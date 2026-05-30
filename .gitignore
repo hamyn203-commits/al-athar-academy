@@ -29,6 +29,10 @@ dist-ssr
 .env.production
 backend/.env
 backend/.env.production
+backend/appsettings.json
+backend/azure-settings.json
+backend/publish-profile.xml
+backend/deploy.zip
 
 # Backend logs
 backend/logs
