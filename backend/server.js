@@ -97,11 +97,15 @@ const connectDB = async () => {
       console.log('⚠️ MONGODB_URI is missing. Running in Mock Mode.');
       return;
     }
-    await mongoose.connect(process.env.MONGODB_URI);
+    console.log('🔄 Connecting to MongoDB...');
+    await mongoose.connect(process.env.MONGODB_URI, {
+      serverSelectionTimeoutMS: 30000,
+      socketTimeoutMS: 45000,
+    });
     console.log('✅ Connected to MongoDB Successfully!');
   } catch (error) {
     console.error('❌ Database connection error:', error.message);
-    process.exit(1);
+    console.log('⚠️ Running in Mock Mode due to DB connection failure');
   }
 };
 connectDB();
