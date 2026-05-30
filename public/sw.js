@@ -1,5 +1,5 @@
-const CACHE_NAME = 'al-athar-academy-v1';
-const RUNTIME_CACHE = 'al-athar-runtime-v1';
+const CACHE_NAME = 'al-athar-academy-v4';
+const RUNTIME_CACHE = 'al-athar-runtime-v4';
 
 const PRECACHE_URLS = [
   '/',
@@ -35,6 +35,22 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
   if (url.origin === location.origin) {
+    if (event.request.mode === 'navigate' || event.request.destination === 'document') {
+      event.respondWith(
+        fetch(event.request)
+          .then((response) => {
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseToCache);
+              cache.put('/index.html', response.clone());
+            });
+            return response;
+          })
+          .catch(() => caches.match(event.request).then((cached) => cached || caches.match('/index.html')))
+      );
+      return;
+    }
+
     event.respondWith(
       caches.match(event.request).then((cached) => {
         if (cached) return cached;

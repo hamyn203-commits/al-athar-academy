@@ -23,6 +23,8 @@ export default function Logo({ size = 40, showText = true }) {
         <img 
           src="/assets/logo.png" 
           alt="شعار الأكاديمية" 
+          width={size}
+          height={size}
           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           onError={(e) => {
             // Fallback if image not found
@@ -35,10 +37,10 @@ export default function Logo({ size = 40, showText = true }) {
       
       {showText && (
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <h1 className="text-gradient-gold" style={{ fontSize: `${size * 0.45}px`, lineHeight: '1.2', margin: 0, fontWeight: '800' }}>
+          <span className="text-gradient-gold logo-title" style={{ fontSize: `${size * 0.45}px`, lineHeight: '1.2', margin: 0, fontWeight: '800' }}>
             أكاديمية الأثر الطيب
-          </h1>
-          <span style={{ fontSize: `${size * 0.25}px`, color: 'var(--text-secondary)', fontWeight: '500', letterSpacing: '1px' }}>
+          </span>
+          <span style={{ fontSize: `${size * 0.25}px`, color: 'var(--text-secondary)', fontWeight: '500', letterSpacing: 0 }}>
             أثرٌ يساوي حياة
           </span>
         </div>

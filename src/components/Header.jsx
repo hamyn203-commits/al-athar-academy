@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { User, Users, Menu, X } from 'lucide-react';
 import Logo from './Logo';
 import LanguageSwitcher from './shared/LanguageSwitcher';
@@ -8,11 +8,11 @@ import { useAppContext } from '../context/AppProvider';
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const navigate = useNavigate();
   const { t } = useAppContext();
 
   const navLinks = [
     { href: '/#about', label: t.header.about },
+    { href: '/global-platform', label: 'منصة V4' },
     { href: '/#sheikhs', label: t.header.sheikhs },
     { href: '/#honors', label: t.header.honors },
     { href: '/#contact', label: t.header.contact },
@@ -20,6 +20,9 @@ export default function Header() {
 
   return (
     <>
+      <a href="#main-content" className="skip-link">
+        تخطي إلى المحتوى
+      </a>
       <div style={{
         background: 'linear-gradient(90deg, var(--primary-gold-dark), var(--clay-terracotta))',
         color: '#fff',
@@ -27,7 +30,7 @@ export default function Header() {
         padding: '8px',
         fontSize: '0.82rem',
         fontWeight: '600',
-        letterSpacing: '0.3px',
+        letterSpacing: 0,
       }}>
         {t.header.developedBy}
       </div>
@@ -57,12 +60,12 @@ export default function Header() {
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }} className="desktop-only">
             <ThemeToggle />
             <LanguageSwitcher compact />
-            <button onClick={() => navigate('/student')} className="btn-premium-outline" style={{ padding: '8px 20px', fontSize: '0.88rem' }} aria-label={t.header.studentPortal}>
+            <Link to="/student" className="btn-premium-outline" style={{ padding: '8px 20px', fontSize: '0.88rem' }} aria-label={t.header.studentPortal}>
               <User size={16} /> {t.header.studentPortal}
-            </button>
-            <button onClick={() => navigate('/teacher')} className="btn-premium" style={{ padding: '8px 20px', fontSize: '0.88rem' }} aria-label={t.header.teacherPortal}>
+            </Link>
+            <Link to="/teacher" className="btn-premium" style={{ padding: '8px 20px', fontSize: '0.88rem' }} aria-label={t.header.teacherPortal}>
               <Users size={16} /> {t.header.teacherPortal}
-            </button>
+            </Link>
           </div>
 
           <button
@@ -95,12 +98,12 @@ export default function Header() {
               <ThemeToggle />
               <LanguageSwitcher />
             </div>
-            <button onClick={() => { navigate('/student'); setMobileMenuOpen(false); }} className="btn-premium-outline" style={{ justifyContent: 'center' }}>
+            <Link to="/student" onClick={() => setMobileMenuOpen(false)} className="btn-premium-outline" style={{ justifyContent: 'center' }}>
               <User size={16} /> {t.header.studentPortal}
-            </button>
-            <button onClick={() => { navigate('/teacher'); setMobileMenuOpen(false); }} className="btn-premium" style={{ justifyContent: 'center' }}>
+            </Link>
+            <Link to="/teacher" onClick={() => setMobileMenuOpen(false)} className="btn-premium" style={{ justifyContent: 'center' }}>
               <Users size={16} /> {t.header.teacherPortal}
-            </button>
+            </Link>
           </nav>
         )}
       </header>

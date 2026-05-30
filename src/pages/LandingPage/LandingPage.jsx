@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { BookOpen, Award, Sparkles, Video, Calendar, Clock, Send, ArrowRight } from 'lucide-react';
 import Tilt from 'react-parallax-tilt';
 import { motion } from 'framer-motion';
@@ -13,7 +13,7 @@ import { sheikhs, honorBoard } from '../../data/mockData';
 
 const fadeUp = { initial: { opacity: 0, y: 30 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true, margin: '-50px' } };
 
-function HeroSection({ navigate, t }) {
+function HeroSection({ t }) {
   return (
     <section id="hero" style={{
       padding: '100px 20px 80px',
@@ -52,12 +52,15 @@ function HeroSection({ navigate, t }) {
       </motion.p>
 
       <motion.div className="animate-fade flex-center" style={{ gap: '16px', flexWrap: 'wrap' }} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
-        <button onClick={() => navigate('/student')} className="btn-premium" style={{ fontSize: '1.1rem', padding: '16px 40px', boxShadow: '0 10px 35px rgba(197, 168, 128, 0.35)' }}>
+        <Link to="/student" className="btn-premium" style={{ fontSize: '1.1rem', padding: '16px 40px', boxShadow: '0 10px 35px rgba(197, 168, 128, 0.35)' }}>
           {t.hero.joinAsStudent} <ArrowRight size={20} style={{ transform: 'rotate(180deg)' }} />
-        </button>
-        <button onClick={() => navigate('/teacher')} className="btn-premium-outline" style={{ fontSize: '1.1rem', padding: '16px 40px', background: 'rgba(0,0,0,0.4)', color: '#fff', borderColor: 'rgba(255,255,255,0.3)' }}>
+        </Link>
+        <Link to="/teacher" className="btn-premium-outline" style={{ fontSize: '1.1rem', padding: '16px 40px', background: 'rgba(0,0,0,0.4)', color: '#fff', borderColor: 'rgba(255,255,255,0.3)' }}>
           {t.hero.teacherPortal}
-        </button>
+        </Link>
+        <Link to="/global-platform" className="btn-premium-outline" style={{ fontSize: '1.1rem', padding: '16px 40px', background: 'rgba(255,255,255,0.08)', color: '#fff', borderColor: 'rgba(255,255,255,0.3)' }}>
+          منصة V4 العالمية
+        </Link>
       </motion.div>
     </section>
   );
@@ -111,7 +114,7 @@ function SheikhsSection({ onVideoOpen, t }) {
             <Tilt className="premium-card" tiltMaxAngleX={4} tiltMaxAngleY={4} scale={1.01} transitionSpeed={1500} glareEnable glareMaxOpacity={0.04} glarePosition="all">
               <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '28px', alignItems: 'center' }}>
                 <div style={{ position: 'relative', width: '120px', height: '120px', borderRadius: 'var(--radius-lg)', overflow: 'hidden', border: '2px solid var(--primary-gold)', flexShrink: 0 }} className="flex-center">
-                  <img src={sheikh.image} alt={sheikh.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" />
+                  <img src={sheikh.image} alt={sheikh.name} width="120" height="120" style={{ width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" />
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', minWidth: 0 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
@@ -209,15 +212,15 @@ function ContactSection({ t }) {
           <form onSubmit={handleSubmit} className="premium-card" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <label htmlFor="contact-name" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>{t.contact.nameLabel}</label>
-              <input id="contact-name" type="text" placeholder={t.contact.namePlaceholder} required className="premium-input" autoComplete="name" />
+              <input id="contact-name" name="name" type="text" placeholder={t.contact.namePlaceholder} required className="premium-input" autoComplete="name" />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <label htmlFor="contact-phone" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>{t.contact.phoneLabel}</label>
-              <input id="contact-phone" type="tel" placeholder="+966…" required className="premium-input" style={{ direction: 'ltr', textAlign: 'right' }} autoComplete="tel" />
+              <input id="contact-phone" name="phone" type="tel" inputMode="tel" placeholder="+966…" required className="premium-input" style={{ direction: 'ltr', textAlign: 'right' }} autoComplete="tel" />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <label htmlFor="contact-message" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>{t.contact.messageLabel}</label>
-              <textarea id="contact-message" placeholder={t.contact.messagePlaceholder} rows="4" required className="premium-input" />
+              <textarea id="contact-message" name="message" placeholder={t.contact.messagePlaceholder} rows="4" required className="premium-input" autoComplete="off" />
             </div>
             <button type="submit" className="btn-premium" style={{ justifyContent: 'center', marginTop: '10px' }} disabled={submitted}>
               {submitted ? t.contact.sentSuccess : <><Send size={18} /> {t.contact.sendButton}</>}
@@ -230,15 +233,14 @@ function ContactSection({ t }) {
 }
 
 export default function LandingPage() {
-  const navigate = useNavigate();
   const { t } = useAppContext();
   const [videoModal, setVideoModal] = useState({ open: false, video: null });
 
   return (
     <>
       <Header />
-      <main style={{ flex: 1 }}>
-        <HeroSection navigate={navigate} t={t} />
+      <main id="main-content" style={{ flex: 1 }}>
+        <HeroSection t={t} />
         <AboutSection t={t} />
         <SheikhsSection onVideoOpen={(v) => setVideoModal({ open: true, video: v })} t={t} />
         <HonorBoardSection t={t} />
