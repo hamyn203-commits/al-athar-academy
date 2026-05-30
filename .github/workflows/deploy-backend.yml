@@ -40,4 +40,7 @@ jobs:
 
     - name: Deploy to Azure Web App
       run: |
-        az webapp deploy --name ${{ env.AZURE_WEBAPP_NAME }} --resource-group al-athar-rg --src-path ./backend --type zip
+        cd backend
+        zip -r ../backend.zip . -x "*.git*" "node_modules/*"
+        cd ..
+        az webapp deploy --name ${{ env.AZURE_WEBAPP_NAME }} --resource-group al-athar-rg --src-path backend.zip --type zip --async true
