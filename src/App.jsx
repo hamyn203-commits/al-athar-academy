@@ -1,0 +1,70 @@
+import { Suspense, lazy } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { AppProvider, useAppContext } from './context/AppProvider';
+import { AuthProvider } from './hooks/useAuth.jsx';
+import { ToastProvider } from './context/ToastProvider';
+import Logo from './components/Logo';
+import ErrorBoundary from './components/shared/ErrorBoundary';
+
+const LandingPage = lazy(() => import('./pages/LandingPage/LandingPage'));
+const StudentPortal = lazy(() => import('./pages/StudentPortal/StudentPortal'));
+const TeacherPortal = lazy(() => import('./pages/TeacherPortal/TeacherPortal'));
+const LiveSessions = lazy(() => import('./pages/LiveSessions/LiveSessions'));
+const LiveRoom = lazy(() => import('./pages/LiveRoom/LiveRoom'));
+const NotFoundPage = lazy(() => import('./pages/NotFound/NotFound'));
+
+function PageLoader() {
+  return (
+    <div className="loading-overlay">
+      <Logo size={60} showText={false} />
+      <div className="spinner spinner-lg" />
+      <span style={{ color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.9rem' }}>جاري التحميل...</span>
+    </div>
+  );
+}
+
+function AppContent() {
+  const { t } = useAppContext();
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+      <div className="bg-particle" style={{ top: '15%', left: '20%', width: '350px', height: '350px' }} />
+      <div className="bg-particle" style={{ top: '60%', right: '10%', width: '400px', height: '400px' }} />
+
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/student" element={<StudentPortal />} />
+          <Route path="/teacher" element={<TeacherPortal />} />
+          <Route path="/live" element={<LiveSessions />} />
+          <Route path="/live/:roomId" element={<LiveRoom />} />
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </Suspense>
+
+      <footer style={{ background: 'var(--bg-elevated)', borderTop: '1px solid var(--border-light)', padding: '32px 0', marginTop: 'auto', position: 'relative', zIndex: 1 }}>
+        <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
+          <Logo size={40} showText />
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+            {t.footer.rights} © {new Date().getFullYear()} | {t.footer.slogan}
+          </p>
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+export default function App() {
+  return (
+    <ErrorBoundary>
+      <AppProvider>
+        <AuthProvider>
+          <ToastProvider>
+            <Router>
+              <AppContent />
+            </Router>
+          </ToastProvider>
+        </AuthProvider>
+      </AppProvider>
+    </ErrorBoundary>
+  );
+}

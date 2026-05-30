@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+    <meta name="theme-color" content="#a68453" />
+    <meta name="description" content="أكاديمية الأثر الطيب - أكاديمية رائدة لتعليم وتجويد القرآن الكريم والعلوم الشرعية مع نخبة من كبار المقرئين والمشايخ" />
+    <meta name="keywords" content="قرآن, تجويد, أكاديمية, تحفيظ, إسلام, تعليم, شيخ, إجازة, سند" />
+    <meta name="author" content="أكاديمية الأثر الطيب" />
+    
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+    <link rel="manifest" href="/manifest.json" />
+    
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="أكاديمية الأثر الطيب | أثر يساوي حياة" />
+    <meta property="og:description" content="أكاديمية رائدة لتعليم وتجويد القرآن الكريم والعلوم الشرعية" />
+    <meta property="og:image" content="/assets/og-image.png" />
+    <meta property="og:url" content="https://alathar.edu" />
+    <meta property="og:site_name" content="أكاديمية الأثر الطيب" />
+    <meta property="og:locale" content="ar_SA" />
+    
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="أكاديمية الأثر الطيب | أثر يساوي حياة" />
+    <meta name="twitter:description" content="أكاديمية رائدة لتعليم وتجويد القرآن الكريم والعلوم الشرعية" />
+    <meta name="twitter:image" content="/assets/og-image.png" />
+    
+    <meta name="robots" content="index, follow" />
+    <meta name="googlebot" content="index, follow" />
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&family=Tajawal:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    
+    <title>أكاديمية الأثر الطيب | أثر يساوي حياة</title>
+    
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "EducationalOrganization",
+      "name": "أكاديمية الأثر الطيب",
+      "alternateName": "Al-Athar Al-Tayyib Academy",
+      "description": "أكاديمية رائدة لتعليم وتجويد القرآن الكريم والعلوم الشرعية",
+      "slogan": "أثرٌ يساوي حياة",
+      "url": "https://alathar.edu",
+      "logo": "/assets/logo.png",
+      "sameAs": [],
+      "address": {
+        "@type": "PostalAddress",
+        "addressCountry": "SA"
+      }
+    }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then((registration) => {
+              console.log('SW registered:', registration);
+            })
+            .catch((error) => {
+              console.log('SW registration failed:', error);
+            });
+        });
+      }
+    </script>
+  </body>
+</html>
