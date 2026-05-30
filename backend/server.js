@@ -63,6 +63,7 @@ app.use(cors({
 
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+app.use('/uploads', express.static('uploads'));
 
 function sanitizeObject(obj) {
   if (typeof obj !== 'object' || obj === null) return obj;
@@ -115,6 +116,12 @@ app.get('/api/health', (req, res) => {
 
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/students', require('./routes/students'));
+app.use('/api/teachers', require('./routes/teachers'));
+app.use('/api/teachers/dashboard', require('./routes/teacherDashboard'));
+app.use('/api/sessions', require('./routes/sessions'));
+app.use('/api/assessments', require('./routes/assessments'));
+app.use('/api/reviews', require('./routes/reviews'));
+app.use('/api/homework', require('./routes/homework'));
 app.use('/api/audio', require('./routes/audio'));
 app.use('/api/live', require('./routes/live'));
 

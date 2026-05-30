@@ -40,3 +40,5 @@ backend/*.log
 
 # Proofshot artifacts
 proofshot-artifacts/
+
+.vercel

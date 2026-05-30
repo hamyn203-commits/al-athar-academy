@@ -1,0 +1,225 @@
+const express = require('express');
+const router = express.Router();
+const Teacher = require('../models/Teacher');
+const User = require('../models/User');
+const { protect, authorize } = require('../middleware/auth');
+const multer = require('multer');
+const path = require('path');
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/teachers');
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 50 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|pdf|mp4|mp3|wav/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    
+    if (extname && mimetype) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only images, PDFs, videos, and audio files are allowed'));
+    }
+  }
+});
+
+router.post('/register', protect, upload.fields([
+  { name: 'profilePhoto', maxCount: 1 },
+  { name: 'idCard', maxCount: 1 },
+  { name: 'graduationCertificate', maxCount: 1 },
+  { name: 'tajweedCertificates', maxCount: 5 },
+  { name: 'ijazat', maxCount: 5 },
+  { name: 'introductionVideo', maxCount: 1 },
+  { name: 'recitationVideo', maxCount: 1 },
+  { name: 'teachingMethodVideo', maxCount: 1 },
+  { name: 'audioRecordings', maxCount: 5 }
+]), async (req, res) => {
+  try {
+    const existingTeacher = await Teacher.findOne({ user: req.user.id });
+    if (existingTeacher) {
+      return res.status(400).json({ error: 'Teacher profile already exists' });
+    }
+
+    const { personalInfo, academicInfo, quranInfo, languages, availability } = req.body;
+
+    const documents = {
+      idCard: req.files?.idCard?.[0]?.path || '',
+      graduationCertificate: req.files?.graduationCertificate?.[0]?.path || '',
+      tajweedCertificates: req.files?.tajweedCertificates?.map(f => f.path) || [],
+      ijazat: req.files?.ijazat?.map(f => f.path) || []
+    };
+
+    const media = {
+      profilePhoto: req.files?.profilePhoto?.[0]?.path || '',
+      introductionVideo: req.files?.introductionVideo?.[0]?.path || '',
+      recitationVideo: req.files?.recitationVideo?.[0]?.path || '',
+      teachingMethodVideo: req.files?.teachingMethodVideo?.[0]?.path || '',
+      audioRecordings: req.files?.audioRecordings?.map(f => f.path) || []
+    };
+
+    const teacher = await Teacher.create({
+      user: req.user.id,
+      personalInfo: JSON.parse(personalInfo),
+      academicInfo: JSON.parse(academicInfo),
+      quranInfo: JSON.parse(quranInfo),
+      languages: JSON.parse(languages || '[]'),
+      availability: JSON.parse(availability || '[]'),
+      documents,
+      media
+    });
+
+    await User.findByIdAndUpdate(req.user.id, { role: 'teacher' });
+
+    res.status(201).json({
+      success: true,
+      message: 'Teacher registration submitted successfully. Awaiting admin review.',
+      teacher
+    });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+router.get('/', async (req, res) => {
+  try {
+    const {
+      country,
+      gender,
+      specialization,
+      language,
+      minRating,
+      minExperience,
+      sortBy = 'rating.average',
+      sortOrder = 'desc',
+      page = 1,
+      limit = 12
+    } = req.query;
+
+    const filter = { status: 'approved', isVerified: true };
+
+    if (country) filter['personalInfo.country'] = country;
+    if (gender) filter['personalInfo.gender'] = gender;
+    if (specialization) filter['quranInfo.specializations'] = specialization;
+    if (language) filter.languages = language;
+    if (minRating) filter['rating.average'] = { $gte: parseFloat(minRating) };
+    if (minExperience) filter['quranInfo.teachingExperience'] = { $gte: parseInt(minExperience) };
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
+
+    const [teachers, total] = await Promise.all([
+      Teacher.find(filter)
+        .populate('user', 'name email avatar')
+        .sort(sort)
+        .skip(skip)
+        .limit(parseInt(limit)),
+      Teacher.countDocuments(filter)
+    ]);
+
+    res.json({
+      teachers,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / parseInt(limit))
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/featured', async (req, res) => {
+  try {
+    const teachers = await Teacher.find({ 
+      status: 'approved', 
+      isVerified: true, 
+      isFeatured: true 
+    })
+      .populate('user', 'name email avatar')
+      .sort({ 'rating.average': -1 })
+      .limit(6);
+
+    res.json(teachers);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/:id', async (req, res) => {
+  try {
+    const teacher = await Teacher.findOne({ 
+      _id: req.params.id, 
+      status: 'approved', 
+      isVerified: true 
+    }).populate('user', 'name email avatar bio');
+
+    if (!teacher) {
+      return res.status(404).json({ error: 'Teacher not found' });
+    }
+
+    res.json(teacher);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/admin/pending', protect, authorize('admin'), async (req, res) => {
+  try {
+    const teachers = await Teacher.find({ status: { $in: ['pending', 'under-review'] } })
+      .populate('user', 'name email')
+      .sort({ createdAt: -1 });
+
+    res.json(teachers);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.put('/admin/:id/review', protect, authorize('admin'), async (req, res) => {
+  try {
+    const { action, note } = req.body;
+    
+    const statusMap = {
+      approve: 'approved',
+      reject: 'rejected',
+      'request-changes': 'under-review'
+    };
+
+    const teacher = await Teacher.findByIdAndUpdate(
+      req.params.id,
+      {
+        status: statusMap[action],
+        isVerified: action === 'approve',
+        $push: {
+          reviewNotes: {
+            admin: req.user.id,
+            note,
+            date: new Date()
+          }
+        }
+      },
+      { new: true }
+    );
+
+    if (!teacher) {
+      return res.status(404).json({ error: 'Teacher not found' });
+    }
+
+    res.json({ success: true, teacher });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+module.exports = router;

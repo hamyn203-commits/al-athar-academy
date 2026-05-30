@@ -12,6 +12,13 @@ const TeacherPortal = lazy(() => import('./pages/TeacherPortal/TeacherPortal'));
 const LiveSessions = lazy(() => import('./pages/LiveSessions/LiveSessions'));
 const LiveRoom = lazy(() => import('./pages/LiveRoom/LiveRoom'));
 const NotFoundPage = lazy(() => import('./pages/NotFound/NotFound'));
+const TeacherRegistration = lazy(() => import('./pages/TeacherRegistration'));
+const Teachers = lazy(() => import('./pages/Teachers'));
+const TeacherProfile = lazy(() => import('./pages/TeacherProfile'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const TeacherDashboard = lazy(() => import('./pages/TeacherDashboard'));
+const StudentDashboard = lazy(() => import('./pages/StudentDashboard'));
+const BookSession = lazy(() => import('./pages/BookSession'));
 
 function PageLoader() {
   return (
@@ -34,7 +41,14 @@ function AppContent() {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/student" element={<StudentPortal />} />
+          <Route path="/student/dashboard" element={<StudentDashboard />} />
           <Route path="/teacher" element={<TeacherPortal />} />
+          <Route path="/teacher/register" element={<TeacherRegistration />} />
+          <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
+          <Route path="/teachers" element={<Teachers />} />
+          <Route path="/teachers/:id" element={<TeacherProfile />} />
+          <Route path="/book-trial/:teacherId" element={<BookSession />} />
+          <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/live" element={<LiveSessions />} />
           <Route path="/live/:roomId" element={<LiveRoom />} />
           <Route path="*" element={<NotFoundPage />} />
