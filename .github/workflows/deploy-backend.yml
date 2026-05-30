@@ -39,8 +39,7 @@ jobs:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
     - name: Deploy to Azure Web App
-      run: |
-        cd backend
-        zip -r ../backend.zip . -x "*.git*" "node_modules/*"
-        cd ..
-        az webapp deploy --name ${{ env.AZURE_WEBAPP_NAME }} --resource-group al-athar-rg --src-path backend.zip --type zip --async true
+      uses: azure/webapps-deploy@v3
+      with:
+        app-name: ${{ env.AZURE_WEBAPP_NAME }}
+        package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
