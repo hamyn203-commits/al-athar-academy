@@ -1,15 +1,14 @@
-import { motion } from 'framer-motion';
-import { BookOpen, Mic, Globe, Baby, Heart, GraduationCap } from 'lucide-react';
+import { BookOpen, Mic, Globe, Baby, Heart, GraduationCap, ArrowLeft } from 'lucide-react';
 import LocalizedLink from './LocalizedLink';
 import { useI18n } from '../i18n';
 
 const colorStyles = {
-  emerald: { bg: 'bg-emerald-100', text: 'text-emerald-600' },
-  blue: { bg: 'bg-blue-100', text: 'text-blue-600' },
-  purple: { bg: 'bg-purple-100', text: 'text-purple-600' },
-  amber: { bg: 'bg-amber-100', text: 'text-amber-600' },
-  pink: { bg: 'bg-pink-100', text: 'text-pink-600' },
-  rose: { bg: 'bg-rose-100', text: 'text-rose-600' },
+  emerald: { bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-100' },
+  blue: { bg: 'bg-blue-50', text: 'text-blue-600', border: 'border-blue-100' },
+  purple: { bg: 'bg-purple-50', text: 'text-purple-600', border: 'border-purple-100' },
+  amber: { bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-100' },
+  pink: { bg: 'bg-pink-50', text: 'text-pink-600', border: 'border-pink-100' },
+  rose: { bg: 'bg-rose-50', text: 'text-rose-600', border: 'border-rose-100' },
 };
 
 const paths = [
@@ -22,34 +21,31 @@ const paths = [
 ];
 
 export default function LearningPathsSection() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
 
   return (
-    <section className="py-20 bg-gradient-to-b from-white to-emerald-50">
-      <div className="container mx-auto px-4 max-w-7xl">
-        <h2 className="section-title">{t.learningPaths?.title || 'مسارات التعلم'}</h2>
-        <p className="section-subtitle">{t.learningPaths?.subtitle || 'اختر المسار المناسب لرحلتك التعليمية'}</p>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {paths.map(({ icon: Icon, color, title, desc, slug }, i) => {
-            const styles = colorStyles[color] || colorStyles.emerald;
+    <section className="py-20 md:py-24 bg-white border-y border-slate-100">
+      <div className="page-container">
+        <div className="max-w-2xl mb-12">
+          <span className="section-label mb-4">مسارات التعلم</span>
+          <h2 className="section-heading">{t.learningPaths?.title || 'مسارات التعلم'}</h2>
+          <p className="section-desc">{t.learningPaths?.subtitle || 'اختر المسار المناسب لرحلتك'}</p>
+        </div>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {paths.map(({ icon: Icon, color, title, desc, slug }) => {
+            const s = colorStyles[color] || colorStyles.emerald;
             return (
-              <motion.div
-                key={slug}
-                initial={false}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.08 }}
-                className="group bg-white border border-gray-100 rounded-2xl p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
-              >
-                <div className={`w-14 h-14 rounded-xl ${styles.bg} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                  <Icon className={styles.text} size={28} />
+              <article key={slug} className="card-modern group">
+                <div className={`inline-flex h-11 w-11 items-center justify-center rounded-xl border ${s.bg} ${s.border} mb-4 group-hover:scale-105 transition-transform`}>
+                  <Icon className={s.text} size={22} strokeWidth={1.5} />
                 </div>
-                <h3 className="text-xl font-bold mb-2">{title}</h3>
-                <p className="text-gray-600 mb-4">{desc}</p>
-                <LocalizedLink to={`/courses?category=${slug}`} className="text-emerald-600 font-semibold text-sm hover:underline">
-                  ابدأ المسار ←
+                <h3 className="text-lg font-semibold tracking-tight text-slate-900 mb-1">{title}</h3>
+                <p className="text-sm text-slate-600 mb-4">{desc}</p>
+                <LocalizedLink to={`/courses?category=${slug}`} locale={locale}
+                  className="inline-flex items-center gap-1 text-sm font-semibold text-emerald-600 hover:text-emerald-700">
+                  ابدأ المسار <ArrowLeft size={14} strokeWidth={1.5} />
                 </LocalizedLink>
-              </motion.div>
+              </article>
             );
           })}
         </div>

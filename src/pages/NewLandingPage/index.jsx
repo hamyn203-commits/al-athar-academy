@@ -1,149 +1,141 @@
 import { useState, useEffect } from 'react';
 import { useI18n } from '../../i18n';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { 
-  Users, 
-  BookOpen, 
-  Globe, 
-  Award, 
-  Clock, 
-  Star,
-  ChevronDown,
-  ChevronUp,
-  ArrowRight,
-  CheckCircle,
-  PlayCircle
+import {
+  Users, BookOpen, Globe, Award, Clock, Star, ChevronDown, ChevronUp,
+  ArrowLeft, CheckCircle2, Sparkles, Mic, GraduationCap, Shield, Video,
 } from 'lucide-react';
 import GlobalHeader from '../../components/GlobalHeader';
 import GlobalFooter from '../../components/GlobalFooter';
 import SEOHead from '../../components/SEOHead';
 import LearningPathsSection from '../../components/LearningPathsSection';
-import AISection from '../../components/AISection';
+import LocalizedLink from '../../components/LocalizedLink';
 
-function AnimatedCounter({ end, duration = 2000, suffix = '' }) {
+function AnimatedCounter({ end, suffix = '' }) {
   const [count, setCount] = useState(0);
-
   useEffect(() => {
-    let startTime;
-    const animate = (currentTime) => {
-      if (!startTime) startTime = currentTime;
-      const progress = Math.min((currentTime - startTime) / duration, 1);
-      setCount(Math.floor(progress * end));
-      if (progress < 1) {
-        requestAnimationFrame(animate);
-      }
+    let start;
+    const tick = (t) => {
+      if (!start) start = t;
+      const p = Math.min((t - start) / 1800, 1);
+      setCount(Math.floor(p * end));
+      if (p < 1) requestAnimationFrame(tick);
     };
-    requestAnimationFrame(animate);
-  }, [end, duration]);
-
-  return <span>{count.toLocaleString()}{suffix}</span>;
+    requestAnimationFrame(tick);
+  }, [end]);
+  return <span>{count.toLocaleString('ar-EG')}{suffix}</span>;
 }
+
+const featureStyles = {
+  emerald: { wrap: 'bg-emerald-50 border-emerald-100', icon: 'text-emerald-600' },
+  blue: { wrap: 'bg-blue-50 border-blue-100', icon: 'text-blue-600' },
+  purple: { wrap: 'bg-purple-50 border-purple-100', icon: 'text-purple-600' },
+  amber: { wrap: 'bg-amber-50 border-amber-100', icon: 'text-amber-600' },
+  indigo: { wrap: 'bg-indigo-50 border-indigo-100', icon: 'text-indigo-600' },
+  rose: { wrap: 'bg-rose-50 border-rose-100', icon: 'text-rose-600' },
+};
 
 function HeroSection() {
   const { t } = useI18n();
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-emerald-900 via-emerald-800 to-green-900">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute inset-0" style={{
-          backgroundImage: 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.4"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
-        }} />
+    <section className="relative overflow-hidden bg-slate-950 text-white geo-pattern">
+      <div className="absolute inset-0 bg-gradient-to-b from-emerald-950/40 via-slate-950 to-slate-950" />
+      <div className="page-container relative pt-16 pb-24 lg:pt-20 lg:pb-28">
+        <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
+          <div>
+            <span className="section-label !border-emerald-500/30 !bg-emerald-500/10 !text-emerald-200 mb-6">
+              <Globe size={14} /> منصة تعليم قرآن عالمية
+            </span>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tight leading-[1.15] text-white">
+              {t.hero.title}
+            </h1>
+            <p className="mt-5 text-lg text-slate-300 max-w-xl leading-relaxed">
+              {t.hero.subtitle}
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link to="/register/student" className="btn-primary !bg-emerald-500 hover:!bg-emerald-400">
+                {t.hero.cta1} <ArrowLeft size={18} strokeWidth={1.5} />
+              </Link>
+              <Link to="/teachers" className="btn-ghost-light">
+                <Users size={18} strokeWidth={1.5} /> {t.hero.cta2}
+              </Link>
+            </div>
+            <div className="mt-10 flex flex-wrap gap-4 text-sm text-slate-400">
+              {['معلمون مجازون', 'حصص Zoom/Jitsi', 'تتبع حفظ ومراجعة', 'شهادات معتمدة'].map((b) => (
+                <span key={b} className="flex items-center gap-1.5">
+                  <CheckCircle2 size={15} className="text-emerald-400" strokeWidth={1.5} /> {b}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* لوحة تقدم — مستوحاة من ilmify / Hifz Academy */}
+          <div className="card-dark lg:ml-auto w-full max-w-md border-emerald-500/20">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <p className="text-xs text-emerald-300/80">لوحة الطالب</p>
+                <p className="text-lg font-semibold tracking-tight">متابعة الحفظ اليومية</p>
+              </div>
+              <span className="rounded-lg bg-emerald-500/20 px-2.5 py-1 text-xs font-semibold text-emerald-200">جuz 30</span>
+            </div>
+            <div className="space-y-4">
+              {[
+                { label: 'سباق (جديد)', val: 85, color: 'bg-emerald-500' },
+                { label: 'سبق (مراجعة قريبة)', val: 72, color: 'bg-teal-500' },
+                { label: 'منزل (مراجعة بعيدة)', val: 91, color: 'bg-cyan-500' },
+              ].map((row) => (
+                <div key={row.label}>
+                  <div className="flex justify-between text-sm mb-1.5">
+                    <span className="text-slate-300">{row.label}</span>
+                    <span className="font-semibold text-white">{row.val}%</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+                    <div className={`h-full rounded-full ${row.color}`} style={{ width: `${row.val}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-6 grid grid-cols-2 gap-3">
+              <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-center">
+                <Video size={18} className="mx-auto mb-1 text-emerald-300" strokeWidth={1.5} />
+                <p className="text-xs text-slate-400">حصة غداً</p>
+                <p className="text-sm font-semibold">4:00 م</p>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-center">
+                <Sparkles size={18} className="mx-auto mb-1 text-emerald-300" strokeWidth={1.5} />
+                <p className="text-xs text-slate-400">تحليل تلاوة</p>
+                <p className="text-sm font-semibold">AI جاهز</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-
-      <div className="container mx-auto px-4 relative z-10">
-        <motion.div
-          initial={false}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="text-center"
-        >
-          <motion.h1
-            initial={false}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.8 }}
-            className="text-5xl md:text-7xl font-bold text-white mb-6"
-          >
-            {t.hero.title}
-          </motion.h1>
-          
-          <motion.p
-            initial={false}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.8 }}
-            className="text-xl md:text-2xl text-emerald-100 mb-12 max-w-3xl mx-auto"
-          >
-            {t.hero.subtitle}
-          </motion.p>
-
-          <motion.div
-            initial={false}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6, duration: 0.8 }}
-            className="flex flex-wrap gap-4 justify-center"
-          >
-            <Link
-              to="/student"
-              className="btn-primary text-lg px-8 py-4 flex items-center gap-2"
-            >
-              {t.hero.cta1}
-              <ArrowRight size={20} />
-            </Link>
-            <Link
-              to="/teachers"
-              className="btn-secondary text-lg px-8 py-4 flex items-center gap-2"
-            >
-              <Users size={20} />
-              {t.hero.cta2}
-            </Link>
-          </motion.div>
-        </motion.div>
-      </div>
-
-      {/* Scroll Indicator */}
-      <motion.div
-        animate={{ y: [0, 10, 0] }}
-        transition={{ repeat: Infinity, duration: 2 }}
-        className="absolute bottom-8 left-1/2 transform -translate-x-1/2"
-      >
-        <ChevronDown size={40} className="text-white/60" />
-      </motion.div>
     </section>
   );
 }
 
-function StatsSection() {
+function StatsBar() {
   const { t } = useI18n();
-  
   const stats = [
     { icon: Users, value: 5000, label: t.stats.students, suffix: '+' },
-    { icon: BookOpen, value: 200, label: t.stats.teachers, suffix: '+' },
-    { icon: Globe, value: 50, label: t.stats.countries, suffix: '+' },
-    { icon: Clock, value: 10000, label: t.stats.sessions, suffix: '+' },
+    { icon: GraduationCap, value: 200, label: t.stats.teachers, suffix: '+' },
+    { icon: Globe, value: 38, label: t.stats.countries, suffix: '+' },
+    { icon: Clock, value: 7600, label: t.stats.sessions, suffix: '+' },
   ];
 
   return (
-    <section className="py-20 bg-white">
-      <div className="container mx-auto px-4">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-          {stats.map((stat, index) => (
-            <motion.div
-              key={index}
-              initial={false}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.1 }}
-              className="text-center"
-            >
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-100 mb-4">
-                <stat.icon className="text-emerald-600" size={32} />
-              </div>
-              <div className="text-4xl font-bold text-gray-900 mb-2">
-                <AnimatedCounter end={stat.value} suffix={stat.suffix} />
-              </div>
-              <div className="text-gray-600">{stat.label}</div>
-            </motion.div>
+    <section className="relative z-10 -mt-10 pb-4">
+      <div className="page-container">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/50">
+          {stats.map(({ icon: Icon, value, label, suffix }) => (
+            <div key={label} className="text-center md:text-right md:pr-4 md:border-l md:border-slate-100 first:md:border-0">
+              <Icon className="mx-auto md:mx-0 mb-2 text-emerald-600" size={22} strokeWidth={1.5} />
+              <p className="text-2xl md:text-3xl font-semibold tracking-tight text-slate-900">
+                <AnimatedCounter end={value} suffix={suffix} />
+              </p>
+              <p className="text-sm text-slate-500 mt-0.5">{label}</p>
+            </div>
           ))}
         </div>
       </div>
@@ -153,75 +145,32 @@ function StatsSection() {
 
 function FeaturesSection() {
   const { t } = useI18n();
-  
   const features = [
-    {
-      icon: Award,
-      title: t.features.feature1.title,
-      description: t.features.feature1.description,
-      color: 'emerald',
-    },
-    {
-      icon: Clock,
-      title: t.features.feature2.title,
-      description: t.features.feature2.description,
-      color: 'blue',
-    },
-    {
-      icon: BookOpen,
-      title: t.features.feature3.title,
-      description: t.features.feature3.description,
-      color: 'purple',
-    },
-    {
-      icon: Award,
-      title: t.features.feature4.title,
-      description: t.features.feature4.description,
-      color: 'gold',
-    },
-    {
-      icon: Globe,
-      title: t.features.feature5.title,
-      description: t.features.feature5.description,
-      color: 'indigo',
-    },
-    {
-      icon: Star,
-      title: t.features.feature6.title,
-      description: t.features.feature6.description,
-      color: 'pink',
-    },
+    { Icon: Shield, style: featureStyles.emerald, title: t.features.feature1.title, desc: t.features.feature1.description },
+    { Icon: Clock, style: featureStyles.blue, title: t.features.feature2.title, desc: t.features.feature2.description },
+    { Icon: BookOpen, style: featureStyles.purple, title: t.features.feature3.title, desc: t.features.feature3.description },
+    { Icon: Award, style: featureStyles.amber, title: t.features.feature4.title, desc: t.features.feature4.description },
+    { Icon: Globe, style: featureStyles.indigo, title: t.features.feature5.title, desc: t.features.feature5.description },
+    { Icon: Sparkles, style: featureStyles.rose, title: t.features.feature6.title, desc: t.features.feature6.description },
   ];
 
   return (
-    <section className="py-20 bg-gray-50">
-      <div className="container mx-auto px-4">
-        <motion.div
-          initial={false}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mb-16"
-        >
-          <h2 className="section-title text-gradient">{t.features.title}</h2>
-          <p className="section-subtitle">{t.features.subtitle}</p>
-        </motion.div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {features.map((feature, index) => (
-            <motion.div
-              key={index}
-              initial={false}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.1 }}
-              className="glass-card p-8 card-hover"
-            >
-              <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-${feature.color}-100 mb-6`}>
-                <feature.icon className={`text-${feature.color}-600`} size={32} />
+    <section className="py-20 md:py-24 bg-[#fafafa]">
+      <div className="page-container">
+        <div className="max-w-2xl mb-12">
+          <span className="section-label mb-4">لماذا الأثر؟</span>
+          <h2 className="section-heading">{t.features.title}</h2>
+          <p className="section-desc">{t.features.subtitle}</p>
+        </div>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {features.map(({ Icon, style, title, desc }) => (
+            <div key={title} className="card-modern group">
+              <div className={`inline-flex h-11 w-11 items-center justify-center rounded-xl border ${style.wrap} mb-4 group-hover:scale-105 transition-transform`}>
+                <Icon className={style.icon} size={22} strokeWidth={1.5} />
               </div>
-              <h3 className="text-xl font-bold mb-3">{feature.title}</h3>
-              <p className="text-gray-600 leading-relaxed">{feature.description}</p>
-            </motion.div>
+              <h3 className="text-lg font-semibold tracking-tight text-slate-900 mb-2">{title}</h3>
+              <p className="text-sm text-slate-600 leading-relaxed">{desc}</p>
+            </div>
           ))}
         </div>
       </div>
@@ -229,92 +178,96 @@ function FeaturesSection() {
   );
 }
 
-function FeaturedTeachersSection() {
+function AISectionModern() {
+  const { locale } = useI18n();
+  return (
+    <section className="py-20 bg-slate-950 text-white geo-pattern">
+      <div className="page-container">
+        <div className="grid lg:grid-cols-2 gap-10 items-center">
+          <div>
+            <span className="section-label !bg-white/10 !border-white/20 !text-emerald-200 mb-4">
+              <Sparkles size={14} /> مدعوم بالذكاء الاصطناعي
+            </span>
+            <h2 className="text-3xl md:text-4xl font-semibold tracking-tight">مركز AI لرحلة الحفظ</h2>
+            <p className="mt-4 text-slate-400 leading-relaxed">
+              مساعد قرآن، تحليل تلاوة بالصوت، وخطط حفظ يومية — مثل أفضل منصات Hifz العالمية.
+            </p>
+            <ul className="mt-6 space-y-3">
+              {[
+                { icon: Mic, text: 'تحليل التجويد والتلاوة بالصوت' },
+                { icon: BookOpen, text: 'خطط سباق / سبق / منزل يومية' },
+                { icon: Sparkles, text: 'مساعد للمعلم والطالب' },
+              ].map(({ icon: Icon, text }) => (
+                <li key={text} className="flex items-center gap-3 text-sm text-slate-300">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/15">
+                    <Icon size={16} className="text-emerald-400" strokeWidth={1.5} />
+                  </span>
+                  {text}
+                </li>
+              ))}
+            </ul>
+            <LocalizedLink to="/ai" locale={locale} className="btn-primary mt-8 !bg-emerald-500">
+              جرّب مركز AI <ArrowLeft size={18} />
+            </LocalizedLink>
+          </div>
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-6 font-mono text-sm">
+            <p className="text-emerald-400 mb-2">// تقرير تلاوة تجريبي</p>
+            <div className="space-y-2 text-slate-300">
+              <p>التجويد: <span className="text-white font-semibold">82%</span></p>
+              <p>المخارج: <span className="text-white font-semibold">78%</span></p>
+              <p>الوقف: <span className="text-white font-semibold">85%</span></p>
+            </div>
+            <p className="mt-4 text-xs text-slate-500">ارفع تسجيلك واحصل على توصيات فورية</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function TeachersSection() {
   const { t } = useI18n();
-  
   const teachers = [
-    {
-      id: 1,
-      name: 'الشيخ أحمد محمد',
-      specialty: 'تحفيظ القرآن',
-      rating: 4.9,
-      reviews: 120,
-      image: '/placeholder-teacher.jpg',
-    },
-    {
-      id: 2,
-      name: 'الشيخة فاطمة علي',
-      specialty: 'التجويد',
-      rating: 4.8,
-      reviews: 95,
-      image: '/placeholder-teacher.jpg',
-    },
-    {
-      id: 3,
-      name: 'الشيخ عمر حسن',
-      specialty: 'اللغة العربية',
-      rating: 4.9,
-      reviews: 150,
-      image: '/placeholder-teacher.jpg',
-    },
+    { id: 1, name: 'الشيخ أحمد محمد', specialty: 'تحفيظ القرآن', rating: 4.9, reviews: 120, initial: 'أ' },
+    { id: 2, name: 'الشيخة فاطمة علي', specialty: 'التجويد', rating: 4.8, reviews: 95, initial: 'ف' },
+    { id: 3, name: 'الشيخ عمر حسن', specialty: 'اللغة العربية', rating: 4.9, reviews: 150, initial: 'ع' },
   ];
 
   return (
-    <section className="py-20 bg-gradient-to-br from-emerald-50 to-green-50">
-      <div className="container mx-auto px-4">
-        <motion.div
-          initial={false}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mb-16"
-        >
-          <h2 className="section-title text-gradient">{t.teachers.title}</h2>
-          <p className="section-subtitle">{t.teachers.subtitle}</p>
-        </motion.div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-          {teachers.map((teacher, index) => (
-            <motion.div
-              key={teacher.id}
-              initial={false}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.1 }}
-              className="glass-card overflow-hidden card-hover"
-            >
-              <div className="relative h-64 bg-gradient-to-br from-emerald-400 to-green-500 flex items-center justify-center">
-                <Users size={80} className="text-white/30" />
-                <div className="absolute top-4 right-4 bg-gold-400 text-white px-3 py-1 rounded-full text-sm font-semibold">
-                  ⭐ {t.teachers.featured}
+    <section className="py-20 md:py-24 bg-white">
+      <div className="page-container">
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-12">
+          <div>
+            <span className="section-label mb-4">نخبة المعلمين</span>
+            <h2 className="section-heading">{t.teachers.title}</h2>
+            <p className="section-desc !mx-0">{t.teachers.subtitle}</p>
+          </div>
+          <Link to="/teachers" className="btn-secondary shrink-0">{t.teachers.viewAll}</Link>
+        </div>
+        <div className="grid md:grid-cols-3 gap-6">
+          {teachers.map((teacher) => (
+            <article key={teacher.id} className="card-modern overflow-hidden !p-0">
+              <div className="flex items-center gap-4 p-5 border-b border-slate-100">
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-xl font-bold text-white">
+                  {teacher.initial}
+                </div>
+                <div>
+                  <h3 className="font-semibold tracking-tight text-slate-900">{teacher.name}</h3>
+                  <p className="text-sm text-emerald-600">{teacher.specialty}</p>
                 </div>
               </div>
-              <div className="p-6">
-                <h3 className="text-xl font-bold mb-2">{teacher.name}</h3>
-                <p className="text-emerald-600 font-medium mb-3">{teacher.specialty}</p>
-                <div className="flex items-center gap-2 mb-4">
-                  <Star className="text-gold-400 fill-gold-400" size={20} />
-                  <span className="font-bold">{teacher.rating}</span>
-                  <span className="text-gray-500">({teacher.reviews} {t.teachers.reviews})</span>
+              <div className="p-5">
+                <div className="flex items-center gap-1.5 mb-4">
+                  <Star className="text-amber-400 fill-amber-400" size={16} />
+                  <span className="font-semibold text-sm">{teacher.rating}</span>
+                  <span className="text-xs text-slate-500">({teacher.reviews} {t.teachers.reviews})</span>
                 </div>
-                <Link
-                  to={`/teachers/${teacher.id}`}
-                  className="btn-primary w-full flex items-center justify-center gap-2"
-                >
-                  {t.teachers.viewProfile}
+                <Link to={`/teachers/${teacher.id}`} className="btn-primary w-full text-sm !py-2.5">
+                  {t.teachers.bookTrial}
                 </Link>
               </div>
-            </motion.div>
+            </article>
           ))}
-        </div>
-
-        <div className="text-center">
-          <Link
-            to="/teachers"
-            className="btn-primary inline-flex items-center gap-2 text-lg px-8 py-4"
-          >
-            <Users size={20} />
-            {t.teachers.viewAll}
-          </Link>
         </div>
       </div>
     </section>
@@ -323,67 +276,30 @@ function FeaturedTeachersSection() {
 
 function TestimonialsSection() {
   const { t } = useI18n();
-  
-  const testimonials = [
-    {
-      name: 'أحمد محمود',
-      country: 'مصر',
-      text: 'تجربة رائعة! تعلمت القرآن بطريقة سهلة وممتعة مع معلمين محترفين.',
-      rating: 5,
-    },
-    {
-      name: 'Sarah Johnson',
-      country: 'USA',
-      text: 'Amazing platform! The teachers are very professional and patient.',
-      rating: 5,
-    },
-    {
-      name: 'محمد علي',
-      country: 'السعودية',
-      text: 'أنصح الجميع بالانضمام. المنصة ممتازة والمعلمون على مستوى عالٍ.',
-      rating: 5,
-    },
+  const items = [
+    { name: 'أحمد محمود', country: 'مصر 🇪🇬', text: 'تجربة رائعة! تعلمت القرآن بطريقة منظمة مع متابعة يومية.' },
+    { name: 'Sarah Johnson', country: 'USA 🇺🇸', text: 'Professional teachers and flexible scheduling worldwide.' },
+    { name: 'محمد علي', country: 'السعودية 🇸🇦', text: 'منصة ممتازة للحفظ والمراجعة مع معلمين مجازين.' },
   ];
 
   return (
-    <section className="py-20 bg-white">
-      <div className="container mx-auto px-4">
-        <motion.div
-          initial={false}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mb-16"
-        >
-          <h2 className="section-title text-gradient">{t.testimonials.title}</h2>
-          <p className="section-subtitle">{t.testimonials.subtitle}</p>
-        </motion.div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {testimonials.map((testimonial, index) => (
-            <motion.div
-              key={index}
-              initial={false}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.1 }}
-              className="glass-card p-8"
-            >
-              <div className="flex items-center gap-1 mb-4">
-                {[...Array(testimonial.rating)].map((_, i) => (
-                  <Star key={i} className="text-gold-400 fill-gold-400" size={20} />
-                ))}
+    <section className="py-20 bg-[#fafafa]">
+      <div className="page-container">
+        <div className="text-center max-w-2xl mx-auto mb-12">
+          <span className="section-label mb-4">آراء الطلاب</span>
+          <h2 className="section-heading">{t.testimonials.title}</h2>
+          <p className="section-desc mx-auto">{t.testimonials.subtitle}</p>
+        </div>
+        <div className="grid md:grid-cols-3 gap-5">
+          {items.map((item) => (
+            <blockquote key={item.name} className="card-modern">
+              <div className="flex gap-0.5 mb-3">
+                {[...Array(5)].map((_, i) => <Star key={i} size={14} className="text-amber-400 fill-amber-400" />)}
               </div>
-              <p className="text-gray-700 mb-6 leading-relaxed">"{testimonial.text}"</p>
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center">
-                  <Users className="text-emerald-600" size={24} />
-                </div>
-                <div>
-                  <div className="font-bold">{testimonial.name}</div>
-                  <div className="text-sm text-gray-500">{testimonial.country}</div>
-                </div>
-              </div>
-            </motion.div>
+              <p className="text-sm text-slate-600 leading-relaxed mb-4">&ldquo;{item.text}&rdquo;</p>
+              <footer className="text-sm font-semibold text-slate-900">{item.name}</footer>
+              <p className="text-xs text-slate-500">{item.country}</p>
+            </blockquote>
           ))}
         </div>
       </div>
@@ -393,61 +309,31 @@ function TestimonialsSection() {
 
 function FAQSection() {
   const { t } = useI18n();
-  const [openIndex, setOpenIndex] = useState(null);
-
+  const [open, setOpen] = useState(null);
   const faqs = [
-    { q: t.faq.q1, a: t.faq.a1 },
-    { q: t.faq.q2, a: t.faq.a2 },
-    { q: t.faq.q3, a: t.faq.a3 },
-    { q: t.faq.q4, a: t.faq.a4 },
-    { q: t.faq.q5, a: t.faq.a5 },
+    { q: t.faq.q1, a: t.faq.a1 }, { q: t.faq.q2, a: t.faq.a2 }, { q: t.faq.q3, a: t.faq.a3 },
+    { q: t.faq.q4, a: t.faq.a4 }, { q: t.faq.q5, a: t.faq.a5 },
   ];
 
   return (
-    <section className="py-20 bg-gray-50">
-      <div className="container mx-auto px-4 max-w-4xl">
-        <motion.div
-          initial={false}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mb-16"
-        >
-          <h2 className="section-title text-gradient">{t.faq.title}</h2>
-          <p className="section-subtitle">{t.faq.subtitle}</p>
-        </motion.div>
-
-        <div className="space-y-4">
-          {faqs.map((faq, index) => (
-            <motion.div
-              key={index}
-              initial={false}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.1 }}
-              className="glass-card overflow-hidden"
-            >
+    <section className="py-20 bg-white">
+      <div className="page-container max-w-3xl">
+        <div className="text-center mb-10">
+          <h2 className="section-heading">{t.faq.title}</h2>
+          <p className="section-desc mx-auto">{t.faq.subtitle}</p>
+        </div>
+        <div className="space-y-3">
+          {faqs.map((faq, i) => (
+            <div key={i} className="rounded-xl border border-slate-200 overflow-hidden">
               <button
-                onClick={() => setOpenIndex(openIndex === index ? null : index)}
-                className="w-full p-6 text-right flex items-center justify-between hover:bg-gray-50 transition-colors"
+                onClick={() => setOpen(open === i ? null : i)}
+                className="flex w-full items-center justify-between gap-4 p-4 text-right text-sm font-semibold text-slate-900 hover:bg-slate-50"
               >
-                <span className="font-bold text-lg">{faq.q}</span>
-                {openIndex === index ? (
-                  <ChevronUp className="text-emerald-600" size={24} />
-                ) : (
-                  <ChevronDown className="text-gray-400" size={24} />
-                )}
+                {faq.q}
+                {open === i ? <ChevronUp size={18} className="shrink-0 text-emerald-600" /> : <ChevronDown size={18} className="shrink-0 text-slate-400" />}
               </button>
-              {openIndex === index && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  className="px-6 pb-6 text-gray-600 leading-relaxed"
-                >
-                  {faq.a}
-                </motion.div>
-              )}
-            </motion.div>
+              {open === i && <div className="px-4 pb-4 text-sm text-slate-600 leading-relaxed border-t border-slate-100 pt-3">{faq.a}</div>}
+            </div>
           ))}
         </div>
       </div>
@@ -457,36 +343,16 @@ function FAQSection() {
 
 function CTASection() {
   const { t } = useI18n();
-
   return (
-    <section className="py-20 bg-gradient-to-r from-emerald-600 to-green-600 relative overflow-hidden">
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute inset-0" style={{
-          backgroundImage: 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.4"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
-        }} />
-      </div>
-
-      <div className="container mx-auto px-4 relative z-10">
-        <motion.div
-          initial={false}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center"
-        >
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-            {t.cta.title}
-          </h2>
-          <p className="text-xl text-emerald-100 mb-12 max-w-2xl mx-auto">
-            {t.cta.subtitle}
-          </p>
-          <Link
-            to="/student"
-            className="inline-flex items-center gap-2 bg-white text-emerald-600 px-8 py-4 rounded-xl font-bold text-lg hover:bg-emerald-50 transition-all duration-200 shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
-          >
-            {t.cta.button}
-            <ArrowRight size={20} />
+    <section className="py-20">
+      <div className="page-container">
+        <div className="rounded-3xl bg-gradient-to-br from-emerald-600 to-teal-700 px-8 py-14 md:px-16 text-center text-white shadow-xl shadow-emerald-900/20">
+          <h2 className="text-3xl md:text-4xl font-semibold tracking-tight">{t.cta.title}</h2>
+          <p className="mt-3 text-emerald-100 max-w-xl mx-auto">{t.cta.subtitle}</p>
+          <Link to="/register/student" className="mt-8 inline-flex items-center gap-2 rounded-xl bg-white px-8 py-3.5 text-sm font-semibold text-emerald-800 shadow-lg hover:bg-emerald-50 transition">
+            {t.cta.button} <ArrowLeft size={18} />
           </Link>
-        </motion.div>
+        </div>
       </div>
     </section>
   );
@@ -494,30 +360,21 @@ function CTASection() {
 
 export default function NewLandingPage() {
   const { t } = useI18n();
-  
   return (
     <>
-      <SEOHead 
-        page={{
-          title: t.hero.title,
-          description: t.hero.subtitle,
-          url: '/',
-          keywords: 'quran, arabic, islamic education, online learning, tajweed, certified teachers',
-          type: 'website'
-        }}
-      />
+      <SEOHead page={{ title: t.hero.title, description: t.hero.subtitle, url: '/', type: 'website' }} />
       <GlobalHeader />
-      <div className="min-h-screen">
+      <main className="bg-[#fafafa]">
         <HeroSection />
-        <StatsSection />
+        <StatsBar />
         <FeaturesSection />
         <LearningPathsSection />
-        <AISection />
-        <FeaturedTeachersSection />
+        <AISectionModern />
+        <TeachersSection />
         <TestimonialsSection />
         <FAQSection />
         <CTASection />
-      </div>
+      </main>
       <GlobalFooter />
     </>
   );
