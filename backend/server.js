@@ -135,6 +135,7 @@ app.use('/api/assessments', require('./routes/assessments'));
 app.use('/api/reviews', require('./routes/reviews'));
 app.use('/api/homework', require('./routes/homework'));
 app.use('/api/notifications', require('./routes/notifications'));
+app.use('/api/courses', require('./routes/courses'));
 app.use('/api/audio', require('./routes/audio'));
 app.use('/api/live', require('./routes/live'));
 
