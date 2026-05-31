@@ -39,6 +39,7 @@ export default function AdminDashboard() {
   const [lessonForm, setLessonForm] = useState({ titleAr: '', type: 'video', videoUrl: '', youtubeUrl: '', duration: 10 });
   const [blogForm, setBlogForm] = useState({ slug: '', titleAr: '', excerptAr: '', contentAr: '' });
   const [uploading, setUploading] = useState(false);
+  const [seeding, setSeeding] = useState(false);
 
   const loadCore = useCallback(async () => {
     const [st, pend, appr] = await Promise.all([
@@ -112,6 +113,19 @@ export default function AdminDashboard() {
       setReplyText((p) => ({ ...p, [id]: '' }));
       loadMessages();
     } catch (e) { toast.error(e.message); }
+  };
+
+  const seedDemoCourse = async () => {
+    setSeeding(true);
+    try {
+      const r = await api.post('/api/lms/seed-demo', {}, { auth: true });
+      toast.success(r.message || 'تم إنشاء الدورة التجريبية');
+      await loadCourses();
+    } catch (e) {
+      toast.error(e.message || 'فشل إنشاء الدورة');
+    } finally {
+      setSeeding(false);
+    }
   };
 
   const addTeacher = async (e) => {
@@ -305,6 +319,16 @@ export default function AdminDashboard() {
 
           {tab === 'courses' && (
             <div className="space-y-6">
+              <div className="bg-gradient-to-l from-emerald-50 to-white border border-emerald-100 rounded-xl p-5 flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <h3 className="font-bold text-emerald-900">دورة LMS تجريبية</h3>
+                  <p className="text-sm text-slate-600 mt-1">إنشاء دورة «تحفيظ القرآن للمبتدئين» مع دروس واختبار — كما في README</p>
+                </div>
+                <button type="button" onClick={seedDemoCourse} disabled={seeding}
+                  className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm disabled:opacity-60">
+                  {seeding ? 'جاري الإنشاء...' : 'إنشاء دورة تجريبية'}
+                </button>
+              </div>
               <form onSubmit={addCourse} className="bg-white rounded-xl border p-6 grid md:grid-cols-2 gap-3">
                 <h3 className="font-bold md:col-span-2 flex items-center gap-2"><BookOpen size={18} /> دورة جديدة</h3>
                 <input required placeholder="عنوان الدورة (عربي)" value={courseForm.titleAr} onChange={(e) => setCourseForm((p) => ({ ...p, titleAr: e.target.value }))} className="border rounded-lg px-3 py-2 text-sm" />

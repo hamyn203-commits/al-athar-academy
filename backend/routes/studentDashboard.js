@@ -111,4 +111,23 @@ router.get('/evaluations', protect, authorize('student'), async (req, res) => {
   }
 });
 
+router.get('/recordings', protect, authorize('student'), async (req, res) => {
+  try {
+    const sessions = await Session.find({
+      student: req.user.id,
+      status: 'completed',
+    })
+      .populate({
+        path: 'teacher',
+        populate: { path: 'user', select: 'name avatar' },
+      })
+      .sort({ scheduledAt: -1 })
+      .limit(50);
+
+    res.json({ sessions });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;

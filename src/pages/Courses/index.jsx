@@ -16,7 +16,7 @@ import {
 import GlobalHeader from '../../components/GlobalHeader';
 import GlobalFooter from '../../components/GlobalFooter';
 import SEOHead from '../../components/SEOHead';
-import api from '../../lib/api';
+import { useMarket } from '../../context/MarketProvider';
 
 // بيانات وهمية للدورات
 const mockCourses = [
@@ -216,6 +216,7 @@ const mockCourses = [
 
 function CourseCard({ course, locale }) {
   const { t } = useI18n();
+  const { displayPrice } = useMarket();
   
   const levelColors = {
     beginner: 'bg-green-100 text-green-700',
@@ -272,7 +273,7 @@ function CourseCard({ course, locale }) {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <DollarSign size={20} className="text-emerald-600" />
-            <span className="text-2xl font-bold text-emerald-600">${course.price}</span>
+            <span className="text-2xl font-bold text-emerald-600">{displayPrice(course.price, course.currency || 'USD')}</span>
             <span className="text-gray-500 text-sm">/ {t.courses.duration}</span>
           </div>
         </div>
@@ -309,6 +310,7 @@ export default function Courses() {
             level: c.level || 'beginner',
             category: c.category || 'quran',
             price: c.price || 0,
+            currency: c.currency || 'USD',
             duration: c.duration || `${c.durationInHours || 0}h`,
             students: c.stats?.enrolled || 0,
             rating: c.stats?.rating?.average || 5,

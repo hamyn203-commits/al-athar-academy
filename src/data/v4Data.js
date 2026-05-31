@@ -32,46 +32,64 @@ import {
 
 export const v4Markets = [
   {
+    slug: 'arab-world',
     region: 'العالم العربي',
+    regionEn: 'Arab World',
     countries: ['مصر', 'السعودية', 'الإمارات', 'الكويت', 'قطر', 'البحرين', 'عمان', 'الأردن', 'العراق', 'المغرب', 'الجزائر', 'تونس'],
     services: ['تحفيظ القرآن', 'التجويد', 'الإجازات', 'اللغة العربية', 'الدراسات الإسلامية'],
     currency: 'SAR',
     language: 'ar',
+    timezone: 'Asia/Riyadh',
   },
   {
+    slug: 'americas',
     region: 'السوق الأمريكي',
+    regionEn: 'Americas',
     countries: ['الولايات المتحدة', 'كندا'],
     services: ['Quran Memorization', 'Arabic Language', 'Islamic Studies', 'Kids Programs', 'Reverts Programs'],
     currency: 'USD',
     language: 'en',
+    timezone: 'America/New_York',
   },
   {
+    slug: 'europe',
     region: 'السوق الأوروبي',
+    regionEn: 'Europe',
     countries: ['بريطانيا', 'فرنسا', 'ألمانيا', 'هولندا', 'بلجيكا', 'السويد'],
     services: ['تعليم القرآن', 'تعليم العربية', 'برامج الأطفال', 'برامج المسلمين الجدد'],
     currency: 'EUR',
     language: 'fr',
+    timezone: 'Europe/London',
   },
   {
+    slug: 'turkey',
     region: 'السوق التركي',
+    regionEn: 'Turkey',
     countries: ['تركيا'],
     services: ['القرآن الكريم', 'اللغة العربية', 'التجويد'],
     currency: 'TRY',
     language: 'tr',
+    timezone: 'Europe/Istanbul',
   },
   {
+    slug: 'indonesia-malaysia',
     region: 'السوق الإندونيسي والماليزي',
+    regionEn: 'Indonesia & Malaysia',
     countries: ['إندونيسيا', 'ماليزيا'],
     services: ['حفظ القرآن', 'تعليم العربية', 'برامج الأطفال'],
     currency: 'IDR',
     language: 'id',
+    timezone: 'Asia/Jakarta',
   },
   {
+    slug: 'south-asia',
     region: 'السوق الباكستاني والهندي',
+    regionEn: 'South Asia',
     countries: ['باكستان', 'الهند'],
     services: ['تحفيظ القرآن', 'التجويد', 'الإجازات'],
     currency: 'PKR',
     language: 'ur',
+    timezone: 'Asia/Karachi',
   },
 ];
 
@@ -84,6 +102,7 @@ export const v4Languages = [
   { code: 'ur', name: 'الأردية', dir: 'RTL', seo: 'ur/quran-academy' },
   { code: 'id', name: 'Bahasa Indonesia', dir: 'LTR', seo: 'id/akademi-alquran-online' },
   { code: 'ms', name: 'Malay', dir: 'LTR', seo: 'ms/akademi-al-quran' },
+  { code: 'ku', name: 'کوردی', dir: 'RTL', seo: 'ku/quran-academy' },
 ];
 
 export const v4Currencies = ['USD', 'EUR', 'GBP', 'SAR', 'AED', 'EGP', 'TRY', 'PKR', 'IDR'];
@@ -165,7 +184,7 @@ export const v4GrowthSystems = [
 
 export const v4Kpis = [
   { label: 'دولة مستهدفة', value: '100+', icon: Globe2 },
-  { label: 'لغة مدعومة', value: '8', icon: Languages },
+  { label: 'لغة مدعومة', value: '9', icon: Languages },
   { label: 'عملة عالمية', value: '9', icon: Banknote },
   { label: 'لوحة تشغيل', value: '3', icon: ChartNoAxesCombined },
   { label: 'مسارات AI', value: '3', icon: Bot },

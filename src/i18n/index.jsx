@@ -11,6 +11,8 @@ import ku from './ku';
 
 const I18nContext = createContext();
 
+import { detectBrowserLocale } from '../lib/locale';
+
 const translations = { ar, en, fr, de, tr, ur, id, ms, ku };
 
 // اللغات التي تكتب من اليمين لليسار
@@ -19,8 +21,8 @@ const rtlLanguages = ['ar', 'ur', 'ku'];
 export function I18nProvider({ children }) {
   const [locale, setLocale] = useState(() => {
     const saved = localStorage.getItem('locale');
-    // التحقق من أن اللغة المحفوظة مدعومة
-    return saved && translations[saved] ? saved : 'ar';
+    if (saved && translations[saved]) return saved;
+    return detectBrowserLocale();
   });
 
   useEffect(() => {

@@ -1,13 +1,18 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Search, Filter, Star, MapPin, Clock, Award, BookOpen, Users, ChevronDown } from 'lucide-react';
+import { v4Markets } from '../../data/v4Data';
+import { useMarket } from '../../context/MarketProvider';
 
 export default function Teachers() {
+  const [searchParams] = useSearchParams();
+  const { displayPrice } = useMarket();
   const [teachers, setTeachers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('rating');
   const [filters, setFilters] = useState({
+    market: searchParams.get('market') || '',
     country: '',
     gender: '',
     specialization: '',
@@ -65,6 +70,7 @@ export default function Teachers() {
 
   const clearFilters = () => {
     setFilters({
+      market: '',
       country: '',
       gender: '',
       specialization: '',
@@ -133,7 +139,18 @@ export default function Teachers() {
           </div>
 
           {showFilters && (
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 pt-4 border-t">
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-7 gap-4 pt-4 border-t">
+              <select
+                value={filters.market}
+                onChange={(e) => handleFilterChange('market', e.target.value)}
+                className="input-field"
+              >
+                <option value="">كل الأسواق</option>
+                {v4Markets.map((m) => (
+                  <option key={m.slug} value={m.slug}>{m.region}</option>
+                ))}
+              </select>
+
               <select
                 value={filters.country}
                 onChange={(e) => handleFilterChange('country', e.target.value)}
@@ -245,7 +262,7 @@ export default function Teachers() {
                       </div>
                     )}
                     <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-semibold">
-                      {teacher.hourlyRate || 50} ج.م/ساعة
+                      {displayPrice(teacher.hourlyRate || 50, 'EGP')}/ساعة
                     </div>
                   </div>
                   

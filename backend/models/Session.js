@@ -34,6 +34,7 @@ const SessionSchema = new mongoose.Schema({
     default: 'Africa/Cairo'
   },
   meetingLink: String,
+  recordingUrl: String,
   meetingProvider: { type: String, enum: ['jitsi', 'google_meet', 'zoom'], default: 'jitsi' },
   notes: String,
   studentFeedback: {
@@ -51,7 +52,8 @@ const SessionSchema = new mongoose.Schema({
     assignedHomework: [{
       type: { type: String, enum: ['memorization', 'review-recent', 'review-far', 'review', 'audio', 'test'] },
       description: String,
-      dueDate: Date
+      dueDate: Date,
+      status: { type: String, enum: ['pending', 'submitted', 'done'], default: 'pending' },
     }]
   },
   earnings: {

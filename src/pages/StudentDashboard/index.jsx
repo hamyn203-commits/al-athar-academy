@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Calendar, CheckCircle, FileText, Star, Trophy, BookOpen,
-  Upload, Clock, Users, X,
+  Upload, Clock, Users, X, Award, Video,
 } from 'lucide-react';
+import { Link as RouterLink } from 'react-router-dom';
 import DashboardLayout, { StatCard, TabBar } from '../../components/dashboard/DashboardLayout';
 import { useRequireAuth } from '../../hooks/useRequireAuth';
 import { useGamificationApi } from '../../hooks/useGamificationApi';
@@ -44,6 +45,8 @@ export default function StudentDashboard() {
   const [evaluations, setEvaluations] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [courses, setCourses] = useState([]);
+  const [certificates, setCertificates] = useState([]);
+  const [recordings, setRecordings] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const [reviewModal, setReviewModal] = useState(null);
@@ -83,6 +86,17 @@ export default function StudentDashboard() {
 
   useEffect(() => { if (ready) load(); }, [ready]);
 
+  useEffect(() => {
+    if (!ready) return;
+    if (tab === 'certificates' && !certificates.length) {
+      api.get('/api/lms/my-certificates', { auth: true }).then(setCertificates).catch(() => setCertificates([]));
+    }
+    if (tab === 'recordings' && !recordings.length) {
+      api.get('/api/students/dashboard/recordings', { auth: true })
+        .then((d) => setRecordings(d.sessions || [])).catch(() => setRecordings([]));
+    }
+  }, [tab, ready, certificates.length, recordings.length]);
+
   if (!ready) return null;
 
   const upcomingTrials = trials.filter((s) => s.status === 'accepted' && new Date(s.scheduledAt) >= new Date());
@@ -90,10 +104,11 @@ export default function StudentDashboard() {
   const upcomingSessions = sessions.filter((s) => s.status === 'accepted' && new Date(s.scheduledAt) >= new Date());
   const pendingSessions = sessions.filter((s) => s.status === 'pending');
 
-  const submitHomework = async (homeworkId, file) => {
+  const submitHomework = async (homeworkId, file, sessionId) => {
     if (!file) return;
     const fd = new FormData();
     fd.append('submission', file);
+    if (sessionId) fd.append('sessionId', sessionId);
     try {
       await api.post(`/api/homework/${homeworkId}/submit`, fd, { auth: true, json: false });
       toast.success('تم رفع الواجب بنجاح');
@@ -163,6 +178,9 @@ export default function StudentDashboard() {
     { id: 'trials', label: `تجريبية (${pendingTrials.length + upcomingTrials.length})` },
     { id: 'sessions', label: `حصصي (${upcomingSessions.length + pendingSessions.length})` },
     { id: 'homework', label: `واجبات (${stats.homeworkPending || 0})` },
+    { id: 'certificates', label: 'شهاداتي' },
+    { id: 'recordings', label: 'تسجيلات' },
+    { id: 'achievements', label: 'إنجازاتي' },
     { id: 'evaluations', label: 'تقييمات المعلم' },
   ];
 
@@ -298,7 +316,7 @@ export default function StudentDashboard() {
                         {hw.status === 'pending' && (
                           <>
                             <input type="file" accept="audio/*" className="hidden" id={`hw-${hw._id}`}
-                              onChange={(e) => submitHomework(hw._id, e.target.files?.[0])} />
+                              onChange={(e) => submitHomework(hw._id, e.target.files?.[0], hw.sessionId)} />
                             <label htmlFor={`hw-${hw._id}`} className="btn-primary cursor-pointer flex items-center gap-1 text-xs px-3 py-1.5">
                               <Upload size={14} /> رفع صوت
                             </label>
@@ -308,6 +326,78 @@ export default function StudentDashboard() {
                     </div>
                   );
                 })}
+              </div>
+            )}
+
+            {tab === 'certificates' && (
+              <div className="space-y-3">
+                <p className="text-sm text-slate-600">شهاداتك بعد إكمال الدورات</p>
+                {certificates.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Award className="mx-auto text-gray-300 mb-3" size={48} />
+                    <p className="text-gray-500">لا شهادات بعد</p>
+                    <RouterLink to="/courses" className="text-sm text-emerald-600 hover:underline mt-2 inline-block">ابدأ دورة</RouterLink>
+                  </div>
+                ) : certificates.map((c) => (
+                  <div key={c._id} className="border rounded-lg p-4 flex flex-wrap justify-between items-center gap-3">
+                    <div>
+                      <h3 className="font-bold">{c.course?.title?.ar || c.course?.title?.en || 'شهادة'}</h3>
+                      <p className="text-xs text-gray-500">{c.issuedAt ? new Date(c.issuedAt).toLocaleDateString('ar-EG') : ''}</p>
+                    </div>
+                    <RouterLink to={`/verify-certificate/${c.certificateId || c._id}`}
+                      className="btn-primary text-sm px-4 py-2">
+                      عرض / تحميل
+                    </RouterLink>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {tab === 'recordings' && (
+              <div className="space-y-3">
+                <p className="text-sm text-slate-600">حصصك المكتملة وتسجيلاتها</p>
+                {recordings.length === 0 ? (
+                  <p className="text-center text-gray-500 py-8">لا تسجيلات بعد</p>
+                ) : recordings.map((s) => (
+                  <div key={s._id} className="border rounded-lg p-4 flex flex-wrap justify-between items-center gap-3">
+                    <div>
+                      <h3 className="font-bold">{s.teacher?.user?.name || 'المعلم'}</h3>
+                      <p className="text-sm text-gray-600">{new Date(s.scheduledAt).toLocaleString('ar-EG')}</p>
+                    </div>
+                    {s.recordingUrl ? (
+                      <a href={s.recordingUrl} target="_blank" rel="noreferrer"
+                        className="flex items-center gap-1 text-sm text-emerald-600 font-semibold">
+                        <Video size={16} /> مشاهدة
+                      </a>
+                    ) : (
+                      <span className="text-xs text-gray-400">لا تسجيل متاح</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {tab === 'achievements' && (
+              <div className="space-y-4">
+                <div className="bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl p-6 text-center">
+                  <Trophy className="mx-auto text-emerald-600 mb-2" size={40} />
+                  <p className="text-3xl font-bold text-emerald-700">{gameStats?.points?.total || 0}</p>
+                  <p className="text-sm text-slate-600">نقطة — المستوى {gameStats?.points?.level || 1}</p>
+                  <p className="text-sm mt-1">🔥 سلسلة {gameStats?.streaks?.current || 0} يوم</p>
+                </div>
+                <h3 className="font-bold text-sm">الأوسمة</h3>
+                {(badges.unlocked || []).length === 0 ? (
+                  <p className="text-gray-500 text-center py-6">أكمل حصصاً ودورات لكسب الأوسمة</p>
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {badges.unlocked.map((b) => (
+                      <div key={b._id} className="border rounded-xl p-4 text-center bg-yellow-50">
+                        <Award className="mx-auto text-yellow-600 mb-2" size={28} />
+                        <p className="font-bold text-sm">{b.badge?.name?.ar || b.badge?.code}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 

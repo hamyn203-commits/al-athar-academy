@@ -72,7 +72,7 @@ export default function SEOHead({ page = {} }) {
       pageScript.textContent = JSON.stringify(page.schema);
       document.head.appendChild(pageScript);
     }
-  }, [meta, organizationSchema, websiteSchema, page.schema, path]);
+  }, [meta, organizationSchema, websiteSchema, page.schema, path, alternates]);
 
   return null;
 }

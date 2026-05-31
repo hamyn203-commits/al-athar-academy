@@ -1,5 +1,9 @@
 import { useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import Header from '../../components/Header';
+import SEOHead from '../../components/SEOHead';
+import { useI18n } from '../../i18n';
+import { localizedPath } from '../../lib/locale';
 import {
   formatCurrencyPreview,
   formatZoneTime,
@@ -61,6 +65,7 @@ function FeatureCard({ title, icon: Icon, items }) {
 }
 
 function GlobalTab() {
+  const { locale } = useI18n();
   const localizedMarkets = useMemo(
     () => v4Markets.map((market) => ({
       ...market,
@@ -79,14 +84,18 @@ function GlobalTab() {
 
       <div className="v4-market-grid">
         {localizedMarkets.map((market) => (
-          <article className="premium-card v4-market-card" key={market.region}>
+          <Link
+            to={localizedPath(`/markets/${market.slug}`, locale)}
+            className="premium-card v4-market-card"
+            key={market.slug}
+          >
             <div>
               <span className="badge-terracotta">{market.currency} · {market.price}</span>
               <h3>{market.region}</h3>
               <p>{market.countries.join('، ')}</p>
             </div>
             <BulletList items={market.services} />
-          </article>
+          </Link>
         ))}
       </div>
 
@@ -214,6 +223,11 @@ function GrowthTab() {
 export default function GlobalPlatform() {
   return (
     <>
+      <SEOHead page={{
+        url: '/global-platform',
+        title: 'أكاديمية الأثر V4 | منصة تعليم إسلامية عالمية',
+        description: 'V4: توسع عالمي، 9 لغات، 6 أسواق، AI، LMS، لوحات تشغيل — ترقية أكاديمية الأثر.',
+      }} />
       <Header />
       <main id="main-content" className="v4-page">
         <section className="v4-hero">
@@ -227,7 +241,11 @@ export default function GlobalPlatform() {
               تحويل أكاديمية الأثر من أكاديمية لتحفيظ القرآن إلى منصة تعليم إسلامية عالمية متعددة اللغات، العملات، المناطق الزمنية، واللوحات التشغيلية مع دعم الذكاء الاصطناعي.
             </p>
             <div className="v4-actions">
-              {v4QuickActions.map((action) => (
+              <Link to="/markets" className="btn-premium-outline">
+                <Globe2 size={18} aria-hidden="true" />
+                استكشاف الأسواق
+              </Link>
+              {v4QuickActions.slice(1).map((action) => (
                 <button type="button" className="btn-premium-outline" key={action.label}>
                   <action.icon size={18} aria-hidden="true" />
                   {action.label}

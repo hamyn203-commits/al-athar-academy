@@ -4,6 +4,8 @@ const Guardian = require('../models/Guardian');
 const User = require('../models/User');
 const Progress = require('../models/Progress');
 const Enrollment = require('../models/Enrollment');
+const Session = require('../models/Session');
+const TeacherTask = require('../models/TeacherTask');
 const { protect, authorize } = require('../middleware/auth');
 
 // @route   GET /api/guardians/my-children
@@ -266,6 +268,39 @@ router.put('/settings', protect, authorize('guardian', 'admin'), async (req, res
   } catch (error) {
     console.error('Update settings error:', error);
     res.status(400).json({ error: error.message });
+  }
+});
+
+// @route   GET /api/guardians/child/:studentId/weekly-summary
+router.get('/child/:studentId/weekly-summary', protect, authorize('guardian', 'admin'), async (req, res) => {
+  try {
+    const guardian = await Guardian.findOne({ user: req.user.id });
+    if (!guardian) return res.status(404).json({ error: 'Guardian profile not found' });
+    if (!guardian.hasPermission(req.params.studentId, 'viewProgress')) {
+      return res.status(403).json({ error: 'Permission denied' });
+    }
+
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    const studentId = req.params.studentId;
+
+    const [completed, missed, homeworkPending, homeworkDone, recentSessions] = await Promise.all([
+      Session.countDocuments({ student: studentId, status: 'completed', updatedAt: { $gte: weekAgo } }),
+      Session.countDocuments({ student: studentId, status: { $in: ['no-show', 'cancelled'] }, updatedAt: { $gte: weekAgo } }),
+      TeacherTask.countDocuments({ student: studentId, status: 'pending' }),
+      TeacherTask.countDocuments({ student: studentId, status: { $in: ['submitted', 'done'] }, updatedAt: { $gte: weekAgo } }),
+      Session.find({ student: studentId, status: 'completed', updatedAt: { $gte: weekAgo } })
+        .populate({ path: 'teacher', populate: { path: 'user', select: 'name' } })
+        .sort({ scheduledAt: -1 })
+        .limit(10),
+    ]);
+
+    res.json({
+      week: { completed, missed, homeworkPending, homeworkDone },
+      recentSessions,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 

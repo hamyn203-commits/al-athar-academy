@@ -2,16 +2,9 @@ const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
 const VerificationCode = require('../models/VerificationCode');
+const { sendWhatsApp, sendTelegram } = require('../services/notificationDispatcher');
 
-const sendWhatsAppMessage = async (phone, code) => {
-  console.log(`📱 WhatsApp verification code for ${phone}: ${code}`);
-  return true;
-};
-
-const sendTelegramMessage = async (username, code) => {
-  console.log(`✈️ Telegram verification code for ${username}: ${code}`);
-  return true;
-};
+const OTP_MSG = (code) => `رمز التحقق — أكاديمية الأثر: ${code}\nصالح 10 دقائق.`;
 
 router.post('/send-verification', async (req, res) => {
   try {
@@ -35,16 +28,15 @@ router.post('/send-verification', async (req, res) => {
       attempts: 0
     });
 
-    let sent = false;
-    if (method === 'whatsapp' && whatsapp) {
-      sent = await sendWhatsAppMessage(whatsapp, code);
-    } else if (method === 'telegram' && telegram) {
-      sent = await sendTelegramMessage(telegram, code);
+    let result;
+    const msg = OTP_MSG(code);
+    if (method === 'telegram' && telegram) {
+      result = await sendTelegram({ chatId: telegram, text: msg });
     } else {
-      sent = await sendWhatsAppMessage(phone, code);
+      result = await sendWhatsApp({ phone: whatsapp || phone, text: msg });
     }
 
-    if (sent) {
+    if (result?.sent) {
       res.json({
         success: true,
         message: `Verification code sent via ${method}`,

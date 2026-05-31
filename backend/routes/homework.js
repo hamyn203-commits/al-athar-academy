@@ -33,6 +33,12 @@ const upload = multer({
   }
 });
 
+function parseSessionHomeworkId(homeworkId) {
+  const match = String(homeworkId).match(/^([a-f0-9]{24})-(\d+)$/);
+  if (!match) return null;
+  return { sessionId: match[1], index: Number(match[2]) };
+}
+
 router.get('/student', protect, authorize('student'), async (req, res) => {
   try {
     const sessions = await Session.find({
@@ -41,12 +47,16 @@ router.get('/student', protect, authorize('student'), async (req, res) => {
       'teacherEvaluation.assignedHomework.0': { $exists: true },
     }).select('teacherEvaluation.assignedHomework');
 
+    const sessionHomeworkIds = [];
     const homework = [];
+
     sessions.forEach((session) => {
       if (session.teacherEvaluation?.assignedHomework) {
         session.teacherEvaluation.assignedHomework.forEach((hw, index) => {
+          const id = `${session._id}-${index}`;
+          sessionHomeworkIds.push(id);
           homework.push({
-            _id: `${session._id}-${index}`,
+            _id: id,
             sessionId: session._id,
             title: hw.type === 'memorization' ? 'حفظ' :
               hw.type === 'review-recent' ? 'مراجعة قريبة' :
@@ -55,11 +65,23 @@ router.get('/student', protect, authorize('student'), async (req, res) => {
               hw.type === 'audio' ? 'تسجيل صوتي' : 'اختبار',
             description: hw.description,
             dueDate: hw.dueDate,
-            status: 'pending',
+            status: hw.status || 'pending',
+            type: hw.type,
           });
         });
       }
     });
+
+    if (sessionHomeworkIds.length) {
+      const subs = await HomeworkSubmission.find({
+        student: req.user.id,
+        homeworkId: { $in: sessionHomeworkIds },
+      }).select('homeworkId status');
+      const subMap = Object.fromEntries(subs.map((s) => [s.homeworkId, s.status]));
+      homework.forEach((hw) => {
+        if (subMap[hw._id]) hw.status = subMap[hw._id] === 'submitted' ? 'submitted' : hw.status;
+      });
+    }
 
     const tasks = await TeacherTask.find({ student: req.user.id }).sort({ createdAt: -1 });
     tasks.forEach((t) => {
@@ -87,6 +109,7 @@ router.post('/:homeworkId/submit', protect, authorize('student'), upload.single(
     }
 
     const { homeworkId } = req.params;
+
     if (mongoose.Types.ObjectId.isValid(homeworkId)) {
       const task = await TeacherTask.findOneAndUpdate(
         { _id: homeworkId, student: req.user.id, status: { $in: ['pending', 'submitted'] } },
@@ -98,9 +121,45 @@ router.post('/:homeworkId/submit', protect, authorize('student'), upload.single(
       }
     }
 
+    const parsed = parseSessionHomeworkId(homeworkId);
+    if (parsed) {
+      const session = await Session.findOne({ _id: parsed.sessionId, student: req.user.id });
+      if (!session?.teacherEvaluation?.assignedHomework?.[parsed.index]) {
+        return res.status(404).json({ error: 'Homework not found' });
+      }
+
+      const existing = await HomeworkSubmission.findOne({ homeworkId, student: req.user.id });
+      if (existing) {
+        return res.status(400).json({ error: 'تم تسليم هذا الواجب مسبقاً' });
+      }
+
+      const submission = await HomeworkSubmission.create({
+        homeworkId,
+        sessionId: parsed.sessionId,
+        student: req.user.id,
+        filePath: req.file.path,
+        fileName: req.file.originalname,
+        fileSize: req.file.size,
+      });
+
+      session.teacherEvaluation.assignedHomework[parsed.index].status = 'submitted';
+      await session.save();
+
+      return res.json({
+        success: true,
+        message: 'تم تسليم الواجب بنجاح',
+        submission,
+      });
+    }
+
+    const sessionId = req.body.sessionId;
+    if (!sessionId || !mongoose.Types.ObjectId.isValid(sessionId)) {
+      return res.status(400).json({ error: 'Invalid homework reference' });
+    }
+
     const submission = await HomeworkSubmission.create({
       homeworkId,
-      sessionId: req.body.sessionId,
+      sessionId,
       student: req.user.id,
       filePath: req.file.path,
       fileName: req.file.originalname,

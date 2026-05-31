@@ -4,13 +4,13 @@ import { AppProvider } from './context/AppProvider';
 import { AuthProvider } from './hooks/useAuth.jsx';
 import { ToastProvider } from './context/ToastProvider';
 import { I18nProvider } from './i18n';
+import { MarketProvider } from './context/MarketProvider';
 import LocaleLayout from './components/LocaleLayout';
+import { StudentLegacyRedirect, TeacherLegacyRedirect } from './components/DashboardRedirect';
 import Logo from './components/Logo';
 import ErrorBoundary from './components/shared/ErrorBoundary';
 
 const LandingPage = lazy(() => import('./pages/NewLandingPage'));
-const StudentPortal = lazy(() => import('./pages/StudentPortal/StudentPortal'));
-const TeacherPortal = lazy(() => import('./pages/TeacherPortal/TeacherPortal'));
 const LiveSessions = lazy(() => import('./pages/LiveSessions/LiveSessions'));
 const LiveRoom = lazy(() => import('./pages/LiveRoom/LiveRoom'));
 const NotFoundPage = lazy(() => import('./pages/NotFound/NotFound'));
@@ -23,6 +23,8 @@ const StudentDashboard = lazy(() => import('./pages/StudentDashboard'));
 const GuardianDashboard = lazy(() => import('./pages/GuardianDashboard'));
 const BookSession = lazy(() => import('./pages/BookSession'));
 const GlobalPlatform = lazy(() => import('./pages/GlobalPlatform/GlobalPlatform'));
+const MarketsIndex = lazy(() => import('./pages/Markets'));
+const MarketDetail = lazy(() => import('./pages/Markets/MarketDetail'));
 const Courses = lazy(() => import('./pages/Courses'));
 const CourseDetail = lazy(() => import('./pages/CourseDetail'));
 const CourseLearn = lazy(() => import('./pages/CourseLearn'));
@@ -72,16 +74,18 @@ function pageRoutes() {
       <Route path="blog/:slug" element={<BlogDetail />} />
       <Route path="contact" element={<Contact />} />
       <Route path="verify-certificate/:certificateId" element={<CertificateView />} />
-      <Route path="student" element={<StudentPortal />} />
+      <Route path="student" element={<StudentLegacyRedirect />} />
       <Route path="student/dashboard" element={<StudentDashboard />} />
       <Route path="guardian/dashboard" element={<GuardianDashboard />} />
-      <Route path="teacher" element={<TeacherPortal />} />
+      <Route path="teacher" element={<TeacherLegacyRedirect />} />
       <Route path="teacher/register" element={<TeacherRegistration />} />
       <Route path="teacher/dashboard" element={<TeacherDashboard />} />
       <Route path="teachers" element={<Teachers />} />
       <Route path="teachers/:id" element={<TeacherProfile />} />
       <Route path="book-trial/:teacherId" element={<BookSession />} />
       <Route path="global-platform" element={<GlobalPlatform />} />
+      <Route path="markets" element={<MarketsIndex />} />
+      <Route path="markets/:slug" element={<MarketDetail />} />
       <Route path="admin" element={<AdminDashboard />} />
       <Route path="live" element={<LiveSessions />} />
       <Route path="live/:roomId" element={<LiveRoom />} />
@@ -110,15 +114,17 @@ export default function App() {
   return (
     <ErrorBoundary>
       <I18nProvider>
-        <AppProvider>
-          <AuthProvider>
-            <ToastProvider>
-              <Router>
-                <AppContent />
-              </Router>
-            </ToastProvider>
-          </AuthProvider>
-        </AppProvider>
+        <MarketProvider>
+          <AppProvider>
+            <AuthProvider>
+              <ToastProvider>
+                <Router>
+                  <AppContent />
+                </Router>
+              </ToastProvider>
+            </AuthProvider>
+          </AppProvider>
+        </MarketProvider>
       </I18nProvider>
     </ErrorBoundary>
   );

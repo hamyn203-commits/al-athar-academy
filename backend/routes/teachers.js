@@ -149,9 +149,11 @@ router.get('/', async (req, res) => {
   try {
     const {
       country,
+      market,
       gender,
       specialization,
       language,
+      currency,
       minRating,
       minExperience,
       sortBy = 'rating.average',
@@ -162,7 +164,15 @@ router.get('/', async (req, res) => {
 
     const filter = { status: 'approved', isVerified: true };
 
-    if (country) filter['personalInfo.country'] = country;
+    if (market) {
+      const { getMarketBySlug } = require('../config/markets');
+      const m = getMarketBySlug(market);
+      if (m?.countries?.length) {
+        filter['personalInfo.country'] = { $in: m.countries };
+      }
+    } else if (country) {
+      filter['personalInfo.country'] = country;
+    }
     if (gender) filter['personalInfo.gender'] = gender;
     if (specialization) filter['quranInfo.specializations'] = specialization;
     if (language) filter.languages = language;

@@ -197,11 +197,26 @@ router.get('/analytics', protect, authorize('teacher'), async (req, res) => {
       monthly[key] = (monthly[key] || 0) + 1;
     });
 
+    const now = new Date();
+    const dayStart = new Date(now); dayStart.setHours(0, 0, 0, 0);
+    const weekStart = new Date(now); weekStart.setDate(now.getDate() - 7);
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const earnings = { daily: 0, weekly: 0, monthly: 0 };
+    sessions.forEach((s) => {
+      const amt = s.earnings?.amount || SESSION_RATE;
+      const d = s.updatedAt;
+      if (d >= dayStart) earnings.daily += amt;
+      if (d >= weekStart) earnings.weekly += amt;
+      if (d >= monthStart) earnings.monthly += amt;
+    });
+
     res.json({
       monthlySessions: Object.entries(monthly).map(([month, count]) => ({ month, count })),
       totalCompleted: sessions.length,
       averageRating: teacher.rating.average,
       totalStudents: teacher.stats.totalStudents,
+      earnings: { ...earnings, pending: teacher.earnings.pendingEarnings },
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -258,6 +273,46 @@ router.post('/withdrawals', protect, authorize('teacher'), async (req, res) => {
       accountInfo: accountInfo.trim(),
     });
     res.status(201).json({ success: true, withdrawal });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+const VALID_DAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+
+router.get('/availability', protect, authorize('teacher'), async (req, res) => {
+  try {
+    const teacher = await Teacher.findOne({ user: req.user.id }).select('availability');
+    if (!teacher) return res.status(404).json({ error: 'Teacher profile not found' });
+    res.json({ availability: teacher.availability || [] });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.put('/availability', protect, authorize('teacher'), async (req, res) => {
+  try {
+    const teacher = await Teacher.findOne({ user: req.user.id });
+    if (!teacher) return res.status(404).json({ error: 'Teacher profile not found' });
+
+    const { availability } = req.body;
+    if (!Array.isArray(availability)) {
+      return res.status(400).json({ error: 'availability must be an array' });
+    }
+
+    const cleaned = availability
+      .filter((d) => VALID_DAYS.includes(d.day))
+      .map((d) => ({
+        day: d.day,
+        slots: (d.slots || [])
+          .filter((s) => s.startTime && s.endTime)
+          .map((s) => ({ startTime: s.startTime, endTime: s.endTime, isBooked: false })),
+      }))
+      .filter((d) => d.slots.length);
+
+    teacher.availability = cleaned;
+    await teacher.save();
+    res.json({ success: true, availability: teacher.availability });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }

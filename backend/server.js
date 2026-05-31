@@ -86,6 +86,7 @@ app.use(cors({
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 app.use('/uploads', express.static('uploads'));
+app.use(require('./middleware/detectMarket'));
 
 function sanitizeObject(obj) {
   if (typeof obj !== 'object' || obj === null) return obj;
@@ -149,6 +150,7 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+app.use('/api/markets', require('./routes/markets'));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/auth', require('./routes/verification'));
 app.use('/api/students', require('./routes/students'));

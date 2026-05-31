@@ -87,7 +87,7 @@ const TeacherSchema = new mongoose.Schema({
   }],
   languages: [{
     type: String,
-    enum: ['arabic', 'english', 'french', 'turkish', 'urdu']
+    enum: ['arabic', 'english', 'french', 'german', 'turkish', 'urdu', 'indonesian', 'malay']
   }],
   isVerified: { type: Boolean, default: false },
   isFeatured: { type: Boolean, default: false }

@@ -60,7 +60,10 @@ const UserSchema = new mongoose.Schema({
   pushPlatform: String,
   telegramId: String,
   preferences: {
-    language: { type: String, default: 'ar', enum: ['ar', 'en', 'id', 'tr'] },
+    language: { type: String, default: 'ar', enum: ['ar', 'en', 'fr', 'de', 'tr', 'ur', 'id', 'ms', 'ku'] },
+    currency: { type: String, default: 'SAR', enum: ['USD', 'EUR', 'GBP', 'SAR', 'AED', 'EGP', 'TRY', 'PKR', 'IDR'] },
+    timezone: { type: String, default: 'Asia/Riyadh' },
+    market: { type: String, default: 'arab-world' },
     theme: { type: String, default: 'light', enum: ['light', 'dark'] },
     notifications: {
       email: { type: Boolean, default: true },
