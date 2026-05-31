@@ -1,8 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
-
-const verificationCodes = new Map();
+const VerificationCode = require('../models/VerificationCode');
 
 const sendWhatsAppMessage = async (phone, code) => {
   console.log(`📱 WhatsApp verification code for ${phone}: ${code}`);
@@ -27,11 +26,12 @@ router.post('/send-verification', async (req, res) => {
     }
 
     const code = crypto.randomInt(100000, 999999).toString();
-    
-    verificationCodes.set(phone, {
+
+    await VerificationCode.create({
+      phone,
       code,
       method,
-      expires: Date.now() + 10 * 60 * 1000,
+      expires: new Date(Date.now() + 10 * 60 * 1000),
       attempts: 0
     });
 
@@ -45,8 +45,8 @@ router.post('/send-verification', async (req, res) => {
     }
 
     if (sent) {
-      res.json({ 
-        success: true, 
+      res.json({
+        success: true,
         message: `Verification code sent via ${method}`,
         ...(process.env.NODE_ENV !== 'production' && { code })
       });
@@ -67,28 +67,29 @@ router.post('/verify-code', async (req, res) => {
       return res.status(400).json({ error: 'Phone and code are required' });
     }
 
-    const verification = verificationCodes.get(phone);
+    const verification = await VerificationCode.findOne({ phone }).sort({ createdAt: -1 });
 
     if (!verification) {
       return res.status(400).json({ error: 'No verification code found for this phone' });
     }
 
-    if (Date.now() > verification.expires) {
-      verificationCodes.delete(phone);
+    if (Date.now() > verification.expires.getTime()) {
+      await VerificationCode.deleteOne({ _id: verification._id });
       return res.status(400).json({ error: 'Verification code expired' });
     }
 
     if (verification.attempts >= 5) {
-      verificationCodes.delete(phone);
+      await VerificationCode.deleteOne({ _id: verification._id });
       return res.status(400).json({ error: 'Too many attempts. Please request a new code' });
     }
 
     if (verification.code !== code) {
       verification.attempts++;
+      await verification.save();
       return res.status(400).json({ error: 'Invalid verification code' });
     }
 
-    verificationCodes.delete(phone);
+    await VerificationCode.deleteOne({ _id: verification._id });
     res.json({ success: true, message: 'Phone verified successfully' });
   } catch (error) {
     console.error('Verify code error:', error);

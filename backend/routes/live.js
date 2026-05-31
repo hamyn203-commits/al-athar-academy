@@ -1,11 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const { AccessToken } = require('livekit-server-sdk');
+const LiveSession = require('../models/LiveSession');
 
 const LIVEKIT_API_KEY = process.env.LIVEKIT_API_KEY || 'your-api-key';
 const LIVEKIT_API_SECRET = process.env.LIVEKIT_API_SECRET || 'your-api-secret';
-
-const sessions = new Map();
 
 function createToken(roomName, participantName, isHost = false) {
   const at = new AccessToken(LIVEKIT_API_KEY, LIVEKIT_API_SECRET, {
@@ -37,12 +36,12 @@ router.post('/token', (req, res) => {
     const { roomName, participantName, isHost } = req.body;
 
     if (!roomName || !participantName) {
-      return res.status(400).json({ 
-        message: 'Room name and participant name are required' 
+      return res.status(400).json({
+        message: 'Room name and participant name are required'
       });
     }
 
-    if (!LIVEKIT_API_KEY || !LIVEKIT_API_SECRET || 
+    if (!LIVEKIT_API_KEY || !LIVEKIT_API_SECRET ||
         LIVEKIT_API_KEY === 'your-api-key') {
       return res.status(503).json({
         message: 'LiveKit not configured',
@@ -52,7 +51,7 @@ router.post('/token', (req, res) => {
     }
 
     const token = createToken(roomName, participantName, isHost);
-    
+
     res.json({ token });
   } catch (error) {
     console.error('Token generation error:', error);
@@ -60,10 +59,9 @@ router.post('/token', (req, res) => {
   }
 });
 
-router.get('/sessions', (req, res) => {
+router.get('/sessions', async (req, res) => {
   try {
-    const sessionsList = Array.from(sessions.values())
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    const sessionsList = await LiveSession.find().sort({ createdAt: -1 });
     res.json(sessionsList);
   } catch (error) {
     console.error('Fetch sessions error:', error);
@@ -71,7 +69,7 @@ router.get('/sessions', (req, res) => {
   }
 });
 
-router.post('/sessions', (req, res) => {
+router.post('/sessions', async (req, res) => {
   try {
     const { title, description, subject } = req.body;
 
@@ -80,20 +78,17 @@ router.post('/sessions', (req, res) => {
     }
 
     const roomId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
-    const session = {
+
+    const session = await LiveSession.create({
       roomId,
       title,
       description: description || '',
       subject: subject || 'general',
-      createdAt: new Date().toISOString(),
       isLive: false,
       isHost: true,
       participants: 0
-    };
+    });
 
-    sessions.set(roomId, session);
-    
     res.status(201).json(session);
   } catch (error) {
     console.error('Create session error:', error);
@@ -101,10 +96,10 @@ router.post('/sessions', (req, res) => {
   }
 });
 
-router.get('/sessions/:roomId', (req, res) => {
+router.get('/sessions/:roomId', async (req, res) => {
   try {
-    const session = sessions.get(req.params.roomId);
-    
+    const session = await LiveSession.findOne({ roomId: req.params.roomId });
+
     if (!session) {
       return res.status(404).json({ message: 'Session not found' });
     }
@@ -116,15 +111,16 @@ router.get('/sessions/:roomId', (req, res) => {
   }
 });
 
-router.delete('/sessions/:roomId', (req, res) => {
+router.delete('/sessions/:roomId', async (req, res) => {
   try {
     const { roomId } = req.params;
-    
-    if (!sessions.has(roomId)) {
+
+    const result = await LiveSession.deleteOne({ roomId });
+
+    if (result.deletedCount === 0) {
       return res.status(404).json({ message: 'Session not found' });
     }
 
-    sessions.delete(roomId);
     res.json({ message: 'Session deleted successfully' });
   } catch (error) {
     console.error('Delete session error:', error);
@@ -132,19 +128,21 @@ router.delete('/sessions/:roomId', (req, res) => {
   }
 });
 
-router.patch('/sessions/:roomId/live', (req, res) => {
+router.patch('/sessions/:roomId/live', async (req, res) => {
   try {
     const { roomId } = req.params;
     const { isLive } = req.body;
-    
-    const session = sessions.get(roomId);
+
+    const session = await LiveSession.findOneAndUpdate(
+      { roomId },
+      { isLive },
+      { new: true }
+    );
+
     if (!session) {
       return res.status(404).json({ message: 'Session not found' });
     }
 
-    session.isLive = isLive;
-    sessions.set(roomId, session);
-    
     res.json(session);
   } catch (error) {
     console.error('Update session error:', error);

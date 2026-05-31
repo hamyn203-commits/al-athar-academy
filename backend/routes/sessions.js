@@ -192,9 +192,11 @@ router.put('/:id/complete', protect, authorize('teacher'), async (req, res) => {
       return res.status(404).json({ error: 'Session not found or not accepted' });
     }
 
+    const SESSION_RATE = 50;
     session.status = 'completed';
+    session.duration = 60;
     session.teacherEvaluation = evaluation;
-    session.earnings.amount = teacher.hourlyRate;
+    session.earnings.amount = SESSION_RATE;
     session.earnings.status = 'pending';
     
     await session.save();
@@ -202,9 +204,9 @@ router.put('/:id/complete', protect, authorize('teacher'), async (req, res) => {
     await Teacher.findByIdAndUpdate(teacher._id, {
       $inc: {
         'stats.totalSessions': 1,
-        'stats.totalHours': session.duration / 60,
-        'earnings.pendingEarnings': teacher.hourlyRate
-      }
+        'stats.totalHours': 1,
+        'earnings.pendingEarnings': SESSION_RATE,
+      },
     });
 
     res.json({ success: true, session });

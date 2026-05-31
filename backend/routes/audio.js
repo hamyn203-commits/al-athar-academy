@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
+const { protect } = require('../middleware/auth');
 const { BlobServiceClient } = require('@azure/storage-blob');
 
 // Multer setup (in-memory storage for uploading directly to Azure)
@@ -25,7 +26,7 @@ if (AZURE_CONNECTION_STRING) {
 }
 
 // Upload Audio Route
-router.post('/upload', upload.single('audio'), async (req, res) => {
+router.post('/upload', protect, upload.single('audio'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: 'No audio file provided.' });

@@ -1,6 +1,14 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
+const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
+
+if (process.env.NODE_ENV === 'production' && (!JWT_SECRET || JWT_SECRET === 'change-me-in-production')) {
+  console.error('❌ FATAL: JWT_SECRET is missing or default. Set a strong secret in production!');
+  process.exit(1);
+}
+
 const generateAccessToken = (user) => {
   return jwt.sign(
     { 
@@ -8,7 +16,7 @@ const generateAccessToken = (user) => {
       email: user.email, 
       role: user.role 
     },
-    process.env.JWT_SECRET || 'fallback-secret-change-in-production',
+    JWT_SECRET || 'dev-only-fallback-secret',
     { expiresIn: process.env.JWT_EXPIRES_IN || '15m' }
   );
 };
@@ -16,7 +24,7 @@ const generateAccessToken = (user) => {
 const generateRefreshToken = (user) => {
   return jwt.sign(
     { id: user._id },
-    process.env.JWT_REFRESH_SECRET || 'fallback-refresh-secret-change-in-production',
+    JWT_REFRESH_SECRET || 'dev-only-fallback-refresh-secret',
     { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d' }
   );
 };
@@ -105,13 +113,24 @@ const optionalAuth = async (req, res, next) => {
   try {
     const decoded = jwt.verify(
       token, 
-      process.env.JWT_SECRET || 'fallback-secret-change-in-production'
+      JWT_SECRET || 'dev-only-fallback-secret'
     );
     req.user = decoded;
   } catch (error) {
     // Token invalid but we continue without user
   }
 
+  next();
+};
+
+const attachTeacherProfile = async (req, res, next) => {
+  if (req.user && req.user.role === 'teacher') {
+    const Teacher = require('../models/Teacher');
+    const teacher = await Teacher.findOne({ user: req.user.id });
+    if (teacher) {
+      req.user.teacherProfile = teacher._id;
+    }
+  }
   next();
 };
 
@@ -122,6 +141,7 @@ module.exports = {
   verifyRefreshToken,
   requireRole,
   optionalAuth,
+  attachTeacherProfile,
   protect: verifyAccessToken,
   authorize: requireRole
 };

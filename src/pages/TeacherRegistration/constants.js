@@ -1,13 +1,11 @@
-import { User, Phone, GraduationCap, BookOpen, FileText, Video, CheckCircle } from 'lucide-react';
+import { User, Phone, Lock, Video, CheckCircle } from 'lucide-react';
 
 export const STEPS = [
-  { id: 1, title: 'أساسي', fullTitle: 'البيانات الأساسية', icon: User },
-  { id: 2, title: 'تحقق', fullTitle: 'التحقق من الهاتف', icon: Phone },
-  { id: 3, title: 'أكاديمي', fullTitle: 'البيانات الأكاديمية', icon: GraduationCap },
-  { id: 4, title: 'قرآني', fullTitle: 'البيانات القرآنية', icon: BookOpen },
-  { id: 5, title: 'مستندات', fullTitle: 'المستندات', icon: FileText },
-  { id: 6, title: 'وسائط', fullTitle: 'الفيديو والصوت', icon: Video },
-  { id: 7, title: 'مراجعة', fullTitle: 'المراجعة والإرسال', icon: CheckCircle },
+  { id: 1, title: 'بياناتك', fullTitle: 'البيانات الشخصية', icon: User },
+  { id: 2, title: 'تحقق', fullTitle: 'تأكيد رقم الهاتف', icon: Phone },
+  { id: 3, title: 'حسابك', fullTitle: 'البريد وكلمة المرور', icon: Lock },
+  { id: 4, title: 'صورة وفيديو', fullTitle: 'الصورة وفيديو التلاوة', icon: Video },
+  { id: 5, title: 'إرسال', fullTitle: 'المراجعة والإرسال', icon: CheckCircle },
 ];
 
 export const COUNTRIES = [
@@ -16,33 +14,30 @@ export const COUNTRIES = [
   'ليبيا', 'السودان', 'تركيا', 'ماليزيا', 'إندonesia', 'باكستان', 'بريطانيا', 'أمريكا', 'أخرى',
 ];
 
-export const SPEC_LABELS = {
-  children: 'أطفال', adults: 'كبار', women: 'نساء', 'non-arabic': 'غير عرب',
-  tajweed: 'تجويد', ijaza: 'إجازة', 'arabic-language': 'لغة عربية',
-};
-
-export const LANG_OPTIONS = [
-  { id: 'arabic', label: 'العربية' },
-  { id: 'english', label: 'English' },
-  { id: 'french', label: 'Français' },
-  { id: 'turkish', label: 'Türkçe' },
-  { id: 'urdu', label: 'اردو' },
+export const TASK_TYPES = [
+  { id: 'memorization', label: 'حفظ جديد' },
+  { id: 'review-recent', label: 'مراجعة قريبة' },
+  { id: 'review-far', label: 'مراجعة بعيدة' },
+  { id: 'audio', label: 'تسجيل صوتي' },
+  { id: 'test', label: 'اختبار' },
 ];
 
 export const INITIAL_FORM = {
   personalInfo: {
-    fullName: '', age: '', gender: '', country: 'مصر', city: '', address: '',
+    fullName: '', age: '', gender: 'male', country: 'مصر', address: '',
     phone: '', whatsapp: '', telegram: '',
   },
   academicInfo: {
-    university: '', faculty: '', graduationYear: '', specialization: '', qualification: '',
+    university: '', graduationYear: '',
   },
-  quranInfo: {
-    numberOfIjazat: 0, ijazaType: '', sheikhName: '', sanad: '',
-    memorizedParts: 30, teachingExperience: 0, specializations: [],
-  },
-  languages: [],
-  availability: [],
 };
 
 export const DRAFT_KEY = 'teacher_registration_draft';
+
+export const VIDEO_GUIDE = [
+  'مدة كل فيديو من 3 إلى 5 دقائق',
+  'يظهر وجهك بوضوح أمام الكاميرا',
+  'صوتك واضح بدون ضوضاء',
+  'اقرأ من المصحف أو من حفظك — تلاوة قرآنية',
+  'يمكنك رفع أكثر من فيديو',
+];

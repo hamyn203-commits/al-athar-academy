@@ -204,8 +204,11 @@ export function AuthProvider({ children }) {
     if (response.status === 401) {
       const errorData = await response.json();
       if (errorData.code === 'TOKEN_EXPIRED') {
-        await refreshAccessToken();
-        return authFetch(url, options);
+        const storedRefresh = refreshToken || localStorage.getItem('refreshToken');
+        if (storedRefresh) {
+          await refreshAccessToken(storedRefresh);
+          return authFetch(url, options);
+        }
       }
       logout();
       throw new Error('Session expired');

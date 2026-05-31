@@ -9,7 +9,7 @@ const { protect, authorize } = require('../middleware/auth');
 // @route   GET /api/guardians/my-children
 // @desc    Get all children for the current guardian
 // @access  Private (Guardian)
-router.get('/my-children', protect, async (req, res) => {
+router.get('/my-children', protect, authorize('guardian', 'admin'), async (req, res) => {
   try {
     const guardian = await Guardian.findOne({ user: req.user.id })
       .populate({
@@ -31,7 +31,7 @@ router.get('/my-children', protect, async (req, res) => {
 // @route   POST /api/guardians/add-child
 // @desc    Add a child to guardian
 // @access  Private (Guardian)
-router.post('/add-child', protect, async (req, res) => {
+router.post('/add-child', protect, authorize('guardian', 'admin'), async (req, res) => {
   try {
     const { studentId, relationship, permissions } = req.body;
 
@@ -61,7 +61,7 @@ router.post('/add-child', protect, async (req, res) => {
 // @route   DELETE /api/guardians/remove-child/:studentId
 // @desc    Remove a child from guardian
 // @access  Private (Guardian)
-router.delete('/remove-child/:studentId', protect, async (req, res) => {
+router.delete('/remove-child/:studentId', protect, authorize('guardian', 'admin'), async (req, res) => {
   try {
     const guardian = await Guardian.findOne({ user: req.user.id });
 
@@ -81,7 +81,7 @@ router.delete('/remove-child/:studentId', protect, async (req, res) => {
 // @route   PUT /api/guardians/permissions/:studentId
 // @desc    Update permissions for a child
 // @access  Private (Guardian)
-router.put('/permissions/:studentId', protect, async (req, res) => {
+router.put('/permissions/:studentId', protect, authorize('guardian', 'admin'), async (req, res) => {
   try {
     const { permissions } = req.body;
     const guardian = await Guardian.findOne({ user: req.user.id });
@@ -102,7 +102,7 @@ router.put('/permissions/:studentId', protect, async (req, res) => {
 // @route   GET /api/guardians/child/:studentId/progress
 // @desc    Get child's progress
 // @access  Private (Guardian)
-router.get('/child/:studentId/progress', protect, async (req, res) => {
+router.get('/child/:studentId/progress', protect, authorize('guardian', 'admin'), async (req, res) => {
   try {
     const guardian = await Guardian.findOne({ user: req.user.id });
 
@@ -132,7 +132,7 @@ router.get('/child/:studentId/progress', protect, async (req, res) => {
 // @route   GET /api/guardians/child/:studentId/enrollments
 // @desc    Get child's enrollments
 // @access  Private (Guardian)
-router.get('/child/:studentId/enrollments', protect, async (req, res) => {
+router.get('/child/:studentId/enrollments', protect, authorize('guardian', 'admin'), async (req, res) => {
   try {
     const guardian = await Guardian.findOne({ user: req.user.id });
 
@@ -161,7 +161,7 @@ router.get('/child/:studentId/enrollments', protect, async (req, res) => {
 // @route   GET /api/guardians/child/:studentId/achievements
 // @desc    Get child's achievements
 // @access  Private (Guardian)
-router.get('/child/:studentId/achievements', protect, async (req, res) => {
+router.get('/child/:studentId/achievements', protect, authorize('guardian', 'admin'), async (req, res) => {
   try {
     const guardian = await Guardian.findOne({ user: req.user.id });
 
@@ -193,7 +193,7 @@ router.get('/child/:studentId/achievements', protect, async (req, res) => {
 // @route   POST /api/guardians/report/:studentId
 // @desc    Generate a report for a child
 // @access  Private (Guardian)
-router.post('/report/:studentId', protect, async (req, res) => {
+router.post('/report/:studentId', protect, authorize('guardian', 'admin'), async (req, res) => {
   try {
     const { type = 'weekly' } = req.body;
     const guardian = await Guardian.findOne({ user: req.user.id });
@@ -220,7 +220,7 @@ router.post('/report/:studentId', protect, async (req, res) => {
 // @route   GET /api/guardians/reports
 // @desc    Get all reports for guardian's children
 // @access  Private (Guardian)
-router.get('/reports', protect, async (req, res) => {
+router.get('/reports', protect, authorize('guardian', 'admin'), async (req, res) => {
   try {
     const guardian = await Guardian.findOne({ user: req.user.id })
       .populate('reports.childId', 'name');
@@ -239,7 +239,7 @@ router.get('/reports', protect, async (req, res) => {
 // @route   PUT /api/guardians/settings
 // @desc    Update guardian settings
 // @access  Private (Guardian)
-router.put('/settings', protect, async (req, res) => {
+router.put('/settings', protect, authorize('guardian', 'admin'), async (req, res) => {
   try {
     const { notificationPreferences, settings } = req.body;
     
@@ -272,7 +272,7 @@ router.put('/settings', protect, async (req, res) => {
 // @route   GET /api/guardians/dashboard
 // @desc    Get guardian dashboard overview
 // @access  Private (Guardian)
-router.get('/dashboard', protect, async (req, res) => {
+router.get('/dashboard', protect, authorize('guardian', 'admin'), async (req, res) => {
   try {
     const guardian = await Guardian.findOne({ user: req.user.id })
       .populate({

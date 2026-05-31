@@ -3,10 +3,12 @@ import { useToast } from '../../context/ToastProvider';
 import { INITIAL_FORM, DRAFT_KEY } from './constants';
 
 const emptyFiles = () => ({
-  profilePhoto: null, idCard: null, graduationCertificate: null,
-  tajweedCertificates: [], ijazat: [],
-  introductionVideo: null, recitationVideo: null, teachingMethodVideo: null,
-  additionalVideos: [], audioRecordings: [],
+  profilePhoto: null,
+  idCard: null,
+  graduationCertificate: null,
+  tajweedCertificates: [],
+  ijazat: [],
+  recitationVideos: [],
 });
 
 export function useTeacherForm() {
@@ -53,19 +55,6 @@ export function useTeacherForm() {
 
   const setFile = (field, file) => setFiles((p) => ({ ...p, [field]: file }));
 
-  const toggleSpec = (spec) => {
-    const specs = formData.quranInfo.specializations;
-    update('quranInfo', 'specializations',
-      specs.includes(spec) ? specs.filter((s) => s !== spec) : [...specs, spec]);
-  };
-
-  const toggleLang = (lang) => {
-    setFormData((p) => ({
-      ...p,
-      languages: p.languages.includes(lang) ? p.languages.filter((l) => l !== lang) : [...p.languages, lang],
-    }));
-  };
-
   const sendCode = async () => {
     if (!formData.personalInfo.phone) return toast.error('أدخل رقم الهاتف أولاً');
     if (!verificationMethod) return toast.error('اختر واتساب أو تليجرام');
@@ -76,7 +65,7 @@ export function useTeacherForm() {
         body: JSON.stringify({
           phone: formData.personalInfo.phone,
           method: verificationMethod,
-          whatsapp: formData.personalInfo.whatsapp,
+          whatsapp: formData.personalInfo.whatsapp || formData.personalInfo.phone,
           telegram: formData.personalInfo.telegram,
         }),
       });
@@ -116,38 +105,26 @@ export function useTeacherForm() {
       case 1:
         if (!p.fullName?.trim()) return 'الاسم مطلوب';
         if (!p.age || Number(p.age) < 18) return 'العمر 18+';
-        if (!p.gender) return 'اختر الجنس';
+        if (!p.address?.trim()) return 'العنوان مطلوب';
+        if (!a.university?.trim()) return 'اسم الجامعة / خريج أي مطلوب';
+        if (!a.graduationYear) return 'سنة التخرج مطلوبة';
         if (!p.country) return 'اختر الدولة';
-        if (!p.city?.trim()) return 'المدينة مطلوبة';
-        if (!p.phone?.trim()) return 'الهاتف مطلوب';
-        if (!credentials.email?.trim()) return 'البريد مطلوب';
-        if (!credentials.password || credentials.password.length < 8) return 'كلمة المرور 8+ أحرف';
-        if (credentials.password !== credentials.confirmPassword) return 'كلمتا المرور غير متطابقتين';
+        if (!p.phone?.trim()) return 'رقم الهاتف مطلوب';
         return null;
       case 2:
         if (!phoneVerified) return 'تحقق من الهاتف أو اضغط تخطي';
         return null;
       case 3:
-        if (!a.university?.trim()) return 'الجامعة مطلوبة';
-        if (!a.faculty?.trim()) return 'الكلية مطلوبة';
-        if (!a.graduationYear) return 'سنة التخرج مطلوبة';
-        if (!a.specialization?.trim()) return 'التخصص مطلوب';
-        if (!a.qualification?.trim()) return 'المؤهل مطلوب';
+        if (!credentials.email?.trim()) return 'البريد مطلوب';
+        if (!credentials.password || credentials.password.length < 8) return 'كلمة المرور 8+ أحرف';
+        if (credentials.password !== credentials.confirmPassword) return 'كلمتا المرور غير متطابقتين';
         return null;
       case 4:
-        if (!formData.quranInfo.specializations.length) return 'اختر تخصصاً واحداً على الأقل';
+        if (!files.profilePhoto) return 'ارفع صورة 4×6';
+        if (!files.recitationVideos?.length) return 'ارفع فيديو تلاوة واحد على الأقل';
         return null;
-      case 5:
-        if (!files.profilePhoto) return 'ارفع صورة شخصية';
-        if (!files.idCard) return 'ارفع بطاقة شخصية';
-        if (!files.graduationCertificate) return 'ارفع شهادة التخرج';
+      default:
         return null;
-      case 6:
-        if (!files.introductionVideo) return 'ارفع فيديو تعريفي';
-        if (!files.recitationVideo) return 'ارفع فيديو تلاوة';
-        if (!files.teachingMethodVideo) return 'ارفع فيديو طريقة التدريس';
-        return null;
-      default: return null;
     }
   };
 
@@ -155,29 +132,48 @@ export function useTeacherForm() {
     const err = validate(step);
     if (err) { setFieldError(err); toast.error(err); return; }
     setFieldError('');
-    if (step === 1) setStep(2);
-    else if (step < 7) setStep(step + 1);
+    if (step < 5) setStep(step + 1);
   };
 
   const prev = () => { if (step > 1) setStep(step - 1); };
 
   const submit = async () => {
-    const err = validate(6);
+    const err = validate(4);
     if (err) { toast.error(err); return; }
     setSubmitting(true);
     const fd = new FormData();
-    fd.append('personalInfo', JSON.stringify({ ...formData.personalInfo, age: Number(formData.personalInfo.age) }));
-    fd.append('academicInfo', JSON.stringify({ ...formData.academicInfo, graduationYear: Number(formData.academicInfo.graduationYear) }));
-    fd.append('quranInfo', JSON.stringify(formData.quranInfo));
-    fd.append('languages', JSON.stringify(formData.languages));
-    fd.append('availability', JSON.stringify(formData.availability));
+    const city = pCity(formData.personalInfo.address);
+    fd.append('personalInfo', JSON.stringify({
+      ...formData.personalInfo,
+      age: Number(formData.personalInfo.age),
+      city,
+      whatsapp: formData.personalInfo.whatsapp || formData.personalInfo.phone,
+    }));
+    fd.append('academicInfo', JSON.stringify({
+      university: formData.academicInfo.university,
+      graduationYear: Number(formData.academicInfo.graduationYear),
+      faculty: '—',
+      specialization: 'تحفيظ قرآن',
+      qualification: 'خريج',
+    }));
+    fd.append('quranInfo', JSON.stringify({
+      numberOfIjazat: 0,
+      memorizedParts: 30,
+      teachingExperience: 0,
+      specializations: ['tajweed'],
+    }));
+    fd.append('languages', JSON.stringify(['arabic']));
+    fd.append('availability', JSON.stringify([]));
     fd.append('email', credentials.email);
     fd.append('password', credentials.password);
-    Object.entries(files).forEach(([k, v]) => {
-      if (!v) return;
-      if (Array.isArray(v)) v.forEach((f) => fd.append(k, f));
-      else fd.append(k, v);
-    });
+
+    if (files.profilePhoto) fd.append('profilePhoto', files.profilePhoto);
+    if (files.idCard) fd.append('idCard', files.idCard);
+    if (files.graduationCertificate) fd.append('graduationCertificate', files.graduationCertificate);
+    files.tajweedCertificates.forEach((f) => fd.append('tajweedCertificates', f));
+    files.ijazat.forEach((f) => fd.append('ijazat', f));
+    files.recitationVideos.forEach((f) => fd.append('recitationVideo', f));
+
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
@@ -196,10 +192,15 @@ export function useTeacherForm() {
 
   return {
     step, setStep, submitted, submitting, credentials, setCredentials,
-    formData, files, setFile, update, toggleSpec, toggleLang,
+    formData, files, setFile, update,
     verificationCode, setVerificationCode, isCodeSent, phoneVerified,
     verificationMethod, setVerificationMethod, fieldError,
     sendCode, verifyCode, skipVerification, next, prev, submit,
     setIsCodeSent,
   };
+}
+
+function pCity(address) {
+  const part = address?.split('،')?.[0]?.trim();
+  return part || address?.slice(0, 40) || '—';
 }

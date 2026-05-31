@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { Assignment, AssignmentSubmission } = require('../models/Assignment');
 const Enrollment = require('../models/Enrollment');
-const { protect, authorize } = require('../middleware/auth');
+const { protect, authorize, attachTeacherProfile } = require('../middleware/auth');
 const multer = require('multer');
 const path = require('path');
 
@@ -76,7 +76,7 @@ router.get('/:id', protect, async (req, res) => {
 // @route   POST /api/assignments
 // @desc    Create a new assignment
 // @access  Private (Teacher/Admin)
-router.post('/', protect, authorize('teacher', 'admin'), async (req, res) => {
+router.post('/', protect, attachTeacherProfile, authorize('teacher', 'admin'), async (req, res) => {
   try {
     const assignmentData = {
       ...req.body,
@@ -96,7 +96,7 @@ router.post('/', protect, authorize('teacher', 'admin'), async (req, res) => {
 // @route   PUT /api/assignments/:id
 // @desc    Update an assignment
 // @access  Private (Teacher/Admin)
-router.put('/:id', protect, authorize('teacher', 'admin'), async (req, res) => {
+router.put('/:id', protect, attachTeacherProfile, authorize('teacher', 'admin'), async (req, res) => {
   try {
     const assignment = await Assignment.findById(req.params.id);
 
@@ -121,7 +121,7 @@ router.put('/:id', protect, authorize('teacher', 'admin'), async (req, res) => {
 // @route   DELETE /api/assignments/:id
 // @desc    Delete an assignment
 // @access  Private (Teacher/Admin)
-router.delete('/:id', protect, authorize('teacher', 'admin'), async (req, res) => {
+router.delete('/:id', protect, attachTeacherProfile, authorize('teacher', 'admin'), async (req, res) => {
   try {
     const assignment = await Assignment.findById(req.params.id);
 

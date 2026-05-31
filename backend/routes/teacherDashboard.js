@@ -2,7 +2,113 @@ const express = require('express');
 const router = express.Router();
 const Session = require('../models/Session');
 const Teacher = require('../models/Teacher');
+const TeacherTask = require('../models/TeacherTask');
 const { protect, authorize } = require('../middleware/auth');
+
+const SESSION_RATE = 50;
+
+router.get('/profile', protect, authorize('teacher'), async (req, res) => {
+  try {
+    const teacher = await Teacher.findOne({ user: req.user.id })
+      .populate('user', 'name email phone avatar');
+    if (!teacher) return res.status(404).json({ error: 'Teacher profile not found' });
+
+    res.json({
+      teacher,
+      wallet: {
+        sessionRate: SESSION_RATE,
+        sessionDurationMinutes: 60,
+        pendingEarnings: teacher.earnings.pendingEarnings,
+        totalEarned: teacher.earnings.totalEarned,
+        withdrawn: teacher.earnings.withdrawnEarnings,
+        completedSessions: teacher.stats.totalSessions,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/active-students', protect, authorize('teacher'), async (req, res) => {
+  try {
+    const teacher = await Teacher.findOne({ user: req.user.id });
+    if (!teacher) return res.status(404).json({ error: 'Teacher profile not found' });
+
+    const sessions = await Session.find({
+      teacher: teacher._id,
+      type: 'regular',
+      status: { $in: ['accepted', 'completed'] },
+    }).populate('student', 'name email avatar phone');
+
+    const map = {};
+    sessions.forEach((s) => {
+      const id = s.student._id.toString();
+      if (!map[id]) {
+        map[id] = { ...s.student.toObject(), sessionCount: 0, lastSession: s.scheduledAt };
+      }
+      map[id].sessionCount++;
+    });
+    res.json({ students: Object.values(map) });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/tasks', protect, authorize('teacher'), async (req, res) => {
+  try {
+    const teacher = await Teacher.findOne({ user: req.user.id });
+    if (!teacher) return res.status(404).json({ error: 'Teacher profile not found' });
+
+    const tasks = await TeacherTask.find({ teacher: teacher._id })
+      .populate('student', 'name email avatar')
+      .sort({ createdAt: -1 });
+    res.json({ tasks });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/tasks', protect, authorize('teacher'), async (req, res) => {
+  try {
+    const teacher = await Teacher.findOne({ user: req.user.id });
+    if (!teacher) return res.status(404).json({ error: 'Teacher profile not found' });
+
+    const { studentId, sessionId, type, title, description, dueDate } = req.body;
+    if (!studentId || !type || !title) {
+      return res.status(400).json({ error: 'studentId, type, title مطلوبة' });
+    }
+
+    const task = await TeacherTask.create({
+      teacher: teacher._id,
+      student: studentId,
+      session: sessionId || undefined,
+      type,
+      title,
+      description: description || '',
+      dueDate: dueDate ? new Date(dueDate) : undefined,
+    });
+    res.status(201).json({ success: true, task });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+router.patch('/tasks/:id', protect, authorize('teacher'), async (req, res) => {
+  try {
+    const teacher = await Teacher.findOne({ user: req.user.id });
+    if (!teacher) return res.status(404).json({ error: 'Teacher profile not found' });
+
+    const task = await TeacherTask.findOneAndUpdate(
+      { _id: req.params.id, teacher: teacher._id },
+      { status: req.body.status },
+      { new: true },
+    );
+    if (!task) return res.status(404).json({ error: 'Task not found' });
+    res.json({ success: true, task });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
 
 router.get('/stats', protect, authorize('teacher'), async (req, res) => {
   try {
@@ -27,7 +133,8 @@ router.get('/stats', protect, authorize('teacher'), async (req, res) => {
       totalHours,
       pendingEarnings: teacher.earnings.pendingEarnings,
       totalEarnings,
-      averageRating: teacher.rating.average
+      averageRating: teacher.rating.average,
+      sessionRate: SESSION_RATE,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });

@@ -49,7 +49,7 @@ const SessionSchema = new mongoose.Schema({
     commitment: { type: Number, min: 1, max: 5 },
     overallNotes: String,
     assignedHomework: [{
-      type: { type: String, enum: ['memorization', 'review', 'audio', 'test'] },
+      type: { type: String, enum: ['memorization', 'review-recent', 'review-far', 'review', 'audio', 'test'] },
       description: String,
       dueDate: Date
     }]

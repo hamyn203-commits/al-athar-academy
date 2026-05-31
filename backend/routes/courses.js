@@ -3,7 +3,7 @@ const router = express.Router();
 const Course = require('../models/Course');
 const Lesson = require('../models/Lesson');
 const Enrollment = require('../models/Enrollment');
-const { protect, authorize } = require('../middleware/auth');
+const { protect, authorize, attachTeacherProfile } = require('../middleware/auth');
 
 // @route   GET /api/courses
 // @desc    Get all published courses with filters
@@ -136,7 +136,7 @@ router.get('/:slug', async (req, res) => {
 // @route   POST /api/courses
 // @desc    Create a new course
 // @access  Private (Admin/Teacher)
-router.post('/', protect, authorize('admin', 'teacher'), async (req, res) => {
+router.post('/', protect, attachTeacherProfile, authorize('admin', 'teacher'), async (req, res) => {
   try {
     const courseData = {
       ...req.body,
@@ -156,7 +156,7 @@ router.post('/', protect, authorize('admin', 'teacher'), async (req, res) => {
 // @route   PUT /api/courses/:id
 // @desc    Update a course
 // @access  Private (Admin/Teacher)
-router.put('/:id', protect, authorize('admin', 'teacher'), async (req, res) => {
+router.put('/:id', protect, attachTeacherProfile, authorize('admin', 'teacher'), async (req, res) => {
   try {
     const course = await Course.findById(req.params.id);
 
@@ -164,8 +164,7 @@ router.put('/:id', protect, authorize('admin', 'teacher'), async (req, res) => {
       return res.status(404).json({ error: 'Course not found' });
     }
 
-    // Check if user is the instructor or admin
-    if (req.user.role === 'teacher' && course.instructor.toString() !== req.user.teacherProfile.toString()) {
+    if (req.user.role === 'teacher' && course.instructor.toString() !== (req.user.teacherProfile || '').toString()) {
       return res.status(403).json({ error: 'Not authorized to update this course' });
     }
 

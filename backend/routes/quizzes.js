@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { Quiz, QuizAttempt } = require('../models/Quiz');
 const Enrollment = require('../models/Enrollment');
-const { protect, authorize } = require('../middleware/auth');
+const { protect, authorize, attachTeacherProfile } = require('../middleware/auth');
 
 // @route   GET /api/quizzes
 // @desc    Get all quizzes for a course
@@ -69,7 +69,7 @@ router.get('/:id', protect, async (req, res) => {
 // @route   POST /api/quizzes
 // @desc    Create a new quiz
 // @access  Private (Teacher/Admin)
-router.post('/', protect, authorize('teacher', 'admin'), async (req, res) => {
+router.post('/', protect, attachTeacherProfile, authorize('teacher', 'admin'), async (req, res) => {
   try {
     const quizData = {
       ...req.body,
@@ -89,7 +89,7 @@ router.post('/', protect, authorize('teacher', 'admin'), async (req, res) => {
 // @route   PUT /api/quizzes/:id
 // @desc    Update a quiz
 // @access  Private (Teacher/Admin)
-router.put('/:id', protect, authorize('teacher', 'admin'), async (req, res) => {
+router.put('/:id', protect, attachTeacherProfile, authorize('teacher', 'admin'), async (req, res) => {
   try {
     const quiz = await Quiz.findById(req.params.id);
 
@@ -114,7 +114,7 @@ router.put('/:id', protect, authorize('teacher', 'admin'), async (req, res) => {
 // @route   DELETE /api/quizzes/:id
 // @desc    Delete a quiz
 // @access  Private (Teacher/Admin)
-router.delete('/:id', protect, authorize('teacher', 'admin'), async (req, res) => {
+router.delete('/:id', protect, attachTeacherProfile, authorize('teacher', 'admin'), async (req, res) => {
   try {
     const quiz = await Quiz.findById(req.params.id);
 
@@ -260,7 +260,17 @@ router.post('/attempts/:attemptId/submit', protect, async (req, res) => {
       if (question) {
         if (question.type === 'multiple-choice' || question.type === 'true-false') {
           const correctOption = question.options.find(opt => opt.isCorrect);
-          answer.isCorrect = correctOption && answer.answer === correctOption.text.en;
+          if (correctOption) {
+            const correctTexts = [
+              correctOption.text?.en,
+              correctOption.text?.ar,
+              correctOption.text?.fr,
+              correctOption.text?.es
+            ].filter(Boolean).map(t => t.toLowerCase().trim());
+            answer.isCorrect = correctTexts.includes((answer.answer || '').toLowerCase().trim());
+          } else {
+            answer.isCorrect = false;
+          }
         } else if (question.type === 'short-answer') {
           answer.isCorrect = answer.answer && answer.answer.toLowerCase().trim() === question.correctAnswer.toLowerCase().trim();
         }

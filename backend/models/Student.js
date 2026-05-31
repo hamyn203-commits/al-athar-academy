@@ -12,6 +12,13 @@ const DailyHabitsSchema = new mongoose.Schema({
 }, { _id: false });
 
 const StudentSchema = new mongoose.Schema({
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: [true, 'User reference is required'],
+    unique: true,
+    index: true
+  },
   name: { type: String, required: true },
   plan: { type: String, default: 'حفظ القرآن كاملاً' },
   currentSurah: { type: String, default: 'سورة الفاتحة' },

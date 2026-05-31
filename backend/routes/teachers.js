@@ -39,7 +39,7 @@ router.post('/register', upload.fields([
   { name: 'tajweedCertificates', maxCount: 5 },
   { name: 'ijazat', maxCount: 5 },
   { name: 'introductionVideo', maxCount: 1 },
-  { name: 'recitationVideo', maxCount: 1 },
+  { name: 'recitationVideo', maxCount: 5 },
   { name: 'teachingMethodVideo', maxCount: 1 },
   { name: 'additionalVideos', maxCount: 10 },
   { name: 'audioRecordings', maxCount: 5 }
@@ -77,30 +77,60 @@ router.post('/register', upload.fields([
     }
 
     const documents = {
-      idCard: req.files?.idCard?.[0]?.path || '',
-      graduationCertificate: req.files?.graduationCertificate?.[0]?.path || '',
+      idCard: req.files?.idCard?.[0]?.path || req.files?.profilePhoto?.[0]?.path || '/uploads/teachers/placeholder.jpg',
+      graduationCertificate: req.files?.graduationCertificate?.[0]?.path || req.files?.profilePhoto?.[0]?.path || '/uploads/teachers/placeholder.jpg',
       tajweedCertificates: req.files?.tajweedCertificates?.map(f => f.path) || [],
-      ijazat: req.files?.ijazat?.map(f => f.path) || []
+      ijazat: req.files?.ijazat?.map(f => f.path) || [],
     };
 
+    const recitationFiles = req.files?.recitationVideo || [];
+    const mainVideo = recitationFiles[0]?.path
+      || req.files?.additionalVideos?.[0]?.path
+      || req.files?.profilePhoto?.[0]?.path
+      || '/uploads/teachers/placeholder.jpg';
+
     const media = {
-      profilePhoto: req.files?.profilePhoto?.[0]?.path || '',
-      introductionVideo: req.files?.introductionVideo?.[0]?.path || '',
-      recitationVideo: req.files?.recitationVideo?.[0]?.path || '',
-      teachingMethodVideo: req.files?.teachingMethodVideo?.[0]?.path || '',
-      additionalVideos: req.files?.additionalVideos?.map(f => f.path) || [],
-      audioRecordings: req.files?.audioRecordings?.map(f => f.path) || []
+      profilePhoto: req.files?.profilePhoto?.[0]?.path || mainVideo,
+      introductionVideo: mainVideo,
+      recitationVideo: mainVideo,
+      teachingMethodVideo: mainVideo,
+      additionalVideos: [
+        ...recitationFiles.slice(1).map((f) => f.path),
+        ...(req.files?.additionalVideos?.map((f) => f.path) || []),
+      ],
+      audioRecordings: req.files?.audioRecordings?.map((f) => f.path) || [],
     };
+
+    const parsedPersonal = JSON.parse(personalInfo);
+    const parsedAcademic = JSON.parse(academicInfo);
+    const parsedQuran = JSON.parse(quranInfo || '{}');
 
     const teacher = await Teacher.create({
       user: userId,
-      personalInfo: JSON.parse(personalInfo),
-      academicInfo: JSON.parse(academicInfo),
-      quranInfo: JSON.parse(quranInfo),
-      languages: JSON.parse(languages || '[]'),
+      personalInfo: {
+        ...parsedPersonal,
+        age: Number(parsedPersonal.age),
+        city: parsedPersonal.city || parsedPersonal.address?.split('،')?.[0] || '—',
+      },
+      academicInfo: {
+        university: parsedAcademic.university || '—',
+        faculty: parsedAcademic.faculty || '—',
+        graduationYear: Number(parsedAcademic.graduationYear) || new Date().getFullYear(),
+        specialization: parsedAcademic.specialization || 'تحفيظ قرآن',
+        qualification: parsedAcademic.qualification || '—',
+      },
+      quranInfo: {
+        numberOfIjazat: parsedQuran.numberOfIjazat || 0,
+        memorizedParts: parsedQuran.memorizedParts || 30,
+        teachingExperience: parsedQuran.teachingExperience || 0,
+        specializations: parsedQuran.specializations?.length ? parsedQuran.specializations : ['tajweed'],
+        ...parsedQuran,
+      },
+      languages: JSON.parse(languages || '["arabic"]'),
       availability: JSON.parse(availability || '[]'),
       documents,
-      media
+      media,
+      hourlyRate: 50,
     });
 
     await User.findByIdAndUpdate(userId, { role: 'teacher' });
