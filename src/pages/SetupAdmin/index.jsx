@@ -15,7 +15,8 @@ export default function SetupAdmin() {
     setLoading(true);
     setError('');
     try {
-      await api.post('/api/admin/ensure-admin', form);
+      const res = await api.post('/api/setup/ensure-admin', form);
+      if (res?.message) setDone(true);
       setDone(true);
     } catch (err) {
       setError(err.message);
@@ -34,7 +35,8 @@ export default function SetupAdmin() {
         </div>
         {done ? (
           <div className="text-center space-y-4">
-            <p className="text-green-600 font-semibold">تم إنشاء حساب الأدمن ✅</p>
+            <p className="text-green-600 font-semibold">تم بنجاح ✅</p>
+            <p className="text-sm text-gray-600">استخدم نفس البريد وكلمة المرور في تسجيل الدخول</p>
             <button onClick={() => navigate('/login')} className="w-full py-2 bg-emerald-600 text-white rounded-lg">تسجيل الدخول</button>
           </div>
         ) : (

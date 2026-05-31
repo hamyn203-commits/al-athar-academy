@@ -164,6 +164,7 @@ app.use('/api/live', require('./routes/live'));
 app.use('/api/blog', require('./routes/blog'));
 app.use('/api/contact', require('./routes/contact'));
 app.use('/api/ai', require('./routes/ai'));
+app.use('/api/setup', require('./routes/setup'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/lms', require('./routes/lms'));
 app.use('/api/meetings', require('./routes/meetings'));

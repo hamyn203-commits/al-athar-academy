@@ -36,23 +36,6 @@ router.get('/', protect, authorize('admin'), (_req, res) => {
   res.json({ ok: true, module: 'admin', version: 2 });
 });
 
-router.post('/ensure-admin', async (req, res) => {
-  try {
-    const existing = await User.countDocuments({ role: 'admin' });
-    if (existing > 0) {
-      return res.status(403).json({ error: 'يوجد أدمن بالفعل — سجّل دخولك من /login' });
-    }
-    const { name, email, password } = req.body;
-    if (!name || !email || !password || password.length < 8) {
-      return res.status(400).json({ error: 'الاسم والبريد وكلمة مرور 8+ أحرف مطلوبة' });
-    }
-    const user = await User.create({ name, email, password, role: 'admin' });
-    res.status(201).json({ message: 'تم إنشاء حساب الأدمن', email: user.email });
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-});
-
 router.get('/stats', protect, authorize('admin'), async (req, res) => {
   try {
     const [totalStudents, approvedTeachers, pendingTeachers, totalSessions, totalCourses, totalEnrollments] = await Promise.all([
