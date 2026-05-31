@@ -47,16 +47,19 @@ export default function AdminDashboard() {
   const [videos, setVideos] = useState([]);
   const [videoForm, setVideoForm] = useState({ title: '', category: 'quran', videoUrl: '', duration: 600 });
   const [courseProgramFilter, setCourseProgramFilter] = useState('all');
+  const [health, setHealth] = useState(null);
 
   const loadCore = useCallback(async () => {
-    const [st, pend, appr] = await Promise.all([
+    const [st, pend, appr, h] = await Promise.all([
       api.get('/api/admin/stats', { auth: true }),
       api.get('/api/teachers/admin/pending', { auth: true }),
       api.get('/api/admin/teachers/approved', { auth: true }),
+      api.get('/api/health').catch(() => null),
     ]);
     setStats(st);
     setPending(Array.isArray(pend) ? pend : []);
     setApproved(Array.isArray(appr) ? appr : []);
+    setHealth(h);
   }, []);
 
   const loadMessages = useCallback(async () => {
@@ -249,6 +252,19 @@ export default function AdminDashboard() {
                 <StatCard label="الحصص" value={stats.totalSessions || 0} icon={Calendar} color="purple" />
                 <StatCard label="الأرباح" value={`${stats.totalEarnings || 0} ج.م`} icon={DollarSign} color="yellow" />
               </div>
+              {health && (
+                <div className="bg-slate-900 text-white rounded-xl p-5 mb-6">
+                  <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                    <h3 className="font-bold flex items-center gap-2"><MonitorPlay size={18} /> صحة النظام v{health.version}</h3>
+                    <a href="https://al-athar-api.azurewebsites.net/api/health" target="_blank" rel="noreferrer" className="text-xs text-emerald-300 hover:underline">فتح API health ↗</a>
+                  </div>
+                  <div className="flex flex-wrap gap-2 text-xs">
+                    {Object.entries(health.features || {}).map(([k, v]) => (
+                      <span key={k} className={`px-2 py-1 rounded-full ${v ? 'bg-emerald-500/20 text-emerald-200' : 'bg-red-500/20 text-red-200'}`}>{k}: {v ? '✓' : '✗'}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div className="bg-white rounded-xl shadow-sm border p-6">
                 <h3 className="font-bold mb-4">معلمون قيد المراجعة ({pending.length})</h3>
                 {pending.length === 0 ? <Empty text="لا طلبات جديدة" /> : pending.map((t) => (

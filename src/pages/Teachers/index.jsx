@@ -239,8 +239,18 @@ export default function Teachers() {
         ) : teachers.length === 0 ? (
           <div className="text-center py-12">
             <Users className="mx-auto text-gray-400 mb-4" size={64} />
-            <p className="text-xl text-gray-600 mb-2">لا يوجد معلمون مطابقون للبحث</p>
-            <p className="text-gray-500">جرب تغيير الفلاتر أو البحث بكلمات أخرى</p>
+            {pagination.total === 0 && !searchQuery && !filters.country && !filters.specialization && !filters.market ? (
+              <>
+                <p className="text-xl text-gray-600 mb-2">لا يوجد معلمون مسجلون بعد</p>
+                <p className="text-gray-500 mb-4">سجّل كمعلم أو عد لاحقاً بعد تفعيل البيانات التجريبية</p>
+                <Link to="/register/teacher" className="inline-block bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700">انضم كمعلم</Link>
+              </>
+            ) : (
+              <>
+                <p className="text-xl text-gray-600 mb-2">لا يوجد معلمون مطابقون للبحث</p>
+                <p className="text-gray-500">جرب تغيير الفلاتر أو البحث بكلمات أخرى</p>
+              </>
+            )}
           </div>
         ) : (
           <>

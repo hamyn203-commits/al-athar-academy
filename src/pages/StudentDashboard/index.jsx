@@ -58,7 +58,7 @@ export default function StudentDashboard() {
 
   const load = async () => {
     try {
-      const [prof, st, tr, sess, hw, tch, ev, rev, enrollments] = await Promise.all([
+      const [prof, st, tr, sess, hw, tch, ev, rev, enrollments, ref] = await Promise.all([
         api.get('/api/students/dashboard/profile', { auth: true }),
         api.get('/api/students/dashboard/stats', { auth: true }),
         api.get('/api/sessions/my-sessions?type=trial&limit=50', { auth: true }),
@@ -68,6 +68,7 @@ export default function StudentDashboard() {
         api.get('/api/students/dashboard/evaluations', { auth: true }),
         api.get('/api/reviews/student', { auth: true }),
         api.get('/api/courses/my-courses', { auth: true }).catch(() => []),
+        api.get('/api/referrals/my', { auth: true }).catch(() => ({ code: '', stats: {}, referrals: [] })),
       ]);
       setProfile(prof);
       setStats(st);
@@ -78,6 +79,7 @@ export default function StudentDashboard() {
       setEvaluations(ev.evaluations || []);
       setReviews(Array.isArray(rev) ? rev : rev.reviews || []);
       setCourses(Array.isArray(enrollments) ? enrollments : []);
+      setReferral(ref);
     } catch {
       toast.error('تعذر تحميل بيانات لوحة الطالب');
     } finally {
@@ -201,6 +203,23 @@ export default function StudentDashboard() {
             <StatCard label="حصص مكتملة" value={stats.completedSessions || 0} icon={CheckCircle} color="blue" />
             <StatCard label="النقاط" value={gameStats?.points?.total || 0} icon={Trophy} color="orange" />
           </div>
+
+          {referral?.code && (
+            <div className="mb-6 bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-xl p-5 flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <p className="font-bold flex items-center gap-2 text-orange-900"><Gift size={20} /> برنامج السفراء</p>
+                <p className="text-sm text-orange-800 mt-1">ادعُ صديقاً واحصل على نقاط — {referral.stats?.totalPoints || 0} نقطة حتى الآن</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <code className="bg-white px-3 py-2 rounded-lg font-mono text-sm border">{referral.code}</code>
+                <button type="button" onClick={() => { navigator.clipboard?.writeText(referral.link || referral.code); toast.success('تم نسخ رابط الإحالة'); }}
+                  className="flex items-center gap-1 bg-orange-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-orange-700">
+                  <Copy size={16} /> نسخ
+                </button>
+                <button type="button" onClick={() => setTab('referral')} className="text-sm text-orange-700 underline">التفاصيل</button>
+              </div>
+            </div>
+          )}
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <TabBar tabs={tabs} active={tab} onChange={setTab} />

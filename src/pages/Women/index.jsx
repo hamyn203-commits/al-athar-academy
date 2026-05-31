@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ShieldCheck, Star, Users, ArrowRight } from 'lucide-react';
+import { ShieldCheck, Star, Users, ArrowRight, BookOpen } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import { localizedPath } from '../../lib/locale';
 import GlobalHeader from '../../components/GlobalHeader';
@@ -12,6 +12,7 @@ export default function WomenPortal() {
   const { locale } = useI18n();
   const isAr = locale === 'ar';
   const [teachers, setTeachers] = useState([]);
+  const [courses, setCourses] = useState([]);
   const [stats, setStats] = useState({ femaleTeachers: 0, studentsServed: 0 });
   const [loading, setLoading] = useState(true);
 
@@ -19,9 +20,11 @@ export default function WomenPortal() {
     Promise.all([
       api.get('/api/women/teachers?limit=12'),
       api.get('/api/women/stats'),
-    ]).then(([t, s]) => {
+      api.get('/api/courses?program=women&limit=6'),
+    ]).then(([t, s, c]) => {
       setTeachers(t.teachers || []);
       setStats(s);
+      setCourses(c.courses || c || []);
     }).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
@@ -38,6 +41,24 @@ export default function WomenPortal() {
             <span className="flex items-center gap-2"><Users size={18} className="text-purple-600" /> {stats.femaleTeachers} {isAr ? 'معلمة' : 'teachers'}</span>
             <span className="flex items-center gap-2"><Star size={18} className="text-purple-600" /> {stats.studentsServed}+ {isAr ? 'طالبة' : 'students'}</span>
           </div>
+        </section>
+
+        <section className="max-w-6xl mx-auto px-4 pb-12">
+          <h2 className="text-2xl font-bold mb-6">{isAr ? 'دورات النساء' : 'Women Courses'}</h2>
+          {courses.length === 0 ? (
+            <p className="text-center text-gray-500 py-8 bg-white rounded-2xl">{isAr ? 'قريباً — دورات مخصصة للنساء' : 'Coming soon — courses for women'}</p>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {courses.map((c) => (
+                <Link key={c._id} to={localizedPath(`/courses/${c.slug}`, locale)} className="bg-white rounded-2xl shadow-md p-5 hover:shadow-lg transition">
+                  <BookOpen className="text-purple-600 mb-3" size={28} />
+                  <h3 className="font-bold mb-1">{isAr ? c.title?.ar : (c.title?.en || c.title?.ar)}</h3>
+                  <p className="text-sm text-gray-600 line-clamp-2">{isAr ? c.description?.ar : (c.description?.en || c.description?.ar)}</p>
+                  <span className="inline-flex items-center gap-1 text-purple-600 text-sm mt-3 font-medium">{isAr ? 'ابدئي الآن' : 'Start now'} <ArrowRight size={14} /></span>
+                </Link>
+              ))}
+            </div>
+          )}
         </section>
 
         <section className="max-w-6xl mx-auto px-4 pb-16">

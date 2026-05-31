@@ -13,6 +13,8 @@ const CATEGORIES = [
   { id: 'general', icon: CircleDollarSign, ar: 'تبرع عام', en: 'General Donation' },
 ];
 
+const GOAL = 10000;
+
 export default function Donate() {
   const { locale } = useI18n();
   const isAr = locale === 'ar';
@@ -58,6 +60,15 @@ export default function Donate() {
             {stats.totalDonors > 0 && (
               <p className="mt-4 text-sm text-rose-700 font-semibold">{stats.totalDonors} {isAr ? 'متبرع' : 'donors'} · ${stats.totalAmount}</p>
             )}
+            <div className="mt-6 max-w-md mx-auto">
+              <div className="flex justify-between text-xs text-gray-600 mb-1">
+                <span>{isAr ? 'هدف الحملة' : 'Campaign goal'}</span>
+                <span>${stats.totalAmount || 0} / ${GOAL}</span>
+              </div>
+              <div className="h-3 bg-rose-100 rounded-full overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-rose-500 to-pink-500 rounded-full transition-all" style={{ width: `${Math.min(100, ((stats.totalAmount || 0) / GOAL) * 100)}%` }} />
+              </div>
+            </div>
           </div>
 
           <div className="grid md:grid-cols-2 gap-4 mb-8">

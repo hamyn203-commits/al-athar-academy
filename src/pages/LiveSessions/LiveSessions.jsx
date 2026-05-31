@@ -19,9 +19,12 @@ export default function LiveSessions() {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
+  const [liveStatus, setLiveStatus] = useState({ configured: false });
+  const [demoLoading, setDemoLoading] = useState(false);
 
   useEffect(() => {
     fetchSessions();
+    fetch(`${API_BASE_URL}/api/live/status`).then((r) => r.json()).then(setLiveStatus).catch(() => {});
   }, []);
 
   const fetchSessions = async () => {
@@ -49,6 +52,19 @@ export default function LiveSessions() {
   const joinSession = (roomId, isHost = false) => {
     const name = activeStudentProfile?.name || 'مشارك';
     navigate(`/live/${roomId}?name=${encodeURIComponent(name)}&host=${isHost}`);
+  };
+
+  const startDemo = async () => {
+    setDemoLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/live/demo-room`, { method: 'POST' });
+      const data = await res.json();
+      if (data.roomId) joinSession(data.roomId, true);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setDemoLoading(false);
+    }
   };
 
   const deleteSession = async (roomId) => {
@@ -84,6 +100,21 @@ export default function LiveSessions() {
           </button>
         </div>
       </header>
+
+      <div className="max-w-6xl mx-auto px-4 py-3">
+        <div className={`rounded-xl px-4 py-3 flex flex-wrap items-center justify-between gap-3 text-sm ${liveStatus.configured ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-amber-50 border border-amber-200 text-amber-900'}`}>
+          <span className="flex items-center gap-2">
+            <Radio size={16} />
+            {liveStatus.configured
+              ? (t.live?.liveKitReady || 'LiveKit جاهز — يمكنك إنشاء غرفة أو تجربة العرض')
+              : (t.live?.liveKitPending || 'LiveKit غير مُفعّل — استخدم «غرفة تجريبية» للمعاينة')}
+          </span>
+          <button type="button" onClick={startDemo} disabled={demoLoading} className="btn-premium text-sm py-2 px-4">
+            <Play size={16} />
+            {demoLoading ? '...' : (t.live?.tryDemo || 'غرفة تجريبية')}
+          </button>
+        </div>
+      </div>
 
       <main className="live-sessions-main">
         {loading ? (

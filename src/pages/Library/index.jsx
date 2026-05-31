@@ -60,6 +60,12 @@ export default function VideoLibrary() {
 
           {loading ? (
             <div className="flex justify-center py-16"><div className="spinner spinner-lg" /></div>
+          ) : videos.length === 0 ? (
+            <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-gray-200">
+              <MonitorPlay className="mx-auto text-gray-300 mb-4" size={48} />
+              <p className="text-gray-600 font-medium">{isAr ? 'لا فيديوهات في هذا التصنيف بعد' : 'No videos in this category yet'}</p>
+              <p className="text-sm text-gray-400 mt-2">{isAr ? 'جرّب تصنيفاً آخر أو عد لاحقاً' : 'Try another category or check back later'}</p>
+            </div>
           ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {videos.map((v) => (

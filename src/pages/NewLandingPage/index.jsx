@@ -61,6 +61,20 @@ function HeroSection() {
                 <Users size={18} strokeWidth={1.5} /> {t.hero.cta2}
               </Link>
             </div>
+            <div className="mt-6 flex flex-wrap gap-2">
+              {[
+                { to: '/library', label: 'المكتبة', icon: BookOpen },
+                { to: '/leaderboard', label: 'البطولة', icon: Award },
+                { to: '/programs/kids', label: 'أطفال', icon: Sparkles },
+                { to: '/programs/women', label: 'نساء', icon: Shield },
+                { to: '/donate', label: 'تبرع', icon: Video },
+                { to: '/app', label: 'تطبيق PWA', icon: Mic },
+              ].map(({ to, label, icon: Icon }) => (
+                <LocalizedLink key={to} to={to} className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-sm text-emerald-100 hover:bg-emerald-500/20 transition">
+                  <Icon size={14} /> {label}
+                </LocalizedLink>
+              ))}
+            </div>
             <div className="mt-10 flex flex-wrap gap-4 text-sm text-slate-400">
               {['معلمون مجازون', 'حصص Zoom/Jitsi', 'تتبع حفظ ومراجعة', 'شهادات معتمدة'].map((b) => (
                 <span key={b} className="flex items-center gap-1.5">
