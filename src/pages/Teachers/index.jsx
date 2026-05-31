@@ -43,12 +43,17 @@ export default function Teachers() {
 
       const response = await fetch(`/api/teachers?${params}`);
       const data = await response.json();
-      
-      setTeachers(data.teachers);
+
+      if (!response.ok) {
+        setTeachers([]);
+        return;
+      }
+
+      setTeachers(data.teachers || []);
       setPagination(prev => ({
         ...prev,
-        total: data.pagination.total,
-        pages: data.pagination.pages
+        total: data.pagination?.total ?? 0,
+        pages: data.pagination?.pages ?? 0,
       }));
     } catch (error) {
       console.error('Error fetching teachers:', error);

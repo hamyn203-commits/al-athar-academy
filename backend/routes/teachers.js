@@ -180,7 +180,14 @@ router.get('/', async (req, res) => {
     if (minExperience) filter['quranInfo.teachingExperience'] = { $gte: parseInt(minExperience) };
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
-    const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
+    const SORT_MAP = {
+      rating: 'rating.average',
+      experience: 'quranInfo.teachingExperience',
+      price: 'hourlyRate',
+      newest: 'createdAt',
+    };
+    const sortField = SORT_MAP[sortBy] || sortBy;
+    const sort = { [sortField]: sortOrder === 'desc' ? -1 : 1 };
 
     const [teachers, total] = await Promise.all([
       Teacher.find(filter)
