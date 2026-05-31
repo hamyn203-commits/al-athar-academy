@@ -1,0 +1,16 @@
+---
+description: Autopilot overnight development for Al-Athar Academy V4
+alwaysApply: true
+---
+
+# Autopilot Al-Athar
+
+When working autonomously or on scheduled runs:
+1. Read `AGENTS.md` and pick the first `pending` backlog item only.
+2. Do not touch `platform/`.
+3. Run `npm run build` before committing.
+4. Push to `master` to trigger deploy (Azure backend + Vercel frontend).
+5. Mark the backlog item `done` in `AGENTS.md`.
+6. Reply in Arabic, concise.
+
+Stack: React 19 + Vite + Tailwind | Express 5 + MongoDB Cosmos | Vercel + Azure.

@@ -1,0 +1,19 @@
+name: Nightly Bootstrap Data
+
+on:
+  schedule:
+    - cron: '30 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Seed demo teacher/course if empty
+        run: |
+          resp=$(curl -sf -X POST \
+            -H "Content-Type: application/json" \
+            -H "X-Seed-Secret: ${{ secrets.SEED_SECRET }}" \
+            https://al-athar-api.azurewebsites.net/api/system/bootstrap \
+            -d '{}' || echo '{"error":"failed"}')
+          echo "$resp"

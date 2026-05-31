@@ -198,6 +198,7 @@ app.use('/api/donations', require('./routes/donations'));
 app.use('/api/videos', require('./routes/videos'));
 app.use('/api/careers', require('./routes/careers'));
 app.use('/api/women', require('./routes/women'));
+app.use('/api/system', require('./routes/system'));
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });

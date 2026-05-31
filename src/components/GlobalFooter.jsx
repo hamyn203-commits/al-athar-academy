@@ -1,5 +1,6 @@
 import { useI18n } from '../i18n';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
+import { localizedPath, DEFAULT_LOCALE } from '../lib/locale';
 import {
   Globe, MessageCircle, Camera, Play, Send,
   Mail, Phone, MapPin, ArrowRight,
@@ -7,7 +8,23 @@ import {
 import { SOCIAL_LINKS, CONTACT } from '../config/social';
 
 export default function GlobalFooter() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const { locale: paramLocale } = useParams();
+  const activeLocale = paramLocale || locale || DEFAULT_LOCALE;
+  const lp = (path) => localizedPath(path, activeLocale);
+
+  const quickLinks = [
+    { to: lp('/courses'), label: t.footer.courses },
+    { to: lp('/teachers'), label: t.footer.teachers },
+    { to: lp('/library'), label: activeLocale === 'ar' ? 'المكتبة' : 'Library' },
+    { to: lp('/leaderboard'), label: activeLocale === 'ar' ? 'البطولة' : 'Leaderboard' },
+    { to: lp('/donate'), label: activeLocale === 'ar' ? 'تبرع' : 'Donate' },
+    { to: lp('/programs/kids'), label: activeLocale === 'ar' ? 'برنامج الأطفال' : 'Kids' },
+    { to: lp('/women'), label: activeLocale === 'ar' ? 'نساء' : 'Women' },
+    { to: lp('/app'), label: activeLocale === 'ar' ? 'تطبيق الهاتف' : 'Mobile app' },
+    { to: lp('/blog'), label: t.footer.blog },
+    { to: lp('/contact'), label: t.footer.contact },
+  ];
 
   const social = [
     { href: SOCIAL_LINKS.facebook, icon: Globe, label: 'Facebook' },
@@ -39,30 +56,14 @@ export default function GlobalFooter() {
           <div>
             <h3 className="text-xl font-bold mb-4">{t.footer.quickLinks}</h3>
             <ul className="space-y-3">
-              <li>
-                <Link to="/courses" className="text-gray-400 hover:text-emerald-400 transition-colors flex items-center gap-2">
-                  <ArrowRight size={16} />
-                  {t.footer.courses}
-                </Link>
-              </li>
-              <li>
-                <Link to="/teachers" className="text-gray-400 hover:text-emerald-400 transition-colors flex items-center gap-2">
-                  <ArrowRight size={16} />
-                  {t.footer.teachers}
-                </Link>
-              </li>
-              <li>
-                <Link to="/blog" className="text-gray-400 hover:text-emerald-400 transition-colors flex items-center gap-2">
-                  <ArrowRight size={16} />
-                  {t.footer.blog}
-                </Link>
-              </li>
-              <li>
-                <Link to="/contact" className="text-gray-400 hover:text-emerald-400 transition-colors flex items-center gap-2">
-                  <ArrowRight size={16} />
-                  {t.footer.contact}
-                </Link>
-              </li>
+              {quickLinks.map(({ to, label }) => (
+                <li key={to}>
+                  <Link to={to} className="text-gray-400 hover:text-emerald-400 transition-colors flex items-center gap-2">
+                    <ArrowRight size={16} />
+                    {label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
@@ -70,25 +71,25 @@ export default function GlobalFooter() {
             <h3 className="text-xl font-bold mb-4">{t.footer.support}</h3>
             <ul className="space-y-3">
               <li>
-                <Link to="/help" className="text-gray-400 hover:text-emerald-400 transition-colors flex items-center gap-2">
+                <Link to={lp('/help')} className="text-gray-400 hover:text-emerald-400 transition-colors flex items-center gap-2">
                   <ArrowRight size={16} />
                   {t.footer.helpCenter}
                 </Link>
               </li>
               <li>
-                <Link to="/faq" className="text-gray-400 hover:text-emerald-400 transition-colors flex items-center gap-2">
+                <Link to={lp('/faq')} className="text-gray-400 hover:text-emerald-400 transition-colors flex items-center gap-2">
                   <ArrowRight size={16} />
                   {t.footer.faq}
                 </Link>
               </li>
               <li>
-                <Link to="/privacy" className="text-gray-400 hover:text-emerald-400 transition-colors flex items-center gap-2">
+                <Link to={lp('/privacy')} className="text-gray-400 hover:text-emerald-400 transition-colors flex items-center gap-2">
                   <ArrowRight size={16} />
                   {t.footer.privacy}
                 </Link>
               </li>
               <li>
-                <Link to="/terms" className="text-gray-400 hover:text-emerald-400 transition-colors flex items-center gap-2">
+                <Link to={lp('/terms')} className="text-gray-400 hover:text-emerald-400 transition-colors flex items-center gap-2">
                   <ArrowRight size={16} />
                   {t.footer.terms}
                 </Link>
@@ -133,10 +134,10 @@ export default function GlobalFooter() {
             © {new Date().getFullYear()} Al-Athar Academy. {t.footer.rights}
           </div>
           <div className="flex gap-6 text-sm">
-            <Link to="/privacy" className="text-gray-400 hover:text-emerald-400 transition-colors">
+            <Link to={lp('/privacy')} className="text-gray-400 hover:text-emerald-400 transition-colors">
               {t.footer.privacy}
             </Link>
-            <Link to="/terms" className="text-gray-400 hover:text-emerald-400 transition-colors">
+            <Link to={lp('/terms')} className="text-gray-400 hover:text-emerald-400 transition-colors">
               {t.footer.terms}
             </Link>
           </div>
