@@ -10,6 +10,7 @@ import { StudentLegacyRedirect, TeacherLegacyRedirect } from './components/Dashb
 import Logo from './components/Logo';
 import QuranChatWidget from './components/QuranChatWidget';
 import PwaInstallPrompt from './components/PwaInstallPrompt';
+import ErrorBoundary from './components/shared/ErrorBoundary';
 
 const LandingPage = lazy(() => import('./pages/NewLandingPage'));
 const LiveSessions = lazy(() => import('./pages/LiveSessions/LiveSessions'));
