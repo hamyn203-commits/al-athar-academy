@@ -1,5 +1,5 @@
-const CACHE_NAME = 'al-athar-academy-v4.5';
-const RUNTIME_CACHE = 'al-athar-runtime-v4.5';
+const CACHE_NAME = 'al-athar-academy-v6.1';
+const RUNTIME_CACHE = 'al-athar-runtime-v6.1';
 
 const PRECACHE_URLS = [
   '/',
@@ -11,6 +11,9 @@ const PRECACHE_URLS = [
   '/ar/app',
   '/ar/leaderboard',
   '/ar/donate',
+  '/ar/library',
+  '/ar/ai',
+  '/ar/programs/kids',
 ];
 
 self.addEventListener('install', (event) => {
@@ -100,6 +103,17 @@ self.addEventListener('fetch', (event) => {
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
+  }
+  if (event.data?.type === 'SHOW_NOTIFICATION') {
+    const { title, body, url } = event.data.payload || {};
+    event.waitUntil(
+      self.registration.showNotification(title || 'أكاديمية الأثر', {
+        body: body || '',
+        icon: '/icons/icon-192x192.png',
+        badge: '/icons/badge-72x72.png',
+        data: { url: url || '/notifications' },
+      })
+    );
   }
 });
 

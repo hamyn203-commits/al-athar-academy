@@ -43,6 +43,7 @@ export default function MobileAppPage() {
 
           <div className="flex flex-col gap-3">
             <Link to={lp('/register/student')} className="btn-primary">{isAr ? 'إنشاء حساب' : 'Create account'}</Link>
+            <Link to={lp('/settings/notifications')} className="text-emerald-700 font-medium hover:underline">{isAr ? 'فعّل الإشعارات ←' : 'Enable notifications →'}</Link>
             <Link to={lp('/leaderboard')} className="text-emerald-700 font-medium hover:underline">{isAr ? 'لوحة المتصدرين ←' : 'Leaderboard →'}</Link>
           </div>
         </div>

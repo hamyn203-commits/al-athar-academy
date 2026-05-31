@@ -2,6 +2,23 @@ const RecitationReport = require('../models/RecitationReport');
 
 const SYSTEM_QURAN = 'You are an Islamic education assistant for Al-Athar Academy. Answer in the user language with authentic sources. Be concise and practical.';
 
+const LOCAL_FAQ = {
+  ar: {
+    غنة: 'الغنة: صوت يخرج من الخيشوم عند النون والميم المشدّدتين، وعند النون والميم المُدغَمتين في الإدغام بغنة. مدّها حركتين.',
+    'نون ساكنة': 'أحكام النون الساكنة والتنوين أربعة: إظهار، إدغام، إقلاب، إخفاء.',
+    مد: 'المد: إطالة الصوت. طبيعي (2)، متصل (4-5)، منفصل (4-5)، لازم (6)، عارض (2-4-6).',
+  },
+};
+
+function getAiProviders() {
+  return {
+    bedrock: !!process.env.AWS_BEARER_TOKEN_BEDROCK,
+    openai: !!process.env.OPENAI_API_KEY,
+    gemini: !!process.env.GEMINI_API_KEY,
+    chain: ['bedrock', 'openai', 'gemini', 'local'],
+  };
+}
+
 async function callBedrock(messages, { maxTokens = 800 } = {}) {
   const token = process.env.AWS_BEARER_TOKEN_BEDROCK;
   const region = process.env.AWS_REGION || 'us-east-1';
@@ -90,6 +107,42 @@ async function callGemini(prompt, { locale = 'ar' } = {}) {
   return { text, provider: 'gemini', model };
 }
 
+function localFaqAnswer(prompt, locale = 'ar') {
+  if (locale !== 'ar') return null;
+  const lower = prompt.toLowerCase();
+  for (const [key, answer] of Object.entries(LOCAL_FAQ.ar)) {
+    if (lower.includes(key)) return answer;
+  }
+  return null;
+}
+
+async function chatWithChain(messages, prompt, { locale = 'ar' } = {}) {
+  const providers = getAiProviders().chain.filter((p) => p !== 'local');
+
+  for (const name of providers) {
+    try {
+      let result = null;
+      if (name === 'bedrock') result = await callBedrock(messages);
+      else if (name === 'openai') result = await callOpenAI(messages);
+      else if (name === 'gemini') result = await callGemini(prompt, { locale });
+      if (result?.text) return { ...result, fallback: false };
+    } catch (e) {
+      console.warn(`${name} failed:`, e.message);
+    }
+  }
+
+  const faq = localFaqAnswer(prompt, locale);
+  if (faq) return { text: faq, provider: 'local-faq', fallback: true };
+
+  return {
+    text: locale === 'ar'
+      ? `بخصوص: "${prompt.slice(0, 120)}" — راجع التفسير الميسر واستمع لتلاوة مجودة. (وضع محلي — أضف مفاتيح AI في Azure)`
+      : `Regarding "${prompt.slice(0, 120)}" — review tafsir and qualified reciters. (local mode — add API keys)`,
+    provider: 'local',
+    fallback: true,
+  };
+}
+
 async function chat(prompt, { locale = 'ar', role = 'quran' } = {}) {
   const system = role === 'teacher'
     ? 'You help Quran teachers with lesson plans and student engagement.'
@@ -102,34 +155,17 @@ async function chat(prompt, { locale = 'ar', role = 'quran' } = {}) {
     { role: 'user', content: prompt },
   ];
 
-  try {
-    const openai = await callOpenAI(messages);
-    if (openai?.text) return { ...openai, fallback: false };
-  } catch (e) {
-    console.warn('OpenAI failed:', e.message);
-  }
+  return chatWithChain(messages, prompt, { locale });
+}
 
+function parseJsonFromText(text) {
+  const jsonMatch = text?.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) return null;
   try {
-    const bedrock = await callBedrock(messages, { maxTokens: 800 });
-    if (bedrock?.text) return { ...bedrock, fallback: false };
-  } catch (e) {
-    console.warn('Bedrock failed:', e.message);
+    return JSON.parse(jsonMatch[0]);
+  } catch {
+    return null;
   }
-
-  try {
-    const gemini = await callGemini(prompt, { locale });
-    if (gemini?.text) return { ...gemini, fallback: false };
-  } catch (e) {
-    console.warn('Gemini failed:', e.message);
-  }
-
-  return {
-    text: locale === 'ar'
-      ? `بخصوص: "${prompt.slice(0, 120)}" — راجع التفسير الميسر واستمع لتلاوة مجودة. (وضع محلي — أضف OPENAI_API_KEY أو GEMINI_API_KEY)`
-      : `Regarding "${prompt.slice(0, 120)}" — review tafsir and qualified reciters. (local mode — add API keys)`,
-    provider: 'local',
-    fallback: true,
-  };
 }
 
 function localRecitationAnalysis(filename, locale = 'ar') {
@@ -189,30 +225,29 @@ Language for notes: ${locale}.
 Transcript: ${transcript || '(no transcript — estimate from filename)'}
 `;
 
+async function analyzeWithAi(prompt, locale) {
+  const messages = [
+    { role: 'system', content: 'You are a Tajweed expert. Return valid JSON only.' },
+    { role: 'user', content: prompt },
+  ];
+  const result = await chatWithChain(messages, prompt, { locale });
+  const parsed = parseJsonFromText(result.text);
+  if (parsed) return { analysis: parsed, provider: result.provider };
+  return null;
+}
+
 async function analyzeRecitation(userId, file, { locale = 'ar', surah = '' } = {}) {
   let analysis = localRecitationAnalysis(file?.originalname, locale);
   let provider = 'local-heuristic';
   let transcript = null;
 
-  if (process.env.OPENAI_API_KEY && file?.buffer) {
-    transcript = await transcribeAudio(file);
-    try {
-      const prompt = RECITATION_JSON_PROMPT(transcript || file.originalname, locale) + (surah ? `\nSurah context: ${surah}` : '');
-      const openai = await callOpenAI([
-        { role: 'system', content: 'You are a Tajweed expert. Return valid JSON only.' },
-        { role: 'user', content: prompt },
-      ], { maxTokens: 1200 });
-      if (openai?.text) {
-        const jsonMatch = openai.text.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          const parsed = JSON.parse(jsonMatch[0]);
-          analysis = { ...localRecitationAnalysis(file.originalname, locale), ...parsed, transcript };
-          provider = 'openai';
-        }
-      }
-    } catch (e) {
-      console.warn('AI recitation analysis fallback:', e.message);
-    }
+  transcript = await transcribeAudio(file);
+
+  const prompt = RECITATION_JSON_PROMPT(transcript || file?.originalname, locale) + (surah ? `\nSurah context: ${surah}` : '');
+  const aiResult = await analyzeWithAi(prompt, locale);
+  if (aiResult) {
+    analysis = { ...localRecitationAnalysis(file?.originalname, locale), ...aiResult.analysis, transcript };
+    provider = aiResult.provider;
   }
 
   const report = await RecitationReport.create({
@@ -231,6 +266,8 @@ async function analyzeRecitation(userId, file, { locale = 'ar', surah = '' } = {
     ...analysis,
     analyzedAt: report.createdAt,
     id: report._id,
+    provider,
+    offline: provider === 'local-heuristic',
   };
 }
 
@@ -291,4 +328,11 @@ Language: ${locale}.`;
   };
 }
 
-module.exports = { chat, analyzeRecitation, generateHomework, generateExam, localRecitationAnalysis };
+module.exports = {
+  chat,
+  analyzeRecitation,
+  generateHomework,
+  generateExam,
+  localRecitationAnalysis,
+  getAiProviders,
+};

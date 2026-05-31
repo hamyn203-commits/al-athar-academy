@@ -197,7 +197,8 @@ export const v4Roadmap = [
   { phase: 'المرحلة 3', title: 'AI وLMS والشهادات', status: 'جاهز للتوصيل بالـ API', icon: BadgeCheck },
   { phase: 'المرحلة 4', title: 'النمو والموبايل والتوظيف', status: 'منشور v4.2', icon: Award },
   { phase: 'المرحلة 5', title: 'PWA + إدارة النمو + Bedrock', status: 'منشور v4.3', icon: CalendarClock },
-  { phase: 'V5', title: 'منصة تخدم مليون طالب', status: 'منشور v4.4', icon: Smartphone },
+  { phase: 'V5', title: 'منصة تخدم مليون طالب', status: 'منشور v6.1', icon: Smartphone },
+  { phase: 'V6', title: 'تجربة مستخدم + AI + PWA', status: 'منشور v6.1', icon: CalendarClock },
 ];
 
 export function formatCurrencyPreview(currency, locale = 'ar-EG') {

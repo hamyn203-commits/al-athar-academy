@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bot, Mic, BookOpen, GraduationCap, Loader2, Sparkles, Upload } from 'lucide-react';
+import { Bot, Mic, BookOpen, GraduationCap, Loader2, Sparkles, Upload, Square, Radio } from 'lucide-react';
 import GlobalHeader from '../../components/GlobalHeader';
 import { api } from '../../lib/api';
 import { useAuth } from '../../hooks/useAuth';
+import { useAudioRecorder } from '../../hooks/useAudioRecorder';
 
 const TABS = [
   { id: 'quran', label: 'مساعد القرآن', icon: BookOpen },
@@ -39,6 +40,7 @@ export default function AIHub() {
   const [selectedReport, setSelectedReport] = useState(null);
   const [reports, setReports] = useState([]);
   const fileRef = useRef(null);
+  const recorder = useAudioRecorder();
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -70,7 +72,7 @@ export default function AIHub() {
     setLoading(true);
     try {
       const fd = new FormData();
-      fd.append('audio', file);
+      fd.append('audio', file, file.name || 'recitation.webm');
       fd.append('locale', 'ar');
       if (surah) fd.append('surah', surah);
       const res = await api.post('/api/ai/recitation-analyze', fd, { auth: true });
@@ -80,7 +82,13 @@ export default function AIHub() {
       alert(err.message);
     } finally {
       setLoading(false);
+      recorder.reset();
     }
+  };
+
+  const analyzeRecording = async () => {
+    if (!recorder.audioBlob) return;
+    await analyzeAudio(new File([recorder.audioBlob], 'recitation.webm', { type: 'audio/webm' }));
   };
 
   const getStudentPlan = async () => {
@@ -127,8 +135,19 @@ export default function AIHub() {
           <div>
             <h1 className="text-2xl font-bold">مركز الذكاء الاصطناعي</h1>
             <p className="text-gray-600 text-sm">
-              {aiStatus?.mode === 'cloud' ? '✓ متصل بـ AI' : 'وضع محلي — أضف مفاتيح API في Backend'}
+              {aiStatus?.mode === 'cloud'
+                ? `✓ متصل — ${aiStatus.activeProvider}`
+                : 'وضع محلي ذكي — Bedrock → OpenAI → Gemini → FAQ'}
             </p>
+            {aiStatus?.chain && (
+              <div className="flex flex-wrap gap-1 mt-1">
+                {aiStatus.chain.filter((p) => p !== 'local').map((p) => (
+                  <span key={p} className={`text-xs px-2 py-0.5 rounded-full ${aiStatus[p] ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-400'}`}>
+                    {p}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -171,16 +190,36 @@ export default function AIHub() {
 
           {tab === 'recitation' && (
             <div className="space-y-4">
-              <p className="text-gray-600">ارفع تسجيلاً صوتياً — تحليل التجويد، الغنة، المد، النون الساكنة</p>
+              <p className="text-gray-600">ارفع ملفاً أو سجّل مباشرة — تحليل التجويد يعمل حتى بدون مفاتيح AI (وضع محلي)</p>
               <input value={surah} onChange={(e) => setSurah(e.target.value)} className="w-full border rounded-lg p-3"
                 placeholder="السورة (اختياري) — مثلاً: الفاتحة" />
-              <input ref={fileRef} type="file" accept="audio/*" className="hidden"
-                onChange={(e) => analyzeAudio(e.target.files?.[0])} />
-              <button type="button" onClick={() => fileRef.current?.click()} disabled={loading}
-                className="btn-primary flex items-center gap-2">
-                {loading ? <Loader2 className="animate-spin" size={18} /> : <Upload size={18} />}
-                رفع وتشغيل التحليل
-              </button>
+
+              <div className="flex flex-wrap gap-2">
+                <input ref={fileRef} type="file" accept="audio/*" className="hidden"
+                  onChange={(e) => analyzeAudio(e.target.files?.[0])} />
+                <button type="button" onClick={() => fileRef.current?.click()} disabled={loading}
+                  className="btn-primary flex items-center gap-2">
+                  {loading ? <Loader2 className="animate-spin" size={18} /> : <Upload size={18} />}
+                  رفع ملف
+                </button>
+
+                {recorder.state === 'recording' ? (
+                  <button type="button" onClick={recorder.stop} className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg">
+                    <Square size={16} /> إيقاف ({recorder.duration}ث)
+                  </button>
+                ) : (
+                  <button type="button" onClick={() => recorder.start().catch((e) => alert(e.message))} disabled={loading}
+                    className="flex items-center gap-2 px-4 py-2 border border-emerald-300 text-emerald-700 rounded-lg hover:bg-emerald-50">
+                    <Radio size={16} /> تسجيل مباشر
+                  </button>
+                )}
+
+                {recorder.state === 'recorded' && (
+                  <button type="button" onClick={analyzeRecording} disabled={loading} className="btn-primary flex items-center gap-2">
+                    <Mic size={18} /> تحليل التسجيل
+                  </button>
+                )}
+              </div>
 
               {displayReport && (
                 <div className="border rounded-lg p-4 space-y-3">
@@ -188,6 +227,9 @@ export default function AIHub() {
                     <span className="font-bold">النتيجة الإجمالية</span>
                     <span className="text-2xl text-emerald-600 font-bold">{displayReport.overallScore}%</span>
                   </div>
+                  {displayReport.offline && (
+                    <p className="text-xs bg-amber-50 text-amber-800 rounded p-2">تحليل محلي — أضف مفاتيح AI على Azure لدقة أعلى</p>
+                  )}
                   {Object.keys(REC_LABELS).map((key) => (
                     <div key={key}>
                       <div className="flex justify-between text-sm mb-1">

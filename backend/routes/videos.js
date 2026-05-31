@@ -4,11 +4,12 @@ const VideoAsset = require('../models/VideoAsset');
 const { protect, authorize } = require('../middleware/auth');
 
 const SEED_VIDEOS = [
-  { title: 'مقدمة في التجويد', titleEn: 'Introduction to Tajweed', category: 'tajweed', videoUrl: 'https://www.youtube.com/embed/placeholder1', duration: 600, sortOrder: 1 },
-  { title: 'أحكام النون الساكنة', titleEn: 'Noon Sakinah Rules', category: 'tajweed', videoUrl: 'https://www.youtube.com/embed/placeholder2', duration: 900, sortOrder: 2 },
-  { title: 'تعلم الحروف العربية', titleEn: 'Learn Arabic Letters', category: 'arabic', videoUrl: 'https://www.youtube.com/embed/placeholder3', duration: 480, sortOrder: 3 },
-  { title: 'سيرة النبي ﷺ — مقدمة', titleEn: 'Prophet Biography Intro', category: 'seerah', videoUrl: 'https://www.youtube.com/embed/placeholder4', duration: 720, sortOrder: 4 },
-  { title: 'تجويد للأطفال', titleEn: 'Tajweed for Kids', category: 'kids', videoUrl: 'https://www.youtube.com/embed/placeholder5', duration: 360, sortOrder: 5 },
+  { title: 'مقدمة في التجويد', titleEn: 'Introduction to Tajweed', category: 'tajweed', videoUrl: 'https://www.youtube.com/embed/2Qd_1wstBg0', duration: 600, sortOrder: 1 },
+  { title: 'تلاوة قرآنية — نموذج', titleEn: 'Quran Recitation Sample', category: 'quran', videoUrl: 'https://www.youtube.com/embed/HGr1BOrrPyY', duration: 480, sortOrder: 2 },
+  { title: 'تعلم الحروف العربية', titleEn: 'Learn Arabic Letters', category: 'arabic', videoUrl: 'https://www.youtube.com/embed/2Qd_1wstBg0', duration: 420, sortOrder: 3 },
+  { title: 'سيرة النبي ﷺ — مقدمة', titleEn: 'Prophet Biography Intro', category: 'seerah', videoUrl: 'https://www.youtube.com/embed/HGr1BOrrPyY', duration: 720, sortOrder: 4 },
+  { title: 'تجويد للأطفال', titleEn: 'Tajweed for Kids', category: 'kids', videoUrl: 'https://www.youtube.com/embed/2Qd_1wstBg0', duration: 360, sortOrder: 5 },
+  { title: 'أحكام النون الساكنة', titleEn: 'Noon Sakinah Rules', category: 'tajweed', videoUrl: 'https://www.youtube.com/embed/HGr1BOrrPyY', duration: 540, sortOrder: 6 },
 ];
 
 router.get('/', async (req, res) => {

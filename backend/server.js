@@ -136,7 +136,7 @@ connectDB();
 app.get('/', (req, res) => {
   res.json({
     service: 'Al-Athar Academy API',
-    version: '6.0.0',
+    version: '6.1.0',
     status: 'ok',
     message: 'الـ API يعمل — استخدم المسارات تحت /api',
     health: '/api/health',
@@ -151,13 +151,15 @@ app.get('/api/health', (req, res) => {
     status: 'ok', 
     message: 'Al-Athar Backend API is running!',
     timestamp: new Date().toISOString(),
-    version: '6.0.0',
+    version: '6.1.0',
     features: {
       ai: !!(process.env.OPENAI_API_KEY || process.env.GEMINI_API_KEY || process.env.AWS_BEARER_TOKEN_BEDROCK),
       bedrock: !!process.env.AWS_BEARER_TOKEN_BEDROCK,
       email: !!process.env.RESEND_API_KEY,
       telegram: !!process.env.TELEGRAM_BOT_TOKEN,
       whatsapp: !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN),
+      livekit: !!(process.env.LIVEKIT_API_KEY && process.env.LIVEKIT_API_SECRET &&
+        process.env.LIVEKIT_API_KEY !== 'your-api-key'),
       meetings: process.env.DEFAULT_MEETING_PROVIDER || 'jitsi',
       database: mongoose.connection.readyState === 1,
     },

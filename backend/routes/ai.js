@@ -137,10 +137,12 @@ router.post('/reports-generate', protect, async (req, res) => {
 });
 
 router.get('/status', protect, (_req, res) => {
+  const providers = aiService.getAiProviders();
+  const active = providers.chain.find((p) => p !== 'local' && providers[p]);
   res.json({
-    openai: !!process.env.OPENAI_API_KEY,
-    gemini: !!process.env.GEMINI_API_KEY,
-    mode: process.env.OPENAI_API_KEY || process.env.GEMINI_API_KEY ? 'cloud' : 'local-fallback',
+    ...providers,
+    mode: active ? 'cloud' : 'local-fallback',
+    activeProvider: active || 'local',
   });
 });
 

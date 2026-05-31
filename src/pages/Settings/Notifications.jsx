@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import GlobalHeader from '../../components/GlobalHeader';
 import { api } from '../../lib/api';
 import { useAuth } from '../../hooks/useAuth';
+import { enableWebPush, isPushSupported } from '../../lib/webPush';
 
 export default function NotificationSettings() {
   const { isAuthenticated } = useAuth();
@@ -11,6 +12,7 @@ export default function NotificationSettings() {
   const [telegramId, setTelegramId] = useState('');
   const [pushToken, setPushToken] = useState('');
   const [saved, setSaved] = useState(false);
+  const [pushLoading, setPushLoading] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -37,10 +39,17 @@ export default function NotificationSettings() {
   };
 
   const registerPush = async () => {
-    const token = pushToken.trim() || `web-${Date.now()}`;
-    await api.post('/api/notifications/push-token', { token, platform: 'web' }, { auth: true });
-    setPushToken(token);
-    alert('تم تسجيل Push');
+    setPushLoading(true);
+    try {
+      const token = await enableWebPush();
+      setPushToken(token);
+      setPrefs((p) => ({ ...p, push: true }));
+      alert('تم تفعيل إشعارات الويب');
+    } catch (err) {
+      alert(err.message || 'فشل تفعيل الإشعارات');
+    } finally {
+      setPushLoading(false);
+    }
   };
 
   return (
@@ -84,9 +93,17 @@ export default function NotificationSettings() {
         </div>
 
         <div className="bg-white border rounded-xl p-6 mt-4 space-y-3">
-          <h2 className="font-semibold">Push Token (Web)</h2>
-          <button onClick={registerPush} className="btn-primary w-full text-sm">تفعيل إشعارات الويب</button>
-          {pushToken && <p className="text-xs text-gray-400 break-all">{pushToken}</p>}
+          <h2 className="font-semibold">إشعارات PWA</h2>
+          {!isPushSupported() ? (
+            <p className="text-sm text-gray-500">المتصفح لا يدعم الإشعارات — ثبّت التطبيق من <Link to="/app" className="text-emerald-600">/app</Link></p>
+          ) : (
+            <>
+              <button onClick={registerPush} disabled={pushLoading} className="btn-primary w-full text-sm">
+                {pushLoading ? 'جاري التفعيل...' : 'تفعيل إشعارات الويب'}
+              </button>
+              {pushToken && <p className="text-xs text-gray-400 break-all">✓ مسجّل: {pushToken.slice(0, 24)}…</p>}
+            </>
+          )}
         </div>
       </main>
     </div>
