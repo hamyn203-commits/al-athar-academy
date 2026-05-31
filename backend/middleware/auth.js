@@ -121,5 +121,7 @@ module.exports = {
   verifyAccessToken,
   verifyRefreshToken,
   requireRole,
-  optionalAuth
+  optionalAuth,
+  protect: verifyAccessToken,
+  authorize: requireRole
 };

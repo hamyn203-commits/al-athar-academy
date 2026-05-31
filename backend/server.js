@@ -5,8 +5,15 @@ const mongoose = require('mongoose');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const morgan = require('morgan');
+const fs = require('fs');
+const path = require('path');
 
 dotenv.config();
+
+const uploadsDir = path.join(__dirname, 'uploads', 'teachers');
+const homeworkDir = path.join(__dirname, 'uploads', 'homework');
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+if (!fs.existsSync(homeworkDir)) fs.mkdirSync(homeworkDir, { recursive: true });
 
 const app = express();
 const PORT = process.env.PORT || 5000;
