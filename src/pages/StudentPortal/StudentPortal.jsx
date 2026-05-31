@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../../config';
 import {
@@ -19,6 +19,19 @@ import { sheikhs, quizQuestion } from '../../data/mockData';
 import { useAppContext } from '../../context/AppProvider';
 
 function LoginView({ studentsData, onLogin, navigate, defaultGamification, setStudentsData, t }) {
+  // التحقق من وجود token
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const user = localStorage.getItem('user');
+    
+    if (token && user) {
+      const userData = JSON.parse(user);
+      if (userData.role === 'student') {
+        navigate('/student/dashboard');
+      }
+    }
+  }, [navigate]);
+
   return (
     <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '60px 20px', minHeight: '100vh' }}>
       <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="glass-card" style={{ width: '100%', maxWidth: '480px', padding: '40px 30px', textAlign: 'center', border: '1px solid var(--primary-gold)' }}>
@@ -28,42 +41,25 @@ function LoginView({ studentsData, onLogin, navigate, defaultGamification, setSt
           {t.student.subtitle}
         </p>
 
-        {studentsData.length === 0 ? (
-          <EmptyState
-            icon={AlertCircle}
-            title={t.student.noStudents}
-            description={t.student.noStudentsDesc}
-            action={
-              <button
-                onClick={() => {
-                  const name = prompt(t.student.quickRegister);
-                  if (name) {
-                    const newSt = { id: Date.now(), name, plan: 'حفظ القرآن كاملاً', currentSurah: 'سورة البقرة (الوجه الأول)', progress: 0, sheikh: 'الشيخ عبد الرحمن الشريف', lastGrade: 'مبتدئ', status: 'نشط', lastUpdate: 'الآن', homework: 'حفظ وجه التسميع الأول والبدء بالخطة', ...defaultGamification };
-                    setStudentsData([newSt]);
-                    onLogin(newSt.id);
-                  }
-                }}
-                className="btn-premium"
-                style={{ fontSize: '0.85rem', padding: '10px 20px' }}
-              >
-                <UserPlus size={16} /> {t.student.quickRegister}
-              </button>
-            }
-          />
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', textAlign: 'right' }}>
-              <label htmlFor="student-select" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>{t.student.selectStudent}</label>
-              <select id="student-select" onChange={(e) => onLogin(Number(e.target.value))} defaultValue="" className="premium-input" style={{ fontSize: '0.95rem' }}>
-                <option value="" disabled>{t.student.selectPlaceholder}</option>
-                {studentsData.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
-            </div>
-            <button onClick={() => navigate('/')} className="btn-premium-outline" style={{ justifyContent: 'center' }}>
-              {t.student.backHome}
-            </button>
-          </div>
-        )}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <button 
+            onClick={() => navigate('/login')} 
+            className="btn-premium"
+            style={{ justifyContent: 'center', fontSize: '1rem', padding: '14px 20px' }}
+          >
+            <UserPlus size={18} /> {t.student.login || 'تسجيل الدخول'}
+          </button>
+          <button 
+            onClick={() => navigate('/register/student')} 
+            className="btn-premium-outline"
+            style={{ justifyContent: 'center', fontSize: '1rem', padding: '14px 20px' }}
+          >
+            <UserPlus size={18} /> {t.student.register || 'إنشاء حساب جديد'}
+          </button>
+          <button onClick={() => navigate('/')} className="btn-premium-outline" style={{ justifyContent: 'center' }}>
+            {t.student.backHome}
+          </button>
+        </div>
       </motion.div>
     </div>
   );
