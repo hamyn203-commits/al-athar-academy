@@ -269,13 +269,13 @@ router.post('/seed-demo', protect, authorize('admin'), async (req, res) => {
       questions: [
         {
           type: 'multiple-choice',
-          text: { ar: 'كم عدد آيات سورة الفاتحة؟', en: 'How many verses in Al-Fatiha?' },
+          question: { ar: 'كم عدد آيات سورة الفاتحة؟', en: 'How many verses in Al-Fatiha?' },
           options: [{ text: { en: '5', ar: '5' }, isCorrect: false }, { text: { en: '7', ar: '7' }, isCorrect: true }, { text: { en: '10', ar: '10' }, isCorrect: false }],
           points: 10,
         },
         {
           type: 'true-false',
-          text: { ar: 'سورة الناس من جزء عم', en: 'An-Nas is from Juz Amma' },
+          question: { ar: 'سورة الناس من جزء عم', en: 'An-Nas is from Juz Amma' },
           options: [{ text: { en: 'True', ar: 'صح' }, isCorrect: true }, { text: { en: 'False', ar: 'خطأ' }, isCorrect: false }],
           points: 10,
         },

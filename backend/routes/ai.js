@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const { protect } = require('../middleware/auth');
+const { protect, authorize } = require('../middleware/auth');
 const aiService = require('../services/aiService');
 const RecitationReport = require('../models/RecitationReport');
 
@@ -69,8 +69,8 @@ router.post('/student-assistant', protect, async (req, res) => {
 router.post('/recitation-analyze', protect, upload.single('audio'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'Audio file required' });
-    const { locale = 'ar' } = req.body;
-    const report = await aiService.analyzeRecitation(req.user.id, req.file, { locale });
+    const { locale = 'ar', surah = '' } = req.body;
+    const report = await aiService.analyzeRecitation(req.user.id, req.file, { locale, surah });
     res.json(report);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -101,7 +101,7 @@ router.get('/recitation-reports/:reportId', protect, async (req, res) => {
   }
 });
 
-router.post('/homework-generate', protect, async (req, res) => {
+router.post('/homework-generate', protect, authorize('teacher', 'admin'), async (req, res) => {
   try {
     const { topic, level, count = 5, locale = 'ar' } = req.body;
     const result = await aiService.generateHomework({ topic, level, count, locale });
@@ -111,24 +111,11 @@ router.post('/homework-generate', protect, async (req, res) => {
   }
 });
 
-router.post('/exam-generate', protect, async (req, res) => {
+router.post('/exam-generate', protect, authorize('teacher', 'admin'), async (req, res) => {
   try {
-    const { courseId, questionCount = 10, locale = 'ar' } = req.body;
-    const result = await aiService.chat(
-      `Generate ${questionCount} exam questions for course ${courseId || 'general'}. Mix MCQ and short answer.`,
-      { locale, role: 'teacher' }
-    );
-    res.json({
-      examId: `EX-${Date.now()}`,
-      courseId,
-      questions: Array.from({ length: questionCount }, (_, i) => ({
-        id: i + 1,
-        type: i % 3 === 0 ? 'mcq' : 'short-answer',
-        points: 10,
-      })),
-      aiDraft: result.text,
-      provider: result.provider,
-    });
+    const { topic, questionCount = 5, locale = 'ar' } = req.body;
+    const result = await aiService.generateExam({ topic, questionCount, locale });
+    res.json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

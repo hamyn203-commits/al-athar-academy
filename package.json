@@ -1,7 +1,7 @@
 {
   "name": "-----",
   "private": true,
-  "version": "4.0.0",
+  "version": "4.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -17,6 +17,7 @@
     "@livekit/components-styles": "^1.2.0",
     "express": "^5.2.1",
     "framer-motion": "^12.40.0",
+    "jspdf": "^4.2.1",
     "livekit-client": "^2.19.1",
     "lucide-react": "^1.17.0",
     "react": "^19.2.6",

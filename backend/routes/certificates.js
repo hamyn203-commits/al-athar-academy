@@ -90,6 +90,34 @@ router.get('/my-certificates', protect, async (req, res) => {
   }
 });
 
+// @route   GET /api/certificates/verify/:certificateId
+router.get('/verify/:certificateId', async (req, res) => {
+  try {
+    const certificate = await Certificate.findOne({ certificateId: req.params.certificateId })
+      .populate('student', 'name')
+      .populate('course', 'title');
+
+    if (!certificate) {
+      return res.status(404).json({ valid: false, error: 'Certificate not found' });
+    }
+
+    const verification = certificate.verify();
+    res.json({
+      valid: verification.valid,
+      reason: verification.reason || null,
+      certificate: {
+        id: certificate.certificateId,
+        studentName: certificate.student.name,
+        courseTitle: certificate.course.title,
+        issuedAt: certificate.issuedAt,
+        status: certificate.status,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to verify certificate' });
+  }
+});
+
 // @route   GET /api/certificates/:certificateId
 // @desc    Get a specific certificate by ID
 // @access  Public
@@ -113,41 +141,6 @@ router.get('/:certificateId', async (req, res) => {
   } catch (error) {
     console.error('Get certificate error:', error);
     res.status(500).json({ error: 'Failed to fetch certificate' });
-  }
-});
-
-// @route   GET /api/certificates/verify/:certificateId
-// @desc    Verify a certificate
-// @access  Public
-router.get('/verify/:certificateId', async (req, res) => {
-  try {
-    const certificate = await Certificate.findOne({ certificateId: req.params.certificateId })
-      .populate('student', 'name')
-      .populate('course', 'title');
-
-    if (!certificate) {
-      return res.status(404).json({ 
-        valid: false, 
-        error: 'Certificate not found' 
-      });
-    }
-
-    const verification = certificate.verify();
-
-    res.json({
-      valid: verification.valid,
-      reason: verification.reason || null,
-      certificate: {
-        id: certificate.certificateId,
-        studentName: certificate.student.name,
-        courseTitle: certificate.course.title,
-        issuedAt: certificate.issuedAt,
-        status: certificate.status
-      }
-    });
-  } catch (error) {
-    console.error('Verify certificate error:', error);
-    res.status(500).json({ error: 'Failed to verify certificate' });
   }
 });
 

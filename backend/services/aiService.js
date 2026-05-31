@@ -94,50 +94,80 @@ async function chat(prompt, { locale = 'ar', role = 'quran' } = {}) {
 }
 
 function localRecitationAnalysis(filename, locale = 'ar') {
+  const ar = locale === 'ar';
   const base = {
     overallScore: 72 + Math.floor(Math.random() * 18),
-    tajweed: { score: 75, notes: locale === 'ar' ? ['تحسين الغنة في بعض المواضع'] : ['Improve ghunnah in some places'] },
-    makhraj: { score: 73, notes: locale === 'ar' ? ['انتبه لمخرج حرف القاف'] : ['Watch Qaf articulation'] },
-    waqf: { score: 78, notes: locale === 'ar' ? ['وقف جيد في معظم الآيات'] : ['Good stopping points'] },
-    mad: { score: 74, notes: locale === 'ar' ? ['مد طبيعي قصير في بعض المواضع'] : ['Natural mad slightly short'] },
-    recommendations: locale === 'ar'
+    tajweed: { score: 75, notes: ar ? ['تحسين الغنة في بعض المواضع'] : ['Improve ghunnah in some places'] },
+    makhraj: { score: 73, notes: ar ? ['انتبه لمخرج حرف القاف'] : ['Watch Qaf articulation'] },
+    waqf: { score: 78, notes: ar ? ['وقف جيد في معظم الآيات'] : ['Good stopping points'] },
+    mad: { score: 74, notes: ar ? ['مد طبيعي قصير في بعض المواضع'] : ['Natural mad slightly short'] },
+    ghunnah: { score: 76, notes: ar ? ['الغنة تحتاج مراجعة في النون الساكنة'] : ['Review ghunnah on noon sakinah'] },
+    noonSakinah: { score: 77, notes: ar ? ['أحكام النون الساكنة جيدة جزئياً'] : ['Noon sakinah rules partially good'] },
+    recommendations: ar
       ? ['تدرب على سورة الملك مع التركيز على الغنة', 'راجع مخارج الحروف المفخمة', 'سجّل تلاوة جديدة بعد 3 أيام']
       : ['Practice Surah Al-Mulk focusing on ghunnah', 'Review heavy letter makhraj', 'Record again after 3 days'],
     source: filename || 'audio-upload',
     provider: 'local-heuristic',
   };
-  base.overallScore = Math.round((base.tajweed.score + base.makhraj.score + base.waqf.score + base.mad.score) / 4);
+  const scores = [base.tajweed.score, base.makhraj.score, base.waqf.score, base.mad.score, base.ghunnah.score, base.noonSakinah.score];
+  base.overallScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
   return base;
 }
 
-async function analyzeRecitation(userId, file, { locale = 'ar' } = {}) {
+async function transcribeAudio(file) {
+  const key = process.env.OPENAI_API_KEY;
+  if (!key || !file?.buffer) return null;
+  try {
+    const fd = new FormData();
+    fd.append('file', new Blob([file.buffer], { type: file.mimetype || 'audio/mpeg' }), file.originalname || 'recitation.mp3');
+    fd.append('model', 'whisper-1');
+    const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${key}` },
+      body: fd,
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.text?.trim() || null;
+  } catch (e) {
+    console.warn('Whisper failed:', e.message);
+    return null;
+  }
+}
+
+const RECITATION_JSON_PROMPT = (transcript, locale) => `Analyze this Quran recitation transcript and return JSON ONLY:
+{
+  "overallScore": 0-100,
+  "tajweed": { "score": 0-100, "notes": ["..."] },
+  "makhraj": { "score": 0-100, "notes": ["..."] },
+  "waqf": { "score": 0-100, "notes": ["..."] },
+  "mad": { "score": 0-100, "notes": ["..."] },
+  "ghunnah": { "score": 0-100, "notes": ["..."] },
+  "noonSakinah": { "score": 0-100, "notes": ["..."] },
+  "recommendations": ["..."]
+}
+Language for notes: ${locale}.
+Transcript: ${transcript || '(no transcript — estimate from filename)'}
+`;
+
+async function analyzeRecitation(userId, file, { locale = 'ar', surah = '' } = {}) {
   let analysis = localRecitationAnalysis(file?.originalname, locale);
   let provider = 'local-heuristic';
+  let transcript = null;
 
   if (process.env.OPENAI_API_KEY && file?.buffer) {
+    transcript = await transcribeAudio(file);
     try {
-      const audioBase64 = file.buffer.toString('base64');
-      const res = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
-          messages: [{
-            role: 'user',
-            content: `Analyze Quran recitation audio (filename: ${file.originalname}). Return JSON only: overallScore, tajweed, makhraj, waqf, mad (each with score 0-100 and notes array), recommendations array. Language for notes: ${locale}.`,
-          }],
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const raw = data.choices?.[0]?.message?.content || '';
-        const jsonMatch = raw.match(/\{[\s\S]*\}/);
+      const prompt = RECITATION_JSON_PROMPT(transcript || file.originalname, locale) + (surah ? `\nSurah context: ${surah}` : '');
+      const openai = await callOpenAI([
+        { role: 'system', content: 'You are a Tajweed expert. Return valid JSON only.' },
+        { role: 'user', content: prompt },
+      ], { maxTokens: 1200 });
+      if (openai?.text) {
+        const jsonMatch = openai.text.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
           const parsed = JSON.parse(jsonMatch[0]);
-          analysis = { ...localRecitationAnalysis(file.originalname, locale), ...parsed };
+          analysis = { ...localRecitationAnalysis(file.originalname, locale), ...parsed, transcript };
           provider = 'openai';
         }
       }
@@ -151,6 +181,8 @@ async function analyzeRecitation(userId, file, { locale = 'ar' } = {}) {
     filename: file?.originalname,
     mimeType: file?.mimetype,
     size: file?.size,
+    surah: surah || undefined,
+    transcript,
     ...analysis,
     provider,
   });
@@ -186,4 +218,38 @@ async function generateHomework({ topic, level, count = 5, locale = 'ar' }) {
   };
 }
 
-module.exports = { chat, analyzeRecitation, generateHomework, localRecitationAnalysis };
+async function generateExam({ topic = 'Tajweed', questionCount = 5, locale = 'ar' }) {
+  const prompt = `Generate ${questionCount} quiz questions about "${topic}". Return JSON array only:
+[{ "type": "multiple-choice"|"true-false"|"short-answer", "question": { "ar": "...", "en": "..." }, "options": [{"text":{"ar":"...","en":"..."},"isCorrect":true|false}], "points": 10 }]
+Language: ${locale}.`;
+  const result = await chat(prompt, { locale, role: 'teacher' });
+  try {
+    const match = result.text.match(/\[[\s\S]*\]/);
+    if (match) {
+      const raw = JSON.parse(match[0]);
+      const questions = raw.map((q, i) => ({
+        id: i + 1,
+        type: q.type === 'mcq' ? 'multiple-choice' : q.type,
+        question: q.question || { ar: q.text?.ar || `س${i + 1}`, en: q.text?.en || `Q${i + 1}` },
+        options: q.options || [],
+        points: q.points || 10,
+      }));
+      return { questions, provider: result.provider };
+    }
+  } catch (_) { /* fallback */ }
+  return {
+    questions: Array.from({ length: questionCount }, (_, i) => ({
+      id: i + 1,
+      type: i % 2 === 0 ? 'multiple-choice' : 'true-false',
+      question: { ar: `${topic} — س${i + 1}`, en: `${topic} — Q${i + 1}` },
+      options: [
+        { text: { ar: 'أ', en: 'A' }, isCorrect: true },
+        { text: { ar: 'ب', en: 'B' }, isCorrect: false },
+      ],
+      points: 10,
+    })),
+    provider: result.provider,
+  };
+}
+
+module.exports = { chat, analyzeRecitation, generateHomework, generateExam, localRecitationAnalysis };

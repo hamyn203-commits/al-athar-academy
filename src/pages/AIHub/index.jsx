@@ -12,6 +12,15 @@ const TABS = [
   { id: 'teacher', label: 'مساعد المعلم', icon: Bot },
 ];
 
+const REC_LABELS = {
+  tajweed: 'التجويد',
+  makhraj: 'مخارج الحروف',
+  waqf: 'الوقف والابتداء',
+  mad: 'المدود',
+  ghunnah: 'الغنة',
+  noonSakinah: 'أحكام النون',
+};
+
 export default function AIHub() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
@@ -26,6 +35,8 @@ export default function AIHub() {
   const [teacherResult, setTeacherResult] = useState(null);
   const [studentPlan, setStudentPlan] = useState(null);
   const [recitationReport, setRecitationReport] = useState(null);
+  const [surah, setSurah] = useState('');
+  const [selectedReport, setSelectedReport] = useState(null);
   const [reports, setReports] = useState([]);
   const fileRef = useRef(null);
 
@@ -61,6 +72,7 @@ export default function AIHub() {
       const fd = new FormData();
       fd.append('audio', file);
       fd.append('locale', 'ar');
+      if (surah) fd.append('surah', surah);
       const res = await api.post('/api/ai/recitation-analyze', fd, { auth: true });
       setRecitationReport(res);
       setReports((prev) => [res, ...prev]);
@@ -82,6 +94,15 @@ export default function AIHub() {
       setLoading(false);
     }
   };
+
+  const loadReport = async (id) => {
+    try {
+      const r = await api.get(`/api/ai/recitation-reports/${id}`, { auth: true });
+      setSelectedReport(r);
+    } catch { /* ignore */ }
+  };
+
+  const displayReport = selectedReport || recitationReport;
 
   const getTeacherHelp = async () => {
     setLoading(true);
@@ -150,43 +171,42 @@ export default function AIHub() {
 
           {tab === 'recitation' && (
             <div className="space-y-4">
-              <p className="text-gray-600">ارفع تسجيلاً صوتياً لتحليل التلاوة (MP3/WAV/M4A)</p>
-              <input
-                ref={fileRef}
-                type="file"
-                accept="audio/*"
-                className="hidden"
-                onChange={(e) => analyzeAudio(e.target.files?.[0])}
-              />
-              <button
-                type="button"
-                onClick={() => fileRef.current?.click()}
-                disabled={loading}
-                className="btn-primary flex items-center gap-2"
-              >
+              <p className="text-gray-600">ارفع تسجيلاً صوتياً — تحليل التجويد، الغنة، المد، النون الساكنة</p>
+              <input value={surah} onChange={(e) => setSurah(e.target.value)} className="w-full border rounded-lg p-3"
+                placeholder="السورة (اختياري) — مثلاً: الفاتحة" />
+              <input ref={fileRef} type="file" accept="audio/*" className="hidden"
+                onChange={(e) => analyzeAudio(e.target.files?.[0])} />
+              <button type="button" onClick={() => fileRef.current?.click()} disabled={loading}
+                className="btn-primary flex items-center gap-2">
                 {loading ? <Loader2 className="animate-spin" size={18} /> : <Upload size={18} />}
                 رفع وتشغيل التحليل
               </button>
 
-              {recitationReport && (
+              {displayReport && (
                 <div className="border rounded-lg p-4 space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="font-bold">النتيجة الإجمالية</span>
-                    <span className="text-2xl text-emerald-600 font-bold">{recitationReport.overallScore}%</span>
+                    <span className="text-2xl text-emerald-600 font-bold">{displayReport.overallScore}%</span>
                   </div>
-                  {['tajweed', 'makhraj', 'waqf', 'mad'].map((key) => (
+                  {Object.keys(REC_LABELS).map((key) => (
                     <div key={key}>
                       <div className="flex justify-between text-sm mb-1">
-                        <span>{key}</span>
-                        <span>{recitationReport[key]?.score}%</span>
+                        <span>{REC_LABELS[key]}</span>
+                        <span>{displayReport[key]?.score ?? '—'}%</span>
                       </div>
                       <div className="bg-gray-100 h-2 rounded-full">
-                        <div className="bg-emerald-500 h-2 rounded-full" style={{ width: `${recitationReport[key]?.score || 0}%` }} />
+                        <div className="bg-emerald-500 h-2 rounded-full" style={{ width: `${displayReport[key]?.score || 0}%` }} />
                       </div>
+                      {(displayReport[key]?.notes || []).map((n, i) => (
+                        <p key={i} className="text-xs text-gray-500 mt-1">• {n}</p>
+                      ))}
                     </div>
                   ))}
+                  {displayReport.transcript && (
+                    <p className="text-xs bg-gray-50 p-2 rounded"><strong>النص:</strong> {displayReport.transcript}</p>
+                  )}
                   <ul className="text-sm text-gray-600 list-disc pr-5">
-                    {(recitationReport.recommendations || []).map((r, i) => <li key={i}>{r}</li>)}
+                    {(displayReport.recommendations || []).map((r, i) => <li key={i}>{r}</li>)}
                   </ul>
                 </div>
               )}
@@ -195,11 +215,12 @@ export default function AIHub() {
                 <div>
                   <h3 className="font-semibold mb-2">تقارير سابقة</h3>
                   <div className="space-y-2">
-                    {reports.slice(0, 5).map((r) => (
-                      <div key={r.reportId || r._id} className="text-sm border rounded p-2 flex justify-between">
-                        <span>{r.filename || r.reportId}</span>
+                    {reports.slice(0, 8).map((r) => (
+                      <button key={r.reportId || r._id} type="button" onClick={() => loadReport(r.reportId || r._id)}
+                        className="w-full text-sm border rounded p-2 flex justify-between hover:bg-emerald-50 text-right">
+                        <span>{r.surah || r.filename || r.reportId}</span>
                         <span className="text-emerald-600">{r.overallScore}%</span>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </div>

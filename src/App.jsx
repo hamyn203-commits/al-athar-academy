@@ -8,7 +8,7 @@ import { MarketProvider } from './context/MarketProvider';
 import LocaleLayout from './components/LocaleLayout';
 import { StudentLegacyRedirect, TeacherLegacyRedirect } from './components/DashboardRedirect';
 import Logo from './components/Logo';
-import ErrorBoundary from './components/shared/ErrorBoundary';
+import QuranChatWidget from './components/QuranChatWidget';
 
 const LandingPage = lazy(() => import('./pages/NewLandingPage'));
 const LiveSessions = lazy(() => import('./pages/LiveSessions/LiveSessions'));
@@ -118,9 +118,10 @@ export default function App() {
           <AppProvider>
             <AuthProvider>
               <ToastProvider>
-                <Router>
-                  <AppContent />
-                </Router>
+              <Router>
+                <AppContent />
+                <QuranChatWidget />
+              </Router>
               </ToastProvider>
             </AuthProvider>
           </AppProvider>

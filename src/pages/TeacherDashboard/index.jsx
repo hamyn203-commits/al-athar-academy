@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   Calendar, Users, Star, Wallet, ClipboardList,
-  BookOpen, X, Plus, Clock, BarChart3, MessageSquare,
+  BookOpen, X, Plus, Clock, BarChart3, MessageSquare, Sparkles,
 } from 'lucide-react';
 import DashboardLayout, { StatCard, TabBar } from '../../components/dashboard/DashboardLayout';
 import { useRequireAuth } from '../../hooks/useRequireAuth';
@@ -49,6 +49,10 @@ export default function TeacherDashboard() {
   const [reviewsData, setReviewsData] = useState({ reviews: [], averageRating: 0, totalReviews: 0 });
   const [schedule, setSchedule] = useState([]);
   const [savingSchedule, setSavingSchedule] = useState(false);
+  const [aiModal, setAiModal] = useState(false);
+  const [aiTopic, setAiTopic] = useState('التجويد');
+  const [aiResult, setAiResult] = useState(null);
+  const [aiLoading, setAiLoading] = useState(false);
 
   const load = async () => {
     try {
@@ -171,6 +175,16 @@ export default function TeacherDashboard() {
     } catch { toast.error('فشل'); }
   };
 
+  const generateAiHomework = async () => {
+    setAiLoading(true);
+    try {
+      const res = await api.post('/api/ai/homework-generate', { topic: aiTopic, level: 'intermediate', count: 5, locale: 'ar' }, { auth: true });
+      setAiResult(res);
+      toast.success('تم توليد الواجبات');
+    } catch (e) { toast.error(e.message || 'فشل'); }
+    finally { setAiLoading(false); }
+  };
+
   const saveSchedule = async () => {
     setSavingSchedule(true);
     try {
@@ -213,7 +227,12 @@ export default function TeacherDashboard() {
             {tab === 'account' && teacher && (
               <div className="space-y-6">
                 <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-5">
-                  <div className="flex items-center gap-2 mb-2"><Wallet className="text-emerald-600" /><h3 className="font-bold">محفظتي</h3></div>
+                <div className="flex justify-between items-center mb-2">
+                  <div className="flex items-center gap-2"><Wallet className="text-emerald-600" /><h3 className="font-bold">محفظتي</h3></div>
+                  <button type="button" onClick={() => setAiModal(true)} className="text-sm flex items-center gap-1 text-purple-600 hover:underline">
+                    <Sparkles size={16} /> مساعد AI
+                  </button>
+                </div>
                   <p className="text-3xl font-bold text-emerald-700">{wallet.pendingEarnings || 0} <span className="text-lg">ج.م</span></p>
                   <p className="text-sm text-slate-600 mt-2">
                     كل حصة = ساعة واحدة = <strong>{SESSION_RATE} ج.م</strong> (ثابت)
@@ -580,6 +599,24 @@ export default function TeacherDashboard() {
             <input type="date" className="input-field w-full" value={newTask.dueDate}
               onChange={(e) => setNewTask((p) => ({ ...p, dueDate: e.target.value }))} />
             <button onClick={assignTask} className="btn-primary w-full">إسناد</button>
+          </div>
+        </Modal>
+      )}
+
+      {aiModal && (
+        <Modal title="مساعد المعلم — AI V4" onClose={() => setAiModal(false)}>
+          <div className="space-y-3">
+            <input className="input-field w-full" placeholder="موضوع الواجبات (مثلاً: الغنة)"
+              value={aiTopic} onChange={(e) => setAiTopic(e.target.value)} />
+            <button type="button" onClick={generateAiHomework} disabled={aiLoading} className="btn-primary w-full flex items-center justify-center gap-2">
+              <Sparkles size={16} /> {aiLoading ? 'جاري التوليد...' : 'توليد 5 واجبات'}
+            </button>
+            {aiResult?.assignments?.map((a) => (
+              <div key={a.id} className="border rounded-lg p-3 text-sm">
+                <p className="font-bold">{a.title}</p>
+                {a.description && <p className="text-gray-600 mt-1">{a.description}</p>}
+              </div>
+            ))}
           </div>
         </Modal>
       )}

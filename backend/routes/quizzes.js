@@ -51,10 +51,15 @@ router.get('/:id', protect, async (req, res) => {
     }
 
     if (req.user.role === 'student') {
-      quiz.questions = quiz.questions.map(q => {
+      quiz.questions = quiz.questions.map((q) => {
         const question = q.toObject();
-        delete question.options;
         delete question.correctAnswer;
+        if (question.options) {
+          question.options = question.options.map((opt) => ({
+            _id: opt._id,
+            text: opt.text,
+          }));
+        }
         return question;
       });
     }
@@ -271,8 +276,11 @@ router.post('/attempts/:attemptId/submit', protect, async (req, res) => {
           } else {
             answer.isCorrect = false;
           }
-        } else if (question.type === 'short-answer') {
-          answer.isCorrect = answer.answer && answer.answer.toLowerCase().trim() === question.correctAnswer.toLowerCase().trim();
+        } else if (question.type === 'short-answer' || question.type === 'fill-blank') {
+          const expected = (question.correctAnswer || '').toLowerCase().trim();
+          answer.isCorrect = expected && answer.answer?.toLowerCase().trim() === expected;
+        } else if (question.type === 'essay') {
+          answer.isCorrect = null;
         }
       }
     });

@@ -4,6 +4,7 @@ import { Award, Calendar, User, BookOpen, CheckCircle, XCircle, Download, Share2
 import GlobalHeader from '../../components/GlobalHeader';
 import GlobalFooter from '../../components/GlobalFooter';
 import SEOHead from '../../components/SEOHead';
+import { downloadCertificatePdf } from '../../lib/certificatePdf';
 import { useI18n } from '../../i18n';
 
 export default function CertificateView() {
@@ -36,9 +37,12 @@ export default function CertificateView() {
     }
   };
 
-  const handleDownload = () => {
-    // TODO: Implement PDF generation
-    alert('PDF download feature coming soon!');
+  const handleDownload = async () => {
+    try {
+      await downloadCertificatePdf({ certificate, locale });
+    } catch {
+      alert(locale === 'ar' ? 'فشل إنشاء PDF' : 'PDF generation failed');
+    }
   };
 
   const handleShare = async () => {
