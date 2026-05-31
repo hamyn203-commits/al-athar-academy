@@ -1,375 +1,264 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Calendar, BookOpen, Star, Clock, CheckCircle, FileText, Upload } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Calendar, CheckCircle, FileText, Star, Trophy, Award, Upload, Play, BookOpen } from 'lucide-react';
+import DashboardLayout, { StatCard, TabBar } from '../../components/dashboard/DashboardLayout';
+import { useRequireAuth } from '../../hooks/useRequireAuth';
+import { useGamificationApi } from '../../hooks/useGamificationApi';
+import { useToast } from '../../context/ToastProvider';
+import api from '../../lib/api';
 
 export default function StudentDashboard() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('overview');
+  const { user, ready, logout } = useRequireAuth(['student']);
+  const toast = useToast();
+  const { stats: gameStats, badges, leaderboard, loading: gameLoading } = useGamificationApi();
+  const [tab, setTab] = useState('overview');
   const [sessions, setSessions] = useState([]);
   const [homework, setHomework] = useState([]);
   const [reviews, setReviews] = useState([]);
-  const [currentTeacher, setCurrentTeacher] = useState(null);
+  const [courses, setCourses] = useState([]);
+  const [certificates, setCertificates] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    
-    if (!token || user.role !== 'student') {
-      navigate('/');
-      return;
-    }
+    if (!ready) return;
+    Promise.all([
+      api.get('/api/sessions/my-sessions', { auth: true }),
+      api.get('/api/homework/student', { auth: true }),
+      api.get('/api/reviews/student', { auth: true }),
+      api.get('/api/courses/my-courses', { auth: true }).catch(() => []),
+      api.get('/api/lms/my-certificates', { auth: true }).catch(() => []),
+    ]).then(([sess, hw, rev, enrollments, certs]) => {
+      setSessions(sess.sessions || []);
+      setHomework(hw.homework || []);
+      setReviews(Array.isArray(rev) ? rev : rev.reviews || []);
+      setCourses(Array.isArray(enrollments) ? enrollments : []);
+      setCertificates(Array.isArray(certs) ? certs : []);
+    }).catch(() => toast.error('تعذر تحميل البيانات'))
+      .finally(() => setLoading(false));
+  }, [ready, toast]);
 
-    fetchSessions();
-    fetchHomework();
-    fetchReviews();
-  }, [navigate]);
+  if (!ready) return null;
 
-  const fetchSessions = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/sessions/my-sessions', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await response.json();
-      setSessions(data.sessions || []);
-    } catch (error) {
-      console.error('Error fetching sessions:', error);
-    }
-  };
-
-  const fetchHomework = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/homework/student', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await response.json();
-      setHomework(data.homework || []);
-    } catch (error) {
-      console.error('Error fetching homework:', error);
-    }
-  };
-
-  const fetchReviews = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/reviews/student', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await response.json();
-      setReviews(data.reviews || []);
-    } catch (error) {
-      console.error('Error fetching reviews:', error);
-    }
-  };
+  const pending = sessions.filter((s) => s.status === 'pending');
+  const upcoming = sessions.filter((s) => s.status === 'accepted' && new Date(s.scheduledAt) > new Date());
+  const completed = sessions.filter((s) => s.status === 'completed');
 
   const submitHomework = async (homeworkId, file) => {
-    const formData = new FormData();
-    formData.append('submission', file);
-
+    if (!file) return;
+    const fd = new FormData();
+    fd.append('submission', file);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/homework/${homeworkId}/submit`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
-        body: formData
-      });
-
-      if (response.ok) {
-        fetchHomework();
-        alert('تم رفع الواجب بنجاح');
-      }
-    } catch (error) {
-      alert('حدث خطأ أثناء الرفع');
+      await api.post(`/api/homework/${homeworkId}/submit`, fd, { auth: true, json: false });
+      toast.success('تم رفع الواجب بنجاح');
+      const hw = await api.get('/api/homework/student', { auth: true });
+      setHomework(hw.homework || []);
+    } catch {
+      toast.error('فشل رفع الواجب');
     }
   };
 
   const rateSession = async (sessionId, teacherId) => {
-    const rating = parseInt(prompt('قيّم الحصة (1-5):') || '5');
-    const comment = prompt('اكتب تعليقك:') || '';
-
+    const rating = parseInt(window.prompt('قيّم الحصة (1-5):', '5') || '0', 10);
+    if (!rating || rating < 1 || rating > 5) return;
+    const comment = window.prompt('اكتب تعليقك:') || '';
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/reviews', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          teacherId,
-          sessionId,
-          rating,
-          comment
-        })
-      });
-
-      if (response.ok) {
-        fetchReviews();
-        alert('تم إرسال التقييم بنجاح');
-      }
-    } catch (error) {
-      alert('حدث خطأ');
+      await api.post('/api/reviews', { teacherId, sessionId, rating, comment }, { auth: true });
+      toast.success('تم إرسال التقييم');
+      const rev = await api.get('/api/reviews/student', { auth: true });
+      setReviews(Array.isArray(rev) ? rev : []);
+    } catch {
+      toast.error('فشل إرسال التقييم');
     }
   };
 
-  const upcomingSessions = sessions.filter(s => 
-    s.status === 'accepted' && new Date(s.scheduledAt) > new Date()
-  );
-
-  const completedSessions = sessions.filter(s => s.status === 'completed');
+  const tabs = [
+    { id: 'overview', label: 'نظرة عامة' },
+    { id: 'sessions', label: 'حصصي' },
+    { id: 'courses', label: 'دوراتي' },
+    { id: 'homework', label: 'الواجبات' },
+    { id: 'gamification', label: 'الإنجازات' },
+    { id: 'certificates', label: 'الشهادات' },
+    { id: 'reviews', label: 'تقييماتي' },
+  ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <h1 className="text-3xl font-bold">لوحة تحكم الطالب</h1>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white rounded-xl shadow p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-xs">الحصص القادمة</p>
-                <p className="text-2xl font-bold text-emerald-600">{upcomingSessions.length}</p>
-              </div>
-              <Calendar className="text-emerald-600" size={32} />
-            </div>
+    <DashboardLayout title="لوحة تحكم الطالب" user={user} onLogout={logout}>
+      {loading ? (
+        <div className="flex justify-center py-20"><div className="spinner spinner-lg" /></div>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <StatCard label="حصص قادمة" value={upcoming.length} icon={Calendar} color="emerald" />
+            <StatCard label="قيد الانتظار" value={pending.length} icon={Calendar} color="yellow" />
+            <StatCard label="حصص مكتملة" value={completed.length} icon={CheckCircle} color="blue" />
+            <StatCard label="الواجبات" value={homework.length} icon={FileText} color="purple" />
+            <StatCard label="النقاط" value={gameStats?.points?.total || 0} icon={Trophy} color="orange" />
           </div>
 
-          <div className="bg-white rounded-xl shadow p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-xs">الحصص المكتملة</p>
-                <p className="text-2xl font-bold text-blue-600">{completedSessions.length}</p>
-              </div>
-              <CheckCircle className="text-blue-600" size={32} />
-            </div>
-          </div>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <TabBar tabs={tabs} active={tab} onChange={setTab} />
 
-          <div className="bg-white rounded-xl shadow p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-xs">الواجبات</p>
-                <p className="text-2xl font-bold text-purple-600">{homework.length}</p>
-              </div>
-              <FileText className="text-purple-600" size={32} />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-xs">التقييمات</p>
-                <p className="text-2xl font-bold text-orange-600">{reviews.length}</p>
-              </div>
-              <Star className="text-orange-600" size={32} />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow">
-          <div className="border-b">
-            <div className="flex overflow-x-auto">
-              <button
-                onClick={() => setActiveTab('overview')}
-                className={`px-6 py-4 font-semibold whitespace-nowrap ${
-                  activeTab === 'overview'
-                    ? 'border-b-2 border-emerald-600 text-emerald-600'
-                    : 'text-gray-600'
-                }`}
-              >
-                نظرة عامة
-              </button>
-              <button
-                onClick={() => setActiveTab('sessions')}
-                className={`px-6 py-4 font-semibold whitespace-nowrap ${
-                  activeTab === 'sessions'
-                    ? 'border-b-2 border-emerald-600 text-emerald-600'
-                    : 'text-gray-600'
-                }`}
-              >
-                حصصي
-              </button>
-              <button
-                onClick={() => setActiveTab('homework')}
-                className={`px-6 py-4 font-semibold whitespace-nowrap ${
-                  activeTab === 'homework'
-                    ? 'border-b-2 border-emerald-600 text-emerald-600'
-                    : 'text-gray-600'
-                }`}
-              >
-                الواجبات
-              </button>
-              <button
-                onClick={() => setActiveTab('reviews')}
-                className={`px-6 py-4 font-semibold whitespace-nowrap ${
-                  activeTab === 'reviews'
-                    ? 'border-b-2 border-emerald-600 text-emerald-600'
-                    : 'text-gray-600'
-                }`}
-              >
-                تقييماتي
-              </button>
-            </div>
-          </div>
-
-          <div className="p-6">
-            {activeTab === 'overview' && (
-              <div className="space-y-6">
-                <h2 className="text-xl font-bold">مرحباً بك</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-emerald-50 p-6 rounded-lg">
-                    <h3 className="font-bold mb-2">الحصص القادمة</h3>
-                    <p className="text-3xl font-bold text-emerald-600">{upcomingSessions.length}</p>
-                    <p className="text-sm text-gray-600">حصة مجدولة</p>
+            {tab === 'overview' && (
+              <div className="space-y-4">
+                {upcoming[0] && (
+                  <div className="bg-emerald-50 rounded-lg p-4 border border-emerald-100">
+                    <h3 className="font-bold mb-1">أقرب حصة</h3>
+                    <p>{upcoming[0].teacher?.user?.name || 'المعلم'}</p>
+                    <p className="text-sm text-gray-600">{new Date(upcoming[0].scheduledAt).toLocaleString('ar-EG')}</p>
                   </div>
-                  <div className="bg-blue-50 p-6 rounded-lg">
-                    <h3 className="font-bold mb-2">التقدم</h3>
-                    <p className="text-3xl font-bold text-blue-600">{completedSessions.length}</p>
-                    <p className="text-sm text-gray-600">حصة مكتملة</p>
-                  </div>
-                </div>
+                )}
+                {courses.length > 0 && (
+                  <p className="text-gray-600">مسجل في {courses.length} دورة</p>
+                )}
+                {!upcoming.length && !courses.length && (
+                  <p className="text-center text-gray-500 py-8">ابدأ بحجز حصة تجريبية من صفحة المعلمين</p>
+                )}
+              </div>
+            )}
 
-                {upcomingSessions.length > 0 && (
+            {tab === 'sessions' && (
+              <div className="space-y-3">
+                {sessions.length === 0 ? <p className="text-center text-gray-500 py-8">لا توجد حصص</p> : sessions.map((s) => (
+                  <div key={s._id} className="border rounded-lg p-4 flex justify-between items-start gap-4">
+                    <div>
+                      <h3 className="font-bold">{s.teacher?.user?.name || s.student?.name}</h3>
+                      <p className="text-sm text-gray-600">{new Date(s.scheduledAt).toLocaleString('ar-EG')}</p>
+                      <span className="text-xs bg-gray-100 px-2 py-0.5 rounded">{s.status}</span>
+                      {s.status === 'pending' && (
+                        <p className="text-xs text-amber-600 mt-1">بانتظار موافقة المعلم</p>
+                      )}
+                      {s.meetingLink && s.status === 'accepted' && (
+                        <a href={s.meetingLink} target="_blank" rel="noreferrer"
+                          className="block mt-2 text-sm text-emerald-600 font-semibold hover:underline">
+                          🎥 انضم للحصة
+                        </a>
+                      )}
+                      {s.status === 'completed' && (
+                        <button onClick={() => rateSession(s._id, s.teacher?._id)} className="block mt-2 text-sm text-orange-600 hover:underline">قيّم الحصة</button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {tab === 'courses' && (
+              <div className="space-y-3">
+                {courses.length === 0 ? (
+                  <div className="text-center py-8">
+                    <BookOpen className="mx-auto text-gray-300 mb-3" size={40} />
+                    <p className="text-gray-500 mb-4">لم تسجل في دورات بعد</p>
+                    <Link to="/courses" className="btn-primary inline-block">تصفح الدورات</Link>
+                  </div>
+                ) : courses.map((e) => (
+                  <div key={e._id} className="border rounded-lg p-4 flex justify-between items-center gap-4">
+                    <div className="flex-1">
+                      <h3 className="font-bold">{e.course?.title?.ar || e.course?.title?.en || 'دورة'}</h3>
+                      <div className="flex items-center gap-2 mt-1">
+                        <div className="flex-1 bg-gray-100 rounded-full h-1.5 max-w-[120px]">
+                          <div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: `${e.progress?.percentage || 0}%` }} />
+                        </div>
+                        <span className="text-sm text-emerald-600">{e.progress?.percentage || 0}%</span>
+                      </div>
+                      {e.status === 'completed' && <span className="text-xs text-emerald-600">✓ مكتملة</span>}
+                    </div>
+                    <button onClick={() => navigate(`/courses/${e.course?.slug}/learn`)}
+                      className="flex items-center gap-1 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700">
+                      <Play size={14} /> {e.progress?.percentage > 0 ? 'متابعة' : 'ابدأ'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {tab === 'homework' && (
+              <div className="space-y-3">
+                {homework.length === 0 ? <p className="text-center text-gray-500 py-8">لا توجد واجبات</p> : homework.map((hw) => (
+                  <div key={hw._id} className="border rounded-lg p-4 flex justify-between items-center gap-4">
+                    <div>
+                      <h3 className="font-bold">{hw.title}</h3>
+                      <p className="text-sm text-gray-600">{hw.description}</p>
+                    </div>
+                    {hw.status !== 'submitted' && (
+                      <>
+                        <input type="file" accept="audio/*" className="hidden" id={`hw-${hw._id}`}
+                          onChange={(e) => submitHomework(hw._id, e.target.files?.[0])} />
+                        <label htmlFor={`hw-${hw._id}`} className="btn-primary cursor-pointer flex items-center gap-1 text-sm">
+                          <Upload size={14} /> رفع
+                        </label>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {tab === 'gamification' && (
+              gameLoading ? <div className="spinner mx-auto" /> : (
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl p-6">
+                    <Trophy className="text-emerald-600 mb-2" size={32} />
+                    <p className="text-3xl font-bold text-emerald-700">{gameStats?.points?.total || 0} نقطة</p>
+                    <p className="text-sm text-gray-600">المستوى {gameStats?.points?.level || 1} — {gameStats?.points?.pointsToNextLevel || 0} نقطة للمستوى التالي</p>
+                    <p className="text-sm mt-2">🔥 سلسلة: {gameStats?.streaks?.current || 0} يوم</p>
+                  </div>
                   <div>
-                    <h3 className="font-bold mb-4">أقرب حصة</h3>
-                    <div className="border rounded-lg p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h4 className="font-bold">{upcomingSessions[0].teacher.user.name}</h4>
-                          <p className="text-gray-600">
-                            {new Date(upcomingSessions[0].scheduledAt).toLocaleString('ar-EG')}
-                          </p>
-                        </div>
-                        <button className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">
-                          دخول الحصة
-                        </button>
-                      </div>
+                    <h3 className="font-bold mb-3 flex items-center gap-2"><Award size={18} /> الشارات ({badges.stats?.totalUnlocked || 0})</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {(badges.unlocked || []).slice(0, 6).map((b) => (
+                        <span key={b._id} className="bg-yellow-100 text-yellow-800 text-xs px-3 py-1 rounded-full">{b.badge?.name?.ar || b.badge?.code}</span>
+                      ))}
+                      {!badges.unlocked?.length && <p className="text-gray-500 text-sm">لا توجد شارات بعد</p>}
                     </div>
                   </div>
-                )}
+                  {leaderboard.length > 0 && (
+                    <div className="md:col-span-2">
+                      <h3 className="font-bold mb-3">لوحة المتصدرين</h3>
+                      {leaderboard.slice(0, 5).map((entry, i) => (
+                        <div key={i} className="flex justify-between py-2 border-b text-sm">
+                          <span>#{i + 1} {entry.userName || entry.name}</span>
+                          <span className="font-bold text-emerald-600">{entry.points || entry.score} نقطة</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            )}
+
+            {tab === 'certificates' && (
+              <div className="space-y-3">
+                {certificates.length === 0 ? <p className="text-center text-gray-500 py-8">لا توجد شهادات بعد — أكمل دورة للحصول على شهادة</p> : certificates.map((c) => (
+                  <div key={c._id} className="border rounded-lg p-4 flex justify-between items-center">
+                    <div>
+                      <h3 className="font-bold">{c.course?.title?.ar || 'شهادة'}</h3>
+                      <p className="text-sm text-gray-500">{new Date(c.issuedAt).toLocaleDateString('ar-EG')}</p>
+                    </div>
+                    <Link to={`/verify-certificate/${c.certificateId}`} className="text-emerald-600 text-sm font-semibold hover:underline">عرض الشهادة</Link>
+                  </div>
+                ))}
               </div>
             )}
 
-            {activeTab === 'sessions' && (
-              <div className="space-y-4">
-                <h2 className="text-xl font-bold mb-4">جميع الحصص</h2>
-                {sessions.length === 0 ? (
-                  <p className="text-center text-gray-500 py-8">لا توجد حصص</p>
-                ) : (
-                  sessions.map((session) => (
-                    <div key={session._id} className="border rounded-lg p-4">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h3 className="font-bold text-lg">{session.teacher.user.name}</h3>
-                          <p className="text-gray-600">
-                            الموعد: {new Date(session.scheduledAt).toLocaleString('ar-EG')}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            الحالة: {session.status === 'accepted' ? 'مقبولة' : session.status === 'completed' ? 'مكتملة' : session.status}
-                          </p>
-                          {session.status === 'completed' && !session.studentFeedback && (
-                            <button
-                              onClick={() => rateSession(session._id, session.teacher._id)}
-                              className="mt-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
-                            >
-                              قيّم الحصة
-                            </button>
-                          )}
-                        </div>
-                        {session.status === 'accepted' && (
-                          <button className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">
-                            دخول
-                          </button>
-                        )}
-                      </div>
+            {tab === 'reviews' && (
+              <div className="space-y-3">
+                {reviews.length === 0 ? <p className="text-center text-gray-500 py-8">لا توجد تقييمات</p> : reviews.map((r) => (
+                  <div key={r._id} className="border rounded-lg p-4">
+                    <h3 className="font-bold">{r.teacher?.personalInfo?.fullName || r.teacher?.user?.name || 'معلم'}</h3>
+                    <div className="flex gap-0.5 my-1">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star key={i} size={14} className={i < r.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'} />
+                      ))}
                     </div>
-                  ))
-                )}
-              </div>
-            )}
-
-            {activeTab === 'homework' && (
-              <div className="space-y-4">
-                <h2 className="text-xl font-bold mb-4">الواجبات</h2>
-                {homework.length === 0 ? (
-                  <p className="text-center text-gray-500 py-8">لا توجد واجبات</p>
-                ) : (
-                  homework.map((hw) => (
-                    <div key={hw._id} className="border rounded-lg p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h3 className="font-bold text-lg">{hw.title}</h3>
-                          <p className="text-gray-600">{hw.description}</p>
-                          <p className="text-sm text-gray-500">
-                            الموعد النهائي: {new Date(hw.dueDate).toLocaleDateString('ar-EG')}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            الحالة: {hw.status === 'submitted' ? 'تم التسليم' : 'قيد الانتظار'}
-                          </p>
-                        </div>
-                        {hw.status !== 'submitted' && (
-                          <div>
-                            <input
-                              type="file"
-                              accept="audio/*"
-                              onChange={(e) => submitHomework(hw._id, e.target.files[0])}
-                              className="hidden"
-                              id={`upload-${hw._id}`}
-                            />
-                            <label
-                              htmlFor={`upload-${hw._id}`}
-                              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer inline-flex items-center gap-2"
-                            >
-                              <Upload size={16} />
-                              رفع الواجب
-                            </label>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
-
-            {activeTab === 'reviews' && (
-              <div className="space-y-4">
-                <h2 className="text-xl font-bold mb-4">تقييماتي</h2>
-                {reviews.length === 0 ? (
-                  <p className="text-center text-gray-500 py-8">لم تقم بأي تقييم بعد</p>
-                ) : (
-                  reviews.map((review) => (
-                    <div key={review._id} className="border rounded-lg p-4">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h3 className="font-bold text-lg">{review.teacher.user.name}</h3>
-                          <div className="flex items-center gap-1 mb-2">
-                            {Array.from({ length: 5 }).map((_, i) => (
-                              <Star
-                                key={i}
-                                size={16}
-                                className={i < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}
-                              />
-                            ))}
-                          </div>
-                          <p className="text-gray-700">{review.comment}</p>
-                          <p className="text-sm text-gray-500 mt-2">
-                            {new Date(review.createdAt).toLocaleDateString('ar-EG')}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
+                    <p className="text-gray-700 text-sm">{r.comment}</p>
+                  </div>
+                ))}
               </div>
             )}
           </div>
-        </div>
-      </div>
-    </div>
+        </>
+      )}
+    </DashboardLayout>
   );
 }

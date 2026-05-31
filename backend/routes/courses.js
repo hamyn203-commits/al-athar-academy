@@ -88,6 +88,26 @@ router.get('/', async (req, res) => {
   }
 });
 
+// @route   GET /api/courses/my-courses
+// @desc    Get user's enrolled courses
+// @access  Private
+router.get('/my-courses', protect, async (req, res) => {
+  try {
+    const enrollments = await Enrollment.find({ student: req.user.id })
+      .populate({
+        path: 'course',
+        select: 'title slug image category level stats',
+        populate: { path: 'instructor', select: 'name image' }
+      })
+      .sort({ lastAccessedAt: -1 });
+
+    res.json(enrollments);
+  } catch (error) {
+    console.error('Get my courses error:', error);
+    res.status(500).json({ error: 'Failed to fetch courses' });
+  }
+});
+
 // @route   GET /api/courses/:slug
 // @desc    Get single course by slug
 // @access  Public
@@ -273,25 +293,6 @@ router.post('/:courseId/lessons/:lessonId/complete', protect, async (req, res) =
   } catch (error) {
     console.error('Complete lesson error:', error);
     res.status(400).json({ error: error.message });
-  }
-});
-
-// @route   GET /api/courses/my-courses
-// @desc    Get user's enrolled courses
-// @access  Private
-router.get('/my-courses', protect, async (req, res) => {
-  try {
-    const enrollments = await Enrollment.find({ student: req.user.id })
-      .populate({
-        path: 'course',
-        populate: { path: 'instructor', select: 'name image' }
-      })
-      .sort({ lastAccessedAt: -1 });
-
-    res.json(enrollments);
-  } catch (error) {
-    console.error('Get my courses error:', error);
-    res.status(500).json({ error: 'Failed to fetch courses' });
   }
 });
 

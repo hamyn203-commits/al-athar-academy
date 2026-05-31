@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import GlobalHeader from '../../components/GlobalHeader';
 import GlobalFooter from '../../components/GlobalFooter';
-import SEOHead from '../../components/SEOHead';
+import api from '../../lib/api';
 
 // بيانات وهمية للدورات
 const mockCourses = [
@@ -277,7 +277,7 @@ function CourseCard({ course, locale }) {
         </div>
 
         <Link
-          to={`/courses/${course.id}`}
+          to={`/courses/${course.slug || course.id}`}
           className="btn-primary w-full flex items-center justify-center gap-2"
         >
           {t.courses.learnMore}
@@ -289,13 +289,36 @@ function CourseCard({ course, locale }) {
 
 export default function Courses() {
   const { t, locale } = useI18n();
+  const [courses, setCourses] = useState(mockCourses);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLevel, setSelectedLevel] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState('popular');
   const [showFilters, setShowFilters] = useState(false);
 
-  const filteredCourses = mockCourses.filter(course => {
+  useEffect(() => {
+    api.get('/api/courses')
+      .then((data) => {
+        if (data.courses?.length) {
+          setCourses(data.courses.map((c) => ({
+            id: c.slug,
+            slug: c.slug,
+            title: c.title,
+            description: c.description,
+            level: c.level || 'beginner',
+            category: c.category || 'quran',
+            price: c.price || 0,
+            duration: c.duration || `${c.durationInHours || 0}h`,
+            students: c.stats?.enrolled || 0,
+            rating: c.stats?.rating?.average || 5,
+            reviews: c.stats?.rating?.count || 0,
+          })));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const filteredCourses = courses.filter(course => {
     const matchesSearch = course.title[locale]?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          course.description[locale]?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesLevel = selectedLevel === 'all' || course.level === selectedLevel;

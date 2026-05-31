@@ -34,6 +34,7 @@ const SessionSchema = new mongoose.Schema({
     default: 'Africa/Cairo'
   },
   meetingLink: String,
+  meetingProvider: { type: String, enum: ['jitsi', 'google_meet', 'zoom'], default: 'jitsi' },
   notes: String,
   studentFeedback: {
     rating: { type: Number, min: 1, max: 5 },

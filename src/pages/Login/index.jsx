@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { User, Lock, Mail, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import Logo from '../../components/Logo';
 import { useI18n } from '../../i18n';
+import api from '../../lib/api';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -30,30 +31,19 @@ export default function Login() {
     setError('');
 
     try {
-      const response = await fetch('https://al-athar-api.azurewebsites.net/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData)
-      });
+      const data = await api.post('/api/auth/login', formData);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'فشل تسجيل الدخول');
-      }
-
-      // حفظ الـ token وبيانات المستخدم
       localStorage.setItem('token', data.accessToken);
       localStorage.setItem('refreshToken', data.refreshToken);
+      localStorage.setItem('accessToken', data.accessToken);
       localStorage.setItem('user', JSON.stringify(data.user));
 
-      // التوجيه حسب نوع المستخدم
       if (data.user.role === 'admin') {
         navigate('/admin');
       } else if (data.user.role === 'teacher') {
         navigate('/teacher/dashboard');
+      } else if (data.user.role === 'guardian') {
+        navigate('/guardian/dashboard');
       } else {
         navigate('/student/dashboard');
       }

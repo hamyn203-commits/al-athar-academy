@@ -121,7 +121,16 @@ app.get('/api/health', (req, res) => {
   res.status(200).json({ 
     status: 'ok', 
     message: 'Al-Athar Backend API is running!',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    version: '1.0.0',
+    features: {
+      ai: !!(process.env.OPENAI_API_KEY || process.env.GEMINI_API_KEY),
+      email: !!process.env.RESEND_API_KEY,
+      telegram: !!process.env.TELEGRAM_BOT_TOKEN,
+      whatsapp: !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN),
+      meetings: process.env.DEFAULT_MEETING_PROVIDER || 'jitsi',
+      database: mongoose.connection.readyState === 1,
+    },
   });
 });
 
@@ -144,6 +153,11 @@ app.use('/api/guardians', require('./routes/guardians'));
 app.use('/api/gamification', require('./routes/gamification'));
 app.use('/api/audio', require('./routes/audio'));
 app.use('/api/live', require('./routes/live'));
+app.use('/api/blog', require('./routes/blog'));
+app.use('/api/ai', require('./routes/ai'));
+app.use('/api/admin', require('./routes/admin'));
+app.use('/api/lms', require('./routes/lms'));
+app.use('/api/meetings', require('./routes/meetings'));
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });

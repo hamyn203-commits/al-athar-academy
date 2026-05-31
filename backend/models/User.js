@@ -31,7 +31,7 @@ const UserSchema = new mongoose.Schema({
   },
   role: { 
     type: String, 
-    enum: ['student', 'teacher', 'admin'],
+    enum: ['student', 'teacher', 'admin', 'guardian'],
     default: 'student'
   },
   avatar: {
@@ -56,12 +56,17 @@ const UserSchema = new mongoose.Schema({
   passwordResetToken: String,
   passwordResetExpires: Date,
   lastLogin: Date,
+  pushToken: String,
+  pushPlatform: String,
+  telegramId: String,
   preferences: {
     language: { type: String, default: 'ar', enum: ['ar', 'en', 'id', 'tr'] },
     theme: { type: String, default: 'light', enum: ['light', 'dark'] },
     notifications: {
       email: { type: Boolean, default: true },
-      push: { type: Boolean, default: true }
+      push: { type: Boolean, default: true },
+      telegram: { type: Boolean, default: true },
+      sms: { type: Boolean, default: false }
     }
   }
 }, { timestamps: true });

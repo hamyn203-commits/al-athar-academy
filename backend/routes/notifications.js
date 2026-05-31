@@ -171,14 +171,15 @@ router.put('/preferences', protect, async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    user.notificationPreferences = {
-      ...user.notificationPreferences,
-      ...preferences
+    user.preferences = user.preferences || {};
+    user.preferences.notifications = {
+      ...user.preferences.notifications,
+      ...preferences,
     };
 
     await user.save();
 
-    res.json(user.notificationPreferences);
+    res.json({ preferences: user.preferences.notifications });
   } catch (error) {
     console.error('Update preferences error:', error);
     res.status(400).json({ error: error.message });
@@ -196,7 +197,14 @@ router.get('/preferences', protect, async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    res.json(user.notificationPreferences || {});
+    res.json({
+      preferences: user.preferences?.notifications || {
+        email: true,
+        push: true,
+        telegram: true,
+        sms: false,
+      },
+    });
   } catch (error) {
     console.error('Get preferences error:', error);
     res.status(500).json({ error: 'Failed to fetch preferences' });

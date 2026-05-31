@@ -4,6 +4,7 @@ import { AppProvider, useAppContext } from './context/AppProvider';
 import { AuthProvider } from './hooks/useAuth.jsx';
 import { ToastProvider } from './context/ToastProvider';
 import { I18nProvider } from './i18n';
+import LocaleLayout from './components/LocaleLayout';
 import Logo from './components/Logo';
 import ErrorBoundary from './components/shared/ErrorBoundary';
 
@@ -19,14 +20,26 @@ const TeacherProfile = lazy(() => import('./pages/TeacherProfile'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const TeacherDashboard = lazy(() => import('./pages/TeacherDashboard'));
 const StudentDashboard = lazy(() => import('./pages/StudentDashboard'));
+const GuardianDashboard = lazy(() => import('./pages/GuardianDashboard'));
 const BookSession = lazy(() => import('./pages/BookSession'));
 const GlobalPlatform = lazy(() => import('./pages/GlobalPlatform/GlobalPlatform'));
 const Courses = lazy(() => import('./pages/Courses'));
+const CourseDetail = lazy(() => import('./pages/CourseDetail'));
+const CourseLearn = lazy(() => import('./pages/CourseLearn'));
 const Blog = lazy(() => import('./pages/Blog'));
+const BlogDetail = lazy(() => import('./pages/BlogDetail'));
 const Contact = lazy(() => import('./pages/Contact'));
+const About = lazy(() => import('./pages/About'));
+const FAQPage = lazy(() => import('./pages/FAQ'));
+const Privacy = lazy(() => import('./pages/Privacy'));
+const Terms = lazy(() => import('./pages/Terms'));
 const CertificateView = lazy(() => import('./pages/Certificate'));
 const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const AIHub = lazy(() => import('./pages/AIHub'));
+const NotificationsPage = lazy(() => import('./pages/Notifications'));
+const NotificationSettings = lazy(() => import('./pages/Settings/Notifications'));
 
 function PageLoader() {
   return (
@@ -35,6 +48,45 @@ function PageLoader() {
       <div className="spinner spinner-lg" />
       <span style={{ color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.9rem' }}>جاري التحميل...</span>
     </div>
+  );
+}
+
+function pageRoutes() {
+  return (
+    <>
+      <Route index element={<LandingPage />} />
+      <Route path="login" element={<Login />} />
+      <Route path="forgot-password" element={<ForgotPassword />} />
+      <Route path="register/student" element={<Register />} />
+      <Route path="about" element={<About />} />
+      <Route path="faq" element={<FAQPage />} />
+      <Route path="privacy" element={<Privacy />} />
+      <Route path="terms" element={<Terms />} />
+      <Route path="courses" element={<Courses />} />
+      <Route path="courses/:slug" element={<CourseDetail />} />
+      <Route path="courses/:slug/learn" element={<CourseLearn />} />
+      <Route path="courses/:slug/learn/:lessonId" element={<CourseLearn />} />
+      <Route path="blog" element={<Blog />} />
+      <Route path="blog/:slug" element={<BlogDetail />} />
+      <Route path="contact" element={<Contact />} />
+      <Route path="verify-certificate/:certificateId" element={<CertificateView />} />
+      <Route path="student" element={<StudentPortal />} />
+      <Route path="student/dashboard" element={<StudentDashboard />} />
+      <Route path="guardian/dashboard" element={<GuardianDashboard />} />
+      <Route path="teacher" element={<TeacherPortal />} />
+      <Route path="teacher/register" element={<TeacherRegistration />} />
+      <Route path="teacher/dashboard" element={<TeacherDashboard />} />
+      <Route path="teachers" element={<Teachers />} />
+      <Route path="teachers/:id" element={<TeacherProfile />} />
+      <Route path="book-trial/:teacherId" element={<BookSession />} />
+      <Route path="global-platform" element={<GlobalPlatform />} />
+      <Route path="admin" element={<AdminDashboard />} />
+      <Route path="live" element={<LiveSessions />} />
+      <Route path="live/:roomId" element={<LiveRoom />} />
+      <Route path="ai" element={<AIHub />} />
+      <Route path="notifications" element={<NotificationsPage />} />
+      <Route path="settings/notifications" element={<NotificationSettings />} />
+    </>
   );
 }
 
@@ -47,25 +99,8 @@ function AppContent() {
 
       <Suspense fallback={<PageLoader />}>
         <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register/student" element={<Register />} />
-          <Route path="/courses" element={<Courses />} />
-          <Route path="/blog" element={<Blog />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/verify-certificate/:certificateId" element={<CertificateView />} />
-          <Route path="/student" element={<StudentPortal />} />
-          <Route path="/student/dashboard" element={<StudentDashboard />} />
-          <Route path="/teacher" element={<TeacherPortal />} />
-          <Route path="/teacher/register" element={<TeacherRegistration />} />
-          <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
-          <Route path="/teachers" element={<Teachers />} />
-          <Route path="/teachers/:id" element={<TeacherProfile />} />
-          <Route path="/book-trial/:teacherId" element={<BookSession />} />
-          <Route path="/global-platform" element={<GlobalPlatform />} />
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/live" element={<LiveSessions />} />
-          <Route path="/live/:roomId" element={<LiveRoom />} />
+          <Route path="/" element={<LocaleLayout />}>{pageRoutes()}</Route>
+          <Route path="/:locale" element={<LocaleLayout />}>{pageRoutes()}</Route>
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Suspense>
@@ -74,7 +109,7 @@ function AppContent() {
         <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
           <Logo size={40} showText />
           <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-            {t.footer.rights} © {new Date().getFullYear()} | {t.footer.slogan}
+            {t.footer?.rights || 'جميع الحقوق محفوظة'} © {new Date().getFullYear()} | {t.footer?.slogan || 'أثرٌ يساوي حياة'}
           </p>
         </div>
       </footer>

@@ -1,0 +1,162 @@
+// Al-Athar Academy V2 — PostgreSQL Schema (Prisma)
+// Migration target from MongoDB Express backend
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  student
+  teacher
+  admin
+  guardian
+}
+
+enum CourseStatus {
+  draft
+  published
+  archived
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  passwordHash  String
+  name          String
+  phone         String?
+  role          Role     @default(student)
+  avatar        String?
+  emailVerified Boolean  @default(false)
+  locale        String   @default("ar")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  teacherProfile  Teacher?
+  guardianProfile Guardian?
+  enrollments     Enrollment[]
+  certificates    Certificate[]
+  notifications   Notification[]
+  achievements    Achievement[]
+}
+
+model Teacher {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id])
+  status    String   @default("pending")
+  country   String?
+  rating    Float    @default(0)
+  hourlyRate Float?
+  bio       String?
+  createdAt DateTime @default(now())
+}
+
+model Guardian {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+}
+
+model Course {
+  id          String       @id @default(cuid())
+  slug        String       @unique
+  title       Json
+  description Json
+  category    String
+  level       String
+  price       Float        @default(0)
+  currency    String       @default("USD")
+  status      CourseStatus @default(draft)
+  instructorId String?
+  createdAt   DateTime     @default(now())
+
+  lessons     Lesson[]
+  enrollments Enrollment[]
+}
+
+model Lesson {
+  id       String @id @default(cuid())
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id])
+  order    Int
+  title    Json
+  type     String
+  duration Int?
+}
+
+model Enrollment {
+  id        String   @id @default(cuid())
+  studentId String
+  student   User     @relation(fields: [studentId], references: [id])
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id])
+  progress  Float    @default(0)
+  status    String   @default("active")
+  enrolledAt DateTime @default(now())
+}
+
+model Certificate {
+  id            String   @id @default(cuid())
+  certificateId String   @unique
+  studentId     String
+  student       User     @relation(fields: [studentId], references: [id])
+  courseId      String?
+  qrCode        String?
+  issuedAt      DateTime @default(now())
+}
+
+model BlogPost {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  title     Json
+  content   Json
+  excerpt   Json
+  locale    String   @default("ar")
+  status    String   @default("published")
+  createdAt DateTime @default(now())
+}
+
+model Session {
+  id          String   @id @default(cuid())
+  studentId   String
+  teacherId   String
+  type        String   @default("trial")
+  status      String   @default("pending")
+  scheduledAt DateTime
+  timezone    String?
+  meetingLink String?
+}
+
+model Notification {
+  id      String   @id @default(cuid())
+  userId  String
+  user    User     @relation(fields: [userId], references: [id])
+  title   String
+  message String
+  type    String
+  isRead  Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Achievement {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+  type   String
+  title  String
+  points Int    @default(0)
+}
+
+model RecitationReport {
+  id           String   @id @default(cuid())
+  studentId    String
+  audioUrl     String
+  overallScore Float
+  report       Json
+  createdAt    DateTime @default(now())
+}

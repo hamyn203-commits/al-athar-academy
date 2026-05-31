@@ -1,16 +1,98 @@
-# React + Vite
+# أكاديمية الأثر الطيب — Al-Athar Academy
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+منصة تعليم إسلامي عالمية: تحفيظ القرآن، التجويد، LMS، AI، وجلسات مباشرة.
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+| الطبقة | التقنية |
+|--------|---------|
+| Frontend | React 19 + Vite + Tailwind |
+| Backend | Express 5 + MongoDB |
+| V2 (قيد الهجرة) | Next.js + NestJS + Prisma |
 
-## React Compiler
+## التشغيل المحلي
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+# 1. Backend
+cd backend
+cp .env.example .env    # عدّل MONGODB_URI
+npm install
+npm start               # http://localhost:5000
 
-## Expanding the ESLint configuration
+# 2. Frontend (نافذة ثانية)
+npm install
+npm run dev             # http://localhost:5173
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## متغيرات Frontend
+
+```bash
+cp .env.example .env
+# VITE_API_BASE_URL=http://localhost:5000
+```
+
+## المسارات الرئيسية
+
+| المسار | الوصف |
+|--------|--------|
+| `/` | الصفحة الرئيسية |
+| `/courses` | الدورات + LMS |
+| `/ai` | مركز الذكاء الاصطناعي |
+| `/teachers` | المعلمون |
+| `/student/dashboard` | لوحة الطالب |
+| `/teacher/dashboard` | لوحة المعلم |
+| `/admin` | لوحة الإدارة |
+
+## LMS سريع
+
+1. Admin → `/admin` → «إنشاء دورة LMS تجريبية»
+2. طالب → `/courses/quran-memorization-beginner` → تسجيل → «ابدأ التعلم»
+
+## AI
+
+- بدون مفاتيح: وضع محلي (fallback)
+- مع `OPENAI_API_KEY` أو `GEMINI_API_KEY` في `backend/.env`: AI سحابي
+
+## الإشعارات
+
+- داخل التطبيق: جرس في Header
+- Email: `RESEND_API_KEY`
+- Telegram: `TELEGRAM_BOT_TOKEN`
+- WhatsApp: `TWILIO_*`
+
+## الاجتماعات
+
+عند قبول الحصة يُنشأ رابط Jitsi تلقائياً. اضبط `DEFAULT_MEETING_PROVIDER` أو `ZOOM_MEETING_BASE_URL`.
+
+## البناء والنشر
+
+```bash
+npm run build           # Frontend → dist/
+```
+
+- Frontend: Vercel / Azure Static Web Apps
+- Backend: Azure App Service
+- راجع [DEPLOYMENT.md](./DEPLOYMENT.md)
+
+## V2 Platform
+
+```bash
+cd platform && npm install
+npm run dev:web   # :3000
+npm run dev:api   # :4000
+```
+
+راجع [platform/README.md](./platform/README.md)
+
+## الهيكل
+
+```
+├── src/           React frontend
+├── backend/       Express API
+├── platform/      Next.js + NestJS scaffold
+└── public/        PWA + assets
+```
+
+---
+
+**أثرٌ يساوي حياة** — [al-athar-academy.vercel.app](https://al-athar-academy.vercel.app)

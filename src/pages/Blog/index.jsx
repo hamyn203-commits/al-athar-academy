@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useI18n } from '../../i18n';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -14,6 +14,7 @@ import {
 import GlobalHeader from '../../components/GlobalHeader';
 import GlobalFooter from '../../components/GlobalFooter';
 import SEOHead from '../../components/SEOHead';
+import api from '../../lib/api';
 
 // بيانات وهمية للمقالات
 const mockArticles = [
@@ -262,7 +263,7 @@ function ArticleCard({ article, locale }) {
         </div>
 
         <Link
-          to={`/blog/${article.id}`}
+          to={`/blog/${article.slug || article.id}`}
           className="flex items-center gap-2 text-emerald-600 font-semibold hover:text-emerald-700 transition-colors"
         >
           {locale === 'ar' ? 'اقرأ المزيد' : 'Read More'}
@@ -275,10 +276,31 @@ function ArticleCard({ article, locale }) {
 
 export default function Blog() {
   const { t, locale } = useI18n();
+  const [articles, setArticles] = useState(mockArticles);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
 
-  const filteredArticles = mockArticles.filter(article => {
+  useEffect(() => {
+    api.get(`/api/blog?locale=${locale}`)
+      .then((data) => {
+        if (data.posts?.length) {
+          setArticles(data.posts.map((p) => ({
+            id: p.slug,
+            slug: p.slug,
+            title: { [locale]: p.title, ar: p.title },
+            excerpt: { [locale]: p.excerpt, ar: p.excerpt },
+            category: p.category,
+            author: p.authorName || 'أكاديمية الأثر',
+            date: p.createdAt,
+            readTime: `${p.readTime} min`,
+            tags: p.tags || [],
+          })));
+        }
+      })
+      .catch(() => {});
+  }, [locale]);
+
+  const filteredArticles = articles.filter(article => {
     const matchesSearch = article.title[locale]?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          article.excerpt[locale]?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || article.category === selectedCategory;

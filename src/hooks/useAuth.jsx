@@ -35,6 +35,8 @@ export function AuthProvider({ children }) {
       setAccessToken(data.accessToken);
       setRefreshToken(data.refreshToken);
       localStorage.setItem('refreshToken', data.refreshToken);
+      localStorage.setItem('token', data.accessToken);
+      localStorage.setItem('accessToken', data.accessToken);
       setIsAuthenticated(true);
     } catch (error) {
       console.error('Token refresh failed:', error);
@@ -78,6 +80,8 @@ export function AuthProvider({ children }) {
 
       localStorage.setItem('user', JSON.stringify(data.user));
       localStorage.setItem('refreshToken', data.refreshToken);
+      localStorage.setItem('token', data.accessToken);
+      localStorage.setItem('accessToken', data.accessToken);
 
       return { success: true, user: data.user };
     } catch (error) {
@@ -106,6 +110,8 @@ export function AuthProvider({ children }) {
 
       localStorage.setItem('user', JSON.stringify(data.user));
       localStorage.setItem('refreshToken', data.refreshToken);
+      localStorage.setItem('token', data.accessToken);
+      localStorage.setItem('accessToken', data.accessToken);
 
       return { success: true, user: data.user };
     } catch (error) {

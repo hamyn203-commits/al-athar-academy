@@ -1,436 +1,230 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Calendar, Users, DollarSign, Clock, BookOpen, CheckCircle, XCircle, Star, TrendingUp, FileText, Award, Plus } from 'lucide-react';
+import { Calendar, Users, DollarSign, Clock, Star, TrendingUp, FileText, Award, BarChart3 } from 'lucide-react';
+import DashboardLayout, { StatCard, TabBar } from '../../components/dashboard/DashboardLayout';
+import { useRequireAuth } from '../../hooks/useRequireAuth';
+import { useToast } from '../../context/ToastProvider';
+import api from '../../lib/api';
 
 export default function TeacherDashboard() {
-  const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('overview');
-  const [stats, setStats] = useState({
-    totalStudents: 0,
-    totalSessions: 0,
-    totalHours: 0,
-    pendingEarnings: 0,
-    totalEarnings: 0,
-    averageRating: 0
-  });
+  const { user, ready, logout } = useRequireAuth(['teacher']);
+  const toast = useToast();
+  const [tab, setTab] = useState('overview');
+  const [stats, setStats] = useState({ totalStudents: 0, totalSessions: 0, totalHours: 0, pendingEarnings: 0, totalEarnings: 0, averageRating: 0 });
   const [sessions, setSessions] = useState([]);
   const [students, setStudents] = useState([]);
-  const [trialRequests, setTrialRequests] = useState([]);
+  const [trials, setTrials] = useState([]);
+  const [analytics, setAnalytics] = useState(null);
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    
-    if (!token || user.role !== 'teacher') {
-      navigate('/');
-      return;
-    }
+  const [meetingProvider, setMeetingProvider] = useState('jitsi');
 
-    fetchStats();
-    fetchSessions();
-    fetchStudents();
-    fetchTrialRequests();
-  }, [navigate]);
-
-  const fetchStats = async () => {
+  const load = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/teachers/dashboard/stats', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await response.json();
-      setStats(data);
-    } catch (error) {
-      console.error('Error fetching stats:', error);
+      const [st, sess, stud, tr, an, rev] = await Promise.all([
+        api.get('/api/teachers/dashboard/stats', { auth: true }),
+        api.get('/api/sessions/my-sessions?status=accepted', { auth: true }),
+        api.get('/api/teachers/dashboard/students', { auth: true }),
+        api.get('/api/sessions/my-sessions?type=trial&status=pending', { auth: true }),
+        api.get('/api/teachers/dashboard/analytics', { auth: true }),
+        api.get('/api/teachers/dashboard/reviews', { auth: true }),
+      ]);
+      setStats(st);
+      setSessions(sess.sessions || []);
+      setStudents(stud.students || []);
+      setTrials(tr.sessions || []);
+      setAnalytics(an);
+      setReviews(rev.reviews || []);
+    } catch {
+      toast.error('تعذر تحميل بيانات لوحة المعلم');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const fetchSessions = async () => {
+  useEffect(() => { if (ready) load(); }, [ready]);
+
+  if (!ready) return null;
+
+  const respondTrial = async (id, action) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/sessions/my-sessions?status=accepted', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await response.json();
-      setSessions(data.sessions || []);
-    } catch (error) {
-      console.error('Error fetching sessions:', error);
-    }
+      await api.put(`/api/sessions/${id}/respond`, {
+        action,
+        provider: action === 'accept' ? meetingProvider : undefined,
+      }, { auth: true });
+      toast.success(action === 'accept' ? 'تم قبول الطلب وإنشاء رابط الاجتماع' : 'تم رفض الطلب');
+      load();
+    } catch { toast.error('حدث خطأ'); }
   };
 
-  const fetchStudents = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/teachers/dashboard/students', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await response.json();
-      setStudents(data.students || []);
-    } catch (error) {
-      console.error('Error fetching students:', error);
-    }
-  };
-
-  const fetchTrialRequests = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/sessions/my-sessions?type=trial&status=pending', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await response.json();
-      setTrialRequests(data.sessions || []);
-    } catch (error) {
-      console.error('Error fetching trial requests:', error);
-    }
-  };
-
-  const handleTrialResponse = async (sessionId, action) => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/sessions/${sessionId}/respond`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ action })
-      });
-
-      if (response.ok) {
-        fetchTrialRequests();
-        alert(action === 'accept' ? 'تم قبول الطلب' : 'تم رفض الطلب');
-      }
-    } catch (error) {
-      alert('حدث خطأ');
-    }
-  };
-
-  const completeSession = async (sessionId) => {
+  const completeSession = async (id) => {
     const evaluation = {
-      attendance: parseInt(prompt('تقييم الحضور (1-5):') || '5'),
-      memorization: parseInt(prompt('تقييم الحفظ (1-5):') || '5'),
-      tajweed: parseInt(prompt('تقييم التجويد (1-5):') || '5'),
-      behavior: parseInt(prompt('تقييم السلوك (1-5):') || '5'),
-      commitment: parseInt(prompt('تقييم الالتزام (1-5):') || '5'),
-      overallNotes: prompt('ملاحظات عامة:') || ''
+      attendance: 5, memorization: 5, tajweed: 5, behavior: 5, commitment: 5,
+      overallNotes: 'حصة ممتازة',
     };
-
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/sessions/${sessionId}/complete`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ evaluation })
-      });
-
-      if (response.ok) {
-        fetchSessions();
-        fetchStats();
-        alert('تم إكمال الحصة بنجاح');
-      }
-    } catch (error) {
-      alert('حدث خطأ');
-    }
+      await api.put(`/api/sessions/${id}/complete`, { evaluation }, { auth: true });
+      toast.success('تم إكمال الحصة');
+      load();
+    } catch { toast.error('فشل إكمال الحصة'); }
   };
+
+  const tabs = [
+    { id: 'overview', label: 'نظرة عامة' },
+    { id: 'trials', label: `تجريبية (${trials.length})` },
+    { id: 'sessions', label: 'الحصص' },
+    { id: 'students', label: 'الطلاب' },
+    { id: 'analytics', label: 'التحليلات' },
+    { id: 'reviews', label: 'التقييمات' },
+  ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <h1 className="text-3xl font-bold">لوحة تحكم المعلم</h1>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-          <div className="bg-white rounded-xl shadow p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-xs">الطلاب</p>
-                <p className="text-2xl font-bold text-emerald-600">{stats.totalStudents}</p>
-              </div>
-              <Users className="text-emerald-600" size={32} />
-            </div>
+    <DashboardLayout title="لوحة تحكم المعلم" user={user} onLogout={logout}>
+      {loading ? <div className="flex justify-center py-20"><div className="spinner spinner-lg" /></div> : (
+        <>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
+            <StatCard label="الطلاب" value={stats.totalStudents} icon={Users} />
+            <StatCard label="الحصص" value={stats.totalSessions} icon={Calendar} color="blue" />
+            <StatCard label="الساعات" value={stats.totalHours} icon={Clock} color="purple" />
+            <StatCard label="مستحقة" value={stats.pendingEarnings} icon={DollarSign} color="yellow" />
+            <StatCard label="الأرباح" value={stats.totalEarnings} icon={TrendingUp} color="green" />
+            <StatCard label="التقييم" value={stats.averageRating?.toFixed?.(1) || '0'} icon={Star} color="orange" />
           </div>
 
-          <div className="bg-white rounded-xl shadow p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-xs">الحصص</p>
-                <p className="text-2xl font-bold text-blue-600">{stats.totalSessions}</p>
-              </div>
-              <Calendar className="text-blue-600" size={32} />
-            </div>
-          </div>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <TabBar tabs={tabs} active={tab} onChange={setTab} />
 
-          <div className="bg-white rounded-xl shadow p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-xs">الساعات</p>
-                <p className="text-2xl font-bold text-purple-600">{stats.totalHours}</p>
-              </div>
-              <Clock className="text-purple-600" size={32} />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-xs">مستحقة</p>
-                <p className="text-2xl font-bold text-yellow-600">{stats.pendingEarnings}</p>
-              </div>
-              <DollarSign className="text-yellow-600" size={32} />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-xs">إجمالي الأرباح</p>
-                <p className="text-2xl font-bold text-green-600">{stats.totalEarnings}</p>
-              </div>
-              <TrendingUp className="text-green-600" size={32} />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-xs">التقييم</p>
-                <p className="text-2xl font-bold text-orange-600">{stats.averageRating.toFixed(1)}</p>
-              </div>
-              <Star className="text-orange-600 fill-orange-600" size={32} />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow">
-          <div className="border-b">
-            <div className="flex overflow-x-auto">
-              <button
-                onClick={() => setActiveTab('overview')}
-                className={`px-6 py-4 font-semibold whitespace-nowrap ${
-                  activeTab === 'overview'
-                    ? 'border-b-2 border-emerald-600 text-emerald-600'
-                    : 'text-gray-600'
-                }`}
-              >
-                نظرة عامة
-              </button>
-              <button
-                onClick={() => setActiveTab('trial-requests')}
-                className={`px-6 py-4 font-semibold whitespace-nowrap ${
-                  activeTab === 'trial-requests'
-                    ? 'border-b-2 border-emerald-600 text-emerald-600'
-                    : 'text-gray-600'
-                }`}
-              >
-                طلبات الحصص التجريبية ({trialRequests.length})
-              </button>
-              <button
-                onClick={() => setActiveTab('sessions')}
-                className={`px-6 py-4 font-semibold whitespace-nowrap ${
-                  activeTab === 'sessions'
-                    ? 'border-b-2 border-emerald-600 text-emerald-600'
-                    : 'text-gray-600'
-                }`}
-              >
-                الحصص القادمة
-              </button>
-              <button
-                onClick={() => setActiveTab('students')}
-                className={`px-6 py-4 font-semibold whitespace-nowrap ${
-                  activeTab === 'students'
-                    ? 'border-b-2 border-emerald-600 text-emerald-600'
-                    : 'text-gray-600'
-                }`}
-              >
-                الطلاب
-              </button>
-              <button
-                onClick={() => setActiveTab('homework')}
-                className={`px-6 py-4 font-semibold whitespace-nowrap ${
-                  activeTab === 'homework'
-                    ? 'border-b-2 border-emerald-600 text-emerald-600'
-                    : 'text-gray-600'
-                }`}
-              >
-                <FileText className="inline ml-1" size={18} />
-                الواجبات
-              </button>
-              <button
-                onClick={() => setActiveTab('ratings')}
-                className={`px-6 py-4 font-semibold whitespace-nowrap ${
-                  activeTab === 'ratings'
-                    ? 'border-b-2 border-emerald-600 text-emerald-600'
-                    : 'text-gray-600'
-                }`}
-              >
-                <Award className="inline ml-1" size={18} />
-                التقييمات
-              </button>
-            </div>
-          </div>
-
-          <div className="p-6">
-            {activeTab === 'overview' && (
-              <div className="space-y-6">
-                <h2 className="text-xl font-bold">مرحباً بك في لوحة التحكم</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-emerald-50 p-6 rounded-lg">
-                    <h3 className="font-bold mb-2">طلبات جديدة</h3>
-                    <p className="text-3xl font-bold text-emerald-600">{trialRequests.length}</p>
-                    <p className="text-sm text-gray-600">طلبات حصص تجريبية بانتظار الموافقة</p>
-                  </div>
-                  <div className="bg-blue-50 p-6 rounded-lg">
-                    <h3 className="font-bold mb-2">حصص اليوم</h3>
-                    <p className="text-3xl font-bold text-blue-600">
-                      {sessions.filter(s => new Date(s.scheduledAt).toDateString() === new Date().toDateString()).length}
-                    </p>
-                    <p className="text-sm text-gray-600">حصص مجدولة لليوم</p>
-                  </div>
+            {tab === 'overview' && (
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="bg-emerald-50 rounded-lg p-5">
+                  <p className="font-bold">طلبات تجريبية</p>
+                  <p className="text-3xl font-bold text-emerald-600">{trials.length}</p>
+                </div>
+                <div className="bg-blue-50 rounded-lg p-5">
+                  <p className="font-bold">حصص اليوم</p>
+                  <p className="text-3xl font-bold text-blue-600">
+                    {sessions.filter((s) => new Date(s.scheduledAt).toDateString() === new Date().toDateString()).length}
+                  </p>
                 </div>
               </div>
             )}
 
-            {activeTab === 'trial-requests' && (
-              <div className="space-y-4">
-                {trialRequests.length === 0 ? (
-                  <p className="text-center text-gray-500 py-8">لا توجد طلبات حصص تجريبية</p>
-                ) : (
-                  trialRequests.map((session) => (
-                    <div key={session._id} className="border rounded-lg p-4">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h3 className="font-bold text-lg">{session.student.name}</h3>
-                          <p className="text-gray-600">
-                            الموعد: {new Date(session.scheduledAt).toLocaleString('ar-EG')}
-                          </p>
-                          <p className="text-sm text-gray-500">{session.notes}</p>
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleTrialResponse(session._id, 'accept')}
-                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                          >
-                            قبول
-                          </button>
-                          <button
-                            onClick={() => handleTrialResponse(session._id, 'reject')}
-                            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-                          >
-                            رفض
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
-
-            {activeTab === 'sessions' && (
-              <div className="space-y-4">
-                {sessions.length === 0 ? (
-                  <p className="text-center text-gray-500 py-8">لا توجد حصص قادمة</p>
-                ) : (
-                  sessions.map((session) => (
-                    <div key={session._id} className="border rounded-lg p-4">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h3 className="font-bold text-lg">{session.student.name}</h3>
-                          <p className="text-gray-600">
-                            الموعد: {new Date(session.scheduledAt).toLocaleString('ar-EG')}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            المدة: {session.duration} دقيقة | النوع: {session.type === 'trial' ? 'تجريبية' : 'عادية'}
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => completeSession(session._id)}
-                          className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
-                        >
-                          إكمال الحصة
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
-
-            {activeTab === 'students' && (
-              <div className="space-y-4">
-                {students.length === 0 ? (
-                  <p className="text-center text-gray-500 py-8">لا يوجد طلاب حالياً</p>
-                ) : (
-                  students.map((student) => (
-                    <div key={student._id} className="border rounded-lg p-4">
-                      <div className="flex items-center gap-4">
-                        <img
-                          src={student.avatar || '/default-avatar.png'}
-                          alt={student.name}
-                          className="w-16 h-16 rounded-full"
-                        />
-                        <div className="flex-1">
-                          <h3 className="font-bold text-lg">{student.name}</h3>
-                          <p className="text-gray-600">{student.email}</p>
-                          <p className="text-sm text-gray-500">
-                            عدد الحصص: {student.sessionCount || 0}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
-
-            {activeTab === 'homework' && (
-              <div className="space-y-4">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-bold">الواجبات والمهام</h2>
-                  <button className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 flex items-center gap-2">
-                    <Plus size={18} />
-                    إضافة واجب جديد
-                  </button>
+            {tab === 'trials' && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-sm mb-2">
+                  <span className="text-gray-600">منصة الاجتماع عند القبول:</span>
+                  <select value={meetingProvider} onChange={(e) => setMeetingProvider(e.target.value)}
+                    className="border rounded-lg px-2 py-1">
+                    <option value="jitsi">Jitsi (فوري)</option>
+                    <option value="zoom">Zoom</option>
+                    <option value="google_meet">Google Meet</option>
+                  </select>
                 </div>
-                <p className="text-center text-gray-500 py-8">قريباً - نظام الواجبات قيد التطوير</p>
-              </div>
-            )}
-
-            {activeTab === 'ratings' && (
-              <div className="space-y-4">
-                <h2 className="text-xl font-bold mb-4">تقييمات الطلاب</h2>
-                <div className="bg-gradient-to-r from-orange-50 to-yellow-50 border border-orange-200 rounded-lg p-6">
-                  <div className="flex items-center justify-between">
+                {trials.length === 0 ? <p className="text-center text-gray-500 py-8">لا توجد طلبات</p> : trials.map((s) => (
+                  <div key={s._id} className="border rounded-lg p-4 flex justify-between items-center gap-4">
                     <div>
-                      <p className="text-sm text-gray-600 mb-1">متوسط التقييم</p>
-                      <div className="flex items-center gap-2">
-                        <span className="text-4xl font-bold text-orange-600">{stats.averageRating.toFixed(1)}</span>
-                        <div className="flex items-center gap-1">
-                          {Array.from({ length: 5 }).map((_, i) => (
-                            <Star
-                              key={i}
-                              size={24}
-                              className={i < Math.round(stats.averageRating) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}
-                            />
-                          ))}
-                        </div>
-                      </div>
+                      <h3 className="font-bold">{s.student?.name}</h3>
+                      <p className="text-sm text-gray-600">{new Date(s.scheduledAt).toLocaleString('ar-EG')}</p>
                     </div>
-                    <Award className="text-orange-600" size={64} />
+                    <div className="flex gap-2">
+                      <button onClick={() => respondTrial(s._id, 'accept')} className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm">قبول</button>
+                      <button onClick={() => respondTrial(s._id, 'reject')} className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm">رفض</button>
+                    </div>
                   </div>
+                ))}
+              </div>
+            )}
+
+            {tab === 'sessions' && (
+              <div className="space-y-3">
+                {sessions.length === 0 ? <p className="text-center text-gray-500 py-8">لا حصص قادمة</p> : sessions.map((s) => (
+                  <div key={s._id} className="border rounded-lg p-4 flex flex-wrap justify-between items-center gap-3">
+                    <div>
+                      <h3 className="font-bold">{s.student?.name}</h3>
+                      <p className="text-sm text-gray-600">{new Date(s.scheduledAt).toLocaleString('ar-EG')}</p>
+                      {s.meetingLink && (
+                        <a href={s.meetingLink} target="_blank" rel="noreferrer"
+                          className="text-sm text-emerald-600 font-semibold hover:underline mt-1 inline-block">
+                          🎥 انضم للحصة
+                        </a>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      {s.meetingLink && (
+                        <a href={s.meetingLink} target="_blank" rel="noreferrer"
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">
+                          بدء الاجتماع
+                        </a>
+                      )}
+                      <button onClick={() => completeSession(s._id)} className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm">إكمال</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {tab === 'students' && (
+              <div className="space-y-3">
+                {students.length === 0 ? <p className="text-center text-gray-500 py-8">لا طلاب</p> : students.map((s) => (
+                  <div key={s._id} className="border rounded-lg p-4 flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center font-bold text-emerald-700">{s.name?.[0]}</div>
+                    <div>
+                      <h3 className="font-bold">{s.name}</h3>
+                      <p className="text-sm text-gray-500">{s.sessionCount || 0} حصة</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {tab === 'analytics' && analytics && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 mb-4"><BarChart3 className="text-emerald-600" /><h3 className="font-bold">تحليلات الأداء</h3></div>
+                <div className="grid md:grid-cols-3 gap-4">
+                  <StatCard label="حصص مكتملة (6 أشهر)" value={analytics.totalCompleted} icon={Calendar} />
+                  <StatCard label="متوسط التقييم" value={analytics.averageRating?.toFixed?.(1)} icon={Star} color="orange" />
+                  <StatCard label="إجمالي الطلاب" value={analytics.totalStudents} icon={Users} color="blue" />
                 </div>
-                <p className="text-center text-gray-500 py-4">التقييمات التفصيلية قريباً</p>
+                {analytics.monthlySessions?.length > 0 && (
+                  <div className="mt-4">
+                    <h4 className="font-semibold mb-2">الحصص الشهرية</h4>
+                    {analytics.monthlySessions.map(({ month, count }) => (
+                      <div key={month} className="flex items-center gap-3 mb-2">
+                        <span className="text-sm w-20 text-gray-500">{month}</span>
+                        <div className="flex-1 bg-gray-100 rounded-full h-3">
+                          <div className="bg-emerald-500 h-3 rounded-full" style={{ width: `${Math.min(count * 20, 100)}%` }} />
+                        </div>
+                        <span className="text-sm font-bold">{count}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {tab === 'reviews' && (
+              <div className="space-y-4">
+                <div className="bg-orange-50 border border-orange-100 rounded-lg p-5 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">متوسط التقييم</p>
+                    <p className="text-4xl font-bold text-orange-600">{stats.averageRating?.toFixed?.(1) || '0'}</p>
+                  </div>
+                  <Award className="text-orange-400" size={48} />
+                </div>
+                {reviews.length === 0 ? <p className="text-center text-gray-500">لا تقييمات بعد</p> : reviews.map((r) => (
+                  <div key={r._id} className="border rounded-lg p-4">
+                    <div className="flex gap-1 mb-1">{Array.from({ length: 5 }).map((_, i) => (
+                      <Star key={i} size={14} className={i < r.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'} />
+                    ))}</div>
+                    <p className="text-sm">{r.comment}</p>
+                    <p className="text-xs text-gray-400 mt-1">{r.student?.name}</p>
+                  </div>
+                ))}
               </div>
             )}
           </div>
-        </div>
-      </div>
-    </div>
+        </>
+      )}
+    </DashboardLayout>
   );
 }

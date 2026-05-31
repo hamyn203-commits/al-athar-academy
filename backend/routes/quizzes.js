@@ -26,6 +26,17 @@ router.get('/', protect, async (req, res) => {
   }
 });
 
+router.get('/my-attempts/list', protect, async (req, res) => {
+  try {
+    const attempts = await QuizAttempt.find({ student: req.user.id })
+      .populate({ path: 'quiz', select: 'title type', populate: { path: 'course', select: 'title' } })
+      .sort({ submittedAt: -1 });
+    res.json(attempts);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // @route   GET /api/quizzes/:id
 // @desc    Get a single quiz
 // @access  Private

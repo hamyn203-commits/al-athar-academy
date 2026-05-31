@@ -182,24 +182,6 @@ router.get('/featured', async (req, res) => {
   }
 });
 
-router.get('/:id', async (req, res) => {
-  try {
-    const teacher = await Teacher.findOne({ 
-      _id: req.params.id, 
-      status: 'approved', 
-      isVerified: true 
-    }).populate('user', 'name email avatar bio');
-
-    if (!teacher) {
-      return res.status(404).json({ error: 'Teacher not found' });
-    }
-
-    res.json(teacher);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
 router.get('/admin/pending', protect, authorize('admin'), async (req, res) => {
   try {
     const teachers = await Teacher.find({ status: { $in: ['pending', 'under-review'] } })
@@ -245,6 +227,24 @@ router.put('/admin/:id/review', protect, authorize('admin'), async (req, res) =>
     res.json({ success: true, teacher });
   } catch (error) {
     res.status(400).json({ error: error.message });
+  }
+});
+
+router.get('/:id', async (req, res) => {
+  try {
+    const teacher = await Teacher.findOne({ 
+      _id: req.params.id, 
+      status: 'approved', 
+      isVerified: true 
+    }).populate('user', 'name email avatar bio');
+
+    if (!teacher) {
+      return res.status(404).json({ error: 'Teacher not found' });
+    }
+
+    res.json(teacher);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 

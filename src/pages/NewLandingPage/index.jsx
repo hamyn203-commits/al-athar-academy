@@ -17,7 +17,8 @@ import {
 } from 'lucide-react';
 import GlobalHeader from '../../components/GlobalHeader';
 import GlobalFooter from '../../components/GlobalFooter';
-import SEOHead from '../../components/SEOHead';
+import LearningPathsSection from '../../components/LearningPathsSection';
+import AISection from '../../components/AISection';
 
 function AnimatedCounter({ end, duration = 2000, suffix = '' }) {
   const [count, setCount] = useState(0);
@@ -509,6 +510,8 @@ export default function NewLandingPage() {
         <HeroSection />
         <StatsSection />
         <FeaturesSection />
+        <LearningPathsSection />
+        <AISection />
         <FeaturedTeachersSection />
         <TestimonialsSection />
         <FAQSection />

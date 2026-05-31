@@ -1,0 +1,306 @@
+const express = require('express');
+const router = express.Router();
+const Course = require('../models/Course');
+const Lesson = require('../models/Lesson');
+const Enrollment = require('../models/Enrollment');
+const Progress = require('../models/Progress');
+const User = require('../models/User');
+const Teacher = require('../models/Teacher');
+const { Quiz } = require('../models/Quiz');
+const Certificate = require('../models/Certificate');
+const { protect, authorize } = require('../middleware/auth');
+const { notifyCourseEnrollment, notifyCertificateIssued } = require('../utils/notify');
+
+async function getCourseBySlug(slug) {
+  return Course.findOne({ slug, status: 'published' });
+}
+
+async function getEnrollment(userId, courseId) {
+  return Enrollment.findOne({ student: userId, course: courseId });
+}
+
+// GET /api/lms/course/:slug — course + lessons + enrollment for student
+router.get('/course/:slug', protect, async (req, res) => {
+  try {
+    const course = await getCourseBySlug(req.params.slug);
+    if (!course) return res.status(404).json({ error: 'Course not found' });
+
+    const lessons = await Lesson.find({ course: course._id, isPublished: true }).sort({ order: 1 });
+    const enrollment = await getEnrollment(req.user.id, course._id);
+
+    res.json({ course, lessons, enrollment });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/lms/course/:slug/enroll
+router.post('/course/:slug/enroll', protect, async (req, res) => {
+  try {
+    const course = await getCourseBySlug(req.params.slug);
+    if (!course) return res.status(404).json({ error: 'Course not found' });
+
+    const existing = await getEnrollment(req.user.id, course._id);
+    if (existing) return res.status(400).json({ error: 'Already enrolled', enrollment: existing });
+
+    const enrollment = await Enrollment.create({
+      student: req.user.id,
+      course: course._id,
+      payment: { amount: course.price, currency: course.currency, status: 'completed', paidAt: new Date() },
+    });
+
+    course.stats.enrolled += 1;
+    await course.save();
+
+    let progress = await Progress.findOne({ student: req.user.id, course: course._id });
+    if (!progress) {
+      progress = await Progress.create({
+        student: req.user.id,
+        course: course._id,
+        enrollment: enrollment._id,
+      });
+    }
+
+    try {
+      await notifyCourseEnrollment(req.user.id, course);
+    } catch (e) {
+      console.warn('Enrollment notification:', e.message);
+    }
+
+    res.status(201).json({ enrollment, progress });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// GET /api/lms/course/:slug/lesson/:lessonId
+router.get('/course/:slug/lesson/:lessonId', protect, async (req, res) => {
+  try {
+    const course = await getCourseBySlug(req.params.slug);
+    if (!course) return res.status(404).json({ error: 'Course not found' });
+
+    const enrollment = await getEnrollment(req.user.id, course._id);
+    const isStaff = ['admin', 'teacher'].includes(req.user.role);
+
+    const lesson = await Lesson.findOne({ _id: req.params.lessonId, course: course._id, isPublished: true })
+      .populate('content.quiz');
+
+    if (!lesson) return res.status(404).json({ error: 'Lesson not found' });
+
+    if (!lesson.isFree && !enrollment && !isStaff) {
+      return res.status(403).json({ error: 'Not enrolled in this course' });
+    }
+
+    if (enrollment) {
+      enrollment.lastAccessedAt = new Date();
+      enrollment.progress.currentLesson = lesson._id;
+      await enrollment.save();
+    }
+
+    lesson.stats.views += 1;
+    await lesson.save();
+
+    const completed = enrollment?.progress?.completedLessons?.some(
+      (cl) => cl.lesson.toString() === lesson._id.toString()
+    ) || false;
+
+    res.json({ lesson, enrollment, completed, courseId: course._id });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/lms/course/:slug/lesson/:lessonId/complete
+router.post('/course/:slug/lesson/:lessonId/complete', protect, async (req, res) => {
+  try {
+    const course = await getCourseBySlug(req.params.slug);
+    if (!course) return res.status(404).json({ error: 'Course not found' });
+
+    const enrollment = await getEnrollment(req.user.id, course._id);
+    if (!enrollment) return res.status(403).json({ error: 'Not enrolled' });
+
+    const { score = 100 } = req.body;
+    await enrollment.updateProgress(req.params.lessonId, score);
+
+    const lesson = await Lesson.findById(req.params.lessonId);
+    if (lesson) {
+      lesson.stats.completions += 1;
+      await lesson.save();
+    }
+
+    const updated = await Enrollment.findById(enrollment._id);
+    let certificate = null;
+
+    if (updated.status === 'completed' && updated.certificate?.issued && course.certificate?.enabled) {
+      const existing = await Certificate.findOne({ student: req.user.id, course: course._id });
+      if (!existing) {
+        const certificateId = Certificate.generateCertificateId();
+        const verificationUrl = `${process.env.FRONTEND_URL || 'https://al-athar-academy.vercel.app'}/verify-certificate/${certificateId}`;
+        const qrCode = await Certificate.generateQRCode(verificationUrl);
+        certificate = await Certificate.create({
+          student: req.user.id,
+          course: course._id,
+          enrollment: updated._id,
+          certificateId,
+          qrCode,
+          metadata: { completionDate: updated.completedAt, score: updated.progress.percentage },
+          language: 'ar',
+        });
+        updated.certificate.certificateId = certificateId;
+        updated.certificate.qrCode = qrCode;
+        await updated.save();
+        try {
+          await notifyCertificateIssued(req.user.id, certificate, course);
+        } catch (e) {
+          console.warn('Certificate notification:', e.message);
+        }
+      }
+    }
+
+    res.json({ enrollment: updated, certificate });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// GET /api/lms/my-certificates
+router.get('/my-certificates', protect, async (req, res) => {
+  try {
+    const certs = await Certificate.find({ student: req.user.id })
+      .populate('course', 'title slug')
+      .sort({ issuedAt: -1 });
+    res.json(certs);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/lms/seed-demo — إنشاء دورة تجريبية (admin)
+router.post('/seed-demo', protect, authorize('admin'), async (req, res) => {
+  try {
+    const existing = await Course.findOne({ slug: 'quran-memorization-beginner' });
+    if (existing) return res.json({ message: 'Demo course already exists', course: existing });
+
+    let teacher = await Teacher.findOne({ status: 'approved' });
+    if (!teacher) {
+      let user = await User.findOne({ role: 'teacher' });
+      if (!user) {
+        user = await User.create({
+          name: 'الشيخ أحمد (تجريبي)',
+          email: `demo-teacher-${Date.now()}@alathar.demo`,
+          password: 'Demo1234!',
+          role: 'teacher',
+        });
+      }
+      teacher = await Teacher.create({
+        user: user._id,
+        personalInfo: { fullName: user.name, country: 'مصر', city: 'القاهرة', phone: '+201000000000' },
+        status: 'approved',
+        isVerified: true,
+        isFeatured: true,
+        languages: ['ar', 'en'],
+      });
+    }
+
+    const course = await Course.create({
+      title: { ar: 'تحفيظ القرآن — المبتدئ', en: 'Quran Memorization — Beginner' },
+      description: { ar: 'دورة تجريبية لحفظ جزء عم', en: 'Demo course for Juz Amma memorization' },
+      slug: 'quran-memorization-beginner',
+      category: 'quran',
+      level: 'beginner',
+      price: 0,
+      currency: 'USD',
+      duration: '3 months',
+      durationInHours: 20,
+      instructor: teacher._id,
+      image: '/courses/quran-beginner.jpg',
+      status: 'published',
+      publishedAt: new Date(),
+      certificate: { enabled: true },
+      stats: { enrolled: 0, rating: { average: 4.9, count: 0 } },
+    });
+
+    const lessons = await Lesson.insertMany([
+      {
+        title: { ar: 'مقدمة في الحفظ', en: 'Introduction to Memorization' },
+        slug: 'intro',
+        course: course._id,
+        order: 1,
+        type: 'video',
+        duration: 15,
+        isFree: true,
+        isPublished: true,
+        content: { video: { url: 'https://www.youtube.com/embed/2Qd_1wstBg0', provider: 'youtube', duration: 900 } },
+      },
+      {
+        title: { ar: 'سورة الفاتحة', en: 'Surah Al-Fatiha' },
+        slug: 'al-fatiha',
+        course: course._id,
+        order: 2,
+        type: 'text',
+        duration: 20,
+        isPublished: true,
+        content: {
+          text: {
+            ar: '## سورة الفاتحة\n\n1. اقرأ السورة مع التجويد\n2. راجع المخارج\n3. سجّل تلاوتك',
+            en: '## Surah Al-Fatiha\n\n1. Recite with tajweed\n2. Review articulation\n3. Record your recitation',
+          },
+        },
+      },
+      {
+        title: { ar: 'سورة الناس', en: 'Surah An-Nas' },
+        slug: 'an-nas',
+        course: course._id,
+        order: 3,
+        type: 'video',
+        duration: 25,
+        isPublished: true,
+        content: { video: { url: 'https://www.youtube.com/embed/HGr1BOrrPyY', provider: 'youtube', duration: 1200 } },
+      },
+    ]);
+
+    const quiz = await Quiz.create({
+      title: { ar: 'اختبار جزء عم', en: 'Juz Amma Quiz' },
+      description: { ar: 'اختبار قصير', en: 'Short quiz' },
+      course: course._id,
+      instructor: teacher._id,
+      type: 'practice',
+      status: 'published',
+      questions: [
+        {
+          type: 'multiple-choice',
+          text: { ar: 'كم عدد آيات سورة الفاتحة؟', en: 'How many verses in Al-Fatiha?' },
+          options: [{ text: { en: '5', ar: '5' }, isCorrect: false }, { text: { en: '7', ar: '7' }, isCorrect: true }, { text: { en: '10', ar: '10' }, isCorrect: false }],
+          points: 10,
+        },
+        {
+          type: 'true-false',
+          text: { ar: 'سورة الناس من جزء عم', en: 'An-Nas is from Juz Amma' },
+          options: [{ text: { en: 'True', ar: 'صح' }, isCorrect: true }, { text: { en: 'False', ar: 'خطأ' }, isCorrect: false }],
+          points: 10,
+        },
+      ],
+      settings: { passingScore: 60, maxAttempts: 3, shuffleQuestions: false, showResults: true },
+    });
+
+    const quizLesson = await Lesson.create({
+      title: { ar: 'اختبار نهاية الدورة', en: 'Final Quiz' },
+      slug: 'final-quiz',
+      course: course._id,
+      order: 4,
+      type: 'quiz',
+      duration: 15,
+      isPublished: true,
+      content: { quiz: quiz._id },
+    });
+
+    course.lessons = [...lessons.map((l) => l._id), quizLesson._id];
+    await course.save();
+
+    res.status(201).json({ message: 'Demo course created', course, lessonsCount: course.lessons.length });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+module.exports = router;

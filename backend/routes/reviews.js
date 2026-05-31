@@ -46,6 +46,17 @@ router.post('/', protect, authorize('student'), async (req, res) => {
   }
 });
 
+router.get('/student', protect, authorize('student'), async (req, res) => {
+  try {
+    const reviews = await Review.find({ student: req.user.id })
+      .populate('teacher', 'personalInfo.fullName rating')
+      .sort({ createdAt: -1 });
+    res.json(reviews);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.get('/teacher/:teacherId', async (req, res) => {
   try {
     const { page = 1, limit = 10 } = req.query;

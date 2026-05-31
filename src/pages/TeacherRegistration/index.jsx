@@ -18,6 +18,7 @@ export default function TeacherRegistration() {
   const [currentStep, setCurrentStep] = useState(1);
   const [verificationCode, setVerificationCode] = useState('');
   const [isCodeSent, setIsCodeSent] = useState(false);
+  const [phoneVerified, setPhoneVerified] = useState(false);
   const [verificationMethod, setVerificationMethod] = useState('');
   const [credentials, setCredentials] = useState({
     email: '',
@@ -134,8 +135,9 @@ export default function TeacherRegistration() {
       });
 
       if (response.ok) {
+        setPhoneVerified(true);
         alert('تم التحقق من رقم الهاتف بنجاح');
-        nextStep();
+        setCurrentStep(prev => prev + 1);
       } else {
         const data = await response.json();
         alert(data.error || 'كود التحقق غير صحيح');
@@ -145,10 +147,36 @@ export default function TeacherRegistration() {
     }
   };
 
-  const nextStep = () => {
-    if (currentStep < steps.length) {
-      setCurrentStep(prev => prev + 1);
+  const validateStep = (step) => {
+    const p = formData.personalInfo;
+    switch (step) {
+      case 1:
+        if (!p.fullName?.trim()) return 'الاسم بالكامل مطلوب';
+        if (!p.age || p.age < 18) return 'يجب أن يكون العمر 18 سنة على الأقل';
+        if (!p.gender) return 'يرجى اختيار الجنس';
+        if (!p.country?.trim()) return 'الدولة مطلوبة';
+        if (!p.city?.trim()) return 'المدينة مطلوبة';
+        if (!p.phone?.trim()) return 'رقم الهاتف مطلوب';
+        if (!credentials.email?.trim()) return 'البريد الإلكتروني مطلوب';
+        if (!credentials.password || credentials.password.length < 8) return 'كلمة المرور 8 أحرف على الأقل';
+        if (credentials.password !== credentials.confirmPassword) return 'كلمتا المرور غير متطابقتين';
+        return null;
+      case 2:
+        if (!phoneVerified) return 'يرجى التحقق من رقم الهاتف قبل المتابعة';
+        return null;
+      case 3:
+        if (!formData.academicInfo.university?.trim()) return 'اسم الجامعة مطلوب';
+        if (!formData.academicInfo.qualification?.trim()) return 'المؤهل العلمي مطلوب';
+        return null;
+      default:
+        return null;
     }
+  };
+
+  const nextStep = () => {
+    const error = validateStep(currentStep);
+    if (error) { alert(error); return; }
+    if (currentStep < steps.length) setCurrentStep(prev => prev + 1);
   };
 
   const prevStep = () => {

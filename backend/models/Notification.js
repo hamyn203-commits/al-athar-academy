@@ -18,8 +18,15 @@ const NotificationSchema = new mongoose.Schema({
       'badge-unlocked',
       'achievement',
       'certificate-issued',
+      'session-request',
+      'session-accepted',
+      'session-rejected',
+      'session-completed',
       'session-reminder',
       'session-cancelled',
+      'homework-assigned',
+      'homework-submitted',
+      'review-received',
       'payment-received',
       'system',
       'marketing'
@@ -198,55 +205,56 @@ NotificationSchema.methods.send = async function(channel) {
   }
 };
 
+const dispatcher = require('../services/notificationDispatcher');
+
 NotificationSchema.methods.sendEmail = async function() {
   const User = mongoose.model('User');
   const user = await User.findById(this.user);
-  
-  if (!user || !user.email) {
-    throw new Error('User email not found');
-  }
+  if (!user?.email) throw new Error('User email not found');
 
-  console.log(`Sending email to ${user.email}: ${this.title.en}`);
-  
+  await dispatcher.sendEmail({
+    to: user.email,
+    subject: this.title.en || this.title.ar,
+    text: this.message.en || this.message.ar,
+  });
   return true;
 };
 
 NotificationSchema.methods.sendPush = async function() {
   const User = mongoose.model('User');
   const user = await User.findById(this.user);
-  
-  if (!user || !user.pushToken) {
-    throw new Error('User push token not found');
-  }
+  if (!user?.pushToken) throw new Error('User push token not found');
 
-  console.log(`Sending push to ${user._id}: ${this.title.en}`);
-  
+  await dispatcher.sendPush({
+    token: user.pushToken,
+    title: this.title.ar || this.title.en,
+    body: this.message.ar || this.message.en,
+    data: { notificationId: String(this._id), type: this.type },
+  });
   return true;
 };
 
 NotificationSchema.methods.sendTelegram = async function() {
   const User = mongoose.model('User');
   const user = await User.findById(this.user);
-  
-  if (!user || !user.telegramId) {
-    throw new Error('User telegram ID not found');
-  }
+  if (!user?.telegramId) throw new Error('User telegram ID not found');
 
-  console.log(`Sending telegram to ${user.telegramId}: ${this.title.en}`);
-  
+  await dispatcher.sendTelegram({
+    chatId: user.telegramId,
+    text: `<b>${this.title.ar || this.title.en}</b>\n${this.message.ar || this.message.en}`,
+  });
   return true;
 };
 
 NotificationSchema.methods.sendSMS = async function() {
   const User = mongoose.model('User');
   const user = await User.findById(this.user);
-  
-  if (!user || !user.phone) {
-    throw new Error('User phone not found');
-  }
+  if (!user?.phone) throw new Error('User phone not found');
 
-  console.log(`Sending SMS to ${user.phone}: ${this.title.en}`);
-  
+  await dispatcher.sendWhatsApp({
+    phone: user.phone,
+    text: `${this.title.ar || this.title.en}\n${this.message.ar || this.message.en}`,
+  });
   return true;
 };
 

@@ -3,6 +3,8 @@ const router = express.Router();
 const Session = require('../models/Session');
 const Teacher = require('../models/Teacher');
 const { protect, authorize } = require('../middleware/auth');
+const meetingService = require('../services/meetingService');
+const { notifyTeacherForSessionRequest, notifySessionAccepted, notifyUser } = require('../utils/notify');
 
 router.post('/trial', protect, async (req, res) => {
   try {
@@ -38,6 +40,12 @@ router.post('/trial', protect, async (req, res) => {
       notes,
       status: 'pending'
     });
+
+    try {
+      await notifyTeacherForSessionRequest(session, teacher.user);
+    } catch (e) {
+      console.warn('Session request notification:', e.message);
+    }
 
     res.status(201).json({
       success: true,
@@ -118,6 +126,8 @@ router.put('/:id/respond', protect, authorize('teacher'), async (req, res) => {
 
     if (action === 'accept') {
       session.status = 'accepted';
+      const provider = req.body.provider || process.env.DEFAULT_MEETING_PROVIDER || 'jitsi';
+      meetingService.attachToSession(session, provider);
     } else if (action === 'reject') {
       session.status = 'rejected';
       session.cancellationReason = reason;
@@ -138,6 +148,25 @@ router.put('/:id/respond', protect, authorize('teacher'), async (req, res) => {
     }
 
     await session.save();
+
+    try {
+      if (action === 'accept') {
+        await notifySessionAccepted(session, session.student, session.meetingLink);
+      } else if (action === 'reject') {
+        await notifyUser(session.student, {
+          type: 'session-rejected',
+          title: { ar: 'تم رفض الحصة', en: 'Session rejected' },
+          message: {
+            ar: reason || 'لم يتم قبول طلب الحصة',
+            en: reason || 'Your session request was not accepted',
+          },
+          data: { session: session._id },
+        });
+      }
+    } catch (e) {
+      console.warn('Session respond notification:', e.message);
+    }
+
     res.json({ success: true, session });
   } catch (error) {
     res.status(400).json({ error: error.message });
