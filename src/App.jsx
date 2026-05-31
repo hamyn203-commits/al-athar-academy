@@ -23,6 +23,7 @@ const BookSession = lazy(() => import('./pages/BookSession'));
 const GlobalPlatform = lazy(() => import('./pages/GlobalPlatform/GlobalPlatform'));
 const Courses = lazy(() => import('./pages/Courses'));
 const Blog = lazy(() => import('./pages/Blog'));
+const Contact = lazy(() => import('./pages/Contact'));
 
 function PageLoader() {
   return (
@@ -46,6 +47,7 @@ function AppContent() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/courses" element={<Courses />} />
           <Route path="/blog" element={<Blog />} />
+          <Route path="/contact" element={<Contact />} />
           <Route path="/student" element={<StudentPortal />} />
           <Route path="/student/dashboard" element={<StudentDashboard />} />
           <Route path="/teacher" element={<TeacherPortal />} />
