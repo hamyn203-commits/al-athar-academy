@@ -34,16 +34,21 @@ export default function TeacherDashboard() {
 
   const [taskModal, setTaskModal] = useState(false);
   const [newTask, setNewTask] = useState({ studentId: '', type: 'memorization', title: '', description: '', dueDate: '' });
+  const [withdrawals, setWithdrawals] = useState([]);
+  const [availableBalance, setAvailableBalance] = useState(0);
+  const [withdrawForm, setWithdrawForm] = useState({ amount: '', method: 'vodafone_cash', accountInfo: '' });
+  const [withdrawing, setWithdrawing] = useState(false);
 
   const load = async () => {
     try {
-      const [prof, st, tr, sess, stud, tsk] = await Promise.all([
+      const [prof, st, tr, sess, stud, tsk, wdr] = await Promise.all([
         api.get('/api/teachers/dashboard/profile', { auth: true }),
         api.get('/api/teachers/dashboard/stats', { auth: true }),
         api.get('/api/sessions/my-sessions?type=trial&status=pending', { auth: true }),
         api.get('/api/sessions/my-sessions?type=regular&status=accepted', { auth: true }),
         api.get('/api/teachers/dashboard/active-students', { auth: true }),
         api.get('/api/teachers/dashboard/tasks', { auth: true }),
+        api.get('/api/teachers/dashboard/withdrawals', { auth: true }),
       ]);
       setProfile(prof);
       setStats(st);
@@ -51,6 +56,8 @@ export default function TeacherDashboard() {
       setSessions(sess.sessions || []);
       setActiveStudents(stud.students || []);
       setTasks(tsk.tasks || []);
+      setWithdrawals(wdr.withdrawals || []);
+      setAvailableBalance(wdr.available ?? prof?.wallet?.pendingEarnings ?? 0);
     } catch {
       toast.error('تعذر تحميل بيانات لوحة المعلم');
     } finally {
@@ -112,6 +119,30 @@ export default function TeacherDashboard() {
     } catch { toast.error('فشل إسناد الواجب'); }
   };
 
+  const requestWithdraw = async (e) => {
+    e.preventDefault();
+    setWithdrawing(true);
+    try {
+      await api.post('/api/teachers/dashboard/withdrawals', {
+        amount: Number(withdrawForm.amount),
+        method: withdrawForm.method,
+        accountInfo: withdrawForm.accountInfo,
+      }, { auth: true });
+      toast.success('تم إرسال طلب السحب — سيتم المراجعة خلال 48 ساعة');
+      setWithdrawForm({ amount: '', method: 'vodafone_cash', accountInfo: '' });
+      load();
+    } catch (err) { toast.error(err.message || 'فشل طلب السحب'); }
+    finally { setWithdrawing(false); }
+  };
+
+  const markTaskDone = async (id) => {
+    try {
+      await api.patch(`/api/teachers/dashboard/tasks/${id}`, { status: 'done' }, { auth: true });
+      toast.success('تم اعتماد الواجب');
+      load();
+    } catch { toast.error('فشل'); }
+  };
+
   const tabs = [
     { id: 'account', label: 'حسابي' },
     { id: 'trials', label: `تجريبية (${trials.length})` },
@@ -148,7 +179,56 @@ export default function TeacherDashboard() {
                     <div className="bg-white rounded-lg p-3"><span className="text-slate-500">إجمالي الأرباح</span><p className="font-bold">{wallet.totalEarned || 0} ج.م</p></div>
                     <div className="bg-white rounded-lg p-3"><span className="text-slate-500">تم سحبه</span><p className="font-bold">{wallet.withdrawn || 0} ج.م</p></div>
                   </div>
+                  <p className="text-xs text-slate-500 mt-3">متاح للسحب: <strong>{availableBalance} ج.م</strong></p>
                 </div>
+
+                {availableBalance >= SESSION_RATE && (
+                  <form onSubmit={requestWithdraw} className="border border-slate-200 rounded-xl p-5 space-y-3">
+                    <h3 className="font-bold text-sm">طلب سحب أرباح</h3>
+                    <div className="grid md:grid-cols-3 gap-3">
+                      <input type="number" min={SESSION_RATE} step={SESSION_RATE} required placeholder={`المبلغ (min ${SESSION_RATE})`}
+                        value={withdrawForm.amount} onChange={(e) => setWithdrawForm((p) => ({ ...p, amount: e.target.value }))}
+                        className="input-field" />
+                      <select value={withdrawForm.method} onChange={(e) => setWithdrawForm((p) => ({ ...p, method: e.target.value }))}
+                        className="input-field">
+                        <option value="vodafone_cash">فودافون كاش</option>
+                        <option value="instapay">InstaPay</option>
+                        <option value="bank">حساب بنكي</option>
+                      </select>
+                      <input required placeholder="رقم المحفظة / IBAN"
+                        value={withdrawForm.accountInfo} onChange={(e) => setWithdrawForm((p) => ({ ...p, accountInfo: e.target.value }))}
+                        className="input-field" />
+                    </div>
+                    <button type="submit" disabled={withdrawing} className="btn-primary text-sm">
+                      {withdrawing ? 'جاري الإرسال...' : 'إرسال طلب السحب'}
+                    </button>
+                  </form>
+                )}
+
+                {withdrawals.length > 0 && (
+                  <div>
+                    <h3 className="font-bold text-sm mb-2">سجل السحوبات</h3>
+                    <div className="space-y-2">
+                      {withdrawals.map((w) => (
+                        <div key={w._id} className="flex justify-between items-center border rounded-lg p-3 text-sm">
+                          <div>
+                            <span className="font-bold">{w.amount} ج.م</span>
+                            <span className="text-slate-500 mx-2">—</span>
+                            <span className="text-slate-600">{w.method}</span>
+                            <p className="text-xs text-slate-400 mt-0.5">{new Date(w.createdAt).toLocaleDateString('ar-EG')}</p>
+                          </div>
+                          <span className={`text-xs px-2 py-1 rounded ${
+                            w.status === 'approved' ? 'bg-green-100 text-green-700'
+                              : w.status === 'rejected' ? 'bg-red-100 text-red-700'
+                              : 'bg-yellow-100 text-yellow-700'
+                          }`}>
+                            {w.status === 'approved' ? 'تم التحويل' : w.status === 'rejected' ? 'مرفوض' : 'قيد المراجعة'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <div className="grid md:grid-cols-2 gap-4 text-sm">
                   <InfoRow label="الاسم" value={teacher.personalInfo?.fullName} />
                   <InfoRow label="البريد" value={user?.email} />
@@ -258,9 +338,16 @@ export default function TeacherDashboard() {
                       {t.description && <p className="text-sm text-gray-500 mt-1">{t.description}</p>}
                       {t.dueDate && <p className="text-xs text-gray-400 mt-1">موعد: {new Date(t.dueDate).toLocaleDateString('ar-EG')}</p>}
                     </div>
-                    <span className={`text-xs px-2 py-1 rounded ${t.status === 'done' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                      {t.status === 'done' ? 'منجز' : t.status === 'submitted' ? 'مُسلّم' : 'قيد الانتظار'}
-                    </span>
+                    <div className="flex flex-col items-end gap-2">
+                      <span className={`text-xs px-2 py-1 rounded ${t.status === 'done' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                        {t.status === 'done' ? 'منجز' : t.status === 'submitted' ? 'مُسلّم' : 'قيد الانتظار'}
+                      </span>
+                      {t.status === 'submitted' && (
+                        <button onClick={() => markTaskDone(t._id)} className="text-xs px-2 py-1 bg-emerald-600 text-white rounded">
+                          اعتماد
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

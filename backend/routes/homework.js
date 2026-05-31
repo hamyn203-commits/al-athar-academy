@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const router = express.Router();
 const Session = require('../models/Session');
 const HomeworkSubmission = require('../models/HomeworkSubmission');
@@ -85,19 +86,31 @@ router.post('/:homeworkId/submit', protect, authorize('student'), upload.single(
       return res.status(400).json({ error: 'Please upload an audio file' });
     }
 
+    const { homeworkId } = req.params;
+    if (mongoose.Types.ObjectId.isValid(homeworkId)) {
+      const task = await TeacherTask.findOneAndUpdate(
+        { _id: homeworkId, student: req.user.id, status: { $in: ['pending', 'submitted'] } },
+        { status: 'submitted', submissionFile: req.file.path },
+        { new: true },
+      );
+      if (task) {
+        return res.json({ success: true, message: 'تم تسليم الواجب', task });
+      }
+    }
+
     const submission = await HomeworkSubmission.create({
-      homeworkId: req.params.homeworkId,
+      homeworkId,
       sessionId: req.body.sessionId,
       student: req.user.id,
       filePath: req.file.path,
       fileName: req.file.originalname,
-      fileSize: req.file.size
+      fileSize: req.file.size,
     });
 
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       message: 'Homework submitted successfully',
-      submission
+      submission,
     });
   } catch (error) {
     res.status(400).json({ error: error.message });

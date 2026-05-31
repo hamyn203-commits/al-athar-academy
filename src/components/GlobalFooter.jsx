@@ -1,47 +1,41 @@
 import { useI18n } from '../i18n';
 import { Link } from 'react-router-dom';
-import { 
-  Globe,
-  MessageCircle,
-  Camera,
-  Play,
-  Briefcase,
-  Mail,
-  Phone,
-  MapPin,
-  ArrowRight
+import {
+  Globe, MessageCircle, Camera, Play, Send,
+  Mail, Phone, MapPin, ArrowRight,
 } from 'lucide-react';
+import { SOCIAL_LINKS, CONTACT } from '../config/social';
 
 export default function GlobalFooter() {
   const { t } = useI18n();
+
+  const social = [
+    { href: SOCIAL_LINKS.facebook, icon: Globe, label: 'Facebook' },
+    { href: SOCIAL_LINKS.whatsapp, icon: MessageCircle, label: 'WhatsApp' },
+    { href: SOCIAL_LINKS.instagram, icon: Camera, label: 'Instagram' },
+    { href: SOCIAL_LINKS.youtube, icon: Play, label: 'YouTube' },
+    { href: SOCIAL_LINKS.telegram, icon: Send, label: 'Telegram' },
+  ];
 
   return (
     <footer className="bg-gray-900 text-white">
       <div className="container mx-auto px-4 py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
-          {/* About Section */}
           <div>
             <h3 className="text-xl font-bold mb-4">{t.footer.about}</h3>
             <p className="text-gray-400 leading-relaxed mb-6">
               {t.footer.aboutText}
             </p>
-            <div className="flex gap-4">
-              <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-emerald-600 transition-colors">
-                <Globe size={20} />
-              </a>
-              <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-emerald-600 transition-colors">
-                <MessageCircle size={20} />
-              </a>
-              <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-emerald-600 transition-colors">
-                <Camera size={20} />
-              </a>
-              <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-emerald-600 transition-colors">
-                <Play size={20} />
-              </a>
+            <div className="flex gap-3 flex-wrap">
+              {social.map(({ href, icon: Icon, label }) => (
+                <a key={label} href={href} target="_blank" rel="noopener noreferrer" aria-label={label}
+                  className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-emerald-600 transition-colors">
+                  <Icon size={20} />
+                </a>
+              ))}
             </div>
           </div>
 
-          {/* Quick Links */}
           <div>
             <h3 className="text-xl font-bold mb-4">{t.footer.quickLinks}</h3>
             <ul className="space-y-3">
@@ -72,7 +66,6 @@ export default function GlobalFooter() {
             </ul>
           </div>
 
-          {/* Support */}
           <div>
             <h3 className="text-xl font-bold mb-4">{t.footer.support}</h3>
             <ul className="space-y-3">
@@ -103,7 +96,6 @@ export default function GlobalFooter() {
             </ul>
           </div>
 
-          {/* Contact Info */}
           <div>
             <h3 className="text-xl font-bold mb-4">{t.footer.contactUs}</h3>
             <ul className="space-y-4">
@@ -111,8 +103,8 @@ export default function GlobalFooter() {
                 <Mail className="text-emerald-400 mt-1" size={20} />
                 <div>
                   <div className="text-gray-400 text-sm">{t.footer.email}</div>
-                  <a href="mailto:info@alathar.com" className="text-white hover:text-emerald-400 transition-colors">
-                    info@alathar.com
+                  <a href={`mailto:${CONTACT.email}`} className="text-white hover:text-emerald-400 transition-colors">
+                    {CONTACT.email}
                   </a>
                 </div>
               </li>
@@ -120,8 +112,8 @@ export default function GlobalFooter() {
                 <Phone className="text-emerald-400 mt-1" size={20} />
                 <div>
                   <div className="text-gray-400 text-sm">{t.footer.phone}</div>
-                  <a href="tel:+201234567890" className="text-white hover:text-emerald-400 transition-colors">
-                    +20 123 456 7890
+                  <a href={`tel:${CONTACT.phone.replace(/\s/g, '')}`} className="text-white hover:text-emerald-400 transition-colors">
+                    {CONTACT.phone}
                   </a>
                 </div>
               </li>
@@ -129,16 +121,13 @@ export default function GlobalFooter() {
                 <MapPin className="text-emerald-400 mt-1" size={20} />
                 <div>
                   <div className="text-gray-400 text-sm">{t.footer.address}</div>
-                  <span className="text-white">
-                    القاهرة، مصر
-                  </span>
+                  <span className="text-white">{CONTACT.address}</span>
                 </div>
               </li>
             </ul>
           </div>
         </div>
 
-        {/* Bottom Bar */}
         <div className="border-t border-gray-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="text-gray-400 text-sm">
             © {new Date().getFullYear()} Al-Athar Academy. {t.footer.rights}

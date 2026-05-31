@@ -10,6 +10,7 @@ const Course = require('../models/Course');
 const Lesson = require('../models/Lesson');
 const Enrollment = require('../models/Enrollment');
 const Blog = require('../models/Blog');
+const WithdrawRequest = require('../models/WithdrawRequest');
 const { protect, authorize } = require('../middleware/auth');
 
 const coursesUploadDir = path.join(__dirname, '..', 'uploads', 'courses');
@@ -366,6 +367,53 @@ router.delete('/blog/:id', protect, authorize('admin'), async (req, res) => {
     res.json({ message: 'تم حذف المقال' });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/withdrawals', protect, authorize('admin'), async (req, res) => {
+  try {
+    const status = req.query.status || 'pending';
+    const filter = status === 'all' ? {} : { status };
+    const withdrawals = await WithdrawRequest.find(filter)
+      .populate({ path: 'teacher', populate: { path: 'user', select: 'name email' } })
+      .sort({ createdAt: -1 });
+    res.json({ withdrawals });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.patch('/withdrawals/:id', protect, authorize('admin'), async (req, res) => {
+  try {
+    const { action, adminNote } = req.body;
+    const withdrawal = await WithdrawRequest.findById(req.params.id);
+    if (!withdrawal) return res.status(404).json({ error: 'طلب غير موجود' });
+    if (withdrawal.status !== 'pending') {
+      return res.status(400).json({ error: 'تمت معالجة هذا الطلب مسبقاً' });
+    }
+
+    const teacher = await Teacher.findById(withdrawal.teacher);
+    if (!teacher) return res.status(404).json({ error: 'المعلم غير موجود' });
+
+    if (action === 'approve') {
+      if (teacher.earnings.pendingEarnings < withdrawal.amount) {
+        return res.status(400).json({ error: 'رصيد المعلم غير كافٍ' });
+      }
+      teacher.earnings.pendingEarnings -= withdrawal.amount;
+      teacher.earnings.withdrawnEarnings += withdrawal.amount;
+      await teacher.save();
+      withdrawal.status = 'approved';
+    } else if (action === 'reject') {
+      withdrawal.status = 'rejected';
+    } else {
+      return res.status(400).json({ error: 'action يجب أن يكون approve أو reject' });
+    }
+
+    if (adminNote) withdrawal.adminNote = adminNote;
+    await withdrawal.save();
+    res.json({ success: true, withdrawal });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
   }
 });
 

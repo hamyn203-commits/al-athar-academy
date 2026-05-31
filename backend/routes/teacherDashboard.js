@@ -3,6 +3,7 @@ const router = express.Router();
 const Session = require('../models/Session');
 const Teacher = require('../models/Teacher');
 const TeacherTask = require('../models/TeacherTask');
+const WithdrawRequest = require('../models/WithdrawRequest');
 const { protect, authorize } = require('../middleware/auth');
 
 const SESSION_RATE = 50;
@@ -204,6 +205,61 @@ router.get('/analytics', protect, authorize('teacher'), async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+async function availableBalance(teacherId) {
+  const teacher = await Teacher.findById(teacherId);
+  if (!teacher) return 0;
+  const pendingSum = await WithdrawRequest.aggregate([
+    { $match: { teacher: teacher._id, status: 'pending' } },
+    { $group: { _id: null, total: { $sum: '$amount' } } },
+  ]);
+  const locked = pendingSum[0]?.total || 0;
+  return Math.max(0, teacher.earnings.pendingEarnings - locked);
+}
+
+router.get('/withdrawals', protect, authorize('teacher'), async (req, res) => {
+  try {
+    const teacher = await Teacher.findOne({ user: req.user.id });
+    if (!teacher) return res.status(404).json({ error: 'Teacher profile not found' });
+
+    const withdrawals = await WithdrawRequest.find({ teacher: teacher._id }).sort({ createdAt: -1 });
+    const available = await availableBalance(teacher._id);
+    res.json({ withdrawals, available });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/withdrawals', protect, authorize('teacher'), async (req, res) => {
+  try {
+    const teacher = await Teacher.findOne({ user: req.user.id });
+    if (!teacher) return res.status(404).json({ error: 'Teacher profile not found' });
+
+    const { amount, method, accountInfo } = req.body;
+    const num = Number(amount);
+    if (!num || num < SESSION_RATE) {
+      return res.status(400).json({ error: `الحد الأدنى للسحب ${SESSION_RATE} ج.م` });
+    }
+    if (!accountInfo?.trim()) {
+      return res.status(400).json({ error: 'بيانات الحساب مطلوبة' });
+    }
+
+    const available = await availableBalance(teacher._id);
+    if (num > available) {
+      return res.status(400).json({ error: `الرصيد المتاح ${available} ج.م فقط` });
+    }
+
+    const withdrawal = await WithdrawRequest.create({
+      teacher: teacher._id,
+      amount: num,
+      method: method || 'vodafone_cash',
+      accountInfo: accountInfo.trim(),
+    });
+    res.status(201).json({ success: true, withdrawal });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
   }
 });
 

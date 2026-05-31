@@ -77,3 +77,5 @@ Disallow: /
 
 User-agent: Claude-Web
 Disallow: /
+
+# IndexNow key: https://al-athar-academy.vercel.app/alathartayyib2026seokey01.txt

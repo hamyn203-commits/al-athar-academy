@@ -13,6 +13,7 @@ const TeacherTaskSchema = new mongoose.Schema({
   description: { type: String, default: '' },
   dueDate: { type: Date },
   status: { type: String, enum: ['pending', 'submitted', 'done'], default: 'pending' },
+  submissionFile: { type: String, default: '' },
 }, { timestamps: true });
 
 TeacherTaskSchema.index({ teacher: 1, createdAt: -1 });

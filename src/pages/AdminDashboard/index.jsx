@@ -29,6 +29,7 @@ export default function AdminDashboard() {
   const [messages, setMessages] = useState([]);
   const [courses, setCourses] = useState([]);
   const [blogPosts, setBlogPosts] = useState([]);
+  const [withdrawals, setWithdrawals] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [lessons, setLessons] = useState([]);
 
@@ -65,6 +66,11 @@ export default function AdminDashboard() {
     setBlogPosts(Array.isArray(r) ? r : []);
   }, []);
 
+  const loadWithdrawals = useCallback(async () => {
+    const r = await api.get('/api/admin/withdrawals?status=all', { auth: true });
+    setWithdrawals(r.withdrawals || []);
+  }, []);
+
   const loadLessons = async (courseId) => {
     const r = await api.get(`/api/admin/courses/${courseId}/lessons`, { auth: true });
     setLessons(Array.isArray(r) ? r : []);
@@ -77,6 +83,7 @@ export default function AdminDashboard() {
       if (tab === 'messages') await loadMessages();
       if (tab === 'courses') await loadCourses();
       if (tab === 'blog') await loadBlog();
+      if (tab === 'withdrawals') await loadWithdrawals();
     } catch (e) {
       toast.error(e.message || 'تعذر تحميل البيانات');
     } finally {
@@ -162,6 +169,14 @@ export default function AdminDashboard() {
     } catch (e) { toast.error(e.message); }
   };
 
+  const reviewWithdraw = async (id, action) => {
+    try {
+      await api.patch(`/api/admin/withdrawals/${id}`, { action }, { auth: true });
+      toast.success(action === 'approve' ? 'تم تحويل المبلغ' : 'تم رفض الطلب');
+      loadWithdrawals();
+    } catch (e) { toast.error(e.message); }
+  };
+
   const deleteItem = async (type, id) => {
     if (!confirm('هل أنت متأكد؟')) return;
     const paths = { course: `/api/admin/courses/${id}`, lesson: `/api/admin/lessons/${id}`, blog: `/api/admin/blog/${id}`, message: `/api/contact/${id}` };
@@ -177,6 +192,7 @@ export default function AdminDashboard() {
     { id: 'overview', label: 'نظرة عامة' },
     { id: 'messages', label: `الرسائل (${messages.filter(m => m.status === 'new').length || '…'})` },
     { id: 'teachers', label: 'المعلمون' },
+    { id: 'withdrawals', label: `السحوبات (${withdrawals.filter(w => w.status === 'pending').length || '…'})` },
     { id: 'courses', label: 'الدورات' },
     { id: 'blog', label: 'المدونة' },
   ];
@@ -376,6 +392,37 @@ export default function AdminDashboard() {
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {tab === 'withdrawals' && (
+            <div className="space-y-3">
+              {withdrawals.length === 0 ? <Empty text="لا طلبات سحب" /> : withdrawals.map((w) => (
+                <div key={w._id} className="bg-white rounded-xl border p-5 flex flex-wrap justify-between items-center gap-4">
+                  <div>
+                    <p className="font-bold">{w.teacher?.user?.name || w.teacher?.personalInfo?.fullName || 'معلم'}</p>
+                    <p className="text-sm text-gray-500">{w.teacher?.user?.email}</p>
+                    <p className="text-lg font-bold text-emerald-700 mt-1">{w.amount} ج.م — {w.method}</p>
+                    <p className="text-sm text-gray-600">{w.accountInfo}</p>
+                    <p className="text-xs text-gray-400 mt-1">{new Date(w.createdAt).toLocaleString('ar-EG')}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs px-2 py-1 rounded ${
+                      w.status === 'approved' ? 'bg-green-100 text-green-700'
+                        : w.status === 'rejected' ? 'bg-red-100 text-red-700'
+                        : 'bg-yellow-100 text-yellow-700'
+                    }`}>
+                      {w.status === 'approved' ? 'تم التحويل' : w.status === 'rejected' ? 'مرفوض' : 'قيد المراجعة'}
+                    </span>
+                    {w.status === 'pending' && (
+                      <>
+                        <button onClick={() => reviewWithdraw(w._id, 'approve')} className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-sm">موافقة</button>
+                        <button onClick={() => reviewWithdraw(w._id, 'reject')} className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-sm">رفض</button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </>
