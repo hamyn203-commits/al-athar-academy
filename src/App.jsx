@@ -3,10 +3,11 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AppProvider, useAppContext } from './context/AppProvider';
 import { AuthProvider } from './hooks/useAuth.jsx';
 import { ToastProvider } from './context/ToastProvider';
+import { I18nProvider } from './i18n';
 import Logo from './components/Logo';
 import ErrorBoundary from './components/shared/ErrorBoundary';
 
-const LandingPage = lazy(() => import('./pages/LandingPage/LandingPage'));
+const LandingPage = lazy(() => import('./pages/NewLandingPage'));
 const StudentPortal = lazy(() => import('./pages/StudentPortal/StudentPortal'));
 const TeacherPortal = lazy(() => import('./pages/TeacherPortal/TeacherPortal'));
 const LiveSessions = lazy(() => import('./pages/LiveSessions/LiveSessions'));
@@ -72,15 +73,17 @@ function AppContent() {
 export default function App() {
   return (
     <ErrorBoundary>
-      <AppProvider>
-        <AuthProvider>
-          <ToastProvider>
-            <Router>
-              <AppContent />
-            </Router>
-          </ToastProvider>
-        </AuthProvider>
-      </AppProvider>
+      <I18nProvider>
+        <AppProvider>
+          <AuthProvider>
+            <ToastProvider>
+              <Router>
+                <AppContent />
+              </Router>
+            </ToastProvider>
+          </AuthProvider>
+        </AppProvider>
+      </I18nProvider>
     </ErrorBoundary>
   );
 }
