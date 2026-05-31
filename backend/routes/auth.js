@@ -41,6 +41,11 @@ router.post('/register', async (req, res) => {
       role: role === 'teacher' ? 'teacher' : 'student',
     });
 
+    if (req.body.referralCode && user.role === 'student') {
+      const { processReferralSignup } = require('./referrals');
+      await processReferralSignup(req.body.referralCode, user._id).catch(() => {});
+    }
+
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
 

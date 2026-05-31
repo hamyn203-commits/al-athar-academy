@@ -59,6 +59,8 @@ const UserSchema = new mongoose.Schema({
   pushToken: String,
   pushPlatform: String,
   telegramId: String,
+  referralCode: { type: String, unique: true, sparse: true, uppercase: true },
+  referredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   preferences: {
     language: { type: String, default: 'ar', enum: ['ar', 'en', 'fr', 'de', 'tr', 'ur', 'id', 'ms', 'ku'] },
     currency: { type: String, default: 'SAR', enum: ['USD', 'EUR', 'GBP', 'SAR', 'AED', 'EGP', 'TRY', 'PKR', 'IDR'] },

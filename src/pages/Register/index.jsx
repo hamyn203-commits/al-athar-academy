@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { User, Lock, Mail, Phone, Eye, EyeOff, ArrowRight, CheckCircle } from 'lucide-react';
 import Logo from '../../components/Logo';
@@ -7,6 +7,8 @@ import { useI18n } from '../../i18n';
 
 export default function Register() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const referralCode = searchParams.get('ref') || '';
   const { locale } = useI18n();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -57,7 +59,8 @@ export default function Register() {
           email: formData.email,
           phone: formData.phone,
           password: formData.password,
-          role: 'student'
+          role: 'student',
+          ...(referralCode ? { referralCode } : {}),
         })
       });
 

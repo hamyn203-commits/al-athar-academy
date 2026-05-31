@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Calendar, CheckCircle, FileText, Star, Trophy, BookOpen,
-  Upload, Clock, Users, X, Award, Video,
+  Upload, Clock, Users, X, Award, Video, Gift, Copy,
 } from 'lucide-react';
 import { Link as RouterLink } from 'react-router-dom';
 import DashboardLayout, { StatCard, TabBar } from '../../components/dashboard/DashboardLayout';
@@ -47,6 +47,7 @@ export default function StudentDashboard() {
   const [courses, setCourses] = useState([]);
   const [certificates, setCertificates] = useState([]);
   const [recordings, setRecordings] = useState([]);
+  const [referral, setReferral] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const [reviewModal, setReviewModal] = useState(null);
@@ -95,7 +96,10 @@ export default function StudentDashboard() {
       api.get('/api/students/dashboard/recordings', { auth: true })
         .then((d) => setRecordings(d.sessions || [])).catch(() => setRecordings([]));
     }
-  }, [tab, ready, certificates.length, recordings.length]);
+    if (tab === 'referral' && !referral) {
+      api.get('/api/referrals/my', { auth: true }).then(setReferral).catch(() => setReferral({ code: '', stats: {}, referrals: [] }));
+    }
+  }, [tab, ready, certificates.length, recordings.length, referral]);
 
   if (!ready) return null;
 
@@ -181,6 +185,7 @@ export default function StudentDashboard() {
     { id: 'certificates', label: 'شهاداتي' },
     { id: 'recordings', label: 'تسجيلات' },
     { id: 'achievements', label: 'إنجازاتي' },
+    { id: 'referral', label: 'السفراء' },
     { id: 'evaluations', label: 'تقييمات المعلم' },
   ];
 
@@ -397,6 +402,54 @@ export default function StudentDashboard() {
                       </div>
                     ))}
                   </div>
+                )}
+              </div>
+            )}
+
+            {tab === 'referral' && (
+              <div className="space-y-6">
+                <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-6 text-center">
+                  <Gift className="mx-auto text-orange-600 mb-3" size={40} />
+                  <h3 className="font-bold text-lg mb-2">نظام السفراء</h3>
+                  <p className="text-sm text-slate-600 mb-4">ادعُ أصدقاءك واحصل على 50 نقطة لكل تسجيل</p>
+                  {referral?.code && (
+                    <div className="flex items-center justify-center gap-2 flex-wrap">
+                      <code className="bg-white px-4 py-2 rounded-lg font-mono text-lg border">{referral.code}</code>
+                      <button type="button" onClick={() => { navigator.clipboard?.writeText(referral.link || referral.code); toast.success('تم النسخ'); }}
+                        className="flex items-center gap-1 text-sm text-orange-700 hover:underline">
+                        <Copy size={14} /> نسخ الرابط
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <div className="grid grid-cols-3 gap-3 text-center">
+                  <div className="bg-white border rounded-xl p-4">
+                    <p className="text-2xl font-bold text-orange-600">{referral?.stats?.totalInvites || 0}</p>
+                    <p className="text-xs text-gray-500">دعوات</p>
+                  </div>
+                  <div className="bg-white border rounded-xl p-4">
+                    <p className="text-2xl font-bold text-emerald-600">{referral?.stats?.active || 0}</p>
+                    <p className="text-xs text-gray-500">نشطة</p>
+                  </div>
+                  <div className="bg-white border rounded-xl p-4">
+                    <p className="text-2xl font-bold text-blue-600">{referral?.stats?.totalPoints || 0}</p>
+                    <p className="text-xs text-gray-500">نقاط مكافأة</p>
+                  </div>
+                </div>
+                {(referral?.referrals || []).length > 0 ? (
+                  <div className="space-y-2">
+                    <h4 className="font-bold text-sm">آخر الدعوات</h4>
+                    {referral.referrals.slice(0, 10).map((r) => (
+                      <div key={r._id} className="flex justify-between items-center border rounded-lg px-4 py-3 text-sm">
+                        <span>{r.referee?.name || '—'}</span>
+                        <span className={`px-2 py-0.5 rounded text-xs ${r.status === 'rewarded' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                          {r.status === 'rewarded' ? 'مكافأ' : r.status === 'active' ? 'نشط' : 'معلق'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-center text-gray-500 py-4">شارك رابطك مع أصدقائك لبدء كسب النقاط</p>
                 )}
               </div>
             )}

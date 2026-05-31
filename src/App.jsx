@@ -41,6 +41,12 @@ const Register = lazy(() => import('./pages/Register'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const SetupAdmin = lazy(() => import('./pages/SetupAdmin'));
 const AIHub = lazy(() => import('./pages/AIHub'));
+const Donate = lazy(() => import('./pages/Donate'));
+const WomenPortal = lazy(() => import('./pages/Women'));
+const VideoLibrary = lazy(() => import('./pages/Library'));
+const Careers = lazy(() => import('./pages/Careers'));
+const RevertsProgram = lazy(() => import('./pages/Programs/Reverts'));
+const KidsProgram = lazy(() => import('./pages/Programs/Kids'));
 const NotificationsPage = lazy(() => import('./pages/Notifications'));
 const NotificationSettings = lazy(() => import('./pages/Settings/Notifications'));
 
@@ -90,6 +96,12 @@ function pageRoutes() {
       <Route path="live" element={<LiveSessions />} />
       <Route path="live/:roomId" element={<LiveRoom />} />
       <Route path="ai" element={<AIHub />} />
+      <Route path="donate" element={<Donate />} />
+      <Route path="women" element={<WomenPortal />} />
+      <Route path="library" element={<VideoLibrary />} />
+      <Route path="careers" element={<Careers />} />
+      <Route path="programs/reverts" element={<RevertsProgram />} />
+      <Route path="programs/kids" element={<KidsProgram />} />
       <Route path="notifications" element={<NotificationsPage />} />
       <Route path="settings/notifications" element={<NotificationSettings />} />
     </>

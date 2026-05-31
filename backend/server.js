@@ -138,7 +138,7 @@ app.get('/api/health', (req, res) => {
     status: 'ok', 
     message: 'Al-Athar Backend API is running!',
     timestamp: new Date().toISOString(),
-    version: '1.0.0',
+    version: '4.2.0',
     features: {
       ai: !!(process.env.OPENAI_API_KEY || process.env.GEMINI_API_KEY),
       email: !!process.env.RESEND_API_KEY,
@@ -178,6 +178,11 @@ app.use('/api/setup', require('./routes/setup'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/lms', require('./routes/lms'));
 app.use('/api/meetings', require('./routes/meetings'));
+app.use('/api/referrals', require('./routes/referrals'));
+app.use('/api/donations', require('./routes/donations'));
+app.use('/api/videos', require('./routes/videos'));
+app.use('/api/careers', require('./routes/careers'));
+app.use('/api/women', require('./routes/women'));
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });

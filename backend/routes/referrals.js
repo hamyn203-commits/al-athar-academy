@@ -1,0 +1,114 @@
+const express = require('express');
+const crypto = require('crypto');
+const router = express.Router();
+const User = require('../models/User');
+const Referral = require('../models/Referral');
+const ReferralReward = require('../models/ReferralReward');
+const { protect } = require('../middleware/auth');
+
+function generateReferralCode() {
+  return crypto.randomBytes(4).toString('hex').toUpperCase();
+}
+
+async function ensureReferralCode(user) {
+  if (user.referralCode) return user.referralCode;
+  let code;
+  let exists = true;
+  while (exists) {
+    code = generateReferralCode();
+    exists = await User.findOne({ referralCode: code });
+  }
+  user.referralCode = code;
+  await user.save();
+  return code;
+}
+
+router.get('/validate/:code', async (req, res) => {
+  try {
+    const code = req.params.code.toUpperCase();
+    const referrer = await User.findOne({ referralCode: code, isActive: true }).select('name referralCode');
+    if (!referrer) return res.status(404).json({ valid: false, error: 'رمز غير صالح' });
+    res.json({ valid: true, referrerName: referrer.name });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/my', protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    const code = await ensureReferralCode(user);
+
+    const referrals = await Referral.find({ referrer: req.user.id })
+      .populate('referee', 'name email createdAt')
+      .sort({ createdAt: -1 });
+
+    const rewards = await ReferralReward.find({ user: req.user.id }).sort({ createdAt: -1 }).limit(20);
+    const totalPoints = rewards.reduce((s, r) => s + r.points, 0);
+
+    res.json({
+      code,
+      link: `${process.env.SITE_URL || process.env.VITE_SITE_URL || 'https://al-athar-academy.vercel.app'}/register/student?ref=${code}`,
+      stats: {
+        totalInvites: referrals.length,
+        active: referrals.filter((r) => r.status === 'active' || r.status === 'rewarded').length,
+        pending: referrals.filter((r) => r.status === 'pending').length,
+        totalPoints,
+      },
+      referrals,
+      rewards,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/leaderboard', async (req, res) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit) || 10, 50);
+    const rows = await Referral.aggregate([
+      { $group: { _id: '$referrer', count: { $sum: 1 }, rewarded: { $sum: { $cond: [{ $eq: ['$status', 'rewarded'] }, 1, 0] } } } },
+      { $sort: { count: -1 } },
+      { $limit: limit },
+      { $lookup: { from: 'users', localField: '_id', foreignField: '_id', as: 'user' } },
+      { $unwind: '$user' },
+      { $project: { name: '$user.name', count: 1, rewarded: 1 } },
+    ]);
+    res.json({ leaderboard: rows.map((r, i) => ({ rank: i + 1, name: r.name, invites: r.count, rewarded: r.rewarded })) });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+async function processReferralSignup(referrerCode, newUserId) {
+  if (!referrerCode) return null;
+  const code = referrerCode.toUpperCase();
+  const referrer = await User.findOne({ referralCode: code, isActive: true });
+  if (!referrer || referrer._id.toString() === newUserId.toString()) return null;
+
+  const referral = await Referral.create({
+    referrer: referrer._id,
+    referee: newUserId,
+    code,
+    status: 'active',
+  });
+
+  await User.findByIdAndUpdate(newUserId, { referredBy: referrer._id });
+
+  const points = 50;
+  await ReferralReward.create({
+    user: referrer._id,
+    referral: referral._id,
+    type: 'signup',
+    points,
+    description: 'دعوة طالب جديد',
+  });
+
+  referral.status = 'rewarded';
+  await referral.save();
+  return referral;
+}
+
+module.exports = router;
+module.exports.processReferralSignup = processReferralSignup;
+module.exports.ensureReferralCode = ensureReferralCode;

@@ -192,13 +192,28 @@ function LearningTab() {
 }
 
 function GrowthTab() {
+  const links = [
+    { to: '/donate', label: 'التبرعات' },
+    { to: '/women', label: 'أكاديمية النساء' },
+    { to: '/library', label: 'مكتبة الفيديو' },
+    { to: '/careers', label: 'التوظيف' },
+    { to: '/programs/reverts', label: 'المسلمون الجدد' },
+    { to: '/programs/kids', label: 'برنامج الأطفال' },
+  ];
+
   return (
     <div className="v4-tab-stack">
       <SectionTitle
         eyebrow="النمو العالمي"
         title="الأطفال، المسلمين الجدد، النساء، الموبايل، التبرعات والتوظيف"
-        description="منظومة النمو في V4/V5 أصبحت وحدات ظاهرة للمستخدم ويمكن تطوير كل وحدة لاحقاً كصفحة مستقلة."
+        description="وحدات V4.2 جاهزة — اضغط للانتقال لكل قسم."
       />
+
+      <div className="flex flex-wrap gap-3 mb-6">
+        {links.map((l) => (
+          <Link key={l.to} to={l.to} className="btn-premium-outline">{l.label}</Link>
+        ))}
+      </div>
 
       <div className="v4-feature-grid compact">
         {v4GrowthSystems.map((system) => (
