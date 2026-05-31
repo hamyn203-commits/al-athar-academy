@@ -93,9 +93,6 @@ function pageRoutes() {
 function AppContent() {
   return (
     <div className="min-h-screen flex flex-col">
-      <div className="bg-particle" style={{ top: '15%', left: '20%', width: '350px', height: '350px' }} />
-      <div className="bg-particle" style={{ top: '60%', right: '10%', width: '400px', height: '400px' }} />
-
       <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/" element={<LocaleLayout />}>{pageRoutes()}</Route>
