@@ -1,6 +1,6 @@
 import { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { AppProvider, useAppContext } from './context/AppProvider';
+import { AppProvider } from './context/AppProvider';
 import { AuthProvider } from './hooks/useAuth.jsx';
 import { ToastProvider } from './context/ToastProvider';
 import { I18nProvider } from './i18n';
@@ -91,9 +91,8 @@ function pageRoutes() {
 }
 
 function AppContent() {
-  const { t } = useAppContext();
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+    <div className="min-h-screen flex flex-col">
       <div className="bg-particle" style={{ top: '15%', left: '20%', width: '350px', height: '350px' }} />
       <div className="bg-particle" style={{ top: '60%', right: '10%', width: '400px', height: '400px' }} />
 
@@ -104,15 +103,6 @@ function AppContent() {
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Suspense>
-
-      <footer style={{ background: 'var(--bg-elevated)', borderTop: '1px solid var(--border-light)', padding: '32px 0', marginTop: 'auto', position: 'relative', zIndex: 1 }}>
-        <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
-          <Logo size={40} showText />
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-            {t.footer?.rights || 'جميع الحقوق محفوظة'} © {new Date().getFullYear()} | {t.footer?.slogan || 'أثرٌ يساوي حياة'}
-          </p>
-        </div>
-      </footer>
     </div>
   );
 }

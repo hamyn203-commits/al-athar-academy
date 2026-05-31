@@ -1,3 +1,6 @@
+@import "tailwindcss";
+@config "../tailwind.config.js";
+
 /* Global Styles */
 * {
   margin: 0;
@@ -96,4 +99,16 @@ body {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+.loading-overlay {
+  @apply fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-white/90;
+}
+
+.spinner {
+  @apply w-8 h-8 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin;
+}
+
+.spinner-lg {
+  @apply w-12 h-12;
 }
