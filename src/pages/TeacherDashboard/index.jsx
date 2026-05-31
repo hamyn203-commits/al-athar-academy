@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Calendar, Users, Star, Wallet, ClipboardList,
   BookOpen, X, Plus, Clock, BarChart3, MessageSquare, Sparkles,
@@ -460,10 +461,14 @@ export default function TeacherDashboard() {
                         </a>
                       )}
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-wrap">
                       {s.meetingLink && (
-                        <a href={s.meetingLink} target="_blank" rel="noreferrer"
-                          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">بدء</a>
+                        <>
+                          <a href={s.meetingLink} target="_blank" rel="noreferrer"
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">بدء</a>
+                          <Link to={`/meeting/${s._id}`}
+                            className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm">🌐 ترجمة</Link>
+                        </>
                       )}
                       <button onClick={() => openEval(s)} className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm">
                         إكمال + تقييم

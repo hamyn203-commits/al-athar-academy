@@ -136,7 +136,7 @@ connectDB();
 app.get('/', (req, res) => {
   res.json({
     service: 'Al-Athar Academy API',
-    version: '6.1.0',
+    version: '6.2.0',
     status: 'ok',
     message: 'الـ API يعمل — استخدم المسارات تحت /api',
     health: '/api/health',
@@ -151,7 +151,7 @@ app.get('/api/health', (req, res) => {
     status: 'ok', 
     message: 'Al-Athar Backend API is running!',
     timestamp: new Date().toISOString(),
-    version: '6.1.0',
+    version: '6.2.0',
     features: {
       ai: !!(process.env.OPENAI_API_KEY || process.env.GEMINI_API_KEY || process.env.AWS_BEARER_TOKEN_BEDROCK),
       bedrock: !!process.env.AWS_BEARER_TOKEN_BEDROCK,
@@ -160,6 +160,7 @@ app.get('/api/health', (req, res) => {
       whatsapp: !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN),
       livekit: !!(process.env.LIVEKIT_API_KEY && process.env.LIVEKIT_API_SECRET &&
         process.env.LIVEKIT_API_KEY !== 'your-api-key'),
+      translation: true,
       meetings: process.env.DEFAULT_MEETING_PROVIDER || 'jitsi',
       database: mongoose.connection.readyState === 1,
     },
@@ -173,7 +174,9 @@ app.use('/api/students', require('./routes/students'));
 app.use('/api/students/dashboard', require('./routes/studentDashboard'));
 app.use('/api/teachers', require('./routes/teachers'));
 app.use('/api/teachers/dashboard', require('./routes/teacherDashboard'));
+app.use('/api/translate', require('./routes/translate'));
 app.use('/api/sessions', require('./routes/sessions'));
+app.use('/api/sessions/:id/translate', require('./routes/sessionTranslate'));
 app.use('/api/assessments', require('./routes/assessments'));
 app.use('/api/reviews', require('./routes/reviews'));
 app.use('/api/homework', require('./routes/homework'));

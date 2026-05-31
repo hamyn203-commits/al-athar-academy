@@ -7,7 +7,6 @@ import {
   useLocalParticipant,
   useRoomContext,
   useParticipants,
-  useTracks,
   TrackToggle,
   DisconnectButton
 } from '@livekit/components-react';
@@ -15,34 +14,60 @@ import '@livekit/components-styles';
 import './LiveRoom.css';
 import { 
   Mic, MicOff, Video, VideoOff, Monitor, MonitorOff, 
-  PhoneOff, Users, MessageSquare, Send, X, ArrowRight
+  PhoneOff, Users, MessageSquare, Send, X, ArrowRight, Languages
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Logo from '../../components/Logo';
 import { useAppContext } from '../../context/AppProvider';
 import { API_BASE_URL } from '../../config';
+import { LangSelect } from '../../components/live/SessionTranslateChat';
+import { translateText } from '../../lib/translateApi';
+import { detectBrowserLocale } from '../../lib/locale';
 
 function LiveRoomContent({ isHost }) {
   const { t } = useAppContext();
   const [showChat, setShowChat] = useState(false);
   const [chatMessages, setChatMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
+  const [myLang, setMyLang] = useState(detectBrowserLocale());
+  const [partnerLang, setPartnerLang] = useState(myLang === 'ar' ? 'id' : 'ar');
+  const [autoTranslate, setAutoTranslate] = useState(true);
   const participants = useParticipants();
   const room = useRoomContext();
   const localParticipant = useLocalParticipant();
 
+  const addMessage = async (text, sender, isMe, lang) => {
+    let displayText = text;
+    let original = null;
+    if (autoTranslate && lang && lang !== myLang) {
+      try {
+        displayText = await translateText(text, lang, myLang);
+        original = text;
+      } catch { /* keep original */ }
+    }
+    setChatMessages((prev) => [...prev, {
+      id: `${Date.now()}-${Math.random()}`,
+      sender,
+      text: displayText,
+      original,
+      lang,
+      timestamp: new Date().toLocaleTimeString(),
+      isMe,
+    }]);
+  };
+
   useEffect(() => {
     if (!room) return;
 
-    const handleDataReceived = (payload, participant) => {
+    const handleDataReceived = async (payload, participant) => {
       try {
         const message = JSON.parse(new TextDecoder().decode(payload));
-        setChatMessages(prev => [...prev, {
-          id: Date.now(),
-          sender: participant?.name || 'Unknown',
-          text: message.text,
-          timestamp: new Date().toLocaleTimeString()
-        }]);
+        await addMessage(
+          message.text,
+          participant?.name || 'Unknown',
+          false,
+          message.lang || 'ar'
+        );
       } catch (e) {
         console.error('Failed to parse message:', e);
       }
@@ -50,7 +75,7 @@ function LiveRoomContent({ isHost }) {
 
     room.on('dataReceived', handleDataReceived);
     return () => room.off('dataReceived', handleDataReceived);
-  }, [room]);
+  }, [room, myLang, autoTranslate]);
 
   const sendMessage = async (e) => {
     e.preventDefault();
@@ -58,7 +83,8 @@ function LiveRoomContent({ isHost }) {
 
     const messageData = {
       text: newMessage,
-      timestamp: Date.now()
+      lang: myLang,
+      timestamp: Date.now(),
     };
 
     try {
@@ -67,12 +93,13 @@ function LiveRoomContent({ isHost }) {
         { reliable: true }
       );
 
-      setChatMessages(prev => [...prev, {
+      setChatMessages((prev) => [...prev, {
         id: Date.now(),
         sender: 'أنا',
         text: newMessage,
+        lang: myLang,
         timestamp: new Date().toLocaleTimeString(),
-        isMe: true
+        isMe: true,
       }]);
       setNewMessage('');
     } catch (error) {
@@ -133,6 +160,20 @@ function LiveRoomContent({ isHost }) {
                   <X size={20} />
                 </button>
               </div>
+
+              <div className="p-3 border-b bg-emerald-50/80 space-y-2">
+                <div className="flex items-center gap-2 text-xs font-medium text-emerald-800">
+                  <Languages size={14} /> ترجمة فورية
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <LangSelect label="لغتي" value={myLang} onChange={setMyLang} isAr />
+                  <LangSelect label="ترجم إلى" value={partnerLang} onChange={setPartnerLang} isAr />
+                </div>
+                <label className="flex items-center gap-2 text-xs">
+                  <input type="checkbox" checked={autoTranslate} onChange={(e) => setAutoTranslate(e.target.checked)} />
+                  ترجمة تلقائية للرسائل الواردة
+                </label>
+              </div>
               
               <div className="chat-messages">
                 {chatMessages.length === 0 ? (
@@ -148,6 +189,9 @@ function LiveRoomContent({ isHost }) {
                         <span className="message-time">{msg.timestamp}</span>
                       </div>
                       <p className="message-text">{msg.text}</p>
+                      {msg.original && msg.original !== msg.text && (
+                        <p className="text-xs text-gray-400 mt-1 italic">{msg.original}</p>
+                      )}
                     </div>
                   ))
                 )}

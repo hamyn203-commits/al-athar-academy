@@ -52,7 +52,7 @@ const KidsProgram = lazy(() => import('./pages/Programs/Kids'));
 const MobileAppPage = lazy(() => import('./pages/Mobile'));
 const LeaderboardPage = lazy(() => import('./pages/Leaderboard'));
 const NotificationsPage = lazy(() => import('./pages/Notifications'));
-const NotificationSettings = lazy(() => import('./pages/Settings/Notifications'));
+const MeetingRoom = lazy(() => import('./pages/Meeting/MeetingRoom'));
 
 function PageLoader() {
   return (
@@ -99,6 +99,7 @@ function pageRoutes() {
       <Route path="admin" element={<AdminDashboard />} />
       <Route path="live" element={<LiveSessions />} />
       <Route path="live/:roomId" element={<LiveRoom />} />
+      <Route path="meeting/:sessionId" element={<MeetingRoom />} />
       <Route path="ai" element={<AIHub />} />
       <Route path="donate" element={<Donate />} />
       <Route path="women" element={<WomenPortal />} />

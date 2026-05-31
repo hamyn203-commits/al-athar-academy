@@ -613,10 +613,16 @@ function SessionCard({ session, onReview, hasReviewed }) {
           <p className="text-xs text-amber-600 mt-1">بانتظار موافقة المعلم</p>
         )}
         {session.meetingLink && session.status === 'accepted' && (
-          <a href={session.meetingLink} target="_blank" rel="noreferrer"
-            className="block mt-2 text-sm text-emerald-600 font-semibold hover:underline">
-            انضم للحصة
-          </a>
+          <div className="flex flex-wrap gap-2 mt-2">
+            <a href={session.meetingLink} target="_blank" rel="noreferrer"
+              className="text-sm text-emerald-600 font-semibold hover:underline">
+              انضم للحصة
+            </a>
+            <Link to={`/meeting/${session._id}`}
+              className="text-sm text-purple-600 font-semibold hover:underline flex items-center gap-1">
+              🌐 مع ترجمة
+            </Link>
+          </div>
         )}
       </div>
       {session.status === 'completed' && !hasReviewed && (
