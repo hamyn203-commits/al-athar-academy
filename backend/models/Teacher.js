@@ -48,6 +48,7 @@ const TeacherSchema = new mongoose.Schema({
     introductionVideo: { type: String, required: true },
     recitationVideo: { type: String, required: true },
     teachingMethodVideo: { type: String, required: true },
+    additionalVideos: [String],
     audioRecordings: [String]
   },
   status: {

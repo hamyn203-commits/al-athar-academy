@@ -222,9 +222,9 @@ export default function TeacherProfile() {
               {activeTab === 'videos' && (
                 <div className="space-y-6">
                   <div>
-                    <h3 className="text-xl font-bold mb-3">فيديو تعريفي</h3>
+                    <h3 className="text-xl font-bold mb-3">📹 فيديو تعريفي</h3>
                     {teacher.media.introductionVideo ? (
-                      <video controls className="w-full rounded-lg">
+                      <video controls className="w-full rounded-lg shadow-lg">
                         <source src={teacher.media.introductionVideo} type="video/mp4" />
                       </video>
                     ) : (
@@ -233,9 +233,9 @@ export default function TeacherProfile() {
                   </div>
 
                   <div>
-                    <h3 className="text-xl font-bold mb-3">فيديو تلاوة</h3>
+                    <h3 className="text-xl font-bold mb-3">🎙️ فيديو تلاوة قرآن</h3>
                     {teacher.media.recitationVideo ? (
-                      <video controls className="w-full rounded-lg">
+                      <video controls className="w-full rounded-lg shadow-lg">
                         <source src={teacher.media.recitationVideo} type="video/mp4" />
                       </video>
                     ) : (
@@ -244,15 +244,49 @@ export default function TeacherProfile() {
                   </div>
 
                   <div>
-                    <h3 className="text-xl font-bold mb-3">فيديو طريقة التدريس</h3>
+                    <h3 className="text-xl font-bold mb-3">📚 فيديو طريقة التدريس</h3>
                     {teacher.media.teachingMethodVideo ? (
-                      <video controls className="w-full rounded-lg">
+                      <video controls className="w-full rounded-lg shadow-lg">
                         <source src={teacher.media.teachingMethodVideo} type="video/mp4" />
                       </video>
                     ) : (
                       <p className="text-gray-500">لا يوجد فيديو طريقة التدريس</p>
                     )}
                   </div>
+
+                  {teacher.media.additionalVideos && teacher.media.additionalVideos.length > 0 && (
+                    <div>
+                      <h3 className="text-xl font-bold mb-3">🎬 فيديوهات إضافية</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {teacher.media.additionalVideos.map((video, index) => (
+                          <div key={index} className="border rounded-lg overflow-hidden shadow-md">
+                            <video controls className="w-full">
+                              <source src={video} type="video/mp4" />
+                            </video>
+                            <div className="p-3 bg-gray-50">
+                              <p className="text-sm text-gray-600">فيديو {index + 1}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {teacher.media.audioRecordings && teacher.media.audioRecordings.length > 0 && (
+                    <div>
+                      <h3 className="text-xl font-bold mb-3">🎵 تسجيلات صوتية</h3>
+                      <div className="space-y-3">
+                        {teacher.media.audioRecordings.map((audio, index) => (
+                          <div key={index} className="border rounded-lg p-4 bg-gray-50">
+                            <p className="text-sm font-semibold mb-2">تسجيل {index + 1}</p>
+                            <audio controls className="w-full">
+                              <source src={audio} type="audio/mpeg" />
+                            </audio>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 

@@ -32,7 +32,7 @@ const upload = multer({
   }
 });
 
-router.post('/register', protect, upload.fields([
+router.post('/register', upload.fields([
   { name: 'profilePhoto', maxCount: 1 },
   { name: 'idCard', maxCount: 1 },
   { name: 'graduationCertificate', maxCount: 1 },
@@ -41,15 +41,40 @@ router.post('/register', protect, upload.fields([
   { name: 'introductionVideo', maxCount: 1 },
   { name: 'recitationVideo', maxCount: 1 },
   { name: 'teachingMethodVideo', maxCount: 1 },
+  { name: 'additionalVideos', maxCount: 10 },
   { name: 'audioRecordings', maxCount: 5 }
 ]), async (req, res) => {
   try {
-    const existingTeacher = await Teacher.findOne({ user: req.user.id });
+    const { personalInfo, academicInfo, quranInfo, languages, availability, email, password } = req.body;
+
+    let userId = req.user?.id;
+
+    if (!userId && email && password) {
+      const existingUser = await User.findOne({ email: email.toLowerCase() });
+      
+      if (existingUser) {
+        return res.status(409).json({ error: 'Email already registered' });
+      }
+
+      const user = await User.create({
+        name: JSON.parse(personalInfo).fullName,
+        email,
+        password,
+        phone: JSON.parse(personalInfo).phone,
+        role: 'teacher'
+      });
+
+      userId = user._id;
+    }
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const existingTeacher = await Teacher.findOne({ user: userId });
     if (existingTeacher) {
       return res.status(400).json({ error: 'Teacher profile already exists' });
     }
-
-    const { personalInfo, academicInfo, quranInfo, languages, availability } = req.body;
 
     const documents = {
       idCard: req.files?.idCard?.[0]?.path || '',
@@ -63,11 +88,12 @@ router.post('/register', protect, upload.fields([
       introductionVideo: req.files?.introductionVideo?.[0]?.path || '',
       recitationVideo: req.files?.recitationVideo?.[0]?.path || '',
       teachingMethodVideo: req.files?.teachingMethodVideo?.[0]?.path || '',
+      additionalVideos: req.files?.additionalVideos?.map(f => f.path) || [],
       audioRecordings: req.files?.audioRecordings?.map(f => f.path) || []
     };
 
     const teacher = await Teacher.create({
-      user: req.user.id,
+      user: userId,
       personalInfo: JSON.parse(personalInfo),
       academicInfo: JSON.parse(academicInfo),
       quranInfo: JSON.parse(quranInfo),
@@ -77,7 +103,7 @@ router.post('/register', protect, upload.fields([
       media
     });
 
-    await User.findByIdAndUpdate(req.user.id, { role: 'teacher' });
+    await User.findByIdAndUpdate(userId, { role: 'teacher' });
 
     res.status(201).json({
       success: true,

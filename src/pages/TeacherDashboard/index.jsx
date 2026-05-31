@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Users, DollarSign, Clock, BookOpen, CheckCircle, XCircle, Star, TrendingUp } from 'lucide-react';
+import { Calendar, Users, DollarSign, Clock, BookOpen, CheckCircle, XCircle, Star, TrendingUp, FileText, Award, Plus } from 'lucide-react';
 
 export default function TeacherDashboard() {
   const navigate = useNavigate();
@@ -250,6 +250,28 @@ export default function TeacherDashboard() {
               >
                 الطلاب
               </button>
+              <button
+                onClick={() => setActiveTab('homework')}
+                className={`px-6 py-4 font-semibold whitespace-nowrap ${
+                  activeTab === 'homework'
+                    ? 'border-b-2 border-emerald-600 text-emerald-600'
+                    : 'text-gray-600'
+                }`}
+              >
+                <FileText className="inline ml-1" size={18} />
+                الواجبات
+              </button>
+              <button
+                onClick={() => setActiveTab('ratings')}
+                className={`px-6 py-4 font-semibold whitespace-nowrap ${
+                  activeTab === 'ratings'
+                    ? 'border-b-2 border-emerald-600 text-emerald-600'
+                    : 'text-gray-600'
+                }`}
+              >
+                <Award className="inline ml-1" size={18} />
+                التقييمات
+              </button>
             </div>
           </div>
 
@@ -364,6 +386,46 @@ export default function TeacherDashboard() {
                     </div>
                   ))
                 )}
+              </div>
+            )}
+
+            {activeTab === 'homework' && (
+              <div className="space-y-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-bold">الواجبات والمهام</h2>
+                  <button className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 flex items-center gap-2">
+                    <Plus size={18} />
+                    إضافة واجب جديد
+                  </button>
+                </div>
+                <p className="text-center text-gray-500 py-8">قريباً - نظام الواجبات قيد التطوير</p>
+              </div>
+            )}
+
+            {activeTab === 'ratings' && (
+              <div className="space-y-4">
+                <h2 className="text-xl font-bold mb-4">تقييمات الطلاب</h2>
+                <div className="bg-gradient-to-r from-orange-50 to-yellow-50 border border-orange-200 rounded-lg p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600 mb-1">متوسط التقييم</p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-4xl font-bold text-orange-600">{stats.averageRating.toFixed(1)}</span>
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: 5 }).map((_, i) => (
+                            <Star
+                              key={i}
+                              size={24}
+                              className={i < Math.round(stats.averageRating) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    <Award className="text-orange-600" size={64} />
+                  </div>
+                </div>
+                <p className="text-center text-gray-500 py-4">التقييمات التفصيلية قريباً</p>
               </div>
             )}
           </div>

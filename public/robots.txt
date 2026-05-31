@@ -1,6 +1,17 @@
 User-agent: *
 Allow: /
-Disallow: /api/
-Disallow: /admin/
+Allow: /teachers
+Allow: /teachers/*
+Allow: /teacher/register
+Allow: /about
+Allow: /contact
 
-Sitemap: https://alathar.edu/sitemap.xml
+Disallow: /admin
+Disallow: /teacher/dashboard
+Disallow: /student/dashboard
+Disallow: /api/
+
+Sitemap: https://al-athar-academy.vercel.app/sitemap.xml
+
+# Crawl-delay for better server performance
+Crawl-delay: 2

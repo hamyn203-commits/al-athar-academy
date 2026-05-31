@@ -4,6 +4,7 @@ import { User, Users, Menu, X } from 'lucide-react';
 import Logo from './Logo';
 import LanguageSwitcher from './shared/LanguageSwitcher';
 import ThemeToggle from './shared/ThemeToggle';
+import NotificationBell from './NotificationBell';
 import { useAppContext } from '../context/AppProvider';
 
 export default function Header() {
@@ -59,6 +60,7 @@ export default function Header() {
 
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }} className="desktop-only">
             <ThemeToggle />
+            <NotificationBell />
             <LanguageSwitcher compact />
             <Link to="/student" className="btn-premium-outline" style={{ padding: '8px 20px', fontSize: '0.88rem' }} aria-label={t.header.studentPortal}>
               <User size={16} /> {t.header.studentPortal}
