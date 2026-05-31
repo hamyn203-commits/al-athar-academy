@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, Award, Sparkles, Video, Calendar, Clock, Send, ArrowRight } from 'lucide-react';
+import { BookOpen, Award, Sparkles, Video, Calendar, Clock, Send, ArrowRight, Users, Star, MapPin } from 'lucide-react';
 import Tilt from 'react-parallax-tilt';
 import { motion } from 'framer-motion';
 import Logo from '../../components/Logo';
@@ -55,11 +55,12 @@ function HeroSection({ t }) {
         <Link to="/student" className="btn-premium" style={{ fontSize: '1.1rem', padding: '16px 40px', boxShadow: '0 10px 35px rgba(197, 168, 128, 0.35)' }}>
           {t.hero.joinAsStudent} <ArrowRight size={20} style={{ transform: 'rotate(180deg)' }} />
         </Link>
-        <Link to="/teacher" className="btn-premium-outline" style={{ fontSize: '1.1rem', padding: '16px 40px', background: 'rgba(0,0,0,0.4)', color: '#fff', borderColor: 'rgba(255,255,255,0.3)' }}>
-          {t.hero.teacherPortal}
+        <Link to="/teachers" className="btn-premium" style={{ fontSize: '1.1rem', padding: '16px 40px', background: 'linear-gradient(135deg, #10b981, #059669)', boxShadow: '0 10px 35px rgba(16, 185, 129, 0.35)' }}>
+          <Users size={20} style={{ marginLeft: '8px' }} />
+          تصفح المعلمين
         </Link>
-        <Link to="/global-platform" className="btn-premium-outline" style={{ fontSize: '1.1rem', padding: '16px 40px', background: 'rgba(255,255,255,0.08)', color: '#fff', borderColor: 'rgba(255,255,255,0.3)' }}>
-          منصة V4 العالمية
+        <Link to="/teacher/register" className="btn-premium-outline" style={{ fontSize: '1.1rem', padding: '16px 40px', background: 'rgba(0,0,0,0.4)', color: '#fff', borderColor: 'rgba(255,255,255,0.3)' }}>
+          سجل كمعلم
         </Link>
       </motion.div>
     </section>
@@ -92,6 +93,70 @@ function AboutSection({ t }) {
             </motion.div>
           ))}
         </div>
+      </div>
+    </section>
+  );
+}
+
+function FeaturedTeachersSection() {
+  return (
+    <section style={{ background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(5, 150, 105, 0.05))', padding: '80px 0', borderY: '1px solid rgba(16, 185, 129, 0.2)' }}>
+      <div className="container">
+        <motion.div style={{ textAlign: 'center', marginBottom: '50px' }} {...fadeUp} transition={{ duration: 0.6 }}>
+          <span className="badge-gold" style={{ fontSize: '0.9rem', padding: '6px 20px', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.3)' }}>
+            🌟 معلمون معتمدون
+          </span>
+          <h2 style={{ fontSize: 'clamp(1.8rem, 4vw, 2.4rem)', marginTop: '16px' }} className="text-gradient-gold">
+            نخبة من أفضل المعلمين
+          </h2>
+          <p style={{ color: 'var(--text-secondary)', marginTop: '10px', maxWidth: '600px', margin: '10px auto 0' }}>
+            اختر معلمك من بين مجموعة من المعلمين المجازين والمعتمدين
+          </p>
+        </motion.div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px', marginBottom: '40px' }}>
+          {[1, 2, 3].map((i) => (
+            <motion.div key={i} {...fadeUp} transition={{ duration: 0.6, delay: i * 0.15 }}>
+              <Tilt className="premium-card" tiltMaxAngleX={8} tiltMaxAngleY={8} scale={1.02} transitionSpeed={2000} glareEnable glareMaxOpacity={0.08} glarePosition="all" style={{ padding: '0', overflow: 'hidden' }}>
+                <div style={{ position: 'relative', height: '200px', background: 'linear-gradient(135deg, #10b981, #059669)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Users size={80} style={{ color: 'rgba(255,255,255,0.3)' }} />
+                  <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(255,255,255,0.9)', padding: '4px 12px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '600', color: '#10b981' }}>
+                    ⭐ معلم مميز
+                  </div>
+                </div>
+                <div style={{ padding: '20px' }}>
+                  <h3 style={{ fontSize: '1.2rem', marginBottom: '8px' }}>معلم {i}</h3>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                    <Star size={16} style={{ color: '#fbbf24', fill: '#fbbf24' }} />
+                    <span style={{ fontWeight: '600' }}>4.{8 + i}</span>
+                    <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>({50 + i * 10} تقييم)</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <MapPin size={14} />
+                      <span>مصر</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Clock size={14} />
+                      <span>{5 + i * 2} سنوات خبرة</span>
+                    </div>
+                  </div>
+                  <div style={{ marginTop: '16px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <span style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '4px 12px', borderRadius: '12px', fontSize: '0.75rem' }}>تجويد</span>
+                    <span style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '4px 12px', borderRadius: '12px', fontSize: '0.75rem' }}>حفظ</span>
+                  </div>
+                </div>
+              </Tilt>
+            </motion.div>
+          ))}
+        </div>
+
+        <motion.div style={{ textAlign: 'center' }} {...fadeUp} transition={{ duration: 0.6, delay: 0.5 }}>
+          <Link to="/teachers" className="btn-premium" style={{ fontSize: '1.1rem', padding: '16px 48px', background: 'linear-gradient(135deg, #10b981, #059669)', boxShadow: '0 10px 35px rgba(16, 185, 129, 0.35)' }}>
+            <Users size={20} style={{ marginLeft: '8px' }} />
+            تصفح جميع المعلمين
+          </Link>
+        </motion.div>
       </div>
     </section>
   );
@@ -242,6 +307,7 @@ export default function LandingPage() {
       <main id="main-content" style={{ flex: 1 }}>
         <HeroSection t={t} />
         <AboutSection t={t} />
+        <FeaturedTeachersSection />
         <SheikhsSection onVideoOpen={(v) => setVideoModal({ open: true, video: v })} t={t} />
         <HonorBoardSection t={t} />
         <ContactSection t={t} />
