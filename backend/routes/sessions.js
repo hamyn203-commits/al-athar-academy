@@ -57,6 +57,59 @@ router.post('/trial', protect, async (req, res) => {
   }
 });
 
+router.post('/regular', protect, async (req, res) => {
+  try {
+    if (req.user.role !== 'student') {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const { teacherId, scheduledAt, timezone, notes } = req.body;
+    const teacher = await Teacher.findOne({ _id: teacherId, status: 'approved', isVerified: true });
+    if (!teacher) {
+      return res.status(404).json({ error: 'Teacher not found or not available' });
+    }
+
+    const prior = await Session.findOne({
+      student: req.user.id,
+      teacher: teacherId,
+      status: { $in: ['accepted', 'completed'] },
+    });
+    if (!prior) {
+      return res.status(400).json({ error: 'يجب إجراء حصة تجريبية أو حصة سابقة مع هذا المعلم أولاً' });
+    }
+
+    const existing = await Session.findOne({
+      student: req.user.id,
+      teacher: teacherId,
+      type: 'regular',
+      status: { $in: ['pending', 'accepted'] },
+    });
+    if (existing) {
+      return res.status(400).json({ error: 'لديك حصة منتظمة قيد الانتظار أو مقبولة مع هذا المعلم' });
+    }
+
+    const session = await Session.create({
+      student: req.user.id,
+      teacher: teacherId,
+      type: 'regular',
+      scheduledAt: new Date(scheduledAt),
+      timezone: timezone || 'Africa/Cairo',
+      notes,
+      status: 'pending',
+    });
+
+    try {
+      await notifyTeacherForSessionRequest(session, teacher.user);
+    } catch (e) {
+      console.warn('Regular session notification:', e.message);
+    }
+
+    res.status(201).json({ success: true, message: 'تم إرسال طلب الحصة', session });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
 router.get('/my-sessions', protect, async (req, res) => {
   try {
     const { status, type, page = 1, limit = 10 } = req.query;
