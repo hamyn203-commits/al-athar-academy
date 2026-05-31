@@ -14,6 +14,7 @@ import {
 import GlobalHeader from '../../components/GlobalHeader';
 import GlobalFooter from '../../components/GlobalFooter';
 import SEOHead from '../../components/SEOHead';
+import api from '../../lib/api';
 
 export default function Contact() {
   const { t, locale } = useI18n();
@@ -37,17 +38,16 @@ export default function Contact() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
-    // محاكاة إرسال النموذج
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      await api.post('/api/contact', formData);
       setIsSubmitted(true);
       setFormData({ name: '', email: '', phone: '', subject: '', message: '' });
-      
-      setTimeout(() => {
-        setIsSubmitted(false);
-      }, 5000);
-    }, 2000);
+      setTimeout(() => setIsSubmitted(false), 5000);
+    } catch {
+      alert(locale === 'ar' ? 'تعذر إرسال الرسالة، حاول لاحقاً' : 'Failed to send message');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const contactInfo = [

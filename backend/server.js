@@ -12,8 +12,10 @@ dotenv.config();
 
 const uploadsDir = path.join(__dirname, 'uploads', 'teachers');
 const homeworkDir = path.join(__dirname, 'uploads', 'homework');
+const coursesDir = path.join(__dirname, 'uploads', 'courses');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 if (!fs.existsSync(homeworkDir)) fs.mkdirSync(homeworkDir, { recursive: true });
+if (!fs.existsSync(coursesDir)) fs.mkdirSync(coursesDir, { recursive: true });
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -154,6 +156,7 @@ app.use('/api/gamification', require('./routes/gamification'));
 app.use('/api/audio', require('./routes/audio'));
 app.use('/api/live', require('./routes/live'));
 app.use('/api/blog', require('./routes/blog'));
+app.use('/api/contact', require('./routes/contact'));
 app.use('/api/ai', require('./routes/ai'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/lms', require('./routes/lms'));
