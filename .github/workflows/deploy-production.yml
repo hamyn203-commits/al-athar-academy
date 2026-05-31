@@ -14,7 +14,7 @@ on:
         default: false
 
 concurrency:
-  group: deploy-production
+  group: azure-backend-deploy
   cancel-in-progress: false
 
 env:

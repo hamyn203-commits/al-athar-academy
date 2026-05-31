@@ -11,8 +11,8 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: deploy-backend-${{ github.ref }}
-  cancel-in-progress: true
+  group: azure-backend-deploy
+  cancel-in-progress: false
 
 env:
   AZURE_WEBAPP_NAME: al-athar-api
