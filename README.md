@@ -64,6 +64,52 @@ cp .env.example .env
 
 عند قبول الحصة يُنشأ رابط Jitsi تلقائياً. اضبط `DEFAULT_MEETING_PROVIDER` أو `ZOOM_MEETING_BASE_URL`.
 
+## البناء والنشر (أوتوماتيك)
+
+```powershell
+# مزامنة env مع Azure
+.\scripts\sync-azure-env.ps1 -FromLocalEnv
+
+# secrets لـ GitHub Actions (Vercel + seed)
+.\scripts\setup-github-secrets.ps1
+
+# push master → ينشر Backend (Azure) + Frontend (Vercel) تلقائياً
+git push origin master
+
+# نشر يدوي كامل
+gh workflow run deploy-production.yml
+```
+
+| Workflow | الوظيفة |
+|----------|---------|
+| Deploy Backend to Azure | `backend/**` → App Service |
+| Deploy Frontend to Vercel | `src/**` → production |
+| Health Check | كل 6 ساعات |
+| Nightly Bootstrap | seed معلم/دورة لو DB فاضي |
+
+## Bedrock / AI على Azure
+
+```powershell
+# 1. ضع المفاتيح في backend/.env
+# AWS_BEARER_TOKEN_BEDROCK=...
+# BEDROCK_MODEL=global.anthropic.claude-sonnet-4-5-20250929-v1:0
+
+# 2. مزامنة
+.\scripts\sync-azure-env.ps1 -FromLocalEnv
+
+# 3. تحقق
+curl https://al-athar-api.azurewebsites.net/api/health
+# features.ai / features.bedrock = true
+```
+
+سكربت مساعد: `scripts/setup-bedrock-claude.ps1`
+
+## Autopilot (تطوير تلقائي)
+
+- طابور المهام: [AGENTS.md](./AGENTS.md)
+- Cursor Automation: تطوير ليلي ~3 ص
+- قاعدة Cursor: `.cursor/rules/autopilot.mdc`
+
 ## البناء والنشر
 
 ```bash

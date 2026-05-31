@@ -1,12 +1,16 @@
-const CACHE_NAME = 'al-athar-academy-v4.4';
-const RUNTIME_CACHE = 'al-athar-runtime-v4.4';
+const CACHE_NAME = 'al-athar-academy-v4.5';
+const RUNTIME_CACHE = 'al-athar-runtime-v4.5';
 
 const PRECACHE_URLS = [
   '/',
   '/index.html',
   '/manifest.json',
   '/favicon.svg',
-  '/assets/logo.png'
+  '/assets/logo.png',
+  '/ar',
+  '/ar/app',
+  '/ar/leaderboard',
+  '/ar/donate',
 ];
 
 self.addEventListener('install', (event) => {

@@ -46,6 +46,7 @@ export default function AdminDashboard() {
   const [applications, setApplications] = useState([]);
   const [videos, setVideos] = useState([]);
   const [videoForm, setVideoForm] = useState({ title: '', category: 'quran', videoUrl: '', duration: 600 });
+  const [courseProgramFilter, setCourseProgramFilter] = useState('all');
 
   const loadCore = useCallback(async () => {
     const [st, pend, appr] = await Promise.all([
@@ -377,14 +378,20 @@ export default function AdminDashboard() {
 
               <div className="grid lg:grid-cols-2 gap-6">
                 <div className="bg-white rounded-xl border p-6">
-                  <h3 className="font-bold mb-4">الدورات ({courses.length})</h3>
-                  {courses.length === 0 ? <Empty text="لا دورات" /> : courses.map((c) => (
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+                    <h3 className="font-bold">الدورات ({courses.filter((c) => courseProgramFilter === 'all' || (c.programs || []).includes(courseProgramFilter)).length})</h3>
+                    <select value={courseProgramFilter} onChange={(e) => setCourseProgramFilter(e.target.value)} className="border rounded-lg px-2 py-1 text-sm">
+                      <option value="all">كل البرامج</option>
+                      {['kids', 'reverts', 'women', 'general'].map((p) => <option key={p} value={p}>{p}</option>)}
+                    </select>
+                  </div>
+                  {courses.length === 0 ? <Empty text="لا دورات" /> : courses.filter((c) => courseProgramFilter === 'all' || (c.programs || []).includes(courseProgramFilter)).map((c) => (
                     <div key={c._id} className={`border rounded-lg p-3 mb-2 cursor-pointer transition ${selectedCourse === c._id ? 'border-emerald-500 bg-emerald-50' : ''}`}
                       onClick={() => { setSelectedCourse(c._id); loadLessons(c._id); }}>
                       <div className="flex justify-between">
                         <div>
                           <p className="font-semibold">{c.title?.ar}</p>
-                          <p className="text-xs text-gray-500">{c.slug} — {c.status} — {c.price}$</p>
+                          <p className="text-xs text-gray-500">{c.slug} — {c.status} — {c.price}$ {(c.programs || []).length ? `[${c.programs.join(',')}]` : ''}</p>
                         </div>
                         <button onClick={(e) => { e.stopPropagation(); deleteItem('course', c._id); }} className="text-red-500"><Trash2 size={16} /></button>
                       </div>

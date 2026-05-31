@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Trophy, Medal, Gift, Flame } from 'lucide-react';
+import { Trophy, Medal, Gift, Flame, Award } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import { localizedPath } from '../../lib/locale';
 import GlobalHeader from '../../components/GlobalHeader';
@@ -67,6 +67,22 @@ export default function LeaderboardPage() {
               </button>
             ))}
           </div>
+
+          {timeframe === 'monthly' && !loading && (
+            <div className="mb-8 flex flex-wrap justify-center gap-3">
+              {[
+                { label: isAr ? '🥇 بطل الشهر' : '🥇 Champion', sub: isAr ? 'أعلى نقاط' : 'Top points' },
+                { label: isAr ? '🌟 سفير الشهر' : '🌟 Ambassador', sub: isAr ? 'أكثر دعوات' : 'Most invites' },
+                { label: isAr ? '📖 متعلم نشط' : '📖 Active learner', sub: isAr ? '5+ حصص' : '5+ sessions' },
+              ].map((b) => (
+                <div key={b.label} className="bg-white border border-amber-200 rounded-xl px-4 py-3 text-center min-w-[120px] shadow-sm">
+                  <Award className="mx-auto text-amber-500 mb-1" size={22} />
+                  <p className="font-bold text-sm">{b.label}</p>
+                  <p className="text-xs text-gray-500">{b.sub}</p>
+                </div>
+              ))}
+            </div>
+          )}
 
           {loading ? (
             <div className="flex justify-center py-16"><div className="spinner spinner-lg" /></div>

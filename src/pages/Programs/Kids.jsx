@@ -8,6 +8,7 @@ import GlobalFooter from '../../components/GlobalFooter';
 import SEOHead from '../../components/SEOHead';
 import api from '../../lib/api';
 import KidsQuizGame from '../../components/games/KidsQuizGame';
+import KidsLettersGame from '../../components/games/KidsLettersGame';
 
 const FEATURES = [
   { icon: Gamepad2, ar: 'ألعاب تعليمية ممتعة', en: 'Fun educational games' },
@@ -51,9 +52,13 @@ export default function KidsProgram() {
             );
           })}
         </section>
-        <section className="max-w-xl mx-auto px-4 pb-12">
+        <section className="max-w-xl mx-auto px-4 pb-8">
           <h2 className="font-bold text-xl mb-4 text-center">{isAr ? 'لعبة التجويد السريعة' : 'Quick Tajweed Quiz'}</h2>
           <KidsQuizGame locale={locale} />
+        </section>
+        <section className="max-w-xl mx-auto px-4 pb-12">
+          <h2 className="font-bold text-xl mb-4 text-center">{isAr ? 'لعبة حروف الهجاء' : 'Arabic Letters Game'}</h2>
+          <KidsLettersGame locale={locale} />
         </section>
         {courses.length > 0 && (
           <section className="max-w-4xl mx-auto px-4 pb-16">

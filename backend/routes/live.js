@@ -31,6 +31,38 @@ function createToken(roomName, participantName, isHost = false) {
   return at.toJwt();
 }
 
+const LIVEKIT_URL = process.env.LIVEKIT_URL || '';
+
+function isLiveKitConfigured() {
+  return LIVEKIT_API_KEY && LIVEKIT_API_SECRET &&
+    LIVEKIT_API_KEY !== 'your-api-key' && LIVEKIT_API_SECRET !== 'your-api-secret';
+}
+
+router.get('/status', (_req, res) => {
+  res.json({ configured: isLiveKitConfigured(), url: LIVEKIT_URL || null });
+});
+
+router.post('/demo-room', async (_req, res) => {
+  try {
+    const roomId = `demo-${Date.now()}`;
+    const session = await LiveSession.create({
+      roomId,
+      title: 'حصة تجريبية — أكاديمية الأثر',
+      description: 'غرفة LiveKit تجريبية',
+      subject: 'quran',
+      isLive: false,
+      participants: 0,
+    });
+    if (!isLiveKitConfigured()) {
+      return res.status(201).json({ session, configured: false, message: 'LiveKit غير مُعد — أضف LIVEKIT_* على Azure' });
+    }
+    const token = createToken(roomId, 'Guest', false);
+    res.status(201).json({ session, configured: true, token, livekitUrl: LIVEKIT_URL });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.post('/token', (req, res) => {
   try {
     const { roomName, participantName, isHost } = req.body;
@@ -41,8 +73,7 @@ router.post('/token', (req, res) => {
       });
     }
 
-    if (!LIVEKIT_API_KEY || !LIVEKIT_API_SECRET ||
-        LIVEKIT_API_KEY === 'your-api-key') {
+    if (!isLiveKitConfigured()) {
       return res.status(503).json({
         message: 'LiveKit not configured',
         note: 'Please set LIVEKIT_API_KEY and LIVEKIT_API_SECRET in .env file',
