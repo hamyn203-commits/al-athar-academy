@@ -136,7 +136,7 @@ connectDB();
 app.get('/', (req, res) => {
   res.json({
     service: 'Al-Athar Academy API',
-    version: '4.3.0',
+    version: '4.4.0',
     status: 'ok',
     message: 'الـ API يعمل — استخدم المسارات تحت /api',
     health: '/api/health',
@@ -151,7 +151,7 @@ app.get('/api/health', (req, res) => {
     status: 'ok', 
     message: 'Al-Athar Backend API is running!',
     timestamp: new Date().toISOString(),
-    version: '4.3.0',
+    version: '4.4.0',
     features: {
       ai: !!(process.env.OPENAI_API_KEY || process.env.GEMINI_API_KEY || process.env.AWS_BEARER_TOKEN_BEDROCK),
       bedrock: !!process.env.AWS_BEARER_TOKEN_BEDROCK,
