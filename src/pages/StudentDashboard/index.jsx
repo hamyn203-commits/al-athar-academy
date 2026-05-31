@@ -389,6 +389,7 @@ export default function StudentDashboard() {
                   <p className="text-3xl font-bold text-emerald-700">{gameStats?.points?.total || 0}</p>
                   <p className="text-sm text-slate-600">نقطة — المستوى {gameStats?.points?.level || 1}</p>
                   <p className="text-sm mt-1">🔥 سلسلة {gameStats?.streaks?.current || 0} يوم</p>
+                  <Link to="/leaderboard" className="inline-block mt-3 text-sm text-emerald-700 font-medium hover:underline">🏆 لوحة المتصدرين</Link>
                 </div>
                 <h3 className="font-bold text-sm">الأوسمة</h3>
                 {(badges.unlocked || []).length === 0 ? (

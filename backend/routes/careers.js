@@ -26,6 +26,17 @@ router.post('/apply', async (req, res) => {
   }
 });
 
+router.put('/applications/:id/status', protect, authorize('admin'), async (req, res) => {
+  try {
+    const { status } = req.body;
+    const app = await JobApplication.findByIdAndUpdate(req.params.id, { status }, { new: true });
+    if (!app) return res.status(404).json({ error: 'الطلب غير موجود' });
+    res.json(app);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
 router.get('/applications', protect, authorize('admin'), async (req, res) => {
   try {
     const { page = 1, limit = 20, status } = req.query;

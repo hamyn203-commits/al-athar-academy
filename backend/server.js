@@ -138,9 +138,10 @@ app.get('/api/health', (req, res) => {
     status: 'ok', 
     message: 'Al-Athar Backend API is running!',
     timestamp: new Date().toISOString(),
-    version: '4.2.0',
+    version: '4.3.0',
     features: {
-      ai: !!(process.env.OPENAI_API_KEY || process.env.GEMINI_API_KEY),
+      ai: !!(process.env.OPENAI_API_KEY || process.env.GEMINI_API_KEY || process.env.AWS_BEARER_TOKEN_BEDROCK),
+      bedrock: !!process.env.AWS_BEARER_TOKEN_BEDROCK,
       email: !!process.env.RESEND_API_KEY,
       telegram: !!process.env.TELEGRAM_BOT_TOKEN,
       whatsapp: !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN),
@@ -176,6 +177,7 @@ app.use('/api/contact', require('./routes/contact'));
 app.use('/api/ai', require('./routes/ai'));
 app.use('/api/setup', require('./routes/setup'));
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api/admin/growth', require('./routes/adminGrowth'));
 app.use('/api/lms', require('./routes/lms'));
 app.use('/api/meetings', require('./routes/meetings'));
 app.use('/api/referrals', require('./routes/referrals'));

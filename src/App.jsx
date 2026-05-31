@@ -9,6 +9,7 @@ import LocaleLayout from './components/LocaleLayout';
 import { StudentLegacyRedirect, TeacherLegacyRedirect } from './components/DashboardRedirect';
 import Logo from './components/Logo';
 import QuranChatWidget from './components/QuranChatWidget';
+import PwaInstallPrompt from './components/PwaInstallPrompt';
 
 const LandingPage = lazy(() => import('./pages/NewLandingPage'));
 const LiveSessions = lazy(() => import('./pages/LiveSessions/LiveSessions'));
@@ -47,6 +48,7 @@ const VideoLibrary = lazy(() => import('./pages/Library'));
 const Careers = lazy(() => import('./pages/Careers'));
 const RevertsProgram = lazy(() => import('./pages/Programs/Reverts'));
 const KidsProgram = lazy(() => import('./pages/Programs/Kids'));
+const LeaderboardPage = lazy(() => import('./pages/Leaderboard'));
 const NotificationsPage = lazy(() => import('./pages/Notifications'));
 const NotificationSettings = lazy(() => import('./pages/Settings/Notifications'));
 
@@ -102,6 +104,7 @@ function pageRoutes() {
       <Route path="careers" element={<Careers />} />
       <Route path="programs/reverts" element={<RevertsProgram />} />
       <Route path="programs/kids" element={<KidsProgram />} />
+      <Route path="leaderboard" element={<LeaderboardPage />} />
       <Route path="notifications" element={<NotificationsPage />} />
       <Route path="settings/notifications" element={<NotificationSettings />} />
     </>
@@ -133,6 +136,7 @@ export default function App() {
               <Router>
                 <AppContent />
                 <QuranChatWidget />
+                <PwaInstallPrompt />
               </Router>
               </ToastProvider>
             </AuthProvider>

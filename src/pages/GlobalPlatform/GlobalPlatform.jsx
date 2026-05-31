@@ -199,6 +199,7 @@ function GrowthTab() {
     { to: '/careers', label: 'التوظيف' },
     { to: '/programs/reverts', label: 'المسلمون الجدد' },
     { to: '/programs/kids', label: 'برنامج الأطفال' },
+    { to: '/leaderboard', label: 'المتصدرين' },
   ];
 
   return (

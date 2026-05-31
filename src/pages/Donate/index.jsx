@@ -20,9 +20,16 @@ export default function Donate() {
   const [form, setForm] = useState({ name: '', email: '', phone: '', amount: 100, currency: 'USD', category: 'general', message: '', isAnonymous: false });
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
+  const [payConfig, setPayConfig] = useState({ paymentEnabled: false });
 
   useEffect(() => {
-    api.get('/api/donations/stats').then(setStats).catch(() => {});
+    Promise.all([
+      api.get('/api/donations/stats'),
+      api.get('/api/donations/config'),
+    ]).then(([stats, cfg]) => {
+      setStats(stats);
+      setPayConfig(cfg);
+    }).catch(() => {});
   }, []);
 
   const submit = async (e) => {
@@ -94,7 +101,25 @@ export default function Donate() {
               <button type="submit" disabled={loading} className="btn-primary w-full !py-3">
                 {loading ? '...' : isAr ? 'تعهد بالتبرع' : 'Pledge Donation'}
               </button>
-              <p className="text-xs text-gray-400 text-center">{isAr ? 'المرحلة 1: تعهد — سيتم ربط بوابة الدفع لاحقاً' : 'Phase 1: pledge — payment gateway coming soon'}</p>
+              <p className="text-xs text-gray-400 text-center">
+                {payConfig.paymentEnabled
+                  ? (isAr ? 'يمكنك أيضاً الدفع مباشرة عبر الرابط أدناه' : 'You can also pay directly via the link below')
+                  : (isAr ? 'سنتواصل معك لإتمام التبرع — أو فعّل STRIPE_DONATION_URL' : 'We will contact you to complete your pledge')}
+              </p>
+              {payConfig.paymentEnabled && (
+                <div className="flex flex-wrap gap-3 justify-center pt-2">
+                  {payConfig.stripeUrl && (
+                    <a href={payConfig.stripeUrl} target="_blank" rel="noopener noreferrer" className="btn-primary !py-2 text-sm">
+                      {isAr ? 'ادفع عبر Stripe' : 'Pay with Stripe'}
+                    </a>
+                  )}
+                  {payConfig.paypalUrl && (
+                    <a href={payConfig.paypalUrl} target="_blank" rel="noopener noreferrer" className="btn-primary !py-2 text-sm !bg-blue-600">
+                      PayPal
+                    </a>
+                  )}
+                </div>
+              )}
             </form>
           )}
         </div>

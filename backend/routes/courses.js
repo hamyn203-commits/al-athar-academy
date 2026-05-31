@@ -25,6 +25,7 @@ router.get('/', async (req, res) => {
     const filter = { status: 'published' };
 
     if (category) filter.category = category;
+    if (req.query.program) filter.programs = req.query.program;
     if (level) filter.level = level;
     if (minPrice || maxPrice) {
       filter.price = {};

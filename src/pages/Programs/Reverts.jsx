@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom';
 import { HeartHandshake, Globe2, Users, ArrowRight, BookOpen } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { useI18n } from '../../i18n';
 import { localizedPath } from '../../lib/locale';
 import GlobalHeader from '../../components/GlobalHeader';
 import GlobalFooter from '../../components/GlobalFooter';
 import SEOHead from '../../components/SEOHead';
+import api from '../../lib/api';
 
 const FEATURES = [
   { icon: Globe2, ar: 'دعم بالإنجليزية والفرنسية', en: 'Support in English & French' },
@@ -16,6 +18,13 @@ const FEATURES = [
 export default function RevertsProgram() {
   const { locale } = useI18n();
   const isAr = locale === 'ar';
+  const [courses, setCourses] = useState([]);
+
+  useEffect(() => {
+    api.get('/api/courses?program=reverts&limit=6').then((d) => setCourses(d.courses || d || [])).catch(() => {
+      api.get('/api/courses?category=islamic&level=beginner&limit=6').then((d) => setCourses(d.courses || d || [])).catch(() => {});
+    });
+  }, []);
 
   return (
     <>
@@ -41,6 +50,19 @@ export default function RevertsProgram() {
             );
           })}
         </section>
+        {courses.length > 0 && (
+          <section className="max-w-4xl mx-auto px-4 pb-16">
+            <h2 className="font-bold text-xl mb-4 flex items-center gap-2"><BookOpen size={22} /> {isAr ? 'مسارات للمسلمين الجدد' : 'New Muslim Paths'}</h2>
+            <div className="grid md:grid-cols-2 gap-4">
+              {courses.map((c) => (
+                <Link key={c._id} to={localizedPath(`/courses/${c.slug}`, locale)} className="bg-white rounded-xl p-4 shadow-md hover:shadow-lg transition">
+                  <p className="font-bold">{c.title?.ar || c.title?.en}</p>
+                  <p className="text-sm text-teal-700 mt-1">{c.price} {c.currency}</p>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
       </main>
       <GlobalFooter />
     </>

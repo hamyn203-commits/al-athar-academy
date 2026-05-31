@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Users, BookOpen, Calendar, DollarSign, CheckCircle, XCircle, Eye,
   Mail, MessageSquare, Plus, Trash2, Upload, Video, Edit3, Send,
+  TrendingUp, BriefcaseBusiness, MonitorPlay,
 } from 'lucide-react';
 import DashboardLayout, { StatCard, TabBar } from '../../components/dashboard/DashboardLayout';
 import { useRequireAuth } from '../../hooks/useRequireAuth';
@@ -40,6 +41,11 @@ export default function AdminDashboard() {
   const [blogForm, setBlogForm] = useState({ slug: '', titleAr: '', excerptAr: '', contentAr: '' });
   const [uploading, setUploading] = useState(false);
   const [seeding, setSeeding] = useState(false);
+  const [growthSummary, setGrowthSummary] = useState({});
+  const [donations, setDonations] = useState([]);
+  const [applications, setApplications] = useState([]);
+  const [videos, setVideos] = useState([]);
+  const [videoForm, setVideoForm] = useState({ title: '', category: 'quran', videoUrl: '', duration: 600 });
 
   const loadCore = useCallback(async () => {
     const [st, pend, appr] = await Promise.all([
@@ -72,6 +78,19 @@ export default function AdminDashboard() {
     setWithdrawals(r.withdrawals || []);
   }, []);
 
+  const loadGrowth = useCallback(async () => {
+    const [sum, don, apps, vids] = await Promise.all([
+      api.get('/api/admin/growth/summary', { auth: true }),
+      api.get('/api/donations', { auth: true }),
+      api.get('/api/careers/applications', { auth: true }),
+      api.get('/api/videos?limit=50', { auth: true }),
+    ]);
+    setGrowthSummary(sum);
+    setDonations(don.donations || []);
+    setApplications(apps.applications || []);
+    setVideos(vids.videos || []);
+  }, []);
+
   const loadLessons = async (courseId) => {
     const r = await api.get(`/api/admin/courses/${courseId}/lessons`, { auth: true });
     setLessons(Array.isArray(r) ? r : []);
@@ -85,6 +104,7 @@ export default function AdminDashboard() {
       if (tab === 'courses') await loadCourses();
       if (tab === 'blog') await loadBlog();
       if (tab === 'withdrawals') await loadWithdrawals();
+      if (tab === 'growth') await loadGrowth();
     } catch (e) {
       toast.error(e.message || 'تعذر تحميل البيانات');
     } finally {
@@ -209,6 +229,7 @@ export default function AdminDashboard() {
     { id: 'withdrawals', label: `السحوبات (${withdrawals.filter(w => w.status === 'pending').length || '…'})` },
     { id: 'courses', label: 'الدورات' },
     { id: 'blog', label: 'المدونة' },
+    { id: 'growth', label: 'النمو V4' },
   ];
 
   return (
@@ -447,6 +468,82 @@ export default function AdminDashboard() {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {tab === 'growth' && (
+            <div className="space-y-8">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <StatCard label="تبرعات" value={growthSummary.donations?.pledged?.count || 0} icon={TrendingUp} color="orange" />
+                <StatCard label="طلبات توظيف" value={growthSummary.newApplications || 0} icon={BriefcaseBusiness} color="blue" />
+                <StatCard label="فيديوهات" value={growthSummary.publishedVideos || 0} icon={MonitorPlay} color="purple" />
+                <StatCard label="إحالات" value={growthSummary.totalReferrals || 0} icon={Users} color="emerald" />
+              </div>
+
+              <div className="bg-white rounded-xl border p-6">
+                <h3 className="font-bold mb-4">التبرعات ({donations.length})</h3>
+                {donations.length === 0 ? <Empty text="لا تبرعات" /> : donations.slice(0, 10).map((d) => (
+                  <div key={d._id} className="flex flex-wrap justify-between items-center border rounded-lg p-3 mb-2 gap-2">
+                    <div>
+                      <p className="font-semibold">{d.isAnonymous ? 'متبرع مجهول' : d.name}</p>
+                      <p className="text-xs text-gray-500">{d.amount} {d.currency} — {d.category}</p>
+                    </div>
+                    <select value={d.status} onChange={async (e) => {
+                      await api.put(`/api/donations/${d._id}/status`, { status: e.target.value }, { auth: true });
+                      loadGrowth();
+                    }} className="text-sm border rounded-lg px-2 py-1">
+                      {['pledged', 'confirmed', 'cancelled'].map((s) => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
+                ))}
+              </div>
+
+              <div className="bg-white rounded-xl border p-6">
+                <h3 className="font-bold mb-4">طلبات التوظيف ({applications.length})</h3>
+                {applications.length === 0 ? <Empty text="لا طلبات" /> : applications.slice(0, 10).map((a) => (
+                  <div key={a._id} className="flex flex-wrap justify-between items-center border rounded-lg p-3 mb-2 gap-2">
+                    <div>
+                      <p className="font-semibold">{a.name}</p>
+                      <p className="text-xs text-gray-500">{a.position} — {a.email}</p>
+                    </div>
+                    <select value={a.status} onChange={async (e) => {
+                      await api.put(`/api/careers/applications/${a._id}/status`, { status: e.target.value }, { auth: true });
+                      loadGrowth();
+                    }} className="text-sm border rounded-lg px-2 py-1">
+                      {['new', 'reviewing', 'interview', 'hired', 'rejected'].map((s) => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <form onSubmit={async (e) => {
+                  e.preventDefault();
+                  try {
+                    await api.post('/api/videos', videoForm, { auth: true });
+                    toast.success('تم إضافة الفيديو');
+                    setVideoForm({ title: '', category: 'quran', videoUrl: '', duration: 600 });
+                    loadGrowth();
+                  } catch (err) { toast.error(err.message); }
+                }} className="bg-white rounded-xl border p-6 space-y-3">
+                  <h3 className="font-bold">فيديو جديد</h3>
+                  <input required placeholder="العنوان" className="w-full border rounded-lg px-3 py-2 text-sm" value={videoForm.title} onChange={(e) => setVideoForm((p) => ({ ...p, title: e.target.value }))} />
+                  <input required placeholder="رابط YouTube embed" className="w-full border rounded-lg px-3 py-2 text-sm" value={videoForm.videoUrl} onChange={(e) => setVideoForm((p) => ({ ...p, videoUrl: e.target.value }))} />
+                  <select className="w-full border rounded-lg px-3 py-2 text-sm" value={videoForm.category} onChange={(e) => setVideoForm((p) => ({ ...p, category: e.target.value }))}>
+                    {['quran', 'tajweed', 'arabic', 'seerah', 'kids'].map((c) => <option key={c}>{c}</option>)}
+                  </select>
+                  <button type="submit" className="w-full py-2 bg-emerald-600 text-white rounded-lg text-sm">إضافة</button>
+                </form>
+                <div className="bg-white rounded-xl border p-6">
+                  <h3 className="font-bold mb-4">المكتبة ({videos.length})</h3>
+                  {videos.slice(0, 8).map((v) => (
+                    <div key={v._id} className="flex justify-between items-center border rounded-lg p-2 mb-2 text-sm">
+                      <span>{v.title}</span>
+                      <button type="button" onClick={async () => { await api.delete(`/api/videos/${v._id}`, { auth: true }); loadGrowth(); }} className="text-red-500"><Trash2 size={14} /></button>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
         </>

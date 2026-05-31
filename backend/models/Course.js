@@ -33,6 +33,10 @@ const CourseSchema = new mongoose.Schema({
     required: true,
     enum: ['quran', 'tajweed', 'arabic', 'islamic', 'ijazah', 'children']
   },
+  programs: [{
+    type: String,
+    enum: ['kids', 'reverts', 'women', 'general'],
+  }],
   level: {
     type: String,
     required: true,

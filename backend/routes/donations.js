@@ -40,6 +40,14 @@ router.get('/stats', async (req, res) => {
   }
 });
 
+router.get('/config', async (_req, res) => {
+  res.json({
+    paymentEnabled: !!(process.env.STRIPE_DONATION_URL || process.env.PAYPAL_DONATION_URL),
+    stripeUrl: process.env.STRIPE_DONATION_URL || '',
+    paypalUrl: process.env.PAYPAL_DONATION_URL || '',
+  });
+});
+
 router.get('/', protect, authorize('admin'), async (req, res) => {
   try {
     const { page = 1, limit = 20, status } = req.query;
@@ -52,6 +60,17 @@ router.get('/', protect, authorize('admin'), async (req, res) => {
     res.json({ donations, pagination: { page: Number(page), limit: Number(limit), total } });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+router.put('/:id/status', protect, authorize('admin'), async (req, res) => {
+  try {
+    const { status } = req.body;
+    const donation = await Donation.findByIdAndUpdate(req.params.id, { status }, { new: true });
+    if (!donation) return res.status(404).json({ error: 'التبرع غير موجود' });
+    res.json(donation);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
   }
 });
 

@@ -2,6 +2,38 @@ const RecitationReport = require('../models/RecitationReport');
 
 const SYSTEM_QURAN = 'You are an Islamic education assistant for Al-Athar Academy. Answer in the user language with authentic sources. Be concise and practical.';
 
+async function callBedrock(messages, { maxTokens = 800 } = {}) {
+  const token = process.env.AWS_BEARER_TOKEN_BEDROCK;
+  const region = process.env.AWS_REGION || 'us-east-1';
+  const model = process.env.BEDROCK_MODEL || 'global.anthropic.claude-sonnet-4-5-20250929-v1:0';
+  if (!token) return null;
+
+  const system = messages.find((m) => m.role === 'system')?.content || SYSTEM_QURAN;
+  const userMsgs = messages.filter((m) => m.role === 'user').map((m) => m.content).join('\n');
+
+  const res = await fetch(`https://bedrock-runtime.${region}.amazonaws.com/model/${encodeURIComponent(model)}/converse`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      system: [{ text: system }],
+      messages: [{ role: 'user', content: [{ text: userMsgs }] }],
+      inferenceConfig: { maxTokens, temperature: 0.7 },
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Bedrock: ${err.slice(0, 200)}`);
+  }
+
+  const data = await res.json();
+  const text = data.output?.message?.content?.[0]?.text?.trim() || '';
+  return { text, provider: 'bedrock', model };
+}
+
 async function callOpenAI(messages, { maxTokens = 800 } = {}) {
   const key = process.env.OPENAI_API_KEY;
   if (!key) return null;
@@ -75,6 +107,13 @@ async function chat(prompt, { locale = 'ar', role = 'quran' } = {}) {
     if (openai?.text) return { ...openai, fallback: false };
   } catch (e) {
     console.warn('OpenAI failed:', e.message);
+  }
+
+  try {
+    const bedrock = await callBedrock(messages, { maxTokens: 800 });
+    if (bedrock?.text) return { ...bedrock, fallback: false };
+  } catch (e) {
+    console.warn('Bedrock failed:', e.message);
   }
 
   try {

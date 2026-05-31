@@ -195,7 +195,8 @@ export const v4Roadmap = [
   { phase: 'المرحلة 1', title: 'التوسع العالمي', status: 'جاهز بالواجهة', icon: MapPinned },
   { phase: 'المرحلة 2', title: 'لوحات التشغيل العالمية', status: 'جاهز كنموذج تشغيلي', icon: PanelsTopLeft },
   { phase: 'المرحلة 3', title: 'AI وLMS والشهادات', status: 'جاهز للتوصيل بالـ API', icon: BadgeCheck },
-  { phase: 'المرحلة 4', title: 'النمو والموبايل والتوظيف', status: 'جاهز كمنظومة نمو', icon: Award },
+  { phase: 'المرحلة 4', title: 'النمو والموبايل والتوظيف', status: 'منشور v4.2', icon: Award },
+  { phase: 'المرحلة 5', title: 'PWA + إدارة النمو + Bedrock', status: 'منشور v4.3', icon: CalendarClock },
   { phase: 'V5', title: 'منصة تخدم مليون طالب', status: 'مؤسسة للتوسع', icon: CalendarClock },
 ];
 

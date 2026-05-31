@@ -90,6 +90,12 @@
       "icons": [{ "src": "/icons/teacher-icon.png", "sizes": "192x192" }]
     },
     {
+      "name": "المتصدرين",
+      "short_name": "بطولة",
+      "url": "/leaderboard",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
       "name": "الحصص المباشرة",
       "short_name": "مباشر",
       "description": "الحصص المباشرة",
