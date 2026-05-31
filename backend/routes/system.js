@@ -30,12 +30,36 @@ router.post('/bootstrap', async (req, res) => {
       });
       teacher = await Teacher.create({
         user: user._id,
-        personalInfo: { fullName: user.name, country: 'مصر', city: 'القاهرة', phone: '+201234567890' },
+        personalInfo: {
+          fullName: user.name,
+          age: 35,
+          gender: 'male',
+          country: 'مصر',
+          city: 'القاهرة',
+          phone: '+201234567890',
+        },
+        academicInfo: {
+          university: 'الأزهر',
+          faculty: 'الدراسات الإسلامية',
+          graduationYear: 2010,
+          specialization: 'التجويد',
+          qualification: 'إجازة في القرآن',
+        },
+        documents: {
+          idCard: '/uploads/demo/id.pdf',
+          graduationCertificate: '/uploads/demo/cert.pdf',
+        },
+        media: {
+          profilePhoto: '/assets/logo.png',
+          introductionVideo: 'https://www.youtube.com/embed/2Qd_1wstBg0',
+          recitationVideo: 'https://www.youtube.com/embed/HGr1BOrrPyY',
+          teachingMethodVideo: 'https://www.youtube.com/embed/2Qd_1wstBg0',
+        },
+        quranInfo: { specializations: ['tajweed', 'children'], memorizedParts: 30 },
         status: 'approved',
         isVerified: true,
         isFeatured: true,
-        languages: ['ar', 'en'],
-        specializations: ['quran', 'tajweed'],
+        languages: ['arabic', 'english'],
         stats: { totalSessions: 120, totalHours: 120, rating: { average: 4.9, count: 45 } },
       });
     }
