@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import GlobalHeader from '../../components/GlobalHeader';
 import GlobalFooter from '../../components/GlobalFooter';
+import SEOHead from '../../components/SEOHead';
 
 function AnimatedCounter({ end, duration = 2000, suffix = '' }) {
   const [count, setCount] = useState(0);
@@ -490,8 +491,19 @@ function CTASection() {
 }
 
 export default function NewLandingPage() {
+  const { t } = useI18n();
+  
   return (
     <>
+      <SEOHead 
+        page={{
+          title: t.hero.title,
+          description: t.hero.subtitle,
+          url: '/',
+          keywords: 'quran, arabic, islamic education, online learning, tajweed, certified teachers',
+          type: 'website'
+        }}
+      />
       <GlobalHeader />
       <div className="min-h-screen">
         <HeroSection />
