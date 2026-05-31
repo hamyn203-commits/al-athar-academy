@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "postbuild": "node scripts/submit-indexnow.mjs",
+    "seo:submit": "node scripts/submit-indexnow.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
     "start": "node server.js"
