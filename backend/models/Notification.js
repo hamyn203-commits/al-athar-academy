@@ -8,32 +8,286 @@ const NotificationSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['session-request', 'session-accepted', 'session-rejected', 'session-completed', 'homework-assigned', 'homework-submitted', 'review-received', 'payment-received', 'system'],
+    enum: [
+      'course-enrollment',
+      'lesson-completed',
+      'assignment-due',
+      'assignment-graded',
+      'quiz-available',
+      'quiz-result',
+      'badge-unlocked',
+      'achievement',
+      'certificate-issued',
+      'session-reminder',
+      'session-cancelled',
+      'payment-received',
+      'system',
+      'marketing'
+    ],
     required: true
   },
   title: {
-    type: String,
-    required: true
+    ar: { type: String, required: true },
+    en: { type: String, required: true },
+    fr: { type: String },
+    de: { type: String },
+    tr: { type: String },
+    ur: { type: String },
+    id: { type: String },
+    ms: { type: String }
   },
   message: {
+    ar: { type: String, required: true },
+    en: { type: String, required: true },
+    fr: { type: String },
+    de: { type: String },
+    tr: { type: String },
+    ur: { type: String },
+    id: { type: String },
+    ms: { type: String }
+  },
+  priority: {
     type: String,
-    required: true
+    enum: ['low', 'medium', 'high', 'urgent'],
+    default: 'medium'
+  },
+  channels: {
+    inApp: {
+      enabled: { type: Boolean, default: true },
+      sent: { type: Boolean, default: false },
+      sentAt: Date
+    },
+    email: {
+      enabled: { type: Boolean, default: false },
+      sent: { type: Boolean, default: false },
+      sentAt: Date,
+      error: String
+    },
+    push: {
+      enabled: { type: Boolean, default: false },
+      sent: { type: Boolean, default: false },
+      sentAt: Date,
+      error: String
+    },
+    telegram: {
+      enabled: { type: Boolean, default: false },
+      sent: { type: Boolean, default: false },
+      sentAt: Date,
+      error: String
+    },
+    sms: {
+      enabled: { type: Boolean, default: false },
+      sent: { type: Boolean, default: false },
+      sentAt: Date,
+      error: String
+    }
   },
   data: {
-    type: mongoose.Schema.Types.Mixed
+    course: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Course'
+    },
+    lesson: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Lesson'
+    },
+    assignment: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Assignment'
+    },
+    quiz: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Quiz'
+    },
+    badge: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Badge'
+    },
+    certificate: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Certificate'
+    },
+    session: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Session'
+    },
+    url: String,
+    actionUrl: String,
+    imageUrl: String,
+    metadata: mongoose.Schema.Types.Mixed
   },
-  read: {
+  isRead: {
     type: Boolean,
     default: false
   },
-  channels: {
-    email: { type: Boolean, default: true },
-    push: { type: Boolean, default: true },
-    inApp: { type: Boolean, default: true }
+  readAt: Date,
+  expiresAt: Date,
+  scheduledAt: Date,
+  status: {
+    type: String,
+    enum: ['pending', 'sent', 'failed', 'expired'],
+    default: 'pending'
   }
-}, { timestamps: true });
+}, {
+  timestamps: true
+});
 
 NotificationSchema.index({ user: 1, createdAt: -1 });
-NotificationSchema.index({ user: 1, read: 1 });
+NotificationSchema.index({ user: 1, isRead: 1 });
+NotificationSchema.index({ user: 1, type: 1 });
+NotificationSchema.index({ scheduledAt: 1 });
+NotificationSchema.index({ expiresAt: 1 });
+NotificationSchema.index({ status: 1 });
 
-module.exports = mongoose.model('Notification', NotificationSchema);
+NotificationSchema.methods.markAsRead = function() {
+  this.isRead = true;
+  this.readAt = new Date();
+  return this.save();
+};
+
+NotificationSchema.methods.send = async function(channel) {
+  if (!this.channels[channel] || !this.channels[channel].enabled) {
+    return false;
+  }
+
+  try {
+    switch (channel) {
+      case 'inApp':
+        this.channels.inApp.sent = true;
+        this.channels.inApp.sentAt = new Date();
+        break;
+      
+      case 'email':
+        const emailSent = await this.sendEmail();
+        this.channels.email.sent = emailSent;
+        this.channels.email.sentAt = emailSent ? new Date() : null;
+        break;
+      
+      case 'push':
+        const pushSent = await this.sendPush();
+        this.channels.push.sent = pushSent;
+        this.channels.push.sentAt = pushSent ? new Date() : null;
+        break;
+      
+      case 'telegram':
+        const telegramSent = await this.sendTelegram();
+        this.channels.telegram.sent = telegramSent;
+        this.channels.telegram.sentAt = telegramSent ? new Date() : null;
+        break;
+      
+      case 'sms':
+        const smsSent = await this.sendSMS();
+        this.channels.sms.sent = smsSent;
+        this.channels.sms.sentAt = smsSent ? new Date() : null;
+        break;
+    }
+
+    const allSent = Object.values(this.channels).every(ch => !ch.enabled || ch.sent);
+    if (allSent) {
+      this.status = 'sent';
+    }
+
+    await this.save();
+    return true;
+  } catch (error) {
+    console.error(`Send ${channel} error:`, error);
+    this.channels[channel].error = error.message;
+    this.status = 'failed';
+    await this.save();
+    return false;
+  }
+};
+
+NotificationSchema.methods.sendEmail = async function() {
+  const User = mongoose.model('User');
+  const user = await User.findById(this.user);
+  
+  if (!user || !user.email) {
+    throw new Error('User email not found');
+  }
+
+  console.log(`Sending email to ${user.email}: ${this.title.en}`);
+  
+  return true;
+};
+
+NotificationSchema.methods.sendPush = async function() {
+  const User = mongoose.model('User');
+  const user = await User.findById(this.user);
+  
+  if (!user || !user.pushToken) {
+    throw new Error('User push token not found');
+  }
+
+  console.log(`Sending push to ${user._id}: ${this.title.en}`);
+  
+  return true;
+};
+
+NotificationSchema.methods.sendTelegram = async function() {
+  const User = mongoose.model('User');
+  const user = await User.findById(this.user);
+  
+  if (!user || !user.telegramId) {
+    throw new Error('User telegram ID not found');
+  }
+
+  console.log(`Sending telegram to ${user.telegramId}: ${this.title.en}`);
+  
+  return true;
+};
+
+NotificationSchema.methods.sendSMS = async function() {
+  const User = mongoose.model('User');
+  const user = await User.findById(this.user);
+  
+  if (!user || !user.phone) {
+    throw new Error('User phone not found');
+  }
+
+  console.log(`Sending SMS to ${user.phone}: ${this.title.en}`);
+  
+  return true;
+};
+
+NotificationSchema.statics.createAndSend = async function(userId, notificationData) {
+  const notification = new this({
+    user: userId,
+    ...notificationData
+  });
+
+  await notification.save();
+
+  const channels = ['inApp', 'email', 'push', 'telegram', 'sms'];
+  for (const channel of channels) {
+    if (notification.channels[channel]?.enabled) {
+      await notification.send(channel);
+    }
+  }
+
+  return notification;
+};
+
+NotificationSchema.statics.sendBulk = async function(userIds, notificationData) {
+  const notifications = userIds.map(userId => ({
+    user: userId,
+    ...notificationData
+  }));
+
+  const created = await this.insertMany(notifications);
+
+  for (const notification of created) {
+    const channels = ['inApp', 'email', 'push', 'telegram', 'sms'];
+    for (const channel of channels) {
+      if (notification.channels[channel]?.enabled) {
+        await notification.send(channel);
+      }
+    }
+  }
+
+  return created;
+};
+
+const Notification = mongoose.model('Notification', NotificationSchema);
+
+module.exports = Notification;

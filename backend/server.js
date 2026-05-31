@@ -136,6 +136,12 @@ app.use('/api/reviews', require('./routes/reviews'));
 app.use('/api/homework', require('./routes/homework'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/courses', require('./routes/courses'));
+app.use('/api/certificates', require('./routes/certificates'));
+app.use('/api/assignments', require('./routes/assignments'));
+app.use('/api/quizzes', require('./routes/quizzes'));
+app.use('/api/progress', require('./routes/progress'));
+app.use('/api/guardians', require('./routes/guardians'));
+app.use('/api/gamification', require('./routes/gamification'));
 app.use('/api/audio', require('./routes/audio'));
 app.use('/api/live', require('./routes/live'));
 
