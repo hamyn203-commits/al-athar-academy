@@ -1,10 +1,5 @@
 #!/usr/bin/env node
-/** إرسال كل روابط Sitemap إلى IndexNow (Bing, Yandex, Seznam...) */
-import { readFileSync, writeFileSync, existsSync } from 'fs';
-import { resolve, dirname } from 'path';
-import { fileURLToPath } from 'url';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
+/** إرسال روابط Sitemap إلى Bing IndexNow (202 = مقبول) */
 const SITE = 'https://al-athar-academy.vercel.app';
 const KEY = 'alathartayyib2026seokey01';
 const LOCALES = ['ar', 'en', 'fr', 'de', 'tr', 'ur', 'id', 'ms', 'ku'];
@@ -12,41 +7,38 @@ const PAGES = ['', '/teachers', '/courses', '/blog', '/contact', '/about', '/tea
 
 const urls = [];
 LOCALES.forEach((loc) => {
-  PAGES.forEach((p) => {
-    urls.push(`${SITE}/${loc}${p}`);
-  });
+  PAGES.forEach((p) => urls.push(`${SITE}/${loc}${p}`));
 });
 
-const body = {
-  host: 'al-athar-academy.vercel.app',
-  key: KEY,
-  keyLocation: `${SITE}/${KEY}.txt`,
-  urlList: urls,
-};
+let ok = 0;
+let fail = 0;
 
-async function submit(endpoint) {
-  const r = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json; charset=utf-8' },
-    body: JSON.stringify(body),
-  });
-  return { endpoint, status: r.status, ok: r.ok };
-}
-
-const results = await Promise.all([
-  submit('https://api.indexnow.org/indexnow'),
-  submit('https://www.bing.com/indexnow'),
-]);
-
-console.log('IndexNow — submitted', urls.length, 'URLs');
-results.forEach((r) => console.log(`  ${r.endpoint}: ${r.status} ${r.ok ? 'OK' : 'FAIL'}`));
-
-// حفظ robots.txt hint if missing IndexNow comment
-const robotsPath = resolve(__dirname, '../public/robots.txt');
-if (existsSync(robotsPath)) {
-  let robots = readFileSync(robotsPath, 'utf8');
-  if (!robots.includes('IndexNow')) {
-    robots += `\n# IndexNow key: ${SITE}/${KEY}.txt\n`;
-    writeFileSync(robotsPath, robots);
+for (const url of urls) {
+  const api = `https://www.bing.com/indexnow?url=${encodeURIComponent(url)}&key=${KEY}`;
+  try {
+    const r = await fetch(api);
+    if (r.status === 200 || r.status === 202) ok++;
+    else fail++;
+  } catch {
+    fail++;
   }
 }
+
+// POST batch لـ IndexNow (بعض الشبكات)
+try {
+  const r = await fetch('https://api.indexnow.org/indexnow', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json; charset=utf-8' },
+    body: JSON.stringify({
+      host: 'al-athar-academy.vercel.app',
+      key: KEY,
+      keyLocation: `${SITE}/${KEY}.txt`,
+      urlList: urls.slice(0, 10),
+    }),
+  });
+  console.log(`IndexNow batch POST: ${r.status}`);
+} catch (e) {
+  console.log('IndexNow batch POST: skipped');
+}
+
+console.log(`Bing IndexNow — ${ok} OK, ${fail} fail, ${urls.length} total URLs`);
