@@ -38,7 +38,7 @@ router.post('/register', async (req, res) => {
       email,
       password,
       phone,
-      role: role || 'student'
+      role: role === 'teacher' ? 'teacher' : 'student',
     });
 
     const accessToken = generateAccessToken(user);

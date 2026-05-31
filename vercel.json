@@ -5,7 +5,8 @@
   "installCommand": "npm install",
   "framework": "vite",
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "https://al-athar-api.azurewebsites.net/api/$1" },
+    { "source": "/api/:path*", "destination": "https://al-athar-api.azurewebsites.net/api/:path*" },
+    { "source": "/uploads/:path*", "destination": "https://al-athar-api.azurewebsites.net/uploads/:path*" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [

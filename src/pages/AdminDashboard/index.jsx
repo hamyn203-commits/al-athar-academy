@@ -77,8 +77,8 @@ export default function AdminDashboard() {
       if (tab === 'messages') await loadMessages();
       if (tab === 'courses') await loadCourses();
       if (tab === 'blog') await loadBlog();
-    } catch {
-      toast.error('تعذر تحميل البيانات');
+    } catch (e) {
+      toast.error(e.message || 'تعذر تحميل البيانات');
     } finally {
       setLoading(false);
     }

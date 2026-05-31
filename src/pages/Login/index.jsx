@@ -297,6 +297,12 @@ export default function Login() {
 
         <div style={{ marginTop: '20px', textAlign: 'center' }}>
           <button
+            onClick={() => navigate('/setup-admin')}
+            style={{ background: 'none', border: 'none', color: '#718096', fontSize: '0.85rem', cursor: 'pointer', marginBottom: '8px', display: 'block', width: '100%' }}
+          >
+            {locale === 'ar' ? 'إعداد أدمن لأول مرة؟' : 'First-time admin setup?'}
+          </button>
+          <button
             onClick={() => navigate('/')}
             style={{
               background: 'none',

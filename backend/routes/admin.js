@@ -30,6 +30,28 @@ const upload = multer({
 });
 
 const PLACEHOLDER = '/uploads/teachers/placeholder.jpg';
+const API_PUBLIC = process.env.API_PUBLIC_URL || 'https://al-athar-api.azurewebsites.net';
+
+router.get('/', protect, authorize('admin'), (_req, res) => {
+  res.json({ ok: true, module: 'admin', version: 2 });
+});
+
+router.post('/ensure-admin', async (req, res) => {
+  try {
+    const existing = await User.countDocuments({ role: 'admin' });
+    if (existing > 0) {
+      return res.status(403).json({ error: 'يوجد أدمن بالفعل — سجّل دخولك من /login' });
+    }
+    const { name, email, password } = req.body;
+    if (!name || !email || !password || password.length < 8) {
+      return res.status(400).json({ error: 'الاسم والبريد وكلمة مرور 8+ أحرف مطلوبة' });
+    }
+    const user = await User.create({ name, email, password, role: 'admin' });
+    res.status(201).json({ message: 'تم إنشاء حساب الأدمن', email: user.email });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
 
 router.get('/stats', protect, authorize('admin'), async (req, res) => {
   try {
@@ -143,8 +165,9 @@ router.put('/teachers/:id', protect, authorize('admin'), async (req, res) => {
 
 router.post('/upload', protect, authorize('admin', 'teacher'), upload.single('file'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'لم يُرفع ملف' });
-  const url = `/uploads/courses/${req.file.filename}`;
-  res.json({ url, filename: req.file.filename, mimetype: req.file.mimetype, size: req.file.size });
+  const rel = `/uploads/courses/${req.file.filename}`;
+  const url = `${API_PUBLIC}${rel}`;
+  res.json({ url, path: rel, filename: req.file.filename, mimetype: req.file.mimetype, size: req.file.size });
 });
 
 router.get('/courses', protect, authorize('admin'), async (req, res) => {

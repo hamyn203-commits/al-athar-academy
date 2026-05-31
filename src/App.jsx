@@ -37,6 +37,7 @@ const CertificateView = lazy(() => import('./pages/Certificate'));
 const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const SetupAdmin = lazy(() => import('./pages/SetupAdmin'));
 const AIHub = lazy(() => import('./pages/AIHub'));
 const NotificationsPage = lazy(() => import('./pages/Notifications'));
 const NotificationSettings = lazy(() => import('./pages/Settings/Notifications'));
@@ -56,6 +57,7 @@ function pageRoutes() {
     <>
       <Route index element={<LandingPage />} />
       <Route path="login" element={<Login />} />
+      <Route path="setup-admin" element={<SetupAdmin />} />
       <Route path="forgot-password" element={<ForgotPassword />} />
       <Route path="register/student" element={<Register />} />
       <Route path="about" element={<About />} />
