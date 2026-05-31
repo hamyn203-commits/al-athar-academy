@@ -133,6 +133,19 @@ const connectDB = async () => {
 };
 connectDB();
 
+app.get('/', (req, res) => {
+  res.json({
+    service: 'Al-Athar Academy API',
+    version: '4.3.0',
+    status: 'ok',
+    message: 'الـ API يعمل — استخدم المسارات تحت /api',
+    health: '/api/health',
+    frontend: process.env.FRONTEND_URL || 'https://al-athar-academy.vercel.app',
+  });
+});
+
+app.get('/api', (_req, res) => res.redirect(301, '/api/health'));
+
 app.get('/api/health', (req, res) => {
   res.status(200).json({ 
     status: 'ok', 
