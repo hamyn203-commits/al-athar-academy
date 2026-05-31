@@ -24,7 +24,7 @@ function generateSitemap() {
     { url: '/terms', priority: '0.3', changefreq: 'yearly' },
   ];
 
-  const languages = ['ar', 'en', 'fr', 'de', 'tr', 'ur', 'id', 'ms'];
+  const languages = ['ar', 'en', 'fr', 'de', 'tr', 'ur', 'id', 'ms', 'ku'];
   
   let sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
@@ -44,6 +44,7 @@ function generateSitemap() {
       languages.forEach(altLang => {
         sitemap += `    <xhtml:link rel="alternate" hreflang="${altLang}" href="${baseUrl}/${altLang}${page.url === '/' ? '' : page.url}" />\n`;
       });
+      sitemap += `    <xhtml:link rel="alternate" hreflang="x-default" href="${baseUrl}/ar${page.url === '/' ? '' : page.url}" />\n`;
       
       sitemap += `  </url>\n`;
     });

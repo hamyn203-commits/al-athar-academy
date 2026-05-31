@@ -1,6 +1,10 @@
 export default {
   common: {
-    appName: 'Al-Athar Akademisi',
+    appName: 'Al-Athar Al-Tayyib',
+    appNameFull: 'Al-Athar Al-Tayyib Akademisi',
+    slogan: 'Etki Hayata Eşittir',
+    seoDescription: 'Al-Athar Al-Tayyib — Kuran, Tecvid ve Arapça için küresel akademi. Motto: Etki Hayata Eşittir',
+    seoKeywords: 'Al-Athar Al-Tayyib, Al Athar Akademisi, Kuran akademisi, Etki Hayata Eşittir, online Kuran',
     home: 'Ana Sayfa',
     about: 'Hakkında',
     teachers: 'Öğretmenler',

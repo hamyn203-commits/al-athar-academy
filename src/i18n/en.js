@@ -1,6 +1,10 @@
 export default {
   common: {
-    appName: 'Al-Athar Academy',
+    appName: 'Al-Athar Al-Tayyib',
+    appNameFull: 'Al-Athar Al-Tayyib Academy',
+    slogan: 'Impact Equals Life',
+    seoDescription: 'Al-Athar Al-Tayyib — global academy for Quran, Tajweed and Arabic. Our motto: Impact Equals Life',
+    seoKeywords: 'Al-Athar Al-Tayyib, Al Athar Al Tayyib, Al-Athar Academy, Impact Equals Life, Quran academy, online Quran',
     home: 'Home',
     about: 'About',
     teachers: 'Teachers',
@@ -33,7 +37,7 @@ export default {
     rating: 'Rating',
   },
   features: {
-    title: 'Why Choose Al-Athar Academy?',
+    title: 'Why Choose Al-Athar Al-Tayyib?',
     subtitle: 'We offer a unique and comprehensive learning experience',
     feature1: {
       title: 'Certified Teachers',
@@ -104,7 +108,7 @@ export default {
     q4: 'Are the certificates accredited?',
     a4: 'Yes, we provide accredited certificates upon successful completion of courses and levels.',
     q5: 'What languages are supported?',
-    a5: 'We support 8 languages: Arabic, English, French, German, Turkish, Urdu, Indonesian, and Malay.',
+    a5: 'We support 9 languages: Arabic, English, French, German, Turkish, Urdu, Indonesian, Malay, and Kurdish.',
   },
   cta: {
     title: 'Start Your Learning Journey Today',
@@ -113,7 +117,7 @@ export default {
   },
   footer: {
     about: 'About Academy',
-    aboutText: 'Al-Athar Academy is a global educational platform specializing in Quran, Arabic language, and Islamic studies.',
+    aboutText: 'Al-Athar Al-Tayyib is a global educational platform specializing in Quran, Arabic language, and Islamic studies.',
     quickLinks: 'Quick Links',
     courses: 'Courses',
     teachers: 'Teachers',

@@ -1,6 +1,10 @@
 export default {
   common: {
-    appName: 'Akademi Al-Athar',
+    appName: 'Al-Athar Al-Tayyib',
+    appNameFull: 'Akademi Al-Athar Al-Tayyib',
+    slogan: 'Dampak Setara Kehidupan',
+    seoDescription: 'Al-Athar Al-Tayyib — akademi global Quran, Tajwid dan Arab. Motto: Dampak Setara Kehidupan',
+    seoKeywords: 'Al-Athar Al-Tayyib, Akademi Al-Athar, Al Athar Al Tayyib, Dampak Setara Kehidupan, Quran online',
     home: 'Beranda',
     about: 'Tentang',
     teachers: 'Guru',

@@ -1,6 +1,10 @@
 export default {
   common: {
-    appName: 'Al-Athar Akademie',
+    appName: 'Al-Athar Al-Tayyib',
+    appNameFull: 'Al-Athar Al-Tayyib Akademie',
+    slogan: 'Wirkung ist Leben',
+    seoDescription: 'Al-Athar Al-Tayyib — globale Akademie für Quran, Tajweed und Arabisch. Motto: Wirkung ist Leben',
+    seoKeywords: 'Al-Athar Al-Tayyib, Al Athar Akademie, Quran Akademie, Wirkung ist Leben, Online Quran',
     home: 'Startseite',
     about: 'Über uns',
     teachers: 'Lehrer',

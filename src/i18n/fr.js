@@ -1,6 +1,10 @@
 export default {
   common: {
-    appName: 'Académie Al-Athar',
+    appName: 'Al-Athar Al-Tayyib',
+    appNameFull: 'Académie Al-Athar Al-Tayyib',
+    slogan: "L'impact égale la vie",
+    seoDescription: "Al-Athar Al-Tayyib — académie mondiale du Coran, Tajweed et arabe. Notre devise : L'impact égale la vie",
+    seoKeywords: 'Al-Athar Al-Tayyib, Académie Al-Athar, Al Athar Al Tayyib, impact égale vie, Coran en ligne, Tajweed',
     home: 'Accueil',
     about: 'À propos',
     teachers: 'Enseignants',

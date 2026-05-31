@@ -1,6 +1,6 @@
-export const LOCALES = ['ar', 'en', 'fr', 'de', 'tr', 'ur', 'id', 'ms'];
+export const LOCALES = ['ar', 'en', 'fr', 'de', 'tr', 'ur', 'id', 'ms', 'ku'];
 export const DEFAULT_LOCALE = 'ar';
-export const RTL_LOCALES = ['ar', 'ur'];
+export const RTL_LOCALES = ['ar', 'ur', 'ku'];
 
 export function isValidLocale(locale) {
   return LOCALES.includes(locale);

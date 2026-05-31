@@ -10,6 +10,7 @@ const languages = [
   { code: 'tr', name: 'Türkçe', flag: '🇹🇷' },
   { code: 'ur', name: 'اردو', flag: '🇵🇰' },
   { code: 'id', name: 'Indonesia', flag: '🇮🇩' },
+  { code: 'ku', name: 'کوردی', flag: '🟥🟩🟡' },
   { code: 'ms', name: 'Melayu', flag: '🇲🇾' },
 ];
 

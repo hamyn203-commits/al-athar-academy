@@ -39,7 +39,7 @@ export default function GlobalHeader() {
             </div>
             <div className="leading-tight">
               <span className="block text-sm font-semibold tracking-tight text-slate-900">{t.common.appName}</span>
-              <span className="hidden text-[10px] text-slate-500 sm:block">أثرٌ يساوي حياة</span>
+              <span className="hidden text-[10px] text-slate-500 sm:block">{t.common.slogan}</span>
             </div>
           </Link>
 

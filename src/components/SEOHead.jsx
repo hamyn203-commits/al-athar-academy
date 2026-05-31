@@ -1,29 +1,28 @@
 import { useEffect } from 'react';
 import { useSEO } from '../hooks/useSEO';
+import { hreflangLinks } from '../seo/brand';
 
 export default function SEOHead({ page = {} }) {
   const { generateMetaTags, organizationSchema, websiteSchema } = useSEO();
   const meta = generateMetaTags(page);
+  const path = page.url || '/';
+  const alternates = hreflangLinks(path);
 
   useEffect(() => {
-    // Update document title
     document.title = meta.title;
 
-    // Update meta tags
-    meta.meta.forEach(tag => {
+    meta.meta.forEach((tag) => {
       let element;
-      
       if (tag.rel) {
-        // Handle link tags (canonical)
-        element = document.querySelector(`link[rel="${tag.rel}"]`);
+        element = document.querySelector(`link[rel="${tag.rel}"]${tag.hreflang ? `[hreflang="${tag.hreflang}"]` : ''}`);
         if (!element) {
           element = document.createElement('link');
           element.setAttribute('rel', tag.rel);
+          if (tag.hreflang) element.setAttribute('hreflang', tag.hreflang);
           document.head.appendChild(element);
         }
         element.setAttribute('href', tag.href);
       } else if (tag.property) {
-        // Handle Open Graph tags
         element = document.querySelector(`meta[property="${tag.property}"]`);
         if (!element) {
           element = document.createElement('meta');
@@ -32,7 +31,6 @@ export default function SEOHead({ page = {} }) {
         }
         element.setAttribute('content', tag.content);
       } else if (tag.name) {
-        // Handle regular meta tags
         element = document.querySelector(`meta[name="${tag.name}"]`);
         if (!element) {
           element = document.createElement('meta');
@@ -43,30 +41,38 @@ export default function SEOHead({ page = {} }) {
       }
     });
 
-    // Add structured data
-    const existingSchemas = document.querySelectorAll('script[type="application/ld+json"]');
-    existingSchemas.forEach(schema => schema.remove());
+    document.querySelectorAll('link[data-seo-hreflang]').forEach((el) => el.remove());
+    alternates.forEach((link) => {
+      const el = document.createElement('link');
+      el.setAttribute('rel', link.rel);
+      el.setAttribute('hreflang', link.hreflang);
+      el.setAttribute('href', link.href);
+      el.setAttribute('data-seo-hreflang', '1');
+      document.head.appendChild(el);
+    });
 
-    // Add organization schema
+    document.querySelectorAll('script[data-seo-schema]').forEach((s) => s.remove());
+
     const orgScript = document.createElement('script');
     orgScript.type = 'application/ld+json';
+    orgScript.setAttribute('data-seo-schema', 'org');
     orgScript.textContent = JSON.stringify(organizationSchema);
     document.head.appendChild(orgScript);
 
-    // Add website schema
     const webScript = document.createElement('script');
     webScript.type = 'application/ld+json';
+    webScript.setAttribute('data-seo-schema', 'web');
     webScript.textContent = JSON.stringify(websiteSchema);
     document.head.appendChild(webScript);
 
-    // Add page-specific schema if provided
     if (page.schema) {
       const pageScript = document.createElement('script');
       pageScript.type = 'application/ld+json';
+      pageScript.setAttribute('data-seo-schema', 'page');
       pageScript.textContent = JSON.stringify(page.schema);
       document.head.appendChild(pageScript);
     }
-  }, [meta, organizationSchema, websiteSchema, page.schema]);
+  }, [meta, organizationSchema, websiteSchema, page.schema, path]);
 
   return null;
 }

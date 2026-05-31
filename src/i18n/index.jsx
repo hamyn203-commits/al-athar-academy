@@ -7,13 +7,14 @@ import tr from './tr';
 import ur from './ur';
 import id from './id';
 import ms from './ms';
+import ku from './ku';
 
 const I18nContext = createContext();
 
-const translations = { ar, en, fr, de, tr, ur, id, ms };
+const translations = { ar, en, fr, de, tr, ur, id, ms, ku };
 
 // اللغات التي تكتب من اليمين لليسار
-const rtlLanguages = ['ar', 'ur'];
+const rtlLanguages = ['ar', 'ur', 'ku'];
 
 export function I18nProvider({ children }) {
   const [locale, setLocale] = useState(() => {

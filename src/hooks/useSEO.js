@@ -1,59 +1,60 @@
 import { useI18n } from '../i18n';
+import { SITE_URL, ALTERNATE_NAMES, ALTERNATE_SLOGANS, OG_LOCALE, SEO_LOCALES, localePath } from '../seo/brand';
 
-// Schema.org structured data generator
 export function useSEO() {
   const { locale, t } = useI18n();
-  const baseUrl = 'https://al-athar-academy.vercel.app';
+  const baseUrl = SITE_URL;
+  const c = t.common;
 
-  // Organization Schema
   const organizationSchema = {
     '@context': 'https://schema.org',
     '@type': 'EducationalOrganization',
-    name: t.common.appName,
-    alternateName: 'Al-Athar Academy',
+    name: c.appName,
+    alternateName: ALTERNATE_NAMES,
     url: baseUrl,
-    logo: `${baseUrl}/logo.png`,
-    description: t.hero.subtitle,
+    logo: `${baseUrl}/assets/logo.png`,
+    image: `${baseUrl}/assets/og-image.png`,
+    description: c.seoDescription || t.hero.subtitle,
     foundingDate: '2024',
-    slogan: t.hero.title,
+    slogan: c.slogan,
+    keywords: c.seoKeywords,
+    inLanguage: SEO_LOCALES,
     address: {
       '@type': 'PostalAddress',
       addressCountry: 'EG',
-      addressLocality: 'Cairo'
+      addressLocality: 'Cairo',
     },
     contactPoint: {
       '@type': 'ContactPoint',
-      telephone: '+20-123-456-7890',
       contactType: 'customer service',
-      availableLanguage: ['Arabic', 'English', 'French', 'German', 'Turkish', 'Urdu', 'Indonesian', 'Malay']
+      availableLanguage: ['Arabic', 'English', 'French', 'German', 'Turkish', 'Urdu', 'Indonesian', 'Malay', 'Kurdish'],
     },
     sameAs: [
       'https://www.facebook.com/alatharacademy',
       'https://www.twitter.com/alatharacademy',
       'https://www.instagram.com/alatharacademy',
       'https://www.youtube.com/@alatharacademy',
-      'https://www.linkedin.com/company/alatharacademy'
-    ]
+    ],
   };
 
-  // WebSite Schema with SearchAction
   const websiteSchema = {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
-    name: t.common.appName,
+    name: c.appName,
+    alternateName: ALTERNATE_NAMES.slice(0, 8),
     url: baseUrl,
-    inLanguage: locale,
+    description: c.seoDescription,
+    inLanguage: SEO_LOCALES,
     potentialAction: {
       '@type': 'SearchAction',
       target: {
         '@type': 'EntryPoint',
-        urlTemplate: `${baseUrl}/${locale}/teachers?q={search_term_string}`
+        urlTemplate: `${baseUrl}/${locale}/teachers?q={search_term_string}`,
       },
-      'query-input': 'required name=search_term_string'
-    }
+      'query-input': 'required name=search_term_string',
+    },
   };
 
-  // BreadcrumbList Schema
   const createBreadcrumbSchema = (items) => ({
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
@@ -61,142 +62,98 @@ export function useSEO() {
       '@type': 'ListItem',
       position: index + 1,
       name: item.name,
-      item: `${baseUrl}/${locale}${item.url}`
-    }))
+      item: `${baseUrl}/${locale}${item.url}`,
+    })),
   });
 
-  // Course Schema
   const createCourseSchema = (course) => ({
     '@context': 'https://schema.org',
     '@type': 'Course',
     name: course.name,
     description: course.description,
-    provider: {
-      '@type': 'Organization',
-      name: t.common.appName,
-      sameAs: baseUrl
-    },
+    provider: { '@type': 'Organization', name: c.appName, sameAs: baseUrl },
     educationalLevel: course.level,
     inLanguage: locale,
     offers: {
       '@type': 'Offer',
       price: course.price,
       priceCurrency: 'USD',
-      availability: 'https://schema.org/InStock'
+      availability: 'https://schema.org/InStock',
     },
-    hasCourseInstance: {
-      '@type': 'CourseInstance',
-      courseMode: 'online',
-      instructor: course.instructor ? {
-        '@type': 'Person',
-        name: course.instructor.name
-      } : undefined
-    }
   });
 
-  // Person Schema for Teachers
   const createTeacherSchema = (teacher) => ({
     '@context': 'https://schema.org',
     '@type': 'Person',
     name: teacher.name,
     image: teacher.image,
     jobTitle: teacher.specialty,
-    worksFor: {
-      '@type': 'Organization',
-      name: t.common.appName
-    },
+    worksFor: { '@type': 'Organization', name: c.appName },
     description: teacher.bio,
-    knowsLanguage: teacher.languages || ['Arabic'],
-    hasCredential: teacher.certifications || [],
-    aggregateRating: teacher.rating ? {
-      '@type': 'AggregateRating',
-      ratingValue: teacher.rating,
-      reviewCount: teacher.reviewCount,
-      bestRating: '5',
-      worstRating: '1'
-    } : undefined
   });
 
-  // FAQ Schema
   const createFAQSchema = (faqs) => ({
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
-    mainEntity: faqs.map(faq => ({
+    mainEntity: faqs.map((faq) => ({
       '@type': 'Question',
       name: faq.question,
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: faq.answer
-      }
-    }))
+      acceptedAnswer: { '@type': 'Answer', text: faq.answer },
+    })),
   });
 
-  // Article Schema for Blog
   const createArticleSchema = (article) => ({
     '@context': 'https://schema.org',
     '@type': 'Article',
     headline: article.title,
     description: article.excerpt,
     image: article.image,
-    author: {
-      '@type': 'Person',
-      name: article.author
-    },
+    author: { '@type': 'Person', name: article.author },
     publisher: {
       '@type': 'Organization',
-      name: t.common.appName,
-      logo: {
-        '@type': 'ImageObject',
-        url: `${baseUrl}/logo.png`
-      }
+      name: c.appName,
+      logo: { '@type': 'ImageObject', url: `${baseUrl}/assets/logo.png` },
     },
     datePublished: article.datePublished,
     dateModified: article.dateModified || article.datePublished,
-    mainEntityOfPage: {
-      '@type': 'WebPage',
-      '@id': `${baseUrl}/${locale}/blog/${article.slug}`
-    }
   });
 
-  // Generate meta tags
   const generateMetaTags = (page = {}) => {
-    const title = page.title ? `${page.title} | ${t.common.appName}` : `${t.common.appName} | ${t.hero.title}`;
-    const description = page.description || t.hero.subtitle;
-    const url = page.url ? `${baseUrl}/${locale}${page.url}` : `${baseUrl}/${locale}`;
-    const image = page.image || `${baseUrl}/og-image.jpg`;
+    const defaultTitle = `${c.appName} | ${c.slogan}`;
+    const title = page.title ? `${page.title} | ${c.appName}` : defaultTitle;
+    const description = page.description || c.seoDescription || t.hero.subtitle;
+    const pagePath = page.url || '/';
+    const url = localePath(locale, pagePath);
+    const image = page.image || `${baseUrl}/assets/og-image.png`;
+    const keywords = page.keywords || c.seoKeywords;
 
-    return {
-      title,
-      meta: [
-        { name: 'description', content: description },
-        { name: 'keywords', content: page.keywords || 'quran, arabic, islamic, education, online learning' },
-        
-        // Open Graph
-        { property: 'og:title', content: title },
-        { property: 'og:description', content: description },
-        { property: 'og:image', content: image },
-        { property: 'og:url', content: url },
-        { property: 'og:type', content: page.type || 'website' },
-        { property: 'og:locale', content: locale },
-        { property: 'og:site_name', content: t.common.appName },
-        
-        // Twitter Card
-        { name: 'twitter:card', content: 'summary_large_image' },
-        { name: 'twitter:title', content: title },
-        { name: 'twitter:description', content: description },
-        { name: 'twitter:image', content: image },
-        { name: 'twitter:site', content: '@alatharacademy' },
-        
-        // Additional SEO
-        { name: 'robots', content: 'index, follow, max-image-preview:large' },
-        { name: 'language', content: locale },
-        { name: 'revisit-after', content: '7 days' },
-        { name: 'author', content: t.common.appName },
-        
-        // Canonical URL
-        { rel: 'canonical', href: url }
-      ]
-    };
+    const meta = [
+      { name: 'description', content: description },
+      { name: 'keywords', content: keywords },
+      { name: 'application-name', content: c.appName },
+      { property: 'og:title', content: title },
+      { property: 'og:description', content: description },
+      { property: 'og:image', content: image },
+      { property: 'og:url', content: url },
+      { property: 'og:type', content: page.type || 'website' },
+      { property: 'og:locale', content: OG_LOCALE[locale] || locale },
+      { property: 'og:site_name', content: c.appName },
+      { name: 'twitter:card', content: 'summary_large_image' },
+      { name: 'twitter:title', content: title },
+      { name: 'twitter:description', content: description },
+      { name: 'twitter:image', content: image },
+      { name: 'twitter:site', content: '@alatharacademy' },
+      { name: 'robots', content: 'index, follow, max-image-preview:large' },
+      { name: 'language', content: locale },
+      { name: 'author', content: c.appNameFull || c.appName },
+      { rel: 'canonical', href: url },
+    ];
+
+    SEO_LOCALES.filter((l) => l !== locale).forEach((l) => {
+      meta.push({ property: 'og:locale:alternate', content: OG_LOCALE[l] || l });
+    });
+
+    return { title, meta };
   };
 
   return {
@@ -207,6 +164,6 @@ export function useSEO() {
     createTeacherSchema,
     createFAQSchema,
     createArticleSchema,
-    generateMetaTags
+    generateMetaTags,
   };
 }
