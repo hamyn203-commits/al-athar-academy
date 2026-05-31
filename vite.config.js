@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import viteCompression from 'vite-plugin-compression';
 import { writeFileSync } from 'fs';
 import { resolve } from 'path';
 
@@ -65,7 +66,20 @@ const sitemapPlugin = {
 };
 
 export default defineConfig({
-  plugins: [react(), sitemapPlugin],
+  plugins: [
+    react(), 
+    sitemapPlugin,
+    viteCompression({
+      algorithm: 'gzip',
+      ext: '.gz',
+      threshold: 1024
+    }),
+    viteCompression({
+      algorithm: 'brotliCompress',
+      ext: '.br',
+      threshold: 1024
+    })
+  ],
   build: {
     rollupOptions: {
       output: {
@@ -80,9 +94,17 @@ export default defineConfig({
             if (id.includes('lucide-react')) {
               return 'icons';
             }
+            if (id.includes('@livekit')) {
+              return 'livekit';
+            }
           }
         }
       }
-    }
+    },
+    chunkSizeWarningLimit: 1000,
+    sourcemap: false
+  },
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'react-router-dom']
   }
 });
