@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Donation = require('../models/Donation');
 const { protect, authorize } = require('../middleware/auth');
+const { notifyAdmin } = require('../services/growthNotify');
 
 router.post('/', async (req, res) => {
   try {
@@ -12,6 +13,10 @@ router.post('/', async (req, res) => {
     const donation = await Donation.create({
       name, email, phone, amount: Number(amount), currency, category, message, isAnonymous,
     });
+    notifyAdmin({
+      subject: `تبرع جديد — ${amount} ${currency || 'USD'}`,
+      html: `<p>تبرع من ${isAnonymous ? 'مجهول' : name} (${email})</p><p>الفئة: ${category} — ${amount} ${currency}</p>`,
+    }).catch(() => {});
     res.status(201).json({ success: true, message: 'شكراً لتبرعك — سنتواصل معك لإتمام العملية', id: donation._id });
   } catch (error) {
     res.status(400).json({ error: error.message });

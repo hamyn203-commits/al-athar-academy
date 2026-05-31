@@ -291,7 +291,8 @@ function CourseCard({ course, locale }) {
 
 export default function Courses() {
   const { t, locale } = useI18n();
-  const [courses, setCourses] = useState(mockCourses);
+  const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLevel, setSelectedLevel] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -299,6 +300,7 @@ export default function Courses() {
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
+    setLoading(true);
     api.get('/api/courses')
       .then((data) => {
         if (data.courses?.length) {
@@ -316,9 +318,12 @@ export default function Courses() {
             rating: c.stats?.rating?.average || 5,
             reviews: c.stats?.rating?.count || 0,
           })));
+        } else {
+          setCourses([]);
         }
       })
-      .catch(() => {});
+      .catch(() => setCourses([]))
+      .finally(() => setLoading(false));
   }, []);
 
   const filteredCourses = courses.filter(course => {
@@ -473,7 +478,9 @@ export default function Courses() {
             }
           </div>
 
-          {sortedCourses.length === 0 ? (
+          {loading ? (
+            <div className="flex justify-center py-20"><div className="spinner spinner-lg" /></div>
+          ) : sortedCourses.length === 0 ? (
             <div className="text-center py-20">
               <BookOpen size={64} className="mx-auto text-gray-400 mb-4" />
               <p className="text-xl text-gray-600">

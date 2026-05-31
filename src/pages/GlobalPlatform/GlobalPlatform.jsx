@@ -237,6 +237,9 @@ function GrowthTab() {
 }
 
 export default function GlobalPlatform() {
+  const { locale } = useI18n();
+  const lp = (path) => localizedPath(path, locale);
+
   return (
     <>
       <SEOHead page={{
@@ -262,10 +265,10 @@ export default function GlobalPlatform() {
                 استكشاف الأسواق
               </Link>
               {v4QuickActions.slice(1).map((action) => (
-                <button type="button" className="btn-premium-outline" key={action.label}>
+                <Link to={lp(action.path)} className="btn-premium-outline" key={action.label}>
                   <action.icon size={18} aria-hidden="true" />
                   {action.label}
-                </button>
+                </Link>
               ))}
             </div>
           </div>

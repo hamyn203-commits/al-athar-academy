@@ -254,6 +254,11 @@ router.put('/:id/complete', protect, authorize('teacher'), async (req, res) => {
     
     await session.save();
 
+    const { processReferralFirstSession } = require('./referrals');
+    if (session.student) {
+      processReferralFirstSession(session.student.toString()).catch(() => {});
+    }
+
     await Teacher.findByIdAndUpdate(teacher._id, {
       $inc: {
         'stats.totalSessions': 1,

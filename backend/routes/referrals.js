@@ -66,19 +66,53 @@ router.get('/my', protect, async (req, res) => {
 router.get('/leaderboard', async (req, res) => {
   try {
     const limit = Math.min(parseInt(req.query.limit) || 10, 50);
-    const rows = await Referral.aggregate([
+    const { timeframe } = req.query;
+    const match = {};
+    if (timeframe === 'monthly') {
+      const start = new Date();
+      start.setDate(1);
+      start.setHours(0, 0, 0, 0);
+      match.createdAt = { $gte: start };
+    } else if (timeframe === 'weekly') {
+      const start = new Date();
+      start.setDate(start.getDate() - 7);
+      match.createdAt = { $gte: start };
+    }
+
+    const pipeline = [{ $match: match }];
+    pipeline.push(
       { $group: { _id: '$referrer', count: { $sum: 1 }, rewarded: { $sum: { $cond: [{ $eq: ['$status', 'rewarded'] }, 1, 0] } } } },
       { $sort: { count: -1 } },
       { $limit: limit },
       { $lookup: { from: 'users', localField: '_id', foreignField: '_id', as: 'user' } },
       { $unwind: '$user' },
       { $project: { name: '$user.name', count: 1, rewarded: 1 } },
-    ]);
-    res.json({ leaderboard: rows.map((r, i) => ({ rank: i + 1, name: r.name, invites: r.count, rewarded: r.rewarded })) });
+    );
+
+    const rows = await Referral.aggregate(pipeline);
+    res.json({ leaderboard: rows.map((r, i) => ({ rank: i + 1, name: r.name, invites: r.count, rewarded: r.rewarded })), timeframe: timeframe || 'all-time' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
+
+async function processReferralFirstSession(studentUserId) {
+  const referral = await Referral.findOne({ referee: studentUserId });
+  if (!referral) return null;
+
+  const exists = await ReferralReward.findOne({ referral: referral._id, type: 'first_session' });
+  if (exists) return null;
+
+  const points = 100;
+  await ReferralReward.create({
+    user: referral.referrer,
+    referral: referral._id,
+    type: 'first_session',
+    points,
+    description: 'أكمل المدعو أول حصة',
+  });
+  return points;
+}
 
 async function processReferralSignup(referrerCode, newUserId) {
   if (!referrerCode) return null;
@@ -111,4 +145,5 @@ async function processReferralSignup(referrerCode, newUserId) {
 
 module.exports = router;
 module.exports.processReferralSignup = processReferralSignup;
+module.exports.processReferralFirstSession = processReferralFirstSession;
 module.exports.ensureReferralCode = ensureReferralCode;

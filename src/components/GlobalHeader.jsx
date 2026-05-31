@@ -9,7 +9,7 @@ import UserMenu from './UserMenu';
 import { useAuth } from '../hooks/useAuth';
 
 export default function GlobalHeader() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { isAuthenticated } = useAuth();
   const { locale: paramLocale } = useParams();
   const activeLocale = paramLocale || DEFAULT_LOCALE;
@@ -22,6 +22,9 @@ export default function GlobalHeader() {
     { path: lp('/teachers'), label: t.common.teachers },
     { path: lp('/courses'), label: t.common.courses },
     { path: lp('/ai'), label: 'AI', icon: Sparkles },
+    { path: lp('/library'), label: locale === 'ar' ? 'المكتبة' : 'Library' },
+    { path: lp('/leaderboard'), label: locale === 'ar' ? 'البطولة' : 'Leaderboard' },
+    { path: lp('/donate'), label: locale === 'ar' ? 'تبرع' : 'Donate' },
     { path: lp('/blog'), label: t.common.blog },
     { path: lp('/about'), label: t.common.about },
   ];
@@ -95,6 +98,9 @@ export default function GlobalHeader() {
                   {link.label}
                 </Link>
               ))}
+              <Link to={lp('/app')} onClick={() => setIsMenuOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-medium text-emerald-700">
+                {locale === 'ar' ? 'تطبيق الهاتف' : 'Mobile app'}
+              </Link>
               <div className="mt-3 flex flex-col gap-2 border-t border-slate-100 pt-3">
                 <LanguageSwitcher />
                 {isAuthenticated ? (

@@ -36,7 +36,7 @@ export default function AdminDashboard() {
 
   const [replyText, setReplyText] = useState({});
   const [teacherForm, setTeacherForm] = useState({ name: '', email: '', password: '', phone: '', country: 'مصر', city: 'القاهرة' });
-  const [courseForm, setCourseForm] = useState({ titleAr: '', slug: '', instructorId: '', price: 0, descAr: '' });
+  const [courseForm, setCourseForm] = useState({ titleAr: '', slug: '', instructorId: '', price: 0, descAr: '', programs: [] });
   const [lessonForm, setLessonForm] = useState({ titleAr: '', type: 'video', videoUrl: '', youtubeUrl: '', duration: 10 });
   const [blogForm, setBlogForm] = useState({ slug: '', titleAr: '', excerptAr: '', contentAr: '' });
   const [uploading, setUploading] = useState(false);
@@ -163,7 +163,7 @@ export default function AdminDashboard() {
     try {
       await api.post('/api/admin/courses', courseForm, { auth: true });
       toast.success('تم إنشاء الدورة');
-      setCourseForm({ titleAr: '', slug: '', instructorId: '', price: 0, descAr: '' });
+      setCourseForm({ titleAr: '', slug: '', instructorId: '', price: 0, descAr: '', programs: [] });
       loadCourses();
     } catch (e) { toast.error(e.message); }
   };
@@ -360,6 +360,18 @@ export default function AdminDashboard() {
                 </select>
                 <input type="number" placeholder="السعر" value={courseForm.price} onChange={(e) => setCourseForm((p) => ({ ...p, price: Number(e.target.value) }))} className="border rounded-lg px-3 py-2 text-sm" />
                 <textarea placeholder="وصف الدورة" value={courseForm.descAr} onChange={(e) => setCourseForm((p) => ({ ...p, descAr: e.target.value }))} className="md:col-span-2 border rounded-lg px-3 py-2 text-sm" rows={2} />
+                <div className="md:col-span-2 flex flex-wrap gap-3">
+                  {['kids', 'reverts', 'women', 'general'].map((prog) => (
+                    <label key={prog} className="flex items-center gap-2 text-sm">
+                      <input type="checkbox" checked={courseForm.programs.includes(prog)}
+                        onChange={(e) => setCourseForm((p) => ({
+                          ...p,
+                          programs: e.target.checked ? [...p.programs, prog] : p.programs.filter((x) => x !== prog),
+                        }))} />
+                      {prog}
+                    </label>
+                  ))}
+                </div>
                 <button type="submit" className="md:col-span-2 py-2 bg-indigo-600 text-white rounded-lg text-sm">إنشاء الدورة</button>
               </form>
 

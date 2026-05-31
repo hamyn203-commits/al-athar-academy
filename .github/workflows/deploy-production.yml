@@ -1,0 +1,80 @@
+name: Deploy Production (Full Stack)
+
+# تشغيل يدوي — ينشر Backend + Frontend معاً (مثالي قبل النوم)
+on:
+  workflow_dispatch:
+    inputs:
+      skip_backend:
+        description: 'Skip Azure backend deploy'
+        type: boolean
+        default: false
+      skip_frontend:
+        description: 'Skip Vercel frontend deploy'
+        type: boolean
+        default: false
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  AZURE_WEBAPP_NAME: al-athar-api
+  AZURE_WEBAPP_PACKAGE_PATH: './backend'
+  NODE_VERSION: '22.x'
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+jobs:
+  deploy-backend:
+    if: ${{ inputs.skip_backend != true }}
+    name: Azure Backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend deps
+        run: npm ci
+        working-directory: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+
+      - uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+
+      - run: echo "### Backend → https://al-athar-api.azurewebsites.net" >> "$GITHUB_STEP_SUMMARY"
+
+  deploy-frontend:
+    name: Vercel Frontend
+    runs-on: ubuntu-latest
+    needs: [deploy-backend]
+    if: always() && (needs.deploy-backend.result == 'success' || needs.deploy-backend.result == 'skipped') && inputs.skip_frontend != true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm install --global vercel@latest
+
+      - run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      - run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+      - id: deploy
+        run: |
+          url=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      - run: echo "### Frontend → ${{ steps.deploy.outputs.url }}" >> "$GITHUB_STEP_SUMMARY"

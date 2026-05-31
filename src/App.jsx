@@ -49,6 +49,7 @@ const VideoLibrary = lazy(() => import('./pages/Library'));
 const Careers = lazy(() => import('./pages/Careers'));
 const RevertsProgram = lazy(() => import('./pages/Programs/Reverts'));
 const KidsProgram = lazy(() => import('./pages/Programs/Kids'));
+const MobileAppPage = lazy(() => import('./pages/Mobile'));
 const LeaderboardPage = lazy(() => import('./pages/Leaderboard'));
 const NotificationsPage = lazy(() => import('./pages/Notifications'));
 const NotificationSettings = lazy(() => import('./pages/Settings/Notifications'));
@@ -106,6 +107,7 @@ function pageRoutes() {
       <Route path="programs/reverts" element={<RevertsProgram />} />
       <Route path="programs/kids" element={<KidsProgram />} />
       <Route path="leaderboard" element={<LeaderboardPage />} />
+      <Route path="app" element={<MobileAppPage />} />
       <Route path="notifications" element={<NotificationsPage />} />
       <Route path="settings/notifications" element={<NotificationSettings />} />
     </>

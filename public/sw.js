@@ -1,5 +1,5 @@
-const CACHE_NAME = 'al-athar-academy-v4';
-const RUNTIME_CACHE = 'al-athar-runtime-v4';
+const CACHE_NAME = 'al-athar-academy-v4.4';
+const RUNTIME_CACHE = 'al-athar-runtime-v4.4';
 
 const PRECACHE_URLS = [
   '/',

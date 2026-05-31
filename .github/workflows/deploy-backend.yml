@@ -7,7 +7,12 @@ on:
     paths:
       - 'backend/**'
       - '.github/workflows/deploy-backend.yml'
+      - '.github/workflows/deploy-production.yml'
   workflow_dispatch:
+
+concurrency:
+  group: deploy-backend-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   AZURE_WEBAPP_NAME: al-athar-api

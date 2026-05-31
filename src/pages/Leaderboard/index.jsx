@@ -36,7 +36,7 @@ export default function LeaderboardPage() {
     setLoading(true);
     Promise.all([
       api.get(`/api/gamification/leaderboard/points/${timeframe}`),
-      api.get('/api/referrals/leaderboard?limit=10'),
+      api.get(`/api/referrals/leaderboard?limit=10${timeframe !== 'all-time' ? `&timeframe=${timeframe}` : ''}`),
     ]).then(([p, r]) => {
       setPoints((p.entries || []).map((e) => ({
         rank: e.rank,

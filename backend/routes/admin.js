@@ -169,7 +169,7 @@ router.post('/courses', protect, authorize('admin'), async (req, res) => {
   try {
     const {
       titleAr, titleEn, descAr, descEn, slug, category = 'quran', level = 'beginner',
-      price = 0, instructorId, image = '/courses/default.jpg', status = 'published',
+      price = 0, instructorId, image = '/courses/default.jpg', status = 'published', programs = [],
     } = req.body;
 
     if (!titleAr || !slug || !instructorId) {
@@ -188,6 +188,7 @@ router.post('/courses', protect, authorize('admin'), async (req, res) => {
       instructor: instructorId,
       image,
       status,
+      programs: Array.isArray(programs) ? programs : [],
       publishedAt: status === 'published' ? new Date() : undefined,
       certificate: { enabled: true },
       stats: { enrolled: 0, rating: { average: 0, count: 0 } },

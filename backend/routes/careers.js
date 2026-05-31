@@ -3,6 +3,7 @@ const router = express.Router();
 const JobApplication = require('../models/JobApplication');
 const JOBS = require('../config/careers');
 const { protect, authorize } = require('../middleware/auth');
+const { notifyAdmin } = require('../services/growthNotify');
 
 router.get('/jobs', (req, res) => {
   res.json({ jobs: JOBS });
@@ -20,6 +21,10 @@ router.post('/apply', async (req, res) => {
     const app = await JobApplication.create({
       name, email, phone, position, coverLetter, resumeUrl, experience, languages,
     });
+    notifyAdmin({
+      subject: `طلب توظيف — ${position}`,
+      html: `<p>${name} (${email}) — ${phone}</p><p>الوظيفة: ${position}</p>`,
+    }).catch(() => {});
     res.status(201).json({ success: true, message: 'تم استلام طلبك — سنتواصل معك قريباً', id: app._id });
   } catch (error) {
     res.status(400).json({ error: error.message });
