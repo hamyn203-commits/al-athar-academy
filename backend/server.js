@@ -71,9 +71,16 @@ app.use(cors({
     if (/^https:\/\/al-athar-academy(-[a-z0-9-]+)?\.vercel\.app$/i.test(origin)) {
       return callback(null, true);
     }
+    const siteUrl = (process.env.SITE_URL || process.env.VITE_SITE_URL || '').replace(/\/$/, '');
+    if (siteUrl && origin === siteUrl) return callback(null, true);
+    if (/^http:\/\/localhost:\d+$/i.test(origin)) return callback(null, true);
+    // إنتاج: أي HTTPS (دومين مخصص، مشاركة من أي مكان)
+    if (process.env.NODE_ENV === 'production' && /^https:\/\//i.test(origin)) {
+      return callback(null, true);
+    }
     callback(new Error('Not allowed by CORS'));
   },
-  credentials: true
+  credentials: true,
 }));
 
 app.use(express.json({ limit: '5mb' }));
@@ -198,6 +205,10 @@ app.use((err, req, res, next) => {
     return res.status(409).json({ 
       error: 'Duplicate entry' 
     });
+  }
+
+  if (err.message === 'Not allowed by CORS') {
+    return res.status(403).json({ error: 'Origin not allowed' });
   }
 
   res.status(err.status || 500).json({ 

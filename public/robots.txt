@@ -9,6 +9,10 @@ Allow: /blog
 Allow: /contact
 Allow: /about
 Allow: /faq
+Allow: /teacher/register
+Allow: /teacher
+Allow: /login
+Allow: /register
 
 # السماح لمحركات البحث بالزحف
 Allow: /*.js$

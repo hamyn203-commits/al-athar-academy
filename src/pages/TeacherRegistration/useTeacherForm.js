@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '../../context/ToastProvider';
+import { apiUrl } from '../../config';
 import { INITIAL_FORM, DRAFT_KEY } from './constants';
 
 const emptyFiles = () => ({
@@ -59,7 +60,7 @@ export function useTeacherForm() {
     if (!formData.personalInfo.phone) return toast.error('أدخل رقم الهاتف أولاً');
     if (!verificationMethod) return toast.error('اختر واتساب أو تليجرام');
     try {
-      const r = await fetch('/api/auth/send-verification', {
+      const r = await fetch(apiUrl('/api/auth/send-verification'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -79,7 +80,7 @@ export function useTeacherForm() {
   const verifyCode = async () => {
     if (verificationCode.length !== 6) return toast.error('الكود 6 أرقام');
     try {
-      const r = await fetch('/api/auth/verify-code', {
+      const r = await fetch(apiUrl('/api/auth/verify-code'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone: formData.personalInfo.phone, code: verificationCode }),
@@ -177,7 +178,7 @@ export function useTeacherForm() {
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const r = await fetch('/api/teachers/register', { method: 'POST', headers, body: fd });
+      const r = await fetch(apiUrl('/api/teachers/register'), { method: 'POST', headers, body: fd });
       const data = await r.json();
       if (!r.ok) throw new Error(data.error || 'فشل التسجيل');
       localStorage.removeItem(DRAFT_KEY);
