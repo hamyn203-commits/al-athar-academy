@@ -3,10 +3,12 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { Search, Filter, Star, MapPin, Clock, Award, BookOpen, Users, ChevronDown } from 'lucide-react';
 import { v4Markets } from '../../data/v4Data';
 import { useMarket } from '../../context/MarketProvider';
+import { useI18n } from '../../i18n';
 
 export default function Teachers() {
   const [searchParams] = useSearchParams();
   const { displayPrice } = useMarket();
+  const { locale } = useI18n();
   const [teachers, setTeachers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -87,19 +89,177 @@ export default function Teachers() {
     setSortBy('rating');
   };
 
+  const labels = {
+    id: {
+      title: 'Guru Bersertifikat Elite',
+      subtitle: 'Pilih guru Anda dari kumpulan instruktur bersertifikat dan terakreditasi kami',
+      searchPlaceholder: 'Cari guru berdasarkan nama atau spesialisasi...',
+      advancedFilters: 'Filter Lanjutan',
+      sortBy: 'Urutkan berdasarkan',
+      ratingHigh: 'Penilaian Tertinggi',
+      expHigh: 'Paling Berpengalaman',
+      studentsHigh: 'Siswa Terbanyak',
+      newest: 'Terbaru',
+      clearFilters: 'Hapus Filter',
+      allMarkets: 'Semua Pasar',
+      allCountries: 'Semua Negara',
+      gender: 'Jenis Kelamin',
+      male: 'Laki-laki',
+      female: 'Perempuan',
+      specialization: 'Spesialisasi',
+      children: 'Anak-anak',
+      adults: 'Dewasa',
+      women: 'Wanita',
+      tajweed: 'Tajwid',
+      ijaza: 'Ijazah',
+      arabicLang: 'B. Arab',
+      language: 'Bahasa',
+      arabic: 'Arab',
+      english: 'Inggris',
+      french: 'Prancis',
+      turkish: 'Turki',
+      experience: 'Pengalaman',
+      exp2: '2+ Tahun',
+      exp5: '5+ Tahun',
+      exp10: '10+ Tahun',
+      hourlyRate: 'Tarif Per Jam',
+      hour: 'jam',
+      featured: '⭐ Guru Unggulan',
+      ratingCount: 'penilaian',
+      yearsExp: 'tahun pengalaman',
+      ijazat: 'ijazah',
+      memorized: 'Hafal',
+      parts: 'juz',
+      students: 'siswa',
+      viewProfile: 'Lihat Profil',
+      loading: 'Memuat data guru...',
+      noTutors: 'Belum ada guru terdaftar',
+      registerTeacher: 'Gabung Sebagai Guru',
+      noTutorsMatched: 'Tidak ada guru yang cocok dengan pencarian Anda',
+      tryChanging: 'Coba ubah filter atau gunakan kata kunci lain',
+      showing: 'Menampilkan {count} dari {total} guru',
+      previous: 'Sebelumnya',
+      next: 'Berikutnya'
+    },
+    ar: {
+      title: 'المعلمون المعتمدون',
+      subtitle: 'اختر المعلم المناسب لك من نخبة من أفضل المعلمين المجازين',
+      searchPlaceholder: 'ابحث عن معلم بالاسم أو التخصص...',
+      advancedFilters: 'الفلاتر المتقدمة',
+      sortBy: 'ترتيب حسب',
+      ratingHigh: 'الأعلى تقييماً',
+      expHigh: 'الأكثر خبرة',
+      studentsHigh: 'الأكثر طلاباً',
+      newest: 'الأحدث',
+      clearFilters: 'مسح الفلاتر',
+      allMarkets: 'كل الأسواق',
+      allCountries: 'كل الدول',
+      gender: 'الجنس',
+      male: 'ذكر',
+      female: 'أنثى',
+      specialization: 'التخصص',
+      children: 'أطفال',
+      adults: 'كبار',
+      women: 'نساء',
+      tajweed: 'تجويد',
+      ijaza: 'إجازة',
+      arabicLang: 'لغة عربية',
+      language: 'اللغة',
+      arabic: 'العربية',
+      english: 'الإنجليزية',
+      french: 'الفرنسية',
+      turkish: 'التركية',
+      experience: 'الخبرة',
+      exp2: '2+ سنوات',
+      exp5: '5+ سنوات',
+      exp10: '10+ سنوات',
+      hourlyRate: 'سعر الساعة',
+      hour: 'ساعة',
+      featured: '⭐ معلم مميز',
+      ratingCount: 'تقييم',
+      yearsExp: 'سنوات خبرة',
+      ijazat: 'إجازات',
+      memorized: 'حفظ',
+      parts: 'جزء',
+      students: 'طالب',
+      viewProfile: 'عرض الملف الشخصي',
+      loading: 'جاري تحميل المعلمين...',
+      noTutors: 'لا يوجد معلمون مسجلون بعد',
+      registerTeacher: 'انضم كمعلم',
+      noTutorsMatched: 'لا يوجد معلمون مطابقون للبحث',
+      tryChanging: 'جرب تغيير الفلاتر أو البحث بكلمات أخرى',
+      showing: 'عرض {count} من {total} معلم',
+      previous: 'السابق',
+      next: 'التالي'
+    },
+    en: {
+      title: 'Certified Tutors',
+      subtitle: 'Choose the suitable tutor from an elite selection of certified tutors',
+      searchPlaceholder: 'Search for tutor by name or specialization...',
+      advancedFilters: 'Advanced Filters',
+      sortBy: 'Sort By',
+      ratingHigh: 'Highest Rated',
+      expHigh: 'Most Experienced',
+      studentsHigh: 'Most Students',
+      newest: 'Newest',
+      clearFilters: 'Clear Filters',
+      allMarkets: 'All Markets',
+      allCountries: 'All Countries',
+      gender: 'Gender',
+      male: 'Male',
+      female: 'Female',
+      specialization: 'Specialization',
+      children: 'Children',
+      adults: 'Adults',
+      women: 'Women',
+      tajweed: 'Tajweed',
+      ijaza: 'Ijaza',
+      arabicLang: 'Arabic Language',
+      language: 'Language',
+      arabic: 'Arabic',
+      english: 'English',
+      french: 'French',
+      turkish: 'Turkish',
+      experience: 'Experience',
+      exp2: '2+ Years',
+      exp5: '5+ Years',
+      exp10: '10+ Years',
+      hourlyRate: 'Hourly Rate',
+      hour: 'hr',
+      featured: '⭐ Featured Tutor',
+      ratingCount: 'rating',
+      yearsExp: 'years experience',
+      ijazat: 'ijazas',
+      memorized: 'Memorized',
+      parts: 'parts',
+      students: 'students',
+      viewProfile: 'View Profile',
+      loading: 'Loading tutors...',
+      noTutors: 'No registered tutors found',
+      registerTeacher: 'Join as a Tutor',
+      noTutorsMatched: 'No tutors match your search criteria',
+      tryChanging: 'Try changing the filters or searching for other keywords',
+      showing: 'Showing {count} of {total} tutors',
+      previous: 'Previous',
+      next: 'Next'
+    }
+  };
+
+  const active = labels[locale] || labels.en;
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-white py-12 px-4">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-4">المعلمون المعتمدون</h1>
-          <p className="text-gray-600 text-lg">اختر المعلم المناسب لك من نخبة من أفضل المعلمين المجازين</p>
+          <h1 className="text-4xl font-bold mb-4">{active.title}</h1>
+          <p className="text-gray-600 text-lg">{active.subtitle}</p>
         </div>
 
         <form onSubmit={handleSearch} className="mb-6">
           <div className="relative max-w-2xl mx-auto">
             <input
               type="text"
-              placeholder="ابحث عن معلم بالاسم أو التخصص..."
+              placeholder={active.searchPlaceholder}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full px-6 py-4 pr-12 rounded-full border-2 border-emerald-200 focus:border-emerald-500 focus:outline-none text-lg"
@@ -120,7 +280,7 @@ export default function Teachers() {
               className="flex items-center gap-2 text-emerald-600 font-semibold hover:text-emerald-700"
             >
               <Filter size={20} />
-              الفلاتر المتقدمة
+              {active.advancedFilters}
               <ChevronDown size={20} className={`transition ${showFilters ? 'rotate-180' : ''}`} />
             </button>
             <div className="flex items-center gap-4">
@@ -129,16 +289,16 @@ export default function Teachers() {
                 onChange={(e) => setSortBy(e.target.value)}
                 className="px-4 py-2 border rounded-lg focus:outline-none focus:border-emerald-500"
               >
-                <option value="rating">الأعلى تقييماً</option>
-                <option value="experience">الأكثر خبرة</option>
-                <option value="students">الأكثر طلاباً</option>
-                <option value="newest">الأحدث</option>
+                <option value="rating">{active.ratingHigh}</option>
+                <option value="experience">{active.expHigh}</option>
+                <option value="students">{active.studentsHigh}</option>
+                <option value="newest">{active.newest}</option>
               </select>
               <button
                 onClick={clearFilters}
                 className="text-sm text-gray-600 hover:text-gray-800"
               >
-                مسح الفلاتر
+                {active.clearFilters}
               </button>
             </div>
           </div>
@@ -150,7 +310,7 @@ export default function Teachers() {
                 onChange={(e) => handleFilterChange('market', e.target.value)}
                 className="input-field"
               >
-                <option value="">كل الأسواق</option>
+                <option value="">{active.allMarkets}</option>
                 {v4Markets.map((m) => (
                   <option key={m.slug} value={m.slug}>{m.region}</option>
                 ))}
@@ -161,13 +321,13 @@ export default function Teachers() {
                 onChange={(e) => handleFilterChange('country', e.target.value)}
                 className="input-field"
               >
-                <option value="">كل الدول</option>
-                <option value="مصر">مصر</option>
-                <option value="السعودية">السعودية</option>
-                <option value="الأردن">الأردن</option>
-                <option value="الإمارات">الإمارات</option>
-                <option value="الكويت">الكويت</option>
-                <option value="قطر">قطر</option>
+                <option value="">{active.allCountries}</option>
+                <option value="مصر">{locale === 'id' ? 'Mesir' : locale === 'ar' ? 'مصر' : 'Egypt'}</option>
+                <option value="السعودية">{locale === 'id' ? 'Arab Saudi' : locale === 'ar' ? 'السعودية' : 'Saudi Arabia'}</option>
+                <option value="الأردن">{locale === 'id' ? 'Yordania' : locale === 'ar' ? 'الأردن' : 'Jordan'}</option>
+                <option value="الإمارات">{locale === 'id' ? 'UEA' : locale === 'ar' ? 'الإمارات' : 'UAE'}</option>
+                <option value="الكويت">{locale === 'id' ? 'Kuwait' : locale === 'ar' ? 'الكويت' : 'Kuwait'}</option>
+                <option value="قطر">{locale === 'id' ? 'Qatar' : locale === 'ar' ? 'قطر' : 'Qatar'}</option>
               </select>
 
               <select
@@ -175,9 +335,9 @@ export default function Teachers() {
                 onChange={(e) => handleFilterChange('gender', e.target.value)}
                 className="input-field"
               >
-                <option value="">الجنس</option>
-                <option value="male">ذكر</option>
-                <option value="female">أنثى</option>
+                <option value="">{active.gender}</option>
+                <option value="male">{active.male}</option>
+                <option value="female">{active.female}</option>
               </select>
 
               <select
@@ -185,13 +345,13 @@ export default function Teachers() {
                 onChange={(e) => handleFilterChange('specialization', e.target.value)}
                 className="input-field"
               >
-                <option value="">التخصص</option>
-                <option value="children">أطفال</option>
-                <option value="adults">كبار</option>
-                <option value="women">نساء</option>
-                <option value="tajweed">تجويد</option>
-                <option value="ijaza">إجازة</option>
-                <option value="arabic-language">لغة عربية</option>
+                <option value="">{active.specialization}</option>
+                <option value="children">{active.children}</option>
+                <option value="adults">{active.adults}</option>
+                <option value="women">{active.women}</option>
+                <option value="tajweed">{active.tajweed}</option>
+                <option value="ijaza">{active.ijaza}</option>
+                <option value="arabic-language">{active.arabicLang}</option>
               </select>
 
               <select
@@ -199,11 +359,11 @@ export default function Teachers() {
                 onChange={(e) => handleFilterChange('language', e.target.value)}
                 className="input-field"
               >
-                <option value="">اللغة</option>
-                <option value="arabic">العربية</option>
-                <option value="english">الإنجليزية</option>
-                <option value="french">الفرنسية</option>
-                <option value="turkish">التركية</option>
+                <option value="">{active.language}</option>
+                <option value="arabic">{active.arabic}</option>
+                <option value="english">{active.english}</option>
+                <option value="french">{active.french}</option>
+                <option value="turkish">{active.turkish}</option>
               </select>
 
               <select
@@ -211,10 +371,10 @@ export default function Teachers() {
                 onChange={(e) => handleFilterChange('minRating', e.target.value)}
                 className="input-field"
               >
-                <option value="">التقييم</option>
-                <option value="4">4+ نجوم</option>
-                <option value="4.5">4.5+ نجوم</option>
-                <option value="4.8">4.8+ نجوم</option>
+                <option value="">{active.rating}</option>
+                <option value="4">4+ {locale === 'id' ? 'Bintang' : locale === 'ar' ? 'نجوم' : 'Stars'}</option>
+                <option value="4.5">4.5+ {locale === 'id' ? 'Bintang' : locale === 'ar' ? 'نجوم' : 'Stars'}</option>
+                <option value="4.8">4.8+ {locale === 'id' ? 'Bintang' : locale === 'ar' ? 'نجوم' : 'Stars'}</option>
               </select>
 
               <select
@@ -222,10 +382,10 @@ export default function Teachers() {
                 onChange={(e) => handleFilterChange('minExperience', e.target.value)}
                 className="input-field"
               >
-                <option value="">الخبرة</option>
-                <option value="2">2+ سنوات</option>
-                <option value="5">5+ سنوات</option>
-                <option value="10">10+ سنوات</option>
+                <option value="">{active.experience}</option>
+                <option value="2">{active.exp2}</option>
+                <option value="5">{active.exp5}</option>
+                <option value="10">{active.exp10}</option>
               </select>
             </div>
           )}
@@ -234,28 +394,28 @@ export default function Teachers() {
         {loading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto"></div>
-            <p className="text-gray-600 mt-4">جاري تحميل المعلمين...</p>
+            <p className="text-gray-600 mt-4">{active.loading}</p>
           </div>
         ) : teachers.length === 0 ? (
           <div className="text-center py-12">
             <Users className="mx-auto text-gray-400 mb-4" size={64} />
             {pagination.total === 0 && !searchQuery && !filters.country && !filters.specialization && !filters.market ? (
               <>
-                <p className="text-xl text-gray-600 mb-2">لا يوجد معلمون مسجلون بعد</p>
-                <p className="text-gray-500 mb-4">سجّل كمعلم أو عد لاحقاً بعد تفعيل البيانات التجريبية</p>
-                <Link to="/register/teacher" className="inline-block bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700">انضم كمعلم</Link>
+                <p className="text-xl text-gray-600 mb-2">{active.noTutors}</p>
+                <p className="text-gray-500 mb-4">{locale === 'id' ? 'Daftar sebagai guru atau kembali lagi nanti setelah mengaktifkan data demo.' : locale === 'ar' ? 'سجّل كمعلم أو عد لاحقاً بعد تفعيل البيانات التجريبية' : 'Register as a tutor or return later after demo data is activated.'}</p>
+                <Link to="/register/teacher" className="inline-block bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700">{active.registerTeacher}</Link>
               </>
             ) : (
               <>
-                <p className="text-xl text-gray-600 mb-2">لا يوجد معلمون مطابقون للبحث</p>
-                <p className="text-gray-500">جرب تغيير الفلاتر أو البحث بكلمات أخرى</p>
+                <p className="text-xl text-gray-600 mb-2">{active.noTutorsMatched}</p>
+                <p className="text-gray-500">{active.tryChanging}</p>
               </>
             )}
           </div>
         ) : (
           <>
             <div className="mb-4 text-gray-600">
-              <p>عرض {teachers.length} من {pagination.total} معلم</p>
+              <p>{active.showing.replace('{count}', teachers.length).replace('{total}', pagination.total)}</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -273,11 +433,11 @@ export default function Teachers() {
                     />
                     {teacher.isFeatured && (
                       <div className="absolute top-4 right-4 bg-gradient-to-r from-yellow-400 to-orange-400 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg">
-                        ⭐ معلم مميز
+                        {active.featured}
                       </div>
                     )}
                     <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-semibold">
-                      {displayPrice(teacher.hourlyRate || 50, 'EGP')}/ساعة
+                      {displayPrice(teacher.hourlyRate || 50, 'EGP')}/{locale === 'id' ? 'jam' : locale === 'ar' ? 'ساعة' : 'hr'}
                     </div>
                   </div>
                   
@@ -287,53 +447,53 @@ export default function Teachers() {
                     <div className="flex items-center gap-2 mb-3">
                       <Star className="text-yellow-400 fill-yellow-400" size={20} />
                       <span className="font-bold text-lg">{teacher.rating.average.toFixed(1)}</span>
-                      <span className="text-gray-500">({teacher.rating.count} تقييم)</span>
+                      <span className="text-gray-500">({teacher.rating.count} {active.ratingCount})</span>
                     </div>
 
                     <div className="space-y-2 text-sm text-gray-600 mb-4">
                       <div className="flex items-center gap-2">
                         <MapPin size={16} className="text-emerald-600" />
-                        <span>{teacher.personalInfo.country}</span>
+                        <span>{locale === 'id' && teacher.personalInfo.country === 'مصر' ? 'Mesir' : locale === 'id' && teacher.personalInfo.country === 'السعودية' ? 'Arab Saudi' : teacher.personalInfo.country}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Clock size={16} className="text-blue-600" />
-                        <span>{teacher.quranInfo.teachingExperience} سنوات خبرة</span>
+                        <span>{teacher.quranInfo.teachingExperience} {active.yearsExp}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Award size={16} className="text-purple-600" />
-                        <span>{teacher.quranInfo.numberOfIjazat} إجازات</span>
+                        <span>{teacher.quranInfo.numberOfIjazat} {active.ijazat}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <BookOpen size={16} className="text-orange-600" />
-                        <span>حفظ {teacher.quranInfo.memorizedParts} جزء</span>
+                        <span>{active.memorized} {teacher.quranInfo.memorizedParts} {active.parts}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Users size={16} className="text-green-600" />
-                        <span>{teacher.stats.totalStudents} طالب</span>
+                        <span>{teacher.stats.totalStudents} {active.students}</span>
                       </div>
                     </div>
 
                     <div className="mb-4">
-                      <p className="text-xs text-gray-500 mb-2">التخصصات:</p>
+                      <p className="text-xs text-gray-500 mb-2">{locale === 'id' ? 'Spesialisasi:' : locale === 'ar' ? 'التخصصات:' : 'Specializations:'}</p>
                       <div className="flex flex-wrap gap-2">
                         {teacher.quranInfo.specializations.slice(0, 4).map((spec) => (
                           <span
                             key={spec}
                             className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-medium"
                           >
-                            {spec === 'children' ? '👶 أطفال' : 
-                             spec === 'adults' ? '👨 كبار' : 
-                             spec === 'women' ? '👩 نساء' :
-                             spec === 'tajweed' ? '📖 تجويد' :
-                             spec === 'ijaza' ? '🎓 إجازة' :
-                             spec === 'arabic-language' ? '🗣️ لغة عربية' : spec}
+                            {spec === 'children' ? (locale === 'id' ? '👶 Anak-anak' : '👶 أطفال') : 
+                             spec === 'adults' ? (locale === 'id' ? '👨 Dewasa' : '👨 كبار') : 
+                             spec === 'women' ? (locale === 'id' ? '👩 Wanita' : '👩 نساء') :
+                             spec === 'tajweed' ? (locale === 'id' ? '📖 Tajwid' : '📖 تجويد') :
+                             spec === 'ijaza' ? (locale === 'id' ? '🎓 Ijazah' : '🎓 إجازة') :
+                             spec === 'arabic-language' ? (locale === 'id' ? '🗣️ B. Arab' : '🗣️ لغة عربية') : spec}
                           </span>
                         ))}
                       </div>
                     </div>
 
                     <button className="w-full bg-gradient-to-r from-emerald-600 to-green-600 text-white py-3 rounded-lg hover:from-emerald-700 hover:to-green-700 transition font-semibold shadow-md">
-                      عرض الملف الشخصي
+                      {active.viewProfile}
                     </button>
                   </div>
                 </Link>
@@ -347,7 +507,7 @@ export default function Teachers() {
                   disabled={pagination.page === 1}
                   className="px-4 py-2 rounded-lg bg-white text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  السابق
+                  {active.previous}
                 </button>
                 {Array.from({ length: Math.min(pagination.pages, 5) }, (_, i) => {
                   const pageNum = i + 1;
@@ -370,7 +530,7 @@ export default function Teachers() {
                   disabled={pagination.page === pagination.pages}
                   className="px-4 py-2 rounded-lg bg-white text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  التالي
+                  {active.next}
                 </button>
               </div>
             )}
