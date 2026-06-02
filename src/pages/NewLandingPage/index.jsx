@@ -10,6 +10,7 @@ import GlobalHeader from '../../components/GlobalHeader';
 import GlobalFooter from '../../components/GlobalFooter';
 import SEOHead from '../../components/SEOHead';
 import LocalizedLink from '../../components/LocalizedLink';
+import { useMarket } from '../../context/MarketProvider';
 
 /* ─── Scroll Reveal Hook ─── */
 function useReveal() {
@@ -661,34 +662,52 @@ function TeachersSection() {
 ══════════════════════════════════════════ */
 function InteractivePlannerSection() {
   const ref = useReveal();
+  const { locale } = useI18n();
+  const { marketSlug } = useMarket();
+  const isIndonesian = marketSlug === 'indonesia-malaysia';
+
   const [path, setPath] = useState('hifz');
   const [frequency, setFrequency] = useState(2);
   const [level, setLevel] = useState('beginner');
+  const [studyMode, setStudyMode] = useState('private'); // 'private' or 'group'
 
   const getEstimatedDuration = () => {
     if (path === 'hifz') {
-      if (frequency === 1) return '4.5 سنوات';
-      if (frequency === 2) return '2.5 سنة';
-      if (frequency === 3) return '1.5 سنة';
-      return '10 أشهر';
+      if (frequency === 1) return locale === 'ar' ? '4.5 سنوات' : '4.5 Years';
+      if (frequency === 2) return locale === 'ar' ? '2.5 سنة' : '2.5 Years';
+      if (frequency === 3) return locale === 'ar' ? '1.5 سنة' : '1.5 Years';
+      return locale === 'ar' ? '10 أشهر' : '10 Months';
     } else if (path === 'tajweed') {
-      if (frequency === 1) return '6 أشهر';
-      if (frequency === 2) return '4 أشهر';
-      if (frequency === 3) return '3 أشهر';
-      return '6 أسابيع';
+      if (frequency === 1) return locale === 'ar' ? '6 أشهر' : '6 Months';
+      if (frequency === 2) return locale === 'ar' ? '4 أشهر' : '4 Months';
+      if (frequency === 3) return locale === 'ar' ? '3 أشهر' : '3 Months';
+      return locale === 'ar' ? '6 أسابيع' : '6 Weeks';
     } else {
-      if (frequency === 1) return '1.5 سنة';
-      if (frequency === 2) return '9 أشهر';
-      if (frequency === 3) return '6 أشهر';
-      return '3 أشهر';
+      if (frequency === 1) return locale === 'ar' ? '1.5 سنة' : '1.5 Years';
+      if (frequency === 2) return locale === 'ar' ? '9 أشهر' : '9 Months';
+      if (frequency === 3) return locale === 'ar' ? '6 أشهر' : '6 Months';
+      return locale === 'ar' ? '3 أشهر' : '3 Months';
     }
   };
 
   const getEstimatedPrice = () => {
-    const monthlyHours = frequency * 4;
-    const usdPrice = monthlyHours * 10;
-    const egpPrice = monthlyHours * 50;
-    return { usd: usdPrice, egp: egpPrice };
+    if (isIndonesian) {
+      if (studyMode === 'group') {
+        return { formatted: 'Rp 100.000', currency: 'IDR' };
+      } else {
+        let rate = 450000;
+        if (frequency === 1) rate = 250000;
+        else if (frequency === 2) rate = 450000;
+        else if (frequency === 3) rate = 600000;
+        else if (frequency === 5) rate = 900000;
+        return { formatted: `Rp ${rate.toLocaleString('id-ID')}`, currency: 'IDR' };
+      }
+    } else {
+      const monthlyHours = frequency * 4;
+      const usdPrice = monthlyHours * 10;
+      const egpPrice = monthlyHours * 50;
+      return { usd: usdPrice, egp: egpPrice, currency: 'USD/EGP' };
+    }
   };
 
   const prices = getEstimatedPrice();
@@ -699,21 +718,53 @@ function InteractivePlannerSection() {
       <div className="absolute inset-0 opacity-5 pointer-events-none geo-pattern" aria-hidden="true" />
       <div className="page-container relative">
         <div ref={ref} className="reveal text-center max-w-2xl mx-auto mb-16">
-          <span className="section-label mb-4">مخطط الدراسة الذكي</span>
-          <h2 className="section-heading mt-4">احسب خطتك الدراسية المخصصة</h2>
+          <span className="section-label mb-4">
+            {locale === 'ar' ? 'مخطط الدراسة الذكي' : locale === 'id' ? 'Rencana Belajar Cerdas' : 'Smart Study Planner'}
+          </span>
+          <h2 className="section-heading mt-4">
+            {locale === 'ar' ? 'احسب خطتك الدراسية المخصصة' : locale === 'id' ? 'Hitung Rencana Belajar Anda' : 'Calculate Your Custom Study Plan'}
+          </h2>
           <GoldDivider center />
-          <p className="section-desc mx-auto !mt-2">حدد أهدافك وعدد الساعات لتصميم خطة تتناسب مع وقتك وميزانيتك</p>
+          <p className="section-desc mx-auto !mt-2">
+            {locale === 'ar' ? 'حدد أهدافك وعدد الساعات لتصميم خطة تتناسب مع وقتك وميزانيتك' : locale === 'id' ? 'Tentukan tujuan dan jam belajar untuk merancang rencana yang sesuai' : 'Select your goals and hours to design a plan that fits your time and budget'}
+          </p>
         </div>
 
         <div className="grid lg:grid-cols-5 gap-8 items-start">
           <div className="lg:col-span-3 glass-card p-8 space-y-6">
+            {/* If Indonesian market, show study mode selector (Private 1-on-1 vs Group) */}
+            {isIndonesian && (
+              <div>
+                <label className="block text-sm font-bold text-[var(--athar-text)] mb-3">
+                  {locale === 'ar' ? '1. نوع الدراسة:' : '1. Jenis Kelas / Study Mode:'}
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { id: 'private', label: locale === 'ar' ? 'حصة فردية خاصة' : 'Kelas Privat (1-on-1)', desc: locale === 'ar' ? 'معلم خاص أزهري' : 'Guru Privat Al-Azhar' },
+                    { id: 'group', label: locale === 'ar' ? 'حلقة جماعية اقتصادية' : 'Kelas Grup (Halaqah)', desc: locale === 'ar' ? 'أقل سعر (5-7 طلاب)' : 'Biaya Ekonomis (5-7 siswa)' }
+                  ].map(opt => (
+                    <button
+                      key={opt.id}
+                      onClick={() => setStudyMode(opt.id)}
+                      className={`flex flex-col items-center justify-center p-4 rounded-xl border text-center transition ${studyMode === opt.id ? 'border-[var(--athar-gold)] bg-[var(--athar-gold-50)] text-[var(--athar-gold-muted)] font-semibold shadow-sm' : 'border-[var(--athar-cream-dark)] hover:border-slate-300'}`}
+                    >
+                      <span className="text-sm">{opt.label}</span>
+                      <span className="text-[10px] text-[var(--athar-text-muted)] mt-1">{opt.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div>
-              <label className="block text-sm font-bold text-[var(--athar-text)] mb-3">1. حدد المسار التعليمي:</label>
+              <label className="block text-sm font-bold text-[var(--athar-text)] mb-3">
+                {isIndonesian ? (locale === 'ar' ? '2. حدد المسار التعليمي:' : '2. Pilih Program Studi:') : (locale === 'ar' ? '1. حدد المسار التعليمي:' : '1. Select Learning Path:')}
+              </label>
               <div className="grid grid-cols-3 gap-3">
                 {[
-                  { id: 'hifz', label: 'حفظ القرآن وتجويده', desc: 'للكبار والصغار' },
-                  { id: 'tajweed', label: 'أحكام التجويد والنطق', desc: 'تصحيح ومخارج الحروف' },
-                  { id: 'arabic', label: 'اللغة العربية الفصحى', desc: 'لغير الناطقين بها' }
+                  { id: 'hifz', label: locale === 'ar' ? 'حفظ القرآن وتجويده' : locale === 'id' ? 'Hafalan & Tajwid' : 'Quran Memorization', desc: locale === 'ar' ? 'للكبار والصغار' : 'Dewasa & Anak-anak' },
+                  { id: 'tajweed', label: locale === 'ar' ? 'أحكام التجويد والنطق' : locale === 'id' ? 'Tajwid & Makhraj' : 'Tajweed & Makhraj', desc: locale === 'ar' ? 'تصحيح ومخارج الحروف' : 'Perbaikan Pelafalan' },
+                  { id: 'arabic', label: locale === 'ar' ? 'اللغة العربية الفصحى' : locale === 'id' ? 'Bahasa Arab' : 'Arabic Language', desc: locale === 'ar' ? 'لغير الناطقين بها' : 'Untuk Non-Arab' }
                 ].map(opt => (
                   <button
                     key={opt.id}
@@ -728,12 +779,14 @@ function InteractivePlannerSection() {
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-[var(--athar-text)] mb-3">2. المستوى الحالي للدارس:</label>
+              <label className="block text-sm font-bold text-[var(--athar-text)] mb-3">
+                {isIndonesian ? (locale === 'ar' ? '3. المستوى الحالي للدارس:' : '3. Tingkat Kemampuan:') : (locale === 'ar' ? '2. المستوى الحالي للدارس:' : '2. Current Level:')}
+              </label>
               <div className="grid grid-cols-3 gap-3">
                 {[
-                  { id: 'beginner', label: 'مبتدئ', desc: 'لا يعرف القراءة' },
-                  { id: 'intermediate', label: 'متوسط', desc: 'يقرأ ولكن يحتاج ضبطاً' },
-                  { id: 'advanced', label: 'متقدم', desc: 'حافظ ويبحث عن السند' }
+                  { id: 'beginner', label: locale === 'ar' ? 'مبتدئ' : locale === 'id' ? 'Pemula' : 'Beginner', desc: locale === 'ar' ? 'لا يعرف القراءة' : locale === 'id' ? 'Belum bisa membaca' : 'Cannot read yet' },
+                  { id: 'intermediate', label: locale === 'ar' ? 'متوسط' : locale === 'id' ? 'Menengah' : 'Intermediate', desc: locale === 'ar' ? 'يقرأ ولكن يحتاج ضبطاً' : locale === 'id' ? 'Bisa membaca & butuh perbaikan' : 'Can read but needs polish' },
+                  { id: 'advanced', label: locale === 'ar' ? 'متقدم' : locale === 'id' ? 'Lanjutan' : 'Advanced', desc: locale === 'ar' ? 'حافظ ويبحث عن السند' : locale === 'id' ? 'Hafal & mencari Sanad' : 'Memorized & seeks Sanad' }
                 ].map(opt => (
                   <button
                     key={opt.id}
@@ -747,26 +800,43 @@ function InteractivePlannerSection() {
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-bold text-[var(--athar-text)] mb-3">3. عدد الساعات في الأسبوع:</label>
-              <div className="grid grid-cols-4 gap-3">
-                {[
-                  { id: 1, label: 'ساعة واحدة', desc: 'حصة / أسبوع' },
-                  { id: 2, label: 'ساعتان', desc: 'حصتان / أسبوع' },
-                  { id: 3, label: '3 ساعات', desc: '3 حصص / أسبوع' },
-                  { id: 5, label: '5 ساعات', desc: '5 حصص / أسبوع' }
-                ].map(opt => (
-                  <button
-                    key={opt.id}
-                    onClick={() => setFrequency(opt.id)}
-                    className={`flex flex-col p-3 rounded-xl border text-center transition ${frequency === opt.id ? 'border-[var(--athar-gold)] bg-[var(--athar-gold-50)] text-[var(--athar-gold-muted)] font-semibold' : 'border-[var(--athar-cream-dark)] hover:border-slate-300'}`}
-                  >
-                    <span className="text-sm font-bold">{opt.id} {opt.id === 1 ? 'ساعة' : opt.id === 2 ? 'ساعتان' : 'ساعات'}</span>
-                    <span className="text-[10px] text-[var(--athar-text-muted)] mt-0.5">{opt.desc}</span>
-                  </button>
-                ))}
+            {/* Frequency selection: only visible or active for Private classes */}
+            {(!isIndonesian || studyMode === 'private') ? (
+              <div>
+                <label className="block text-sm font-bold text-[var(--athar-text)] mb-3">
+                  {isIndonesian ? (locale === 'ar' ? '4. عدد الساعات في الأسبوع:' : '4. Jumlah Jam Per Minggu:') : (locale === 'ar' ? '3. عدد الساعات في الأسبوع:' : '3. Hours Per Week:')}
+                </label>
+                <div className="grid grid-cols-4 gap-3">
+                  {[
+                    { id: 1, label: locale === 'ar' ? 'ساعة واحدة' : '1 Jam', desc: locale === 'ar' ? 'حصة / أسبوع' : '1 sesi / minggu' },
+                    { id: 2, label: locale === 'ar' ? 'ساعتان' : '2 Jam', desc: locale === 'ar' ? '2 حصة / أسبوع' : '2 sesi / minggu' },
+                    { id: 3, label: locale === 'ar' ? '3 ساعات' : '3 Jam', desc: locale === 'ar' ? '3 حصص / أسبوع' : '3 sesi / minggu' },
+                    { id: 5, label: locale === 'ar' ? '5 ساعات' : '5 Jam', desc: locale === 'ar' ? '5 حصص / أسبوع' : '5 sesi / minggu' }
+                  ].map(opt => (
+                    <button
+                      key={opt.id}
+                      onClick={() => setFrequency(opt.id)}
+                      className={`flex flex-col p-3 rounded-xl border text-center transition ${frequency === opt.id ? 'border-[var(--athar-gold)] bg-[var(--athar-gold-50)] text-[var(--athar-gold-muted)] font-semibold' : 'border-[var(--athar-cream-dark)] hover:border-slate-300'}`}
+                    >
+                      <span className="text-sm font-bold">{opt.label}</span>
+                      <span className="text-[10px] text-[var(--athar-text-muted)] mt-0.5">{opt.desc}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            ) : (
+              <div>
+                <label className="block text-sm font-bold text-[var(--athar-text)] mb-3">
+                  {locale === 'ar' ? '4. عدد الساعات في الأسبوع:' : '4. Jumlah Jam Per Minggu:'}
+                </label>
+                <div className="p-4 rounded-xl border border-[var(--athar-gold)]/20 bg-[var(--athar-gold-50)] text-sm text-[var(--athar-gold-muted)] font-semibold flex items-center gap-2">
+                  <Clock size={16} />
+                  <span>
+                    {locale === 'ar' ? '2 حصة في الأسبوع (مجدولة جماعياً)' : '2 sesi per minggu (Jadwal kelas grup tetap)'}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="lg:col-span-2 rounded-2xl border-2 border-[var(--athar-gold)]/30 bg-gradient-to-br from-white to-[var(--athar-gold-50)] p-8 shadow-md relative overflow-hidden flex flex-col justify-between min-h-[400px]">
@@ -775,34 +845,59 @@ function InteractivePlannerSection() {
             <div>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--athar-gold-100)] px-3 py-1 text-xs font-semibold text-[var(--athar-gold-muted)] mb-5">
                 <Sparkles size={12} />
-                ملخص الخطة المقترحة
+                {locale === 'ar' ? 'ملخص الخطة المقترحة' : locale === 'id' ? 'Ringkasan Rencana' : 'Plan Summary'}
               </span>
 
               <div className="space-y-5">
                 <div>
-                  <p className="text-xs text-[var(--athar-text-muted)]">المدة المتوقعة للختم / الإنجاز:</p>
-                  <p className="font-naskh text-3xl font-bold text-[var(--athar-text)] mt-1">{duration}</p>
+                  <p className="text-xs text-[var(--athar-text-muted)]">
+                    {locale === 'ar' ? 'المدة المتوقعة للختم / الإنجاز:' : locale === 'id' ? 'Estimasi Durasi Selesai:' : 'Estimated Duration:'}
+                  </p>
+                  <p className="font-naskh text-3xl font-bold text-[var(--athar-text)] mt-1">
+                    {studyMode === 'group' && isIndonesian ? (locale === 'ar' ? '1.5 سنة' : '1.5 Tahun') : duration}
+                  </p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 border-t border-[var(--athar-gold)]/20 pt-4">
                   <div>
-                    <p className="text-xs text-[var(--athar-text-muted)]">الرسوم الشهرية المقدرة:</p>
-                    <p className="text-xl font-extrabold text-[var(--athar-text)] mt-1">{prices.egp} ج.م <span className="text-xs text-[var(--athar-text-muted)] font-normal">/ {prices.usd}$</span></p>
+                    <p className="text-xs text-[var(--athar-text-muted)]">
+                      {locale === 'ar' ? 'الرسوم الشهرية المقدرة:' : locale === 'id' ? 'Biaya Bulanan:' : 'Estimated Monthly Fee:'}
+                    </p>
+                    <p className="text-xl font-extrabold text-[var(--athar-text)] mt-1">
+                      {isIndonesian ? (
+                        <span className="text-lg">{prices.formatted}</span>
+                      ) : (
+                        <>
+                          {prices.egp} ج.م <span className="text-xs text-[var(--athar-text-muted)] font-normal">/ {prices.usd}$</span>
+                        </>
+                      )}
+                    </p>
                   </div>
                   <div>
-                    <p className="text-xs text-[var(--athar-text-muted)]">معدل الحصص شهرياً:</p>
-                    <p className="text-lg font-bold text-[var(--athar-text)] mt-1">{frequency * 4} حصص</p>
+                    <p className="text-xs text-[var(--athar-text-muted)]">
+                      {locale === 'ar' ? 'معدل الحصص شهرياً:' : locale === 'id' ? 'Jumlah Sesi Bulanan:' : 'Monthly Sessions:'}
+                    </p>
+                    <p className="text-lg font-bold text-[var(--athar-text)] mt-1">
+                      {studyMode === 'group' && isIndonesian ? '8' : frequency * 4} {locale === 'ar' ? 'حصص' : 'sessions'}
+                    </p>
                   </div>
                 </div>
 
                 <div className="border-t border-[var(--athar-gold)]/20 pt-4 space-y-2">
-                  <p className="text-xs font-bold text-[var(--athar-text-muted)] mb-2">المزايا المشمولة في خطتك:</p>
-                  {[
-                    'معلم شخصي مباشر 1-on-1 (أزهري مجاز)',
-                    'تقارير أداء دورية (لوحة قيادة الطالب وولي الأمر)',
-                    'شهادة تخرج معتمدة برقم تحقق QR Code',
-                    'إمكانية تسجيل الحصص لإعادة المراجعة'
-                  ].map((feat) => (
+                  <p className="text-xs font-bold text-[var(--athar-text-muted)] mb-2">
+                    {locale === 'ar' ? 'المزايا المشمولة في خطتك:' : locale === 'id' ? 'Fasilitas Termasuk:' : 'Included Benefits:'}
+                  </p>
+                  {(studyMode === 'group' && isIndonesian ? [
+                    locale === 'ar' ? 'معلم أزهري مباشر (حلقة جماعية 5-7 طلاب)' : 'Guru Al-Azhar (Kelas grup 5-7 siswa)',
+                    locale === 'ar' ? 'منهج إقرأ الإندونيسي التفاعلي المتكامل' : 'Kurikulum Iqro interaktif lengkap',
+                    locale === 'ar' ? 'شهادة إتمام معتمدة برمز QR عند التخرج' : 'Sertifikat kelulusan terverifikasi QR Code',
+                    locale === 'ar' ? 'سعر اقتصادي مدعوم بالكامل لأندونيسيا' : 'Biaya ekonomis khusus Indonesia'
+                  ] : [
+                    locale === 'ar' ? 'معلم شخصي مباشر 1-on-1 (أزهري مجاز)' : 'Guru privat 1-on-1 langsung dari Mesir',
+                    locale === 'ar' ? 'تقارير أداء دورية لولي الأمر والطالب' : 'Laporan perkembangan siswa berkala',
+                    locale === 'ar' ? 'شهادة تخرج معتمدة برقم تحقق QR Code' : 'Sertifikat kelulusan berlisensi resmi',
+                    locale === 'ar' ? 'إمكانية تسجيل الحصص لإعادة المراجعة' : 'Rekaman sesi tersedia untuk diulang'
+                  ]).map((feat) => (
                     <div key={feat} className="flex items-start gap-2 text-xs text-[var(--athar-text)]">
                       <CheckCircle2 size={13} className="text-[var(--athar-gold)] mt-0.5 shrink-0" />
                       <span>{feat}</span>
@@ -814,14 +909,14 @@ function InteractivePlannerSection() {
 
             <div className="mt-8">
               <Link
-                to={`/register/student?path=${path}&freq=${frequency}&level=${level}`}
+                to={`/register/student?path=${path}&freq=${studyMode === 'group' ? 2 : frequency}&level=${level}&mode=${studyMode}`}
                 className="btn-gold w-full justify-center text-sm py-3 shadow-lg"
               >
-                ابدأ خطتك التعليمية الآن
+                {locale === 'ar' ? 'ابدأ خطتك التعليمية الآن' : locale === 'id' ? 'Mulai Belajar Sekarang' : 'Start Your Plan Now'}
                 <ArrowLeft size={16} />
               </Link>
               <p className="text-[10px] text-center text-[var(--athar-text-muted)] mt-2">
-                *الأسعار تقريبية وقد تتغير حسب اختيار المعلم وخيارات التخصيص
+                {locale === 'ar' ? '*الأسعار تقريبية وقد تتغير حسب خيارات التخصيص' : '*Biaya bersifat estimasi dan dapat disesuaikan'}
               </p>
             </div>
           </div>

@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import Logo from '../../components/Logo';
 import { useI18n } from '../../i18n';
+import { useMarket } from '../../context/MarketProvider';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -17,6 +18,10 @@ export default function Register() {
   const planPath = searchParams.get('path') || '';
   const planFreq = searchParams.get('freq') || '';
   const planLevel = searchParams.get('level') || '';
+  const planMode = searchParams.get('mode') || 'private';
+
+  const { marketSlug } = useMarket();
+  const isIndonesian = marketSlug === 'indonesia-malaysia';
 
   const { locale } = useI18n();
   const isRtl = locale === 'ar';
@@ -131,10 +136,23 @@ export default function Register() {
 
   const getEstimatedPrice = () => {
     const frequency = parseInt(planFreq) || 2;
-    const monthlyHours = frequency * 4;
-    const usdPrice = monthlyHours * 10;
-    const egpPrice = monthlyHours * 50;
-    return { usd: usdPrice, egp: egpPrice };
+    if (isIndonesian) {
+      if (planMode === 'group') {
+        return { formatted: 'Rp 100.000', currency: 'IDR' };
+      } else {
+        let rate = 450000;
+        if (frequency === 1) rate = 250000;
+        else if (frequency === 2) rate = 450000;
+        else if (frequency === 3) rate = 600000;
+        else if (frequency === 5) rate = 900000;
+        return { formatted: `Rp ${rate.toLocaleString('id-ID')}`, currency: 'IDR' };
+      }
+    } else {
+      const monthlyHours = frequency * 4;
+      const usdPrice = monthlyHours * 10;
+      const egpPrice = monthlyHours * 50;
+      return { usd: usdPrice, egp: egpPrice, currency: 'USD/EGP' };
+    }
   };
 
   const planPrice = getEstimatedPrice();
@@ -188,7 +206,14 @@ export default function Register() {
                 <div className="space-y-3">
                   <div>
                     <p className="text-xs text-slate-400">{locale === 'ar' ? 'المسار التعليمي:' : 'Learning Path:'}</p>
-                    <p className="text-base font-bold text-[var(--athar-gold-light)]">{pathNames[planPath] || planPath}</p>
+                    <p className="text-base font-bold text-[var(--athar-gold-light)]">
+                      {pathNames[planPath] || planPath}
+                      {isIndonesian && (
+                        <span className="text-xs font-normal text-slate-300 ml-2">
+                          ({planMode === 'group' ? (locale === 'ar' ? 'حلقة جماعية' : 'Kelas Grup') : (locale === 'ar' ? 'حصة خاصة' : 'Kelas Privat')})
+                        </span>
+                      )}
+                    </p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 pt-2 border-t border-white/10">
@@ -198,18 +223,24 @@ export default function Register() {
                     </div>
                     <div>
                       <p className="text-xs text-slate-400">{locale === 'ar' ? 'الحصص شهرياً:' : 'Sessions Monthly:'}</p>
-                      <p className="text-sm font-semibold">{parseInt(planFreq) * 4} {locale === 'ar' ? 'حصص' : 'sessions'}</p>
+                      <p className="text-sm font-semibold">{planMode === 'group' && isIndonesian ? 8 : parseInt(planFreq) * 4} {locale === 'ar' ? 'حصص' : 'sessions'}</p>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 pt-2 border-t border-white/10">
                     <div>
                       <p className="text-xs text-slate-400">{locale === 'ar' ? 'المدة المقدرة:' : 'Estimated Duration:'}</p>
-                      <p className="text-sm font-bold text-emerald-400">{planDuration}</p>
+                      <p className="text-sm font-bold text-emerald-400">{planMode === 'group' && isIndonesian ? (locale === 'ar' ? '1.5 سنة' : '1.5 Years') : planDuration}</p>
                     </div>
                     <div>
                       <p className="text-xs text-slate-400">{locale === 'ar' ? 'التكلفة الشهرية:' : 'Monthly Cost:'}</p>
-                      <p className="text-sm font-bold text-[var(--athar-gold-light)]">{planPrice.egp} ج.م <span className="text-[10px] text-slate-300">/ {planPrice.usd}$</span></p>
+                      <p className="text-sm font-bold text-[var(--athar-gold-light)]">
+                        {isIndonesian ? (
+                          planPrice.formatted
+                        ) : (
+                          <>{planPrice.egp} ج.م <span className="text-[10px] text-slate-300">/ {planPrice.usd}$</span></>
+                        )}
+                      </p>
                     </div>
                   </div>
                 </div>

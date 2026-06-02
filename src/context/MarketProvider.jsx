@@ -17,6 +17,29 @@ export function MarketProvider({ children }) {
     });
   }, [locale]);
 
+  useEffect(() => {
+    const stored = localStorage.getItem('market_prefs');
+    if (stored) return;
+
+    let active = true;
+    const detectGeo = async () => {
+      try {
+        const res = await fetch('https://freeipapi.com/api/json');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (active && data.countryCode === 'ID') {
+          const next = { marketSlug: 'indonesia-malaysia', currency: 'IDR', timezone: 'Asia/Jakarta' };
+          setPrefs(next);
+          saveMarketPrefs(next);
+        }
+      } catch (err) {
+        console.warn('GeoIP detection failed:', err);
+      }
+    };
+    detectGeo();
+    return () => { active = false; };
+  }, []);
+
   const market = getMarketBySlug(prefs.marketSlug);
 
   const setMarket = useCallback((slug) => {
