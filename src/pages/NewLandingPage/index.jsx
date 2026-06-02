@@ -17,9 +17,18 @@ function useReveal() {
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    if (!window.IntersectionObserver) {
+      el.classList.add('visible');
+      return;
+    }
     const obs = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) { el.classList.add('visible'); obs.disconnect(); } },
-      { threshold: 0.12 }
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          el.classList.add('visible');
+          obs.disconnect();
+        }
+      },
+      { threshold: 0.02 }
     );
     obs.observe(el);
     return () => obs.disconnect();
@@ -379,6 +388,59 @@ function CourseTimelineSection() {
 function AISectionModern() {
   const { locale } = useI18n();
   const ref = useReveal();
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentWord, setCurrentWord] = useState(-1);
+  const [showError, setShowError] = useState(false);
+  const [scores, setScores] = useState({ tajweed: 82, makharij: 78, waqf: 85 });
+
+  useEffect(() => {
+    if (!isPlaying) {
+      setCurrentWord(-1);
+      setShowError(false);
+      return;
+    }
+
+    const timers = [];
+
+    // Word 0: الْحَمْدُ (correct)
+    timers.push(setTimeout(() => {
+      setCurrentWord(0);
+      setScores(prev => ({ ...prev, makharij: 83 }));
+    }, 800));
+
+    // Word 1: لِلَّهِ (correct)
+    timers.push(setTimeout(() => {
+      setCurrentWord(1);
+      setScores(prev => ({ ...prev, waqf: 88 }));
+    }, 1800));
+
+    // Word 2: رَبِّ (simulated error - student said "rabbu")
+    timers.push(setTimeout(() => {
+      setCurrentWord(2);
+      setShowError(true);
+      setScores(prev => ({ ...prev, tajweed: 70 }));
+    }, 2800));
+
+    // Word 3: الْعَالَمِينَ (correct)
+    timers.push(setTimeout(() => {
+      setCurrentWord(3);
+      setScores({ tajweed: 89, makharij: 88, waqf: 92 });
+    }, 4200));
+
+    // Stop demo after 5.5s
+    timers.push(setTimeout(() => {
+      setIsPlaying(false);
+    }, 5500));
+
+    return () => timers.forEach(clearTimeout);
+  }, [isPlaying]);
+
+  const words = [
+    { text: "الْحَمْدُ", correct: true },
+    { text: "لِلَّهِ", correct: true },
+    { text: "رَبِّ", correct: false, errorText: "تنبيه تشكيل: نُطقت بالضم (رَبُّ) والموضع مجرور بالكسرة (رَبِّ)" },
+    { text: "الْعَالَمِينَ", correct: true }
+  ];
 
   return (
     <section
@@ -430,39 +492,92 @@ function AISectionModern() {
             </LocalizedLink>
           </div>
 
-          {/* Mock AI report card */}
-          <div className="glass-card p-7">
-            <div className="flex items-center gap-3 mb-5">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--athar-gold-100)]">
-                <Mic size={18} className="text-[var(--athar-gold)]" strokeWidth={1.5} />
-              </span>
-              <div>
-                <p className="text-xs text-[var(--athar-text-muted)]">تقرير تلاوة تجريبي</p>
-                <p className="text-sm font-semibold text-[var(--athar-text)]">سورة الفاتحة</p>
+          {/* Dynamic AI Recitation Card */}
+          <div className="glass-card p-7 border-2 transition-all relative overflow-hidden" style={{ borderColor: isPlaying ? 'var(--athar-gold)' : 'rgba(201,162,39,0.2)' }}>
+            <div className="flex items-center justify-between gap-3 mb-6">
+              <div className="flex items-center gap-3">
+                <span className={`flex h-10 w-10 items-center justify-center rounded-xl transition ${isPlaying ? 'bg-red-100 text-red-600' : 'bg-[var(--athar-gold-100)] text-[var(--athar-gold)]'}`}>
+                  {isPlaying ? <span className="flex h-2.5 w-2.5 rounded-full bg-red-600 animate-ping" /> : <Mic size={18} strokeWidth={1.5} />}
+                </span>
+                <div>
+                  <p className="text-xs text-[var(--athar-text-muted)]">{isPlaying ? 'جاري الاستماع للتلاوة...' : 'محاكاة تلاوة تجريبية'}</p>
+                  <p className="text-sm font-semibold text-[var(--athar-text)]">سورة الفاتحة (الآية 2)</p>
+                </div>
+              </div>
+              
+              <button
+                onClick={() => setIsPlaying(!isPlaying)}
+                className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-bold transition shadow-sm ${isPlaying ? 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100' : 'bg-[var(--athar-gold-100)] text-[var(--athar-gold-muted)] border border-[var(--athar-gold)]/30 hover:bg-[var(--athar-gold-200)]'}`}
+              >
+                <Play size={10} className={isPlaying ? 'hidden' : 'inline'} />
+                {isPlaying ? 'إيقاف المحاكاة' : 'تشغيل المحاكاة'}
+              </button>
+            </div>
+
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 mb-6 text-center">
+              <p className="font-naskh text-2xl font-bold leading-loose text-slate-800 flex items-center justify-center gap-2 flex-wrap">
+                {words.map((w, idx) => {
+                  const isHighlighted = idx === currentWord;
+                  const isPast = idx < currentWord;
+                  let colorClass = 'text-slate-400';
+                  
+                  if (isHighlighted) {
+                    colorClass = w.correct ? 'text-emerald-600 font-extrabold scale-105' : 'text-red-600 font-extrabold scale-105';
+                  } else if (isPast) {
+                    colorClass = w.correct ? 'text-slate-800' : 'text-red-500';
+                  }
+                  
+                  return (
+                    <span
+                      key={idx}
+                      className={`transition-all duration-300 relative group cursor-help ${colorClass}`}
+                    >
+                      {w.text}
+                      {!w.correct && idx <= currentWord && (
+                        <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 bg-slate-800 text-white text-[10px] p-2 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition duration-200 z-10 pointer-events-none leading-normal">
+                          {w.errorText}
+                        </span>
+                      )}
+                    </span>
+                  );
+                })}
+              </p>
+              
+              <div className="flex items-center justify-center gap-1 h-6 mt-4">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((bar) => (
+                  <div
+                    key={bar}
+                    className="w-1 rounded-full bg-[var(--athar-gold)] transition-all duration-300"
+                    style={{
+                      height: isPlaying ? `${Math.floor(Math.random() * 18) + 6}px` : '4px',
+                      opacity: isPlaying ? 0.8 : 0.3,
+                    }}
+                  />
+                ))}
               </div>
             </div>
 
             {[
-              { label: 'التجويد', val: 82, color: 'bg-[var(--athar-gold)]' },
-              { label: 'المخارج', val: 78, color: 'bg-emerald-500' },
-              { label: 'الوقف والابتداء', val: 85, color: 'bg-blue-500' },
+              { label: 'التجويد ونبرات الصوت', val: scores.tajweed, color: 'bg-[var(--athar-gold)]' },
+              { label: 'مخارج الحروف الفموية', val: scores.makharij, color: 'bg-emerald-500' },
+              { label: 'الوقف والابتداء والقراءة الصحيحة', val: scores.waqf, color: 'bg-blue-500' },
             ].map(({ label, val, color }) => (
               <div key={label} className="mb-4">
-                <div className="flex justify-between text-sm mb-1.5">
+                <div className="flex justify-between text-xs mb-1.5">
                   <span className="text-[var(--athar-text-muted)]">{label}</span>
                   <span className="font-bold text-[var(--athar-text)]">{val}%</span>
                 </div>
-                <div className="h-2.5 rounded-full bg-[var(--athar-gold-200)] overflow-hidden">
+                <div className="h-2 rounded-full bg-[var(--athar-gold-200)] overflow-hidden">
                   <div
-                    className={`h-full rounded-full ${color} transition-all duration-1000`}
+                    className={`h-full rounded-full ${color} transition-all duration-500`}
                     style={{ width: `${val}%` }}
                   />
                 </div>
               </div>
             ))}
 
-            <p className="mt-4 text-xs text-[var(--athar-text-muted)] border-t border-[var(--athar-gold)]/20 pt-4">
-              ارفع تسجيلك واحصل على توصيات فورية من الذكاء الاصطناعي
+            <p className="mt-4 text-xs text-[var(--athar-text-muted)] border-t border-[var(--athar-gold)]/20 pt-4 text-center">
+              {isPlaying ? 'الذكاء الاصطناعي يقوم بتحليل التلاوة ومطابقتها...' : 'جرّب التلاوة بصوتك في لوحة الطالب للحصول على تقييم فوري'}
             </p>
           </div>
 
@@ -535,6 +650,181 @@ function TeachersSection() {
               </article>
             );
           })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ══════════════════════════════════════════
+   Interactive Plan Calculator (Moddakir/Iqra Style)
+══════════════════════════════════════════ */
+function InteractivePlannerSection() {
+  const ref = useReveal();
+  const [path, setPath] = useState('hifz');
+  const [frequency, setFrequency] = useState(2);
+  const [level, setLevel] = useState('beginner');
+
+  const getEstimatedDuration = () => {
+    if (path === 'hifz') {
+      if (frequency === 1) return '4.5 سنوات';
+      if (frequency === 2) return '2.5 سنة';
+      if (frequency === 3) return '1.5 سنة';
+      return '10 أشهر';
+    } else if (path === 'tajweed') {
+      if (frequency === 1) return '6 أشهر';
+      if (frequency === 2) return '4 أشهر';
+      if (frequency === 3) return '3 أشهر';
+      return '6 أسابيع';
+    } else {
+      if (frequency === 1) return '1.5 سنة';
+      if (frequency === 2) return '9 أشهر';
+      if (frequency === 3) return '6 أشهر';
+      return '3 أشهر';
+    }
+  };
+
+  const getEstimatedPrice = () => {
+    const monthlyHours = frequency * 4;
+    const usdPrice = monthlyHours * 10;
+    const egpPrice = monthlyHours * 50;
+    return { usd: usdPrice, egp: egpPrice };
+  };
+
+  const prices = getEstimatedPrice();
+  const duration = getEstimatedDuration();
+
+  return (
+    <section className="py-24 bg-white relative overflow-hidden" id="planner">
+      <div className="absolute inset-0 opacity-5 pointer-events-none geo-pattern" aria-hidden="true" />
+      <div className="page-container relative">
+        <div ref={ref} className="reveal text-center max-w-2xl mx-auto mb-16">
+          <span className="section-label mb-4">مخطط الدراسة الذكي</span>
+          <h2 className="section-heading mt-4">احسب خطتك الدراسية المخصصة</h2>
+          <GoldDivider center />
+          <p className="section-desc mx-auto !mt-2">حدد أهدافك وعدد الساعات لتصميم خطة تتناسب مع وقتك وميزانيتك</p>
+        </div>
+
+        <div className="grid lg:grid-cols-5 gap-8 items-start">
+          <div className="lg:col-span-3 glass-card p-8 space-y-6">
+            <div>
+              <label className="block text-sm font-bold text-[var(--athar-text)] mb-3">1. حدد المسار التعليمي:</label>
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { id: 'hifz', label: 'حفظ القرآن وتجويده', desc: 'للكبار والصغار' },
+                  { id: 'tajweed', label: 'أحكام التجويد والنطق', desc: 'تصحيح ومخارج الحروف' },
+                  { id: 'arabic', label: 'اللغة العربية الفصحى', desc: 'لغير الناطقين بها' }
+                ].map(opt => (
+                  <button
+                    key={opt.id}
+                    onClick={() => setPath(opt.id)}
+                    className={`flex flex-col items-center justify-center p-4 rounded-xl border text-center transition ${path === opt.id ? 'border-[var(--athar-gold)] bg-[var(--athar-gold-50)] text-[var(--athar-gold-muted)] font-semibold shadow-sm' : 'border-[var(--athar-cream-dark)] hover:border-slate-300'}`}
+                  >
+                    <span className="text-sm">{opt.label}</span>
+                    <span className="text-[10px] text-[var(--athar-text-muted)] mt-1">{opt.desc}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-[var(--athar-text)] mb-3">2. المستوى الحالي للدارس:</label>
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { id: 'beginner', label: 'مبتدئ', desc: 'لا يعرف القراءة' },
+                  { id: 'intermediate', label: 'متوسط', desc: 'يقرأ ولكن يحتاج ضبطاً' },
+                  { id: 'advanced', label: 'متقدم', desc: 'حافظ ويبحث عن السند' }
+                ].map(opt => (
+                  <button
+                    key={opt.id}
+                    onClick={() => setLevel(opt.id)}
+                    className={`flex flex-col p-3 rounded-xl border text-center transition ${level === opt.id ? 'border-[var(--athar-gold)] bg-[var(--athar-gold-50)] text-[var(--athar-gold-muted)] font-semibold' : 'border-[var(--athar-cream-dark)] hover:border-slate-300'}`}
+                  >
+                    <span className="text-sm">{opt.label}</span>
+                    <span className="text-[10px] text-[var(--athar-text-muted)] mt-0.5">{opt.desc}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-[var(--athar-text)] mb-3">3. عدد الساعات في الأسبوع:</label>
+              <div className="grid grid-cols-4 gap-3">
+                {[
+                  { id: 1, label: 'ساعة واحدة', desc: 'حصة / أسبوع' },
+                  { id: 2, label: 'ساعتان', desc: 'حصتان / أسبوع' },
+                  { id: 3, label: '3 ساعات', desc: '3 حصص / أسبوع' },
+                  { id: 5, label: '5 ساعات', desc: '5 حصص / أسبوع' }
+                ].map(opt => (
+                  <button
+                    key={opt.id}
+                    onClick={() => setFrequency(opt.id)}
+                    className={`flex flex-col p-3 rounded-xl border text-center transition ${frequency === opt.id ? 'border-[var(--athar-gold)] bg-[var(--athar-gold-50)] text-[var(--athar-gold-muted)] font-semibold' : 'border-[var(--athar-cream-dark)] hover:border-slate-300'}`}
+                  >
+                    <span className="text-sm font-bold">{opt.id} {opt.id === 1 ? 'ساعة' : opt.id === 2 ? 'ساعتان' : 'ساعات'}</span>
+                    <span className="text-[10px] text-[var(--athar-text-muted)] mt-0.5">{opt.desc}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="lg:col-span-2 rounded-2xl border-2 border-[var(--athar-gold)]/30 bg-gradient-to-br from-white to-[var(--athar-gold-50)] p-8 shadow-md relative overflow-hidden flex flex-col justify-between min-h-[400px]">
+            <div className="absolute top-0 right-0 w-24 h-24 opacity-15 pointer-events-none" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h60v60H0z' fill='none'/%3E%3Cpath d='M60 0C26.863 0 0 26.863 0 60' fill='none' stroke='%23c9a227' stroke-width='1.5'/%3E%3C/svg%3E")`, backgroundSize: 'cover' }} aria-hidden="true" />
+
+            <div>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--athar-gold-100)] px-3 py-1 text-xs font-semibold text-[var(--athar-gold-muted)] mb-5">
+                <Sparkles size={12} />
+                ملخص الخطة المقترحة
+              </span>
+
+              <div className="space-y-5">
+                <div>
+                  <p className="text-xs text-[var(--athar-text-muted)]">المدة المتوقعة للختم / الإنجاز:</p>
+                  <p className="font-naskh text-3xl font-bold text-[var(--athar-text)] mt-1">{duration}</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 border-t border-[var(--athar-gold)]/20 pt-4">
+                  <div>
+                    <p className="text-xs text-[var(--athar-text-muted)]">الرسوم الشهرية المقدرة:</p>
+                    <p className="text-xl font-extrabold text-[var(--athar-text)] mt-1">{prices.egp} ج.م <span className="text-xs text-[var(--athar-text-muted)] font-normal">/ {prices.usd}$</span></p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[var(--athar-text-muted)]">معدل الحصص شهرياً:</p>
+                    <p className="text-lg font-bold text-[var(--athar-text)] mt-1">{frequency * 4} حصص</p>
+                  </div>
+                </div>
+
+                <div className="border-t border-[var(--athar-gold)]/20 pt-4 space-y-2">
+                  <p className="text-xs font-bold text-[var(--athar-text-muted)] mb-2">المزايا المشمولة في خطتك:</p>
+                  {[
+                    'معلم شخصي مباشر 1-on-1 (أزهري مجاز)',
+                    'تقارير أداء دورية (لوحة قيادة الطالب وولي الأمر)',
+                    'شهادة تخرج معتمدة برقم تحقق QR Code',
+                    'إمكانية تسجيل الحصص لإعادة المراجعة'
+                  ].map((feat) => (
+                    <div key={feat} className="flex items-start gap-2 text-xs text-[var(--athar-text)]">
+                      <CheckCircle2 size={13} className="text-[var(--athar-gold)] mt-0.5 shrink-0" />
+                      <span>{feat}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-8">
+              <Link
+                to={`/register/student?path=${path}&freq=${frequency}&level=${level}`}
+                className="btn-gold w-full justify-center text-sm py-3 shadow-lg"
+              >
+                ابدأ خطتك التعليمية الآن
+                <ArrowLeft size={16} />
+              </Link>
+              <p className="text-[10px] text-center text-[var(--athar-text-muted)] mt-2">
+                *الأسعار تقريبية وقد تتغير حسب اختيار المعلم وخيارات التخصيص
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -661,6 +951,7 @@ export default function NewLandingPage() {
         <CourseTimelineSection />
         <AISectionModern />
         <TeachersSection />
+        <InteractivePlannerSection />
         <FAQSection />
         <CTASection />
       </main>
