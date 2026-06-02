@@ -883,6 +883,19 @@ function InteractivePlannerSection() {
                   </div>
                 </div>
 
+                {isIndonesian && (
+                  <div className="flex items-start gap-2 rounded-xl bg-emerald-50 border border-emerald-200/60 p-2.5 text-[11px] text-emerald-800 font-semibold leading-normal shadow-xs">
+                    <Globe size={14} className="shrink-0 text-emerald-600 mt-0.5 animate-spin" style={{ animationDuration: '6s' }} />
+                    <span>
+                      {locale === 'id' 
+                        ? 'Terdeteksi IP Indonesia: Subsidi Biaya Khusus Aktif (Dukungan Guru Mesir Terjangkau)' 
+                        : locale === 'ar'
+                        ? 'تم رصد عنوان IP من إندونيسيا: الرسوم المدعومة نشطة (معلمين مصريين بتكلفة مناسبة)'
+                        : 'Indonesian IP Detected: Subsidized Pricing Active (Affordable Egyptian Scholars)'}
+                    </span>
+                  </div>
+                )}
+
                 <div className="border-t border-[var(--athar-gold)]/20 pt-4 space-y-2">
                   <p className="text-xs font-bold text-[var(--athar-text-muted)] mb-2">
                     {locale === 'ar' ? 'المزايا المشمولة في خطتك:' : locale === 'id' ? 'Fasilitas Termasuk:' : 'Included Benefits:'}
@@ -915,6 +928,22 @@ function InteractivePlannerSection() {
                 {locale === 'ar' ? 'ابدأ خطتك التعليمية الآن' : locale === 'id' ? 'Mulai Belajar Sekarang' : 'Start Your Plan Now'}
                 <ArrowLeft size={16} />
               </Link>
+
+              {isIndonesian && (
+                <div className="mt-4 pt-3 border-t border-[var(--athar-gold)]/20 text-center">
+                  <p className="text-[10px] text-[var(--athar-text-muted)] font-bold mb-2">
+                    {locale === 'id' ? 'Metode Pembayaran Lokal Didukung:' : locale === 'ar' ? 'طرق الدفع المحلية المدعومة:' : 'Supported Local Payment Methods:'}
+                  </p>
+                  <div className="flex flex-wrap justify-center gap-1.5 opacity-90">
+                    {['QRIS', 'GoPay', 'OVO', 'DANA', 'ShopeePay', 'LinkAja', 'Transfer Bank'].map(method => (
+                      <span key={method} className="text-[9px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/50 rounded px-1.5 py-0.5">
+                        {method}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <p className="text-[10px] text-center text-[var(--athar-text-muted)] mt-2">
                 {locale === 'ar' ? '*الأسعار تقريبية وقد تتغير حسب خيارات التخصيص' : '*Biaya bersifat estimasi dan dapat disesuaikan'}
               </p>

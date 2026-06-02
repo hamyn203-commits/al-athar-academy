@@ -18,16 +18,57 @@ export function MarketProvider({ children }) {
   }, [locale]);
 
   useEffect(() => {
-    const stored = localStorage.getItem('market_prefs');
-    if (stored) return;
-
     let active = true;
     const detectGeo = async () => {
       try {
-        const res = await fetch('https://freeipapi.com/api/json');
-        if (!res.ok) return;
-        const data = await res.json();
-        if (active && data.countryCode === 'ID') {
+        let countryCode = '';
+
+        // Check mock country parameter first for QA/testing
+        if (typeof window !== 'undefined' && window.location.search.includes('mock_country=ID')) {
+          countryCode = 'ID';
+        }
+
+        // 1. Try FreeIPAPI
+        if (!countryCode) {
+          try {
+            const res = await fetch('https://freeipapi.com/api/json');
+            if (res.ok) {
+              const data = await res.json();
+              countryCode = data.countryCode;
+            }
+          } catch (e) {
+            console.warn('FreeIPAPI failed:', e);
+          }
+        }
+
+        // 2. Fallback to ipapi.co
+        if (!countryCode) {
+          try {
+            const res = await fetch('https://ipapi.co/json/');
+            if (res.ok) {
+              const data = await res.json();
+              countryCode = data.country_code;
+            }
+          } catch (e) {
+            console.warn('ipapi.co fallback failed:', e);
+          }
+        }
+
+        // 3. Fallback to ip-api
+        if (!countryCode) {
+          try {
+            const res = await fetch('https://ip-api.com/json/');
+            if (res.ok) {
+              const data = await res.json();
+              countryCode = data.countryCode;
+            }
+          } catch (e) {
+            console.warn('ip-api.com fallback failed:', e);
+          }
+        }
+
+        if (active && countryCode === 'ID') {
+          localStorage.setItem('is_indonesia_ip', 'true');
           const next = { marketSlug: 'indonesia-malaysia', currency: 'IDR', timezone: 'Asia/Jakarta' };
           setPrefs(next);
           saveMarketPrefs(next);
@@ -43,6 +84,11 @@ export function MarketProvider({ children }) {
   const market = getMarketBySlug(prefs.marketSlug);
 
   const setMarket = useCallback((slug) => {
+    const isIndoIP = typeof window !== 'undefined' && localStorage.getItem('is_indonesia_ip') === 'true';
+    if (isIndoIP) {
+      console.warn('Market change blocked: User IP is geolocked to Indonesia');
+      return;
+    }
     const m = getMarketBySlug(slug);
     if (!m) return;
     const next = { marketSlug: slug, currency: m.currency, timezone: m.timezone };
@@ -51,6 +97,8 @@ export function MarketProvider({ children }) {
   }, []);
 
   const setCurrency = useCallback((currency) => {
+    const isIndoIP = typeof window !== 'undefined' && localStorage.getItem('is_indonesia_ip') === 'true';
+    if (isIndoIP) return;
     setPrefs((prev) => {
       const next = { ...prev, currency };
       saveMarketPrefs(next);

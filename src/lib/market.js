@@ -41,6 +41,16 @@ export function saveMarketPrefs(prefs) {
 
 export function resolveMarketPrefs(locale) {
   const stored = getStoredMarketPrefs();
+  const isIndoIP = typeof window !== 'undefined' && localStorage.getItem('is_indonesia_ip') === 'true';
+
+  if (isIndoIP) {
+    return {
+      marketSlug: 'indonesia-malaysia',
+      currency: 'IDR',
+      timezone: stored?.timezone || 'Asia/Jakarta',
+    };
+  }
+
   const detected = detectMarket(locale);
   return {
     marketSlug: stored?.marketSlug || detected?.slug || 'arab-world',

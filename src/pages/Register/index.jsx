@@ -243,6 +243,34 @@ export default function Register() {
                       </p>
                     </div>
                   </div>
+
+                  {isIndonesian && (
+                    <div className="mt-3 flex items-start gap-2 rounded-xl bg-emerald-950/40 border border-emerald-500/20 p-2.5 text-[11px] text-emerald-300 leading-normal">
+                      <Globe size={14} className="shrink-0 text-emerald-400 mt-0.5 animate-spin" style={{ animationDuration: '6s' }} />
+                      <span>
+                        {locale === 'id' 
+                          ? 'Terdeteksi IP Indonesia: Subsidi Biaya Khusus Aktif (Dukungan Guru Mesir Terjangkau).' 
+                          : locale === 'ar'
+                          ? 'تم رصد عنوان IP من إندونيسيا: الرسوم المدعومة نشطة (معلمين مصريين بتكلفة مناسبة).'
+                          : 'Indonesian IP Detected: Subsidized Pricing Active (Affordable Egyptian Scholars).'}
+                      </span>
+                    </div>
+                  )}
+
+                  {isIndonesian && (
+                    <div className="mt-3 pt-3 border-t border-white/10">
+                      <p className="text-[10px] text-slate-400 font-bold mb-1.5">
+                        {locale === 'id' ? 'Pilihan Pembayaran Lokal:' : locale === 'ar' ? 'خيارات الدفع المحلية:' : 'Local Payment Options:'}
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {['QRIS', 'GoPay', 'OVO', 'DANA', 'ShopeePay', 'Bank Transfer'].map(method => (
+                          <span key={method} className="text-[8px] font-bold text-emerald-300 bg-emerald-950/50 border border-emerald-500/30 rounded px-1.5 py-0.5">
+                            {method}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
@@ -259,6 +287,34 @@ export default function Register() {
                     <span className="text-sm text-slate-200">{perk.title}</span>
                   </div>
                 ))}
+
+                {isIndonesian && (
+                  <div className="mt-4 flex items-start gap-2 rounded-xl bg-emerald-950/40 border border-emerald-500/20 p-2.5 text-[11px] text-emerald-300 leading-normal">
+                    <Globe size={14} className="shrink-0 text-emerald-400 mt-0.5 animate-spin" style={{ animationDuration: '6s' }} />
+                    <span>
+                      {locale === 'id' 
+                        ? 'Terdeteksi IP Indonesia: Subsidi Biaya Khusus Aktif (Dukungan Guru Mesir Terjangkau).' 
+                        : locale === 'ar'
+                        ? 'تم رصد عنوان IP من إندونيسيا: الرسوم المدعومة نشطة (معلمين مصريين بتكلفة مناسبة).'
+                        : 'Indonesian IP Detected: Subsidized Pricing Active (Affordable Egyptian Scholars).'}
+                    </span>
+                  </div>
+                )}
+
+                {isIndonesian && (
+                  <div className="mt-4 pt-3 border-t border-white/10">
+                    <p className="text-[10px] text-slate-400 font-bold mb-1.5">
+                      {locale === 'id' ? 'Pilihan Pembayaran Lokal:' : locale === 'ar' ? 'خيارات الدفع المحلية:' : 'Local Payment Options:'}
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {['QRIS', 'GoPay', 'OVO', 'DANA', 'ShopeePay', 'Bank Transfer'].map(method => (
+                        <span key={method} className="text-[8px] font-bold text-emerald-300 bg-emerald-950/50 border border-emerald-500/30 rounded px-1.5 py-0.5">
+                          {method}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
