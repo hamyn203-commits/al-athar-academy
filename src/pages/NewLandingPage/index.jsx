@@ -1,151 +1,234 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useI18n } from '../../i18n';
 import { Link } from 'react-router-dom';
 import {
   Users, BookOpen, Globe, Award, Clock, Star, ChevronDown, ChevronUp,
   ArrowLeft, CheckCircle2, Sparkles, Mic, GraduationCap, Shield, Video,
+  Play, Quote, Zap, BookMarked, HeartHandshake,
 } from 'lucide-react';
 import GlobalHeader from '../../components/GlobalHeader';
 import GlobalFooter from '../../components/GlobalFooter';
 import SEOHead from '../../components/SEOHead';
-import LearningPathsSection from '../../components/LearningPathsSection';
 import LocalizedLink from '../../components/LocalizedLink';
 
-function AnimatedCounter({ end, suffix = '' }) {
-  const [count, setCount] = useState(0);
+/* ─── Scroll Reveal Hook ─── */
+function useReveal() {
+  const ref = useRef(null);
   useEffect(() => {
-    let start;
-    const tick = (t) => {
-      if (!start) start = t;
-      const p = Math.min((t - start) / 1800, 1);
-      setCount(Math.floor(p * end));
-      if (p < 1) requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
-  }, [end]);
-  return <span>{count.toLocaleString('ar-EG')}{suffix}</span>;
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { el.classList.add('visible'); obs.disconnect(); } },
+      { threshold: 0.12 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+  return ref;
 }
 
-const featureStyles = {
-  emerald: { wrap: 'bg-emerald-50 border-emerald-100', icon: 'text-emerald-600' },
-  blue: { wrap: 'bg-blue-50 border-blue-100', icon: 'text-blue-600' },
-  purple: { wrap: 'bg-purple-50 border-purple-100', icon: 'text-purple-600' },
-  amber: { wrap: 'bg-amber-50 border-amber-100', icon: 'text-amber-600' },
-  indigo: { wrap: 'bg-indigo-50 border-indigo-100', icon: 'text-indigo-600' },
-  rose: { wrap: 'bg-rose-50 border-rose-100', icon: 'text-rose-600' },
-};
+/* ─── Animated Counter ─── */
+function AnimatedCounter({ end, suffix = '' }) {
+  const [count, setCount] = useState(0);
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) return;
+      obs.disconnect();
+      let start;
+      const tick = (t) => {
+        if (!start) start = t;
+        const p = Math.min((t - start) / 1800, 1);
+        setCount(Math.floor(p * end));
+        if (p < 1) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    }, { threshold: 0.5 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [end]);
+  return <span ref={ref}>{count.toLocaleString('ar-EG')}{suffix}</span>;
+}
 
-function GlobalReachStrip() {
-  const langs = ['العربية', 'English', 'Bahasa', 'اردو', 'Türkçe', 'Français', 'Deutsch', 'Melayu'];
+/* ─── Gold Divider ─── */
+function GoldDivider({ center = false }) {
   return (
-    <section className="border-y border-[var(--athar-cream-dark)] bg-white py-4" aria-label="لغات المنصة">
-      <div className="page-container flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-slate-500">
-        <span className="font-semibold text-[var(--athar-gold-muted)]">+9 لغات</span>
-        {langs.map((l) => (
-          <span key={l} className="px-2 py-0.5 rounded-full bg-[var(--athar-cream)]">{l}</span>
-        ))}
-        <span className="text-slate-400 hidden sm:inline">| مستوحى من Bayyinah · Quran.com · أكاديميات عالمية</span>
-      </div>
-    </section>
+    <div className={`gold-divider my-5 ${center ? 'mx-auto' : ''}`} aria-hidden="true" />
   );
 }
 
+/* ══════════════════════════════════════════
+   1. HERO SECTION
+══════════════════════════════════════════ */
 function HeroSection() {
   const { t } = useI18n();
+  const textRef = useReveal();
 
   return (
-    <section className="relative overflow-hidden geo-pattern-athar text-white">
-      <div className="absolute inset-0 bg-gradient-to-b from-[var(--athar-navy-mid)]/90 via-[var(--athar-navy)] to-[var(--athar-navy)]" />
-      <div className="page-container relative pt-16 pb-24 lg:pt-22 lg:pb-28">
-        <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
-          <div>
-            <span className="section-label section-label-dark mb-6">
-              <Globe size={14} aria-hidden="true" /> منصة تعليم قرآن عالمية
+    <section className="geo-pattern-light relative overflow-hidden min-h-[92vh] flex items-center">
+      {/* Top gradient accent */}
+      <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-[var(--athar-gold)] to-transparent" aria-hidden="true" />
+
+      <div className="page-container relative w-full py-20 lg:py-28">
+        <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-20">
+
+          {/* ── Text ── */}
+          <div ref={textRef} className="reveal order-2 lg:order-1">
+            <span className="section-label mb-6 inline-flex">
+              <Globe size={13} aria-hidden="true" />
+              منصة تعليم قرآن عالمية
             </span>
-            <h1 className="text-4xl md:text-5xl lg:text-[3.25rem] font-bold tracking-tight leading-[1.12] text-white text-pretty">
+
+            <h1
+              className="font-naskh text-5xl md:text-6xl lg:text-[4rem] font-bold leading-[1.15] text-[var(--athar-text)] text-pretty"
+              style={{ letterSpacing: '-0.01em' }}
+            >
               {t.hero.title}
             </h1>
-            <div className="gold-divider my-5" aria-hidden="true" />
-            <p className="text-lg text-slate-300 max-w-xl leading-relaxed text-pretty">
+
+            <GoldDivider />
+
+            <p className="text-lg text-[var(--athar-text-muted)] max-w-xl leading-relaxed text-pretty">
               {t.hero.subtitle}
             </p>
+
+            {/* CTA Buttons */}
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link to="/register/student" className="btn-gold">
-                {t.hero.cta1} <ArrowLeft size={18} strokeWidth={1.5} aria-hidden="true" />
+              <Link to="/register/student" className="btn-gold text-base px-7 py-3.5">
+                {t.hero.cta1}
+                <ArrowLeft size={18} strokeWidth={1.5} aria-hidden="true" />
               </Link>
-              <Link to="/teachers" className="btn-ghost-light border-[var(--athar-gold)]/40 hover:border-[var(--athar-gold)]">
-                <Users size={18} strokeWidth={1.5} aria-hidden="true" /> {t.hero.cta2}
+              <Link
+                to="/teachers"
+                className="inline-flex items-center gap-2 rounded-xl border border-[var(--athar-gold)]/40 bg-white px-7 py-3.5 text-sm font-semibold text-[var(--athar-gold-muted)] shadow-sm hover:border-[var(--athar-gold)] hover:bg-[var(--athar-gold-50)] transition"
+              >
+                <Users size={18} strokeWidth={1.5} aria-hidden="true" />
+                {t.hero.cta2}
               </Link>
             </div>
+
+            {/* Trust badges */}
+            <div className="mt-8 flex flex-wrap gap-x-5 gap-y-2">
+              {['معلمون مجازون', 'ترجمة فورية', 'تتبع الحفظ', 'شهادات معتمدة'].map((b) => (
+                <span key={b} className="flex items-center gap-1.5 text-sm text-[var(--athar-text-muted)]">
+                  <CheckCircle2 size={15} className="text-[var(--athar-gold)]" strokeWidth={2} aria-hidden="true" />
+                  {b}
+                </span>
+              ))}
+            </div>
+
+            {/* Quick links */}
             <div className="mt-6 flex flex-wrap gap-2">
               {[
                 { to: '/library', label: 'المكتبة', icon: BookOpen },
                 { to: '/leaderboard', label: 'البطولة', icon: Award },
                 { to: '/programs/kids', label: 'أطفال', icon: Sparkles },
                 { to: '/programs/women', label: 'نساء', icon: Shield },
-                { to: '/donate', label: 'تبرع', icon: Video },
-                { to: '/app', label: 'تطبيق PWA', icon: Mic },
+                { to: '/donate', label: 'تبرع', icon: HeartHandshake },
+                { to: '/ai', label: 'مركز AI', icon: Mic },
               ].map(({ to, label, icon: Icon }) => (
-                <LocalizedLink key={to} to={to} className="inline-flex items-center gap-1.5 rounded-full border border-[var(--athar-gold)]/25 bg-[var(--athar-gold)]/10 px-3 py-1.5 text-sm text-[var(--athar-gold-light)] hover:bg-[var(--athar-gold)]/20 transition">
-                  <Icon size={14} aria-hidden="true" /> {label}
+                <LocalizedLink
+                  key={to}
+                  to={to}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-[var(--athar-gold)]/30 bg-[var(--athar-gold-50)] px-3 py-1.5 text-xs font-medium text-[var(--athar-gold-muted)] hover:bg-[var(--athar-gold-100)] hover:border-[var(--athar-gold)]/60 transition"
+                >
+                  <Icon size={12} aria-hidden="true" />
+                  {label}
                 </LocalizedLink>
-              ))}
-            </div>
-            <div className="mt-10 flex flex-wrap gap-4 text-sm text-slate-400">
-              {['معلمون مجازون', 'ترجمة فورية', 'تتبع حفظ', 'شهادات معتمدة'].map((b) => (
-                <span key={b} className="flex items-center gap-1.5">
-                  <CheckCircle2 size={15} className="text-[var(--athar-gold)]" strokeWidth={1.5} aria-hidden="true" /> {b}
-                </span>
               ))}
             </div>
           </div>
 
-          <div className="card-dark lg:ml-auto w-full max-w-md border-[var(--athar-gold)]/25 ring-1 ring-[var(--athar-gold)]/10">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <p className="text-xs text-emerald-300/80">لوحة الطالب</p>
-                <p className="text-lg font-semibold tracking-tight">متابعة الحفظ اليومية</p>
-              </div>
-              <span className="rounded-lg bg-emerald-500/20 px-2.5 py-1 text-xs font-semibold text-emerald-200">جuz 30</span>
-            </div>
-            <div className="space-y-4">
-              {[
-                { label: 'سباق (جديد)', val: 85, color: 'bg-emerald-500' },
-                { label: 'سبق (مراجعة قريبة)', val: 72, color: 'bg-teal-500' },
-                { label: 'منزل (مراجعة بعيدة)', val: 91, color: 'bg-cyan-500' },
-              ].map((row) => (
-                <div key={row.label}>
-                  <div className="flex justify-between text-sm mb-1.5">
-                    <span className="text-slate-300">{row.label}</span>
-                    <span className="font-semibold text-white">{row.val}%</span>
-                  </div>
-                  <div className="h-2 rounded-full bg-white/10 overflow-hidden">
-                    <div className={`h-full rounded-full ${row.color}`} style={{ width: `${row.val}%` }} />
-                  </div>
+          {/* ── Illustration ── */}
+          <div className="order-1 lg:order-2 flex justify-center lg:justify-end reveal reveal-delay-2">
+            <div className="relative w-full max-w-md">
+              {/* Glow behind image */}
+              <div
+                className="absolute inset-0 rounded-3xl"
+                style={{ background: 'radial-gradient(ellipse at 50% 60%, rgba(201,162,39,0.18) 0%, transparent 70%)' }}
+                aria-hidden="true"
+              />
+              <img
+                src="/hero-illustration.png"
+                alt="شيخ يقرأ القرآن الكريم"
+                className="relative w-full h-auto drop-shadow-2xl"
+                style={{ filter: 'drop-shadow(0 20px 40px rgba(201,162,39,0.2))' }}
+              />
+              {/* Floating badge */}
+              <div className="absolute -bottom-4 -right-4 glass-card px-4 py-3 flex items-center gap-2.5 shadow-lg">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--athar-gold-100)]">
+                  <Sparkles size={18} className="text-[var(--athar-gold)]" />
+                </span>
+                <div>
+                  <p className="text-xs text-[var(--athar-text-muted)]">تحليل التلاوة</p>
+                  <p className="text-sm font-semibold text-[var(--athar-text)]">AI جاهز</p>
                 </div>
-              ))}
-            </div>
-            <div className="mt-6 grid grid-cols-2 gap-3">
-              <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-center">
-                <Video size={18} className="mx-auto mb-1 text-emerald-300" strokeWidth={1.5} />
-                <p className="text-xs text-slate-400">حصة غداً</p>
-                <p className="text-sm font-semibold">4:00 م</p>
               </div>
-              <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-center">
-                <Sparkles size={18} className="mx-auto mb-1 text-emerald-300" strokeWidth={1.5} />
-                <p className="text-xs text-slate-400">تحليل تلاوة</p>
-                <p className="text-sm font-semibold">AI جاهز</p>
+              {/* Floating badge 2 */}
+              <div className="absolute -top-4 -left-4 glass-card px-4 py-3 flex items-center gap-2.5 shadow-lg">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50">
+                  <CheckCircle2 size={18} className="text-emerald-600" />
+                </span>
+                <div>
+                  <p className="text-xs text-[var(--athar-text-muted)]">معلمون</p>
+                  <p className="text-sm font-semibold text-[var(--athar-text)]">+200 مجاز</p>
+                </div>
               </div>
             </div>
           </div>
+
         </div>
+      </div>
+
+      {/* Bottom wave */}
+      <div className="absolute bottom-0 inset-x-0 h-16 bg-gradient-to-t from-white to-transparent" aria-hidden="true" />
+    </section>
+  );
+}
+
+/* ══════════════════════════════════════════
+   2. SOCIAL PROOF MARQUEE
+══════════════════════════════════════════ */
+const testimonialItems = [
+  { name: 'أحمد محمود', country: '🇪🇬 مصر', text: 'تجربة رائعة! تعلمت القرآن بطريقة منظمة.' },
+  { name: 'Sarah Johnson', country: '🇺🇸 USA', text: 'Professional teachers and flexible scheduling.' },
+  { name: 'محمد العمري', country: '🇸🇦 السعودية', text: 'منصة ممتازة للحفظ مع معلمين مجازين.' },
+  { name: 'Amina Hassan', country: '🇬🇧 UK', text: 'The AI recitation tool is simply incredible.' },
+  { name: 'يوسف بكر', country: '🇹🇷 تركيا', text: 'أفضل منصة لتعلم التجويد بالعربية.' },
+  { name: 'Fatima Al-Zahra', country: '🇲🇾 Malaysia', text: 'My kids love the kids program so much!' },
+];
+
+function SocialProofStrip() {
+  const doubled = [...testimonialItems, ...testimonialItems];
+  return (
+    <section className="border-y border-[var(--athar-cream-dark)] bg-white py-5 overflow-hidden" aria-label="آراء الطلاب">
+      <div className="marquee-track gap-5">
+        {doubled.map((item, i) => (
+          <div
+            key={i}
+            className="flex-shrink-0 flex items-center gap-3 rounded-2xl border border-[var(--athar-cream-dark)] bg-[var(--athar-gold-50)] px-5 py-3 mx-2.5"
+            style={{ minWidth: '260px' }}
+          >
+            <Quote size={16} className="text-[var(--athar-gold)] shrink-0" strokeWidth={1.5} />
+            <div>
+              <p className="text-xs text-[var(--athar-text-muted)] line-clamp-1">"{item.text}"</p>
+              <p className="text-xs font-semibold text-[var(--athar-text)] mt-0.5">{item.name} · {item.country}</p>
+            </div>
+          </div>
+        ))}
       </div>
     </section>
   );
 }
 
+/* ══════════════════════════════════════════
+   3. STATS BAR
+══════════════════════════════════════════ */
 function StatsBar() {
   const { t } = useI18n();
+  const ref = useReveal();
   const stats = [
     { icon: Users, value: 5000, label: t.stats.students, suffix: '+' },
     { icon: GraduationCap, value: 200, label: t.stats.teachers, suffix: '+' },
@@ -154,16 +237,21 @@ function StatsBar() {
   ];
 
   return (
-    <section className="relative z-10 -mt-10 pb-4">
+    <section className="py-12 bg-white">
       <div className="page-container">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 rounded-2xl border border-[var(--athar-cream-dark)] bg-white p-6 shadow-xl ring-1 ring-[var(--athar-gold)]/20">
-          {stats.map(({ icon: Icon, value, label, suffix }) => (
-            <div key={label} className="text-center md:text-right md:pr-4 md:border-l md:border-[var(--athar-cream-dark)] first:md:border-0">
-              <Icon className="mx-auto md:mx-0 mb-2 text-[var(--athar-emerald)]" size={22} strokeWidth={1.5} aria-hidden="true" />
-              <p className="text-2xl md:text-3xl font-semibold tracking-tight text-slate-900">
+        <div ref={ref} className="reveal grid grid-cols-2 md:grid-cols-4 gap-px bg-[var(--athar-cream-dark)] rounded-2xl overflow-hidden shadow-sm ring-1 ring-[var(--athar-gold)]/20">
+          {stats.map(({ icon: Icon, value, label, suffix }, idx) => (
+            <div
+              key={label}
+              className="bg-white flex flex-col items-center justify-center py-8 px-4 text-center group hover:bg-[var(--athar-gold-50)] transition-colors duration-200"
+            >
+              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--athar-gold-100)] mb-3 group-hover:scale-110 transition-transform">
+                <Icon className="text-[var(--athar-gold)]" size={22} strokeWidth={1.5} />
+              </span>
+              <p className="font-naskh text-3xl font-bold text-[var(--athar-text)]">
                 <AnimatedCounter end={value} suffix={suffix} />
               </p>
-              <p className="text-sm text-slate-500 mt-0.5">{label}</p>
+              <p className="text-sm text-[var(--athar-text-muted)] mt-1">{label}</p>
             </div>
           ))}
         </div>
@@ -172,197 +260,329 @@ function StatsBar() {
   );
 }
 
+/* ══════════════════════════════════════════
+   4. FEATURES (GLASSMORPHISM)
+══════════════════════════════════════════ */
 function FeaturesSection() {
   const { t } = useI18n();
+  const ref = useReveal();
+
   const features = [
-    { Icon: Shield, style: featureStyles.emerald, title: t.features.feature1.title, desc: t.features.feature1.description },
-    { Icon: Clock, style: featureStyles.blue, title: t.features.feature2.title, desc: t.features.feature2.description },
-    { Icon: BookOpen, style: featureStyles.purple, title: t.features.feature3.title, desc: t.features.feature3.description },
-    { Icon: Award, style: featureStyles.amber, title: t.features.feature4.title, desc: t.features.feature4.description },
-    { Icon: Globe, style: featureStyles.indigo, title: t.features.feature5.title, desc: t.features.feature5.description },
-    { Icon: Sparkles, style: featureStyles.rose, title: t.features.feature6.title, desc: t.features.feature6.description },
+    { Icon: Shield, bg: 'bg-emerald-50', iconCls: 'text-emerald-600', title: t.features.feature1.title, desc: t.features.feature1.description, delay: '' },
+    { Icon: Clock, bg: 'bg-blue-50', iconCls: 'text-blue-600', title: t.features.feature2.title, desc: t.features.feature2.description, delay: 'reveal-delay-1' },
+    { Icon: BookOpen, bg: 'bg-purple-50', iconCls: 'text-purple-600', title: t.features.feature3.title, desc: t.features.feature3.description, delay: 'reveal-delay-2' },
+    { Icon: Award, bg: 'bg-amber-50', iconCls: 'text-amber-600', title: t.features.feature4.title, desc: t.features.feature4.description, delay: 'reveal-delay-3' },
+    { Icon: Globe, bg: 'bg-indigo-50', iconCls: 'text-indigo-600', title: t.features.feature5.title, desc: t.features.feature5.description, delay: 'reveal-delay-4' },
+    { Icon: Sparkles, bg: 'bg-rose-50', iconCls: 'text-rose-600', title: t.features.feature6.title, desc: t.features.feature6.description, delay: 'reveal-delay-5' },
   ];
 
   return (
-    <section className="py-20 md:py-24 bg-[var(--athar-cream)]">
-      <div className="page-container">
-        <div className="max-w-2xl mb-12">
+    <section
+      className="py-24 relative overflow-hidden"
+      style={{ background: 'linear-gradient(160deg, var(--athar-gold-50) 0%, #fff 40%, var(--athar-gold-50) 100%)' }}
+    >
+      {/* Background arabesque accent */}
+      <div
+        className="absolute top-0 left-0 w-64 h-64 opacity-30 pointer-events-none"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='200' height='200' viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23c9a227' stroke-opacity='0.15' stroke-width='1'%3E%3Cpath d='M100 20l12 36 36 12-36 12-12 36-12-36-36-12 36-12z'/%3E%3Cpath d='M100 60l6 18 18 6-18 6-6 18-6-18-18-6 18-6z'/%3E%3C/g%3E%3C/svg%3E")`,
+          backgroundSize: 'cover',
+        }}
+        aria-hidden="true"
+      />
+
+      <div className="page-container relative">
+        <div ref={ref} className="reveal max-w-2xl mb-14">
           <span className="section-label mb-4">لماذا الأثر؟</span>
-          <h2 className="section-heading">{t.features.title}</h2>
-          <p className="section-desc">{t.features.subtitle}</p>
+          <h2 className="section-heading mt-4">{t.features.title}</h2>
+          <GoldDivider />
+          <p className="section-desc !mt-2">{t.features.subtitle}</p>
         </div>
+
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {features.map(({ Icon, style, title, desc }) => (
-            <div key={title} className="card-modern group">
-              <div className={`inline-flex h-11 w-11 items-center justify-center rounded-xl border ${style.wrap} mb-4 group-hover:scale-105 transition-transform`}>
-                <Icon className={style.icon} size={22} strokeWidth={1.5} />
+          {features.map(({ Icon, bg, iconCls, title, desc, delay }) => {
+            const cardRef = useReveal();
+            return (
+              <div key={title} ref={cardRef} className={`glass-card p-7 reveal ${delay}`}>
+                <div className={`inline-flex h-12 w-12 items-center justify-center rounded-2xl ${bg} mb-5`}>
+                  <Icon className={iconCls} size={22} strokeWidth={1.5} />
+                </div>
+                <h3 className="font-naskh text-xl font-semibold text-[var(--athar-text)] mb-2">{title}</h3>
+                <p className="text-sm text-[var(--athar-text-muted)] leading-relaxed">{desc}</p>
               </div>
-              <h3 className="text-lg font-semibold tracking-tight text-slate-900 mb-2">{title}</h3>
-              <p className="text-sm text-slate-600 leading-relaxed">{desc}</p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>
   );
 }
 
+/* ══════════════════════════════════════════
+   5. COURSE TIMELINE
+══════════════════════════════════════════ */
+const timelineSteps = [
+  { icon: BookMarked, label: 'مبتدئ', title: 'تعلّم القراءة', desc: 'أساسيات النطق والتجويد مع معلم متخصص', color: 'bg-emerald-500', light: 'bg-emerald-50', text: 'text-emerald-600' },
+  { icon: Mic, label: 'متوسط', title: 'صحّح التلاوة', desc: 'تحليل صوتي بالذكاء الاصطناعي وتصحيح فوري', color: 'bg-[var(--athar-gold)]', light: 'bg-[var(--athar-gold-100)]', text: 'text-[var(--athar-gold-muted)]' },
+  { icon: BookOpen, label: 'متقدم', title: 'ابدأ الحفظ', desc: 'نظام سباق/سبق/منزل المُثبَت علمياً', color: 'bg-blue-500', light: 'bg-blue-50', text: 'text-blue-600' },
+  { icon: Award, label: 'خريج', title: 'احصل على شهادتك', desc: 'شهادة معتمدة رقمياً بعد إتمام الدورة', color: 'bg-purple-500', light: 'bg-purple-50', text: 'text-purple-600' },
+];
+
+function CourseTimelineSection() {
+  const ref = useReveal();
+  return (
+    <section className="py-24 bg-white">
+      <div className="page-container">
+        <div ref={ref} className="reveal text-center max-w-2xl mx-auto mb-16">
+          <span className="section-label mb-4">مسار التعلم</span>
+          <h2 className="section-heading mt-4">رحلتك من الصفر إلى الإجازة</h2>
+          <GoldDivider center />
+          <p className="section-desc mx-auto !mt-2">أربع مراحل واضحة تأخذك من البداية حتى الاحتراف</p>
+        </div>
+
+        <div className="relative">
+          {/* Connecting line */}
+          <div
+            className="absolute top-10 right-10 left-10 h-0.5 hidden lg:block"
+            style={{ background: 'linear-gradient(90deg, var(--athar-gold-200), var(--athar-gold), var(--athar-gold-200))' }}
+            aria-hidden="true"
+          />
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {timelineSteps.map(({ icon: Icon, label, title, desc, color, light, text }, idx) => {
+              const stepRef = useReveal();
+              return (
+                <div key={title} ref={stepRef} className={`reveal reveal-delay-${idx + 1} flex flex-col items-center text-center`}>
+                  {/* Step circle */}
+                  <div className={`relative flex h-20 w-20 items-center justify-center rounded-full ${light} ring-4 ring-white shadow-md mb-5 group-hover:scale-110 transition-transform`}>
+                    <Icon className={text} size={28} strokeWidth={1.5} />
+                    <span className={`absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full ${color} text-white text-xs font-bold ring-2 ring-white`}>
+                      {idx + 1}
+                    </span>
+                  </div>
+                  <span className={`text-xs font-semibold ${text} mb-1`}>{label}</span>
+                  <h3 className="font-naskh text-lg font-bold text-[var(--athar-text)] mb-2">{title}</h3>
+                  <p className="text-sm text-[var(--athar-text-muted)] leading-relaxed">{desc}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ══════════════════════════════════════════
+   6. AI SECTION (GOLD BG)
+══════════════════════════════════════════ */
 function AISectionModern() {
   const { locale } = useI18n();
+  const ref = useReveal();
+
   return (
-    <section className="relative py-20 geo-pattern-athar text-white overflow-hidden">
-      <div className="absolute inset-0 bg-[var(--athar-navy-mid)]/95" />
+    <section
+      className="relative py-24 overflow-hidden"
+      style={{ background: 'linear-gradient(135deg, var(--athar-gold-50) 0%, var(--athar-gold-100) 50%, var(--athar-gold-50) 100%)' }}
+    >
+      {/* Arabesque watermark */}
+      <div
+        className="absolute inset-0 opacity-20 pointer-events-none"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='120' height='120' viewBox='0 0 120 120' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23c9a227' stroke-opacity='0.25' stroke-width='0.7'%3E%3Cpath d='M60 12l8 24 24 8-24 8-8 24-8-24-24-8 24-8z'/%3E%3C/g%3E%3C/svg%3E")`,
+        }}
+        aria-hidden="true"
+      />
+
       <div className="page-container relative">
-        <div className="grid lg:grid-cols-2 gap-10 items-center">
+        <div ref={ref} className="reveal grid lg:grid-cols-2 gap-12 items-center">
+
+          {/* Text */}
           <div>
-            <span className="section-label section-label-dark mb-4">
-              <Sparkles size={14} aria-hidden="true" /> مدعوم بالذكاء الاصطناعي
+            <span className="section-label mb-4">
+              <Zap size={14} aria-hidden="true" />
+              مدعوم بالذكاء الاصطناعي
             </span>
-            <h2 className="text-3xl md:text-4xl font-semibold tracking-tight">مركز AI لرحلة الحفظ</h2>
-            <p className="mt-4 text-slate-400 leading-relaxed">
+            <h2 className="font-naskh text-4xl font-bold text-[var(--athar-text)] mt-4">
+              مركز AI لرحلة الحفظ
+            </h2>
+            <GoldDivider />
+            <p className="text-[var(--athar-text-muted)] leading-relaxed">
               مساعد قرآن، تحليل تلاوة بالصوت، وخطط حفظ يومية — مثل أفضل منصات Hifz العالمية.
             </p>
             <ul className="mt-6 space-y-3">
               {[
                 { icon: Mic, text: 'تحليل التجويد والتلاوة بالصوت' },
                 { icon: BookOpen, text: 'خطط سباق / سبق / منزل يومية' },
-                { icon: Sparkles, text: 'مساعد للمعلم والطالب' },
+                { icon: Sparkles, text: 'مساعد ذكي للمعلم والطالب' },
               ].map(({ icon: Icon, text }) => (
-                <li key={text} className="flex items-center gap-3 text-sm text-slate-300">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/15">
-                    <Icon size={16} className="text-emerald-400" strokeWidth={1.5} />
+                <li key={text} className="flex items-center gap-3 text-sm text-[var(--athar-text)]">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/70 shadow-sm border border-[var(--athar-gold)]/20">
+                    <Icon size={16} className="text-[var(--athar-gold)]" strokeWidth={1.5} />
                   </span>
                   {text}
                 </li>
               ))}
             </ul>
-            <LocalizedLink to="/ai" locale={locale} className="btn-primary mt-8 !bg-emerald-500">
-              جرّب مركز AI <ArrowLeft size={18} />
+            <LocalizedLink to="/ai" locale={locale} className="btn-gold mt-8 inline-flex">
+              جرّب مركز AI
+              <ArrowLeft size={18} aria-hidden="true" />
             </LocalizedLink>
           </div>
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-6 font-mono text-sm">
-            <p className="text-emerald-400 mb-2">// تقرير تلاوة تجريبي</p>
-            <div className="space-y-2 text-slate-300">
-              <p>التجويد: <span className="text-white font-semibold">82%</span></p>
-              <p>المخارج: <span className="text-white font-semibold">78%</span></p>
-              <p>الوقف: <span className="text-white font-semibold">85%</span></p>
+
+          {/* Mock AI report card */}
+          <div className="glass-card p-7">
+            <div className="flex items-center gap-3 mb-5">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--athar-gold-100)]">
+                <Mic size={18} className="text-[var(--athar-gold)]" strokeWidth={1.5} />
+              </span>
+              <div>
+                <p className="text-xs text-[var(--athar-text-muted)]">تقرير تلاوة تجريبي</p>
+                <p className="text-sm font-semibold text-[var(--athar-text)]">سورة الفاتحة</p>
+              </div>
             </div>
-            <p className="mt-4 text-xs text-slate-500">ارفع تسجيلك واحصل على توصيات فورية</p>
+
+            {[
+              { label: 'التجويد', val: 82, color: 'bg-[var(--athar-gold)]' },
+              { label: 'المخارج', val: 78, color: 'bg-emerald-500' },
+              { label: 'الوقف والابتداء', val: 85, color: 'bg-blue-500' },
+            ].map(({ label, val, color }) => (
+              <div key={label} className="mb-4">
+                <div className="flex justify-between text-sm mb-1.5">
+                  <span className="text-[var(--athar-text-muted)]">{label}</span>
+                  <span className="font-bold text-[var(--athar-text)]">{val}%</span>
+                </div>
+                <div className="h-2.5 rounded-full bg-[var(--athar-gold-200)] overflow-hidden">
+                  <div
+                    className={`h-full rounded-full ${color} transition-all duration-1000`}
+                    style={{ width: `${val}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+
+            <p className="mt-4 text-xs text-[var(--athar-text-muted)] border-t border-[var(--athar-gold)]/20 pt-4">
+              ارفع تسجيلك واحصل على توصيات فورية من الذكاء الاصطناعي
+            </p>
           </div>
+
         </div>
       </div>
     </section>
   );
 }
 
+/* ══════════════════════════════════════════
+   7. TEACHERS SECTION
+══════════════════════════════════════════ */
 function TeachersSection() {
   const { t } = useI18n();
+  const ref = useReveal();
   const teachers = [
-    { id: 1, name: 'الشيخ أحمد محمد', specialty: 'تحفيظ القرآن', rating: 4.9, reviews: 120, initial: 'أ' },
-    { id: 2, name: 'الشيخة فاطمة علي', specialty: 'التجويد', rating: 4.8, reviews: 95, initial: 'ف' },
-    { id: 3, name: 'الشيخ عمر حسن', specialty: 'اللغة العربية', rating: 4.9, reviews: 150, initial: 'ع' },
+    { id: 1, name: 'الشيخ أحمد محمد', specialty: 'تحفيظ القرآن', rating: 4.9, reviews: 120, initial: 'أ', from: 'emerald' },
+    { id: 2, name: 'الشيخة فاطمة علي', specialty: 'التجويد', rating: 4.8, reviews: 95, initial: 'ف', from: 'amber' },
+    { id: 3, name: 'الشيخ عمر حسن', specialty: 'اللغة العربية', rating: 4.9, reviews: 150, initial: 'ع', from: 'blue' },
   ];
 
+  const gradients = {
+    emerald: 'from-emerald-400 to-teal-600',
+    amber: 'from-amber-400 to-orange-500',
+    blue: 'from-blue-400 to-indigo-600',
+  };
+
   return (
-    <section className="py-20 md:py-24 bg-white">
+    <section className="py-24 bg-white">
       <div className="page-container">
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-12">
+        <div ref={ref} className="reveal flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-14">
           <div>
             <span className="section-label mb-4">نخبة المعلمين</span>
-            <h2 className="section-heading">{t.teachers.title}</h2>
-            <p className="section-desc !mx-0">{t.teachers.subtitle}</p>
+            <h2 className="section-heading mt-4">{t.teachers.title}</h2>
+            <GoldDivider />
+            <p className="section-desc !mx-0 !mt-2">{t.teachers.subtitle}</p>
           </div>
           <Link to="/teachers" className="btn-secondary shrink-0">{t.teachers.viewAll}</Link>
         </div>
+
         <div className="grid md:grid-cols-3 gap-6">
-          {teachers.map((teacher) => (
-            <article key={teacher.id} className="card-modern overflow-hidden !p-0">
-              <div className="flex items-center gap-4 p-5 border-b border-slate-100">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-xl font-bold text-white">
-                  {teacher.initial}
+          {teachers.map((teacher, idx) => {
+            const cardRef = useReveal();
+            return (
+              <article key={teacher.id} ref={cardRef} className={`glass-card overflow-hidden !p-0 reveal reveal-delay-${idx + 1}`}>
+                {/* Gold top accent */}
+                <div className="h-1 bg-gradient-to-r from-[var(--athar-gold-200)] via-[var(--athar-gold)] to-[var(--athar-gold-200)]" />
+                <div className="p-6">
+                  <div className="flex items-center gap-4 mb-5">
+                    <div className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${gradients[teacher.from]} text-2xl font-bold text-white shadow-md`}>
+                      {teacher.initial}
+                    </div>
+                    <div>
+                      <h3 className="font-naskh text-lg font-bold text-[var(--athar-text)]">{teacher.name}</h3>
+                      <p className="text-sm text-[var(--athar-gold-muted)]">{teacher.specialty}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 mb-5">
+                    <Star className="text-amber-400 fill-amber-400" size={15} />
+                    <span className="font-semibold text-sm text-[var(--athar-text)]">{teacher.rating}</span>
+                    <span className="text-xs text-[var(--athar-text-muted)]">({teacher.reviews} {t.teachers.reviews})</span>
+                  </div>
+                  <Link
+                    to={`/teachers/${teacher.id}`}
+                    className="btn-gold w-full justify-center text-sm !py-2.5"
+                  >
+                    {t.teachers.bookTrial}
+                  </Link>
                 </div>
-                <div>
-                  <h3 className="font-semibold tracking-tight text-slate-900">{teacher.name}</h3>
-                  <p className="text-sm text-emerald-600">{teacher.specialty}</p>
-                </div>
-              </div>
-              <div className="p-5">
-                <div className="flex items-center gap-1.5 mb-4">
-                  <Star className="text-amber-400 fill-amber-400" size={16} />
-                  <span className="font-semibold text-sm">{teacher.rating}</span>
-                  <span className="text-xs text-slate-500">({teacher.reviews} {t.teachers.reviews})</span>
-                </div>
-                <Link to={`/teachers/${teacher.id}`} className="btn-primary w-full text-sm !py-2.5">
-                  {t.teachers.bookTrial}
-                </Link>
-              </div>
-            </article>
-          ))}
+              </article>
+            );
+          })}
         </div>
       </div>
     </section>
   );
 }
 
-function TestimonialsSection() {
-  const { t } = useI18n();
-  const items = [
-    { name: 'أحمد محمود', country: 'مصر 🇪🇬', text: 'تجربة رائعة! تعلمت القرآن بطريقة منظمة مع متابعة يومية.' },
-    { name: 'Sarah Johnson', country: 'USA 🇺🇸', text: 'Professional teachers and flexible scheduling worldwide.' },
-    { name: 'محمد علي', country: 'السعودية 🇸🇦', text: 'منصة ممتازة للحفظ والمراجعة مع معلمين مجازين.' },
-  ];
-
-  return (
-    <section className="py-20 bg-[#fafafa]">
-      <div className="page-container">
-        <div className="text-center max-w-2xl mx-auto mb-12">
-          <span className="section-label mb-4">آراء الطلاب</span>
-          <h2 className="section-heading">{t.testimonials.title}</h2>
-          <p className="section-desc mx-auto">{t.testimonials.subtitle}</p>
-        </div>
-        <div className="grid md:grid-cols-3 gap-5">
-          {items.map((item) => (
-            <blockquote key={item.name} className="card-modern">
-              <div className="flex gap-0.5 mb-3">
-                {[...Array(5)].map((_, i) => <Star key={i} size={14} className="text-amber-400 fill-amber-400" />)}
-              </div>
-              <p className="text-sm text-slate-600 leading-relaxed mb-4">&ldquo;{item.text}&rdquo;</p>
-              <footer className="text-sm font-semibold text-slate-900">{item.name}</footer>
-              <p className="text-xs text-slate-500">{item.country}</p>
-            </blockquote>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
+/* ══════════════════════════════════════════
+   8. FAQ
+══════════════════════════════════════════ */
 function FAQSection() {
   const { t } = useI18n();
   const [open, setOpen] = useState(null);
+  const ref = useReveal();
   const faqs = [
     { q: t.faq.q1, a: t.faq.a1 }, { q: t.faq.q2, a: t.faq.a2 }, { q: t.faq.q3, a: t.faq.a3 },
     { q: t.faq.q4, a: t.faq.a4 }, { q: t.faq.q5, a: t.faq.a5 },
   ];
 
   return (
-    <section className="py-20 bg-white">
+    <section className="py-24" style={{ background: 'var(--athar-gold-50)' }}>
       <div className="page-container max-w-3xl">
-        <div className="text-center mb-10">
-          <h2 className="section-heading">{t.faq.title}</h2>
-          <p className="section-desc mx-auto">{t.faq.subtitle}</p>
+        <div ref={ref} className="reveal text-center mb-12">
+          <span className="section-label mb-4">الأسئلة الشائعة</span>
+          <h2 className="section-heading mt-4">{t.faq.title}</h2>
+          <GoldDivider center />
+          <p className="section-desc mx-auto !mt-2">{t.faq.subtitle}</p>
         </div>
         <div className="space-y-3">
           {faqs.map((faq, i) => (
-            <div key={i} className="rounded-xl border border-slate-200 overflow-hidden">
+            <div
+              key={i}
+              className="rounded-2xl border bg-white overflow-hidden transition-shadow"
+              style={{ borderColor: open === i ? 'rgba(201,162,39,0.4)' : 'var(--athar-cream-dark)' }}
+            >
               <button
                 onClick={() => setOpen(open === i ? null : i)}
-                className="flex w-full items-center justify-between gap-4 p-4 text-right text-sm font-semibold text-slate-900 hover:bg-slate-50"
+                className="flex w-full items-center justify-between gap-4 p-5 text-right text-sm font-semibold text-[var(--athar-text)] hover:bg-[var(--athar-gold-50)] transition-colors"
               >
                 {faq.q}
-                {open === i ? <ChevronUp size={18} className="shrink-0 text-emerald-600" /> : <ChevronDown size={18} className="shrink-0 text-slate-400" />}
+                {open === i
+                  ? <ChevronUp size={18} className="shrink-0 text-[var(--athar-gold)]" />
+                  : <ChevronDown size={18} className="shrink-0 text-[var(--athar-text-muted)]" />}
               </button>
-              {open === i && <div className="px-4 pb-4 text-sm text-slate-600 leading-relaxed border-t border-slate-100 pt-3">{faq.a}</div>}
+              {open === i && (
+                <div className="px-5 pb-5 text-sm text-[var(--athar-text-muted)] leading-relaxed border-t border-[var(--athar-cream-dark)] pt-4">
+                  {faq.a}
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -371,40 +591,76 @@ function FAQSection() {
   );
 }
 
+/* ══════════════════════════════════════════
+   9. CTA SECTION
+══════════════════════════════════════════ */
 function CTASection() {
   const { t } = useI18n();
+  const ref = useReveal();
   return (
-    <section className="py-20">
+    <section className="py-20 bg-white">
       <div className="page-container">
-        <div className="rounded-3xl relative overflow-hidden px-8 py-14 md:px-16 text-center text-white shadow-xl ring-1 ring-[var(--athar-gold)]/30"
-          style={{ background: 'linear-gradient(135deg, var(--athar-navy-mid) 0%, var(--athar-emerald-deep) 50%, var(--athar-navy) 100%)' }}>
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-1 bg-gradient-to-r from-transparent via-[var(--athar-gold)] to-transparent" aria-hidden="true" />
-          <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-pretty">{t.cta.title}</h2>
-          <p className="mt-3 text-slate-300 max-w-xl mx-auto">{t.cta.subtitle}</p>
-          <Link to="/register/student" className="btn-gold mt-8">
-            {t.cta.button} <ArrowLeft size={18} aria-hidden="true" />
-          </Link>
+        <div
+          ref={ref}
+          className="reveal relative rounded-3xl overflow-hidden px-8 py-16 md:px-16 text-center shadow-xl"
+          style={{
+            background: 'linear-gradient(135deg, var(--athar-gold-100) 0%, var(--athar-gold-50) 50%, #fff 100%)',
+            border: '1px solid rgba(201,162,39,0.3)',
+          }}
+        >
+          {/* Arabesque corners */}
+          <div
+            className="absolute top-0 right-0 w-48 h-48 opacity-20 pointer-events-none"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg width='150' height='150' viewBox='0 0 150 150' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23c9a227' stroke-opacity='0.4' stroke-width='1'%3E%3Cpath d='M75 15l10 30 30 10-30 10-10 30-10-30-30-10 30-10z'/%3E%3C/g%3E%3C/svg%3E")`,
+            }}
+            aria-hidden="true"
+          />
+          <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-[var(--athar-gold)] to-transparent" aria-hidden="true" />
+
+          <span className="section-label mb-6">ابدأ رحلتك</span>
+          <h2 className="font-naskh text-4xl md:text-5xl font-bold text-[var(--athar-text)] mt-4 text-pretty">
+            {t.cta.title}
+          </h2>
+          <p className="mt-4 text-[var(--athar-text-muted)] max-w-xl mx-auto leading-relaxed">
+            {t.cta.subtitle}
+          </p>
+          <div className="mt-8 flex flex-wrap gap-3 justify-center">
+            <Link to="/register/student" className="btn-gold text-base px-8 py-3.5">
+              {t.cta.button}
+              <ArrowLeft size={18} aria-hidden="true" />
+            </Link>
+            <Link
+              to="/teachers"
+              className="inline-flex items-center gap-2 rounded-xl border border-[var(--athar-gold)]/40 bg-white px-7 py-3.5 text-sm font-semibold text-[var(--athar-gold-muted)] hover:bg-[var(--athar-gold-50)] transition"
+            >
+              <Play size={16} strokeWidth={1.5} />
+              شاهد كيف تعمل المنصة
+            </Link>
+          </div>
         </div>
       </div>
     </section>
   );
 }
 
+/* ══════════════════════════════════════════
+   MAIN PAGE EXPORT
+══════════════════════════════════════════ */
 export default function NewLandingPage() {
   const { t } = useI18n();
   return (
     <>
       <SEOHead page={{ title: t.hero.title, description: t.hero.subtitle, url: '/', type: 'website' }} />
       <GlobalHeader />
-      <main className="bg-[var(--athar-cream)]">
+      <main className="bg-white">
         <HeroSection />
-        <GlobalReachStrip />
+        <SocialProofStrip />
         <StatsBar />
         <FeaturesSection />
-        <LearningPathsSection />
+        <CourseTimelineSection />
         <AISectionModern />
         <TeachersSection />
-        <TestimonialsSection />
         <FAQSection />
         <CTASection />
       </main>

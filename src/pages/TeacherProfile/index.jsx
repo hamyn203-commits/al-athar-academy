@@ -19,9 +19,14 @@ export default function TeacherProfile() {
     try {
       const response = await fetch(`/api/teachers/${id}`);
       const data = await response.json();
+      if (!response.ok || data.error || !data._id) {
+        setTeacher(null);
+        return;
+      }
       setTeacher(data);
     } catch (error) {
       console.error('Error fetching teacher:', error);
+      setTeacher(null);
     } finally {
       setLoading(false);
     }
@@ -69,8 +74,8 @@ export default function TeacherProfile() {
           <div className="md:flex">
             <div className="md:w-1/3">
               <img
-                src={teacher.media.profilePhoto || '/default-teacher.png'}
-                alt={teacher.user.name}
+                src={teacher.media?.profilePhoto || teacher.user?.avatar || '/default-teacher.png'}
+                alt={teacher.user?.name || 'معلم'}
                 className="w-full h-96 object-cover"
               />
             </div>
@@ -78,12 +83,12 @@ export default function TeacherProfile() {
             <div className="md:w-2/3 p-8">
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <h1 className="text-3xl font-bold mb-2">{teacher.user.name}</h1>
+                  <h1 className="text-3xl font-bold mb-2">{teacher.user?.name || teacher.personalInfo?.fullName}</h1>
                   <div className="flex items-center gap-4 text-gray-600">
                     <div className="flex items-center gap-1">
                       <Star className="text-yellow-400 fill-yellow-400" size={20} />
-                      <span className="font-bold">{teacher.rating.average.toFixed(1)}</span>
-                      <span>({teacher.rating.count} تقييم)</span>
+                      <span className="font-bold">{(teacher.rating?.average ?? teacher.stats?.rating?.average ?? 0).toFixed(1)}</span>
+                      <span>({teacher.rating?.count ?? teacher.stats?.rating?.count ?? 0} تقييم)</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <MapPin size={18} />
@@ -101,22 +106,22 @@ export default function TeacherProfile() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                 <div className="bg-emerald-50 p-4 rounded-lg text-center">
                   <Clock className="mx-auto mb-2 text-emerald-600" size={24} />
-                  <p className="text-2xl font-bold text-emerald-600">{teacher.quranInfo.teachingExperience}</p>
+                  <p className="text-2xl font-bold text-emerald-600">{teacher.quranInfo?.teachingExperience ?? 0}</p>
                   <p className="text-sm text-gray-600">سنوات خبرة</p>
                 </div>
                 <div className="bg-emerald-50 p-4 rounded-lg text-center">
                   <BookOpen className="mx-auto mb-2 text-emerald-600" size={24} />
-                  <p className="text-2xl font-bold text-emerald-600">{teacher.quranInfo.memorizedParts}</p>
+                  <p className="text-2xl font-bold text-emerald-600">{teacher.quranInfo?.memorizedParts ?? 0}</p>
                   <p className="text-sm text-gray-600">جزء محفوظ</p>
                 </div>
                 <div className="bg-emerald-50 p-4 rounded-lg text-center">
                   <Award className="mx-auto mb-2 text-emerald-600" size={24} />
-                  <p className="text-2xl font-bold text-emerald-600">{teacher.quranInfo.numberOfIjazat}</p>
+                  <p className="text-2xl font-bold text-emerald-600">{teacher.quranInfo?.numberOfIjazat ?? 0}</p>
                   <p className="text-sm text-gray-600">إجازات</p>
                 </div>
                 <div className="bg-emerald-50 p-4 rounded-lg text-center">
                   <CheckCircle className="mx-auto mb-2 text-emerald-600" size={24} />
-                  <p className="text-2xl font-bold text-emerald-600">{teacher.stats.totalStudents}</p>
+                  <p className="text-2xl font-bold text-emerald-600">{teacher.stats?.totalStudents ?? 0}</p>
                   <p className="text-sm text-gray-600">طالب</p>
                 </div>
               </div>

@@ -17,6 +17,7 @@ import GlobalHeader from '../../components/GlobalHeader';
 import GlobalFooter from '../../components/GlobalFooter';
 import SEOHead from '../../components/SEOHead';
 import { useMarket } from '../../context/MarketProvider';
+import api from '../../lib/api';
 
 // بيانات وهمية للدورات
 const mockCourses = [
