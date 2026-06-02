@@ -35,30 +35,46 @@ const featureStyles = {
   rose: { wrap: 'bg-rose-50 border-rose-100', icon: 'text-rose-600' },
 };
 
+function GlobalReachStrip() {
+  const langs = ['العربية', 'English', 'Bahasa', 'اردو', 'Türkçe', 'Français', 'Deutsch', 'Melayu'];
+  return (
+    <section className="border-y border-[var(--athar-cream-dark)] bg-white py-4" aria-label="لغات المنصة">
+      <div className="page-container flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-slate-500">
+        <span className="font-semibold text-[var(--athar-gold-muted)]">+9 لغات</span>
+        {langs.map((l) => (
+          <span key={l} className="px-2 py-0.5 rounded-full bg-[var(--athar-cream)]">{l}</span>
+        ))}
+        <span className="text-slate-400 hidden sm:inline">| مستوحى من Bayyinah · Quran.com · أكاديميات عالمية</span>
+      </div>
+    </section>
+  );
+}
+
 function HeroSection() {
   const { t } = useI18n();
 
   return (
-    <section className="relative overflow-hidden bg-slate-950 text-white geo-pattern">
-      <div className="absolute inset-0 bg-gradient-to-b from-emerald-950/40 via-slate-950 to-slate-950" />
-      <div className="page-container relative pt-16 pb-24 lg:pt-20 lg:pb-28">
+    <section className="relative overflow-hidden geo-pattern-athar text-white">
+      <div className="absolute inset-0 bg-gradient-to-b from-[var(--athar-navy-mid)]/90 via-[var(--athar-navy)] to-[var(--athar-navy)]" />
+      <div className="page-container relative pt-16 pb-24 lg:pt-22 lg:pb-28">
         <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
           <div>
-            <span className="section-label !border-emerald-500/30 !bg-emerald-500/10 !text-emerald-200 mb-6">
-              <Globe size={14} /> منصة تعليم قرآن عالمية
+            <span className="section-label section-label-dark mb-6">
+              <Globe size={14} aria-hidden="true" /> منصة تعليم قرآن عالمية
             </span>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tight leading-[1.15] text-white">
+            <h1 className="text-4xl md:text-5xl lg:text-[3.25rem] font-bold tracking-tight leading-[1.12] text-white text-pretty">
               {t.hero.title}
             </h1>
-            <p className="mt-5 text-lg text-slate-300 max-w-xl leading-relaxed">
+            <div className="gold-divider my-5" aria-hidden="true" />
+            <p className="text-lg text-slate-300 max-w-xl leading-relaxed text-pretty">
               {t.hero.subtitle}
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link to="/register/student" className="btn-primary !bg-emerald-500 hover:!bg-emerald-400">
-                {t.hero.cta1} <ArrowLeft size={18} strokeWidth={1.5} />
+              <Link to="/register/student" className="btn-gold">
+                {t.hero.cta1} <ArrowLeft size={18} strokeWidth={1.5} aria-hidden="true" />
               </Link>
-              <Link to="/teachers" className="btn-ghost-light">
-                <Users size={18} strokeWidth={1.5} /> {t.hero.cta2}
+              <Link to="/teachers" className="btn-ghost-light border-[var(--athar-gold)]/40 hover:border-[var(--athar-gold)]">
+                <Users size={18} strokeWidth={1.5} aria-hidden="true" /> {t.hero.cta2}
               </Link>
             </div>
             <div className="mt-6 flex flex-wrap gap-2">
@@ -70,22 +86,21 @@ function HeroSection() {
                 { to: '/donate', label: 'تبرع', icon: Video },
                 { to: '/app', label: 'تطبيق PWA', icon: Mic },
               ].map(({ to, label, icon: Icon }) => (
-                <LocalizedLink key={to} to={to} className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-sm text-emerald-100 hover:bg-emerald-500/20 transition">
-                  <Icon size={14} /> {label}
+                <LocalizedLink key={to} to={to} className="inline-flex items-center gap-1.5 rounded-full border border-[var(--athar-gold)]/25 bg-[var(--athar-gold)]/10 px-3 py-1.5 text-sm text-[var(--athar-gold-light)] hover:bg-[var(--athar-gold)]/20 transition">
+                  <Icon size={14} aria-hidden="true" /> {label}
                 </LocalizedLink>
               ))}
             </div>
             <div className="mt-10 flex flex-wrap gap-4 text-sm text-slate-400">
-              {['معلمون مجازون', 'حصص Zoom/Jitsi', 'تتبع حفظ ومراجعة', 'شهادات معتمدة'].map((b) => (
+              {['معلمون مجازون', 'ترجمة فورية', 'تتبع حفظ', 'شهادات معتمدة'].map((b) => (
                 <span key={b} className="flex items-center gap-1.5">
-                  <CheckCircle2 size={15} className="text-emerald-400" strokeWidth={1.5} /> {b}
+                  <CheckCircle2 size={15} className="text-[var(--athar-gold)]" strokeWidth={1.5} aria-hidden="true" /> {b}
                 </span>
               ))}
             </div>
           </div>
 
-          {/* لوحة تقدم — مستوحاة من ilmify / Hifz Academy */}
-          <div className="card-dark lg:ml-auto w-full max-w-md border-emerald-500/20">
+          <div className="card-dark lg:ml-auto w-full max-w-md border-[var(--athar-gold)]/25 ring-1 ring-[var(--athar-gold)]/10">
             <div className="flex items-center justify-between mb-6">
               <div>
                 <p className="text-xs text-emerald-300/80">لوحة الطالب</p>
@@ -141,10 +156,10 @@ function StatsBar() {
   return (
     <section className="relative z-10 -mt-10 pb-4">
       <div className="page-container">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/50">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 rounded-2xl border border-[var(--athar-cream-dark)] bg-white p-6 shadow-xl ring-1 ring-[var(--athar-gold)]/20">
           {stats.map(({ icon: Icon, value, label, suffix }) => (
-            <div key={label} className="text-center md:text-right md:pr-4 md:border-l md:border-slate-100 first:md:border-0">
-              <Icon className="mx-auto md:mx-0 mb-2 text-emerald-600" size={22} strokeWidth={1.5} />
+            <div key={label} className="text-center md:text-right md:pr-4 md:border-l md:border-[var(--athar-cream-dark)] first:md:border-0">
+              <Icon className="mx-auto md:mx-0 mb-2 text-[var(--athar-emerald)]" size={22} strokeWidth={1.5} aria-hidden="true" />
               <p className="text-2xl md:text-3xl font-semibold tracking-tight text-slate-900">
                 <AnimatedCounter end={value} suffix={suffix} />
               </p>
@@ -169,7 +184,7 @@ function FeaturesSection() {
   ];
 
   return (
-    <section className="py-20 md:py-24 bg-[#fafafa]">
+    <section className="py-20 md:py-24 bg-[var(--athar-cream)]">
       <div className="page-container">
         <div className="max-w-2xl mb-12">
           <span className="section-label mb-4">لماذا الأثر؟</span>
@@ -195,12 +210,13 @@ function FeaturesSection() {
 function AISectionModern() {
   const { locale } = useI18n();
   return (
-    <section className="py-20 bg-slate-950 text-white geo-pattern">
-      <div className="page-container">
+    <section className="relative py-20 geo-pattern-athar text-white overflow-hidden">
+      <div className="absolute inset-0 bg-[var(--athar-navy-mid)]/95" />
+      <div className="page-container relative">
         <div className="grid lg:grid-cols-2 gap-10 items-center">
           <div>
-            <span className="section-label !bg-white/10 !border-white/20 !text-emerald-200 mb-4">
-              <Sparkles size={14} /> مدعوم بالذكاء الاصطناعي
+            <span className="section-label section-label-dark mb-4">
+              <Sparkles size={14} aria-hidden="true" /> مدعوم بالذكاء الاصطناعي
             </span>
             <h2 className="text-3xl md:text-4xl font-semibold tracking-tight">مركز AI لرحلة الحفظ</h2>
             <p className="mt-4 text-slate-400 leading-relaxed">
@@ -360,11 +376,13 @@ function CTASection() {
   return (
     <section className="py-20">
       <div className="page-container">
-        <div className="rounded-3xl bg-gradient-to-br from-emerald-600 to-teal-700 px-8 py-14 md:px-16 text-center text-white shadow-xl shadow-emerald-900/20">
-          <h2 className="text-3xl md:text-4xl font-semibold tracking-tight">{t.cta.title}</h2>
-          <p className="mt-3 text-emerald-100 max-w-xl mx-auto">{t.cta.subtitle}</p>
-          <Link to="/register/student" className="mt-8 inline-flex items-center gap-2 rounded-xl bg-white px-8 py-3.5 text-sm font-semibold text-emerald-800 shadow-lg hover:bg-emerald-50 transition">
-            {t.cta.button} <ArrowLeft size={18} />
+        <div className="rounded-3xl relative overflow-hidden px-8 py-14 md:px-16 text-center text-white shadow-xl ring-1 ring-[var(--athar-gold)]/30"
+          style={{ background: 'linear-gradient(135deg, var(--athar-navy-mid) 0%, var(--athar-emerald-deep) 50%, var(--athar-navy) 100%)' }}>
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-1 bg-gradient-to-r from-transparent via-[var(--athar-gold)] to-transparent" aria-hidden="true" />
+          <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-pretty">{t.cta.title}</h2>
+          <p className="mt-3 text-slate-300 max-w-xl mx-auto">{t.cta.subtitle}</p>
+          <Link to="/register/student" className="btn-gold mt-8">
+            {t.cta.button} <ArrowLeft size={18} aria-hidden="true" />
           </Link>
         </div>
       </div>
@@ -378,8 +396,9 @@ export default function NewLandingPage() {
     <>
       <SEOHead page={{ title: t.hero.title, description: t.hero.subtitle, url: '/', type: 'website' }} />
       <GlobalHeader />
-      <main className="bg-[#fafafa]">
+      <main className="bg-[var(--athar-cream)]">
         <HeroSection />
+        <GlobalReachStrip />
         <StatsBar />
         <FeaturesSection />
         <LearningPathsSection />

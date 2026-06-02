@@ -1,0 +1,87 @@
+/* Al-Athar Academy — Visual identity v6.3 */
+:root {
+  --athar-navy: #0a1628;
+  --athar-navy-mid: #0f2744;
+  --athar-emerald: #0d9488;
+  --athar-emerald-deep: #047857;
+  --athar-gold: #c9a227;
+  --athar-gold-light: #e8d48b;
+  --athar-gold-muted: #a68453;
+  --athar-cream: #f7f5f0;
+  --athar-cream-dark: #ede9e1;
+  --athar-surface: #ffffff;
+  --athar-text: #0f172a;
+  --athar-text-muted: #64748b;
+  --primary-gold: var(--athar-gold);
+  --clay-terracotta: #b45309;
+  --text-secondary: var(--athar-text-muted);
+  --shadow-brand: 0 4px 24px -4px rgba(10, 22, 40, 0.12);
+  --shadow-brand-lg: 0 20px 50px -12px rgba(10, 22, 40, 0.2);
+}
+
+.geo-pattern-athar {
+  background-color: var(--athar-navy);
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(201, 162, 39, 0.15), transparent),
+    url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23c9a227' stroke-opacity='0.06' stroke-width='0.5'%3E%3Cpath d='M40 0l5 15 15 5-15 5-5 15-5-15-15-5 15-5z'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.gold-divider {
+  height: 3px;
+  width: 4rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--athar-gold), var(--athar-gold-light), var(--athar-gold));
+}
+
+.text-gradient-gold {
+  background: linear-gradient(135deg, var(--athar-gold-light) 0%, var(--athar-gold) 50%, var(--athar-gold-muted) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.text-gradient-brand {
+  background: linear-gradient(135deg, #6ee7b7 0%, var(--athar-emerald) 40%, var(--athar-gold-light) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.btn-gold {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--athar-navy);
+  background: linear-gradient(135deg, var(--athar-gold-light), var(--athar-gold));
+  box-shadow: 0 4px 14px rgba(201, 162, 39, 0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.btn-gold:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(201, 162, 39, 0.45);
+}
+
+.card-premium {
+  border-radius: 1rem;
+  border: 1px solid var(--athar-cream-dark);
+  background: var(--athar-surface);
+  box-shadow: var(--shadow-brand);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+.card-premium:hover {
+  border-color: rgba(201, 162, 39, 0.35);
+  box-shadow: var(--shadow-brand-lg);
+  transform: translateY(-2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-gold:hover,
+  .card-premium:hover {
+    transform: none;
+  }
+}

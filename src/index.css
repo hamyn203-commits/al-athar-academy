@@ -1,3 +1,4 @@
+@import "./styles/brand.css";
 @import "tailwindcss";
 @config "../tailwind.config.js";
 
@@ -5,8 +6,8 @@
 body {
   font-family: 'Cairo', 'Tajawal', system-ui, sans-serif;
   line-height: 1.6;
-  color: #0f172a;
-  background: #fafafa;
+  color: var(--athar-text);
+  background: var(--athar-cream);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -15,7 +16,16 @@ body {
 }
 
 .section-label {
-  @apply inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700;
+  @apply inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold;
+  border-color: rgba(201, 162, 39, 0.35);
+  background: rgba(201, 162, 39, 0.08);
+  color: var(--athar-gold-muted);
+}
+
+.section-label-dark {
+  border-color: rgba(201, 162, 39, 0.4);
+  background: rgba(201, 162, 39, 0.12);
+  color: var(--athar-gold-light);
 }
 
 .section-heading {
@@ -27,11 +37,22 @@ body {
 }
 
 .btn-primary {
-  @apply inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 hover:shadow-md;
+  @apply inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold text-white shadow-sm transition;
+  background: linear-gradient(135deg, var(--athar-emerald) 0%, var(--athar-emerald-deep) 100%);
+}
+.btn-primary:hover {
+  filter: brightness(1.08);
+  box-shadow: 0 8px 24px rgba(13, 148, 136, 0.35);
 }
 
 .btn-secondary {
-  @apply inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50;
+  @apply inline-flex items-center justify-center gap-2 rounded-xl border bg-white px-6 py-3 text-sm font-semibold shadow-sm transition;
+  border-color: var(--athar-cream-dark);
+  color: var(--athar-navy-mid);
+}
+.btn-secondary:hover {
+  border-color: rgba(201, 162, 39, 0.5);
+  background: rgba(201, 162, 39, 0.06);
 }
 
 .btn-ghost-light {
@@ -39,7 +60,13 @@ body {
 }
 
 .card-modern {
-  @apply rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm transition hover:border-emerald-200 hover:shadow-md;
+  @apply rounded-2xl border bg-white p-6 transition;
+  border-color: var(--athar-cream-dark);
+  box-shadow: var(--shadow-brand);
+}
+.card-modern:hover {
+  border-color: rgba(201, 162, 39, 0.35);
+  box-shadow: var(--shadow-brand-lg);
 }
 
 .card-dark {
@@ -70,7 +97,7 @@ body {
 }
 
 .geo-pattern {
-  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2310b981' fill-opacity='0.08'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23c9a227' fill-opacity='0.06'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
 }
 
 .input-field {

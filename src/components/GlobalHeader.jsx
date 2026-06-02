@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { useI18n } from '../i18n';
 import { localizedPath, DEFAULT_LOCALE } from '../lib/locale';
-import { Menu, X, LogIn, Sparkles } from 'lucide-react';
+import { Menu, X, Sparkles } from 'lucide-react';
 import LanguageSwitcher from './LanguageSwitcher';
 import NotificationBell from './NotificationBell';
 import UserMenu from './UserMenu';
+import BrandLogo from './BrandLogo';
 import { useAuth } from '../hooks/useAuth';
 
 export default function GlobalHeader() {
@@ -33,20 +34,13 @@ export default function GlobalHeader() {
     location.pathname === path || location.pathname.endsWith(path.replace(`/${activeLocale}`, ''));
 
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl">
+    <header className="sticky top-0 z-50 border-b border-[var(--athar-cream-dark)] bg-white/95 backdrop-blur-xl shadow-sm">
+      <div className="h-0.5 w-full bg-gradient-to-r from-transparent via-[var(--athar-gold)] to-transparent opacity-80" aria-hidden="true" />
       <div className="page-container">
         <div className="flex h-16 items-center justify-between gap-4">
-          <Link to={lp('/')} className="flex items-center gap-2.5 shrink-0">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-600 text-sm font-bold text-white shadow-sm">
-              أ
-            </div>
-            <div className="leading-tight">
-              <span className="block text-sm font-semibold tracking-tight text-slate-900">{t.common.appName}</span>
-              <span className="hidden text-[10px] text-slate-500 sm:block">{t.common.slogan}</span>
-            </div>
-          </Link>
+          <BrandLogo to={lp('/')} size="md" />
 
-          <nav className="hidden lg:flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50/80 p-1">
+          <nav className="hidden lg:flex items-center gap-1 rounded-full border border-[var(--athar-cream-dark)] bg-[var(--athar-cream)]/80 p-1" aria-label="Main">
             {navLinks.map((link) => {
               const Icon = link.icon;
               const active = isActive(link.path);
@@ -54,11 +48,13 @@ export default function GlobalHeader() {
                 <Link
                   key={link.path}
                   to={link.path}
-                  className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition ${
-                    active ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-600 hover:text-emerald-700'
+                  className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-600 ${
+                    active
+                      ? 'bg-white text-[var(--athar-emerald-deep)] shadow-sm ring-1 ring-[var(--athar-gold)]/30'
+                      : 'text-slate-600 hover:text-[var(--athar-emerald-deep)]'
                   }`}
                 >
-                  {Icon && <Icon size={14} strokeWidth={1.5} />}
+                  {Icon && <Icon size={14} strokeWidth={1.5} aria-hidden="true" />}
                   {link.label}
                 </Link>
               );
@@ -74,7 +70,7 @@ export default function GlobalHeader() {
               </>
             ) : (
               <>
-                <Link to={lp('/login')} className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:text-emerald-700">
+                <Link to={lp('/login')} className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:text-[var(--athar-emerald-deep)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-600">
                   {t.common.login}
                 </Link>
                 <Link to={lp('/register/student')} className="btn-primary !py-2 !px-4 text-sm">
@@ -84,24 +80,24 @@ export default function GlobalHeader() {
             )}
           </div>
 
-          <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="md:hidden rounded-lg p-2 text-slate-700" aria-label="Menu">
-            {isMenuOpen ? <X size={22} /> : <Menu size={22} />}
+          <button type="button" onClick={() => setIsMenuOpen(!isMenuOpen)} className="md:hidden rounded-lg p-2 text-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-600" aria-label={isMenuOpen ? 'إغلاق القائمة' : 'فتح القائمة'} aria-expanded={isMenuOpen}>
+            {isMenuOpen ? <X size={22} aria-hidden="true" /> : <Menu size={22} aria-hidden="true" />}
           </button>
         </div>
 
         {isMenuOpen && (
-          <div className="md:hidden border-t border-slate-100 py-4">
+          <div className="md:hidden border-t border-[var(--athar-cream-dark)] py-4">
             <nav className="flex flex-col gap-1">
               {navLinks.map((link) => (
                 <Link key={link.path} to={link.path} onClick={() => setIsMenuOpen(false)}
-                  className={`rounded-lg px-3 py-2.5 text-sm font-medium ${isActive(link.path) ? 'bg-emerald-50 text-emerald-700' : 'text-slate-700'}`}>
+                  className={`rounded-lg px-3 py-2.5 text-sm font-medium ${isActive(link.path) ? 'bg-emerald-50 text-emerald-800' : 'text-slate-700'}`}>
                   {link.label}
                 </Link>
               ))}
-              <Link to={lp('/app')} onClick={() => setIsMenuOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-medium text-emerald-700">
+              <Link to={lp('/app')} onClick={() => setIsMenuOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-medium text-[var(--athar-gold-muted)]">
                 {locale === 'ar' ? 'تطبيق الهاتف' : 'Mobile app'}
               </Link>
-              <div className="mt-3 flex flex-col gap-2 border-t border-slate-100 pt-3">
+              <div className="mt-3 flex flex-col gap-2 border-t border-[var(--athar-cream-dark)] pt-3">
                 <LanguageSwitcher />
                 {isAuthenticated ? (
                   <><NotificationBell /><UserMenu locale={activeLocale} /></>
