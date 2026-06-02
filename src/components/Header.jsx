@@ -6,10 +6,12 @@ import LanguageSwitcher from './shared/LanguageSwitcher';
 import ThemeToggle from './shared/ThemeToggle';
 import NotificationBell from './NotificationBell';
 import { useAppContext } from '../context/AppProvider';
+import { useI18n } from '../i18n';
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { t } = useAppContext();
+  const { locale } = useI18n();
 
   const navLinks = [
     { href: '/#about', label: t.header.about },
@@ -22,7 +24,7 @@ export default function Header() {
   return (
     <>
       <a href="#main-content" className="skip-link">
-        تخطي إلى المحتوى
+        {locale === 'id' ? 'Lewati ke konten' : locale === 'ar' ? 'تخطي إلى المحتوى' : 'Skip to content'}
       </a>
       <div style={{
         background: 'linear-gradient(90deg, var(--primary-gold-dark), var(--clay-terracotta))',
@@ -46,7 +48,7 @@ export default function Header() {
         padding: '12px 24px',
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Link to="/" aria-label="الصفحة الرئيسية">
+          <Link to="/" aria-label={locale === 'id' ? 'Beranda' : locale === 'ar' ? 'الصفحة الرئيسية' : 'Home'}>
             <Logo size={48} />
           </Link>
 
@@ -73,7 +75,7 @@ export default function Header() {
           <button
             className="mobile-only"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label={mobileMenuOpen ? 'إغلاق القائمة' : 'فتح القائمة'}
+            aria-label={mobileMenuOpen ? (locale === 'id' ? 'Tutup menu' : locale === 'ar' ? 'إغلاق القائمة' : 'Close menu') : (locale === 'id' ? 'Buka menu' : locale === 'ar' ? 'فتح القائمة' : 'Open menu')}
             aria-expanded={mobileMenuOpen}
             style={{ background: 'none', border: 'none', color: 'var(--primary-gold)', cursor: 'pointer', padding: '4px' }}
           >

@@ -80,7 +80,7 @@ export default function GlobalHeader() {
             )}
           </div>
 
-          <button type="button" onClick={() => setIsMenuOpen(!isMenuOpen)} className="md:hidden rounded-lg p-2 text-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-600" aria-label={isMenuOpen ? 'إغلاق القائمة' : 'فتح القائمة'} aria-expanded={isMenuOpen}>
+          <button type="button" onClick={() => setIsMenuOpen(!isMenuOpen)} className="md:hidden rounded-lg p-2 text-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-600" aria-label={isMenuOpen ? (locale === 'id' ? 'Tutup menu' : locale === 'ar' ? 'إغلاق القائمة' : 'Close menu') : (locale === 'id' ? 'Buka menu' : locale === 'ar' ? 'فتح القائمة' : 'Open menu')} aria-expanded={isMenuOpen}>
             {isMenuOpen ? <X size={22} aria-hidden="true" /> : <Menu size={22} aria-hidden="true" />}
           </button>
         </div>

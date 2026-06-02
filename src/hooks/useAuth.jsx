@@ -40,7 +40,14 @@ export function AuthProvider({ children }) {
       setIsAuthenticated(true);
     } catch (error) {
       console.error('Token refresh failed:', error);
-      logout();
+      const isNetworkError = error instanceof TypeError || error.message?.includes('fetch') || error.message?.includes('NetworkError');
+      if (isNetworkError) {
+        setIsAuthenticated(true);
+        const localAccess = localStorage.getItem('accessToken') || localStorage.getItem('token');
+        if (localAccess) setAccessToken(localAccess);
+      } else {
+        logout();
+      }
     } finally {
       setIsLoading(false);
     }

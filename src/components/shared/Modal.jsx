@@ -1,7 +1,9 @@
 import { useEffect } from 'react';
 import { X } from 'lucide-react';
+import { useI18n } from '../../i18n';
 
 export default function Modal({ isOpen, onClose, children, maxWidth = '560px' }) {
+  const { locale } = useI18n();
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -22,7 +24,7 @@ export default function Modal({ isOpen, onClose, children, maxWidth = '560px' })
   return (
     <div className="modal-overlay" onClick={onClose} role="dialog" aria-modal="true">
       <div className="modal-content" style={{ maxWidth }} onClick={(e) => e.stopPropagation()}>
-        <button className="modal-close" onClick={onClose} aria-label="إغلاق">
+        <button className="modal-close" onClick={onClose} aria-label={locale === 'id' ? 'Tutup' : locale === 'ar' ? 'إغلاق' : 'Close'}>
           <X size={20} />
         </button>
         {children}

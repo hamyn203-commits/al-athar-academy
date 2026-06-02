@@ -1,19 +1,26 @@
 import { LogOut } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useI18n } from '../../i18n';
 
 export default function DashboardLayout({ title, user, onLogout, children }) {
+  const { locale, isRTL } = useI18n();
+
+  const greeting = locale === 'id' ? `Halo, ${user?.name}` : locale === 'ar' ? `مرحباً، ${user?.name}` : `Welcome, ${user?.name}`;
+  const websiteLabel = locale === 'id' ? 'Situs' : locale === 'ar' ? 'الموقع' : 'Website';
+  const logoutLabel = locale === 'id' ? 'Keluar' : locale === 'ar' ? 'خروج' : 'Logout';
+
   return (
-    <div className="min-h-screen bg-gray-50" dir="rtl">
+    <div className="min-h-screen bg-gray-50" dir={isRTL ? 'rtl' : 'ltr'}>
       <header className="bg-white shadow-sm border-b border-gray-100 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
-            {user?.name && <p className="text-sm text-gray-500">مرحباً، {user.name}</p>}
+            {user?.name && <p className="text-sm text-gray-500">{greeting}</p>}
           </div>
           <div className="flex items-center gap-3">
-            <Link to="/" className="text-sm text-emerald-600 hover:underline">الموقع</Link>
+            <Link to="/" className="text-sm text-emerald-600 hover:underline">{websiteLabel}</Link>
             <button onClick={onLogout} className="flex items-center gap-1 px-3 py-2 text-sm text-gray-600 hover:text-red-600 rounded-lg hover:bg-red-50">
-              <LogOut size={16} /> خروج
+              <LogOut size={16} /> {logoutLabel}
             </button>
           </div>
         </div>

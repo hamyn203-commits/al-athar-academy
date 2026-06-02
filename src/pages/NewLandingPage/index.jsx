@@ -39,6 +39,7 @@ function useReveal() {
 
 /* ─── Animated Counter ─── */
 function AnimatedCounter({ end, suffix = '' }) {
+  const { locale } = useI18n();
   const [count, setCount] = useState(0);
   const ref = useRef(null);
   useEffect(() => {
@@ -59,7 +60,7 @@ function AnimatedCounter({ end, suffix = '' }) {
     obs.observe(el);
     return () => obs.disconnect();
   }, [end]);
-  return <span ref={ref}>{count.toLocaleString('ar-EG')}{suffix}</span>;
+  return <span ref={ref}>{count.toLocaleString(locale === 'ar' ? 'ar-EG' : locale === 'id' ? 'id-ID' : 'en-US')}{suffix}</span>;
 }
 
 /* ─── Gold Divider ─── */
@@ -73,7 +74,7 @@ function GoldDivider({ center = false }) {
    1. HERO SECTION
 ══════════════════════════════════════════ */
 function HeroSection() {
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
   const textRef = useReveal();
 
   return (
@@ -88,7 +89,7 @@ function HeroSection() {
           <div ref={textRef} className="reveal order-2 lg:order-1">
             <span className="section-label mb-6 inline-flex">
               <Globe size={13} aria-hidden="true" />
-              منصة تعليم قرآن عالمية
+              {locale === 'id' ? 'Platform Edukasi Quran Global' : locale === 'ar' ? 'منصة تعليم قرآن عالمية' : 'Global Quran Learning Platform'}
             </span>
 
             <h1
@@ -106,22 +107,28 @@ function HeroSection() {
 
             {/* CTA Buttons */}
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link to="/register/student" className="btn-gold text-base px-7 py-3.5">
+              <LocalizedLink to="/register/student" locale={locale} className="btn-gold text-base px-7 py-3.5">
                 {t.hero.cta1}
                 <ArrowLeft size={18} strokeWidth={1.5} aria-hidden="true" />
-              </Link>
-              <Link
+              </LocalizedLink>
+              <LocalizedLink
                 to="/teachers"
+                locale={locale}
                 className="inline-flex items-center gap-2 rounded-xl border border-[var(--athar-gold)]/40 bg-white px-7 py-3.5 text-sm font-semibold text-[var(--athar-gold-muted)] shadow-sm hover:border-[var(--athar-gold)] hover:bg-[var(--athar-gold-50)] transition"
               >
                 <Users size={18} strokeWidth={1.5} aria-hidden="true" />
                 {t.hero.cta2}
-              </Link>
+              </LocalizedLink>
             </div>
 
             {/* Trust badges */}
             <div className="mt-8 flex flex-wrap gap-x-5 gap-y-2">
-              {['معلمون مجازون', 'ترجمة فورية', 'تتبع الحفظ', 'شهادات معتمدة'].map((b) => (
+              {(locale === 'id' 
+                ? ['Guru Bersertifikat', 'Terjemahan Langsung', 'Pelacakan Hafalan', 'Sertifikat Resmi']
+                : locale === 'ar'
+                ? ['معلمون مجازون', 'ترجمة فورية', 'تتبع الحفظ', 'شهادات معتمدة']
+                : ['Certified Tutors', 'Live Translation', 'Hifz Tracking', 'Accredited Certificates']
+              ).map((b) => (
                 <span key={b} className="flex items-center gap-1.5 text-sm text-[var(--athar-text-muted)]">
                   <CheckCircle2 size={15} className="text-[var(--athar-gold)]" strokeWidth={2} aria-hidden="true" />
                   {b}
@@ -132,12 +139,12 @@ function HeroSection() {
             {/* Quick links */}
             <div className="mt-6 flex flex-wrap gap-2">
               {[
-                { to: '/library', label: 'المكتبة', icon: BookOpen },
-                { to: '/leaderboard', label: 'البطولة', icon: Award },
-                { to: '/programs/kids', label: 'أطفال', icon: Sparkles },
-                { to: '/programs/women', label: 'نساء', icon: Shield },
-                { to: '/donate', label: 'تبرع', icon: HeartHandshake },
-                { to: '/ai', label: 'مركز AI', icon: Mic },
+                { to: '/library', label: locale === 'id' ? 'Perpustakaan' : locale === 'ar' ? 'المكتبة' : 'Library', icon: BookOpen },
+                { to: '/leaderboard', label: locale === 'id' ? 'Turnamen' : locale === 'ar' ? 'البطولة' : 'Leaderboard', icon: Award },
+                { to: '/programs/kids', label: locale === 'id' ? 'Anak-anak' : locale === 'ar' ? 'أطفال' : 'Kids', icon: Sparkles },
+                { to: '/programs/women', label: locale === 'id' ? 'Wanita' : locale === 'ar' ? 'نساء' : 'Women', icon: Shield },
+                { to: '/donate', label: locale === 'id' ? 'Donasi' : locale === 'ar' ? 'تبرع' : 'Donate', icon: HeartHandshake },
+                { to: '/ai', label: locale === 'id' ? 'Pusat AI' : locale === 'ar' ? 'مركز AI' : 'AI Hub', icon: Mic },
               ].map(({ to, label, icon: Icon }) => (
                 <LocalizedLink
                   key={to}
@@ -162,7 +169,7 @@ function HeroSection() {
               />
               <img
                 src="/hero-illustration.png"
-                alt="شيخ يقرأ القرآن الكريم"
+                alt={locale === 'id' ? 'Syekh membaca Al-Quran' : locale === 'ar' ? 'شيخ يقرأ القرآن الكريم' : 'Sheikh reciting Holy Quran'}
                 className="relative w-full h-auto drop-shadow-2xl"
                 style={{ filter: 'drop-shadow(0 20px 40px rgba(201,162,39,0.2))' }}
               />
@@ -172,8 +179,8 @@ function HeroSection() {
                   <Sparkles size={18} className="text-[var(--athar-gold)]" />
                 </span>
                 <div>
-                  <p className="text-xs text-[var(--athar-text-muted)]">تحليل التلاوة</p>
-                  <p className="text-sm font-semibold text-[var(--athar-text)]">AI جاهز</p>
+                  <p className="text-xs text-[var(--athar-text-muted)]">{locale === 'id' ? 'Analisis Bacaan' : locale === 'ar' ? 'تحليل التلاوة' : 'Recitation Analysis'}</p>
+                  <p className="text-sm font-semibold text-[var(--athar-text)]">{locale === 'id' ? 'AI Siap' : locale === 'ar' ? 'AI جاهز' : 'AI Ready'}</p>
                 </div>
               </div>
               {/* Floating badge 2 */}
@@ -182,8 +189,8 @@ function HeroSection() {
                   <CheckCircle2 size={18} className="text-emerald-600" />
                 </span>
                 <div>
-                  <p className="text-xs text-[var(--athar-text-muted)]">معلمون</p>
-                  <p className="text-sm font-semibold text-[var(--athar-text)]">+200 مجاز</p>
+                  <p className="text-xs text-[var(--athar-text-muted)]">{locale === 'id' ? 'Pengajar' : locale === 'ar' ? 'معلمون' : 'Tutors'}</p>
+                  <p className="text-sm font-semibold text-[var(--athar-text)]">{locale === 'id' ? '+200 Bersertifikat' : locale === 'ar' ? '+200 مجاز' : '+200 Certified'}</p>
                 </div>
               </div>
             </div>
@@ -200,18 +207,43 @@ function HeroSection() {
 
 /* ══════════════════════════════════════════
    2. SOCIAL PROOF MARQUEE
-══════════════════════════════════════════ */
-const testimonialItems = [
-  { name: 'أحمد محمود', country: '🇪🇬 مصر', text: 'تجربة رائعة! تعلمت القرآن بطريقة منظمة.' },
-  { name: 'Sarah Johnson', country: '🇺🇸 USA', text: 'Professional teachers and flexible scheduling.' },
-  { name: 'محمد العمري', country: '🇸🇦 السعودية', text: 'منصة ممتازة للحفظ مع معلمين مجازين.' },
-  { name: 'Amina Hassan', country: '🇬🇧 UK', text: 'The AI recitation tool is simply incredible.' },
-  { name: 'يوسف بكر', country: '🇹🇷 تركيا', text: 'أفضل منصة لتعلم التجويد بالعربية.' },
-  { name: 'Fatima Al-Zahra', country: '🇲🇾 Malaysia', text: 'My kids love the kids program so much!' },
-];
+   ══════════════════════════════════════════ */
+const getTestimonialItems = (locale) => {
+  if (locale === 'id') {
+    return [
+      { name: 'Ahmad Mahmud', country: '🇪🇬 Mesir', text: 'Pengalaman luar biasa! Saya belajar Al-Quran secara terstruktur.' },
+      { name: 'Sarah Johnson', country: '🇺🇸 AS', text: 'Guru profesional dan jadwal yang fleksibel.' },
+      { name: 'Muhammad Al-Amri', country: '🇸🇦 Arab Saudi', text: 'Platform luar biasa untuk menghafal dengan guru bersertifikat.' },
+      { name: 'Siti Rahma', country: '🇮🇩 Indonesia', text: 'Sangat terbantu belajar makhraj langsung dengan Syekh Mesir.' },
+      { name: 'Yusuf Bakar', country: '🇹🇷 Turki', text: 'Platform terbaik untuk belajar Tajwid dalam bahasa Arab.' },
+      { name: 'Fatima Al-Zahra', country: '🇲🇾 Malaysia', text: 'Anak-anak saya sangat menyukai program anak-anak!' },
+    ];
+  }
+  if (locale === 'ar') {
+    return [
+      { name: 'أحمد محمود', country: '🇪🇬 مصر', text: 'تجربة رائعة! تعلمت القرآن بطريقة منظمة.' },
+      { name: 'سارة جونسون', country: '🇺🇸 أمريكا', text: 'معلمون محترفون وجداول مرنة للغاية.' },
+      { name: 'محمد العمري', country: '🇸🇦 السعودية', text: 'منصة ممتازة للحفظ مع معلمين مجازين.' },
+      { name: 'أمينة حسن', country: '🇬🇧 بريطانيا', text: 'أداة التلاوة بالذكاء الاصطناعي مذهلة حقًا.' },
+      { name: 'يوسف بكر', country: '🇹🇷 تركيا', text: 'أفضل منصة لتعلم التجويد بالعربية.' },
+      { name: 'فاطمة الزهراء', country: '🇲🇾 ماليزيا', text: 'أطفالي يحبون برنامج الأطفال كثيراً!' },
+    ];
+  }
+  // English/Default
+  return [
+    { name: 'Ahmad Mahmoud', country: '🇪🇬 Egypt', text: 'Great experience! I learned Quran in an organized way.' },
+    { name: 'Sarah Johnson', country: '🇺🇸 USA', text: 'Professional teachers and flexible scheduling.' },
+    { name: 'Mohamed Al-Omari', country: '🇸🇦 KSA', text: 'Excellent platform for hifz with certified teachers.' },
+    { name: 'Amina Hassan', country: '🇬🇧 UK', text: 'The AI recitation tool is simply incredible.' },
+    { name: 'Yusuf Bakar', country: '🇹🇷 Turkey', text: 'Best platform to learn Tajweed in Arabic.' },
+    { name: 'Fatima Al-Zahra', country: '🇲🇾 Malaysia', text: 'My kids love the kids program so much!' },
+  ];
+};
 
 function SocialProofStrip() {
-  const doubled = [...testimonialItems, ...testimonialItems];
+  const { locale } = useI18n();
+  const items = getTestimonialItems(locale);
+  const doubled = [...items, ...items];
   return (
     <section className="border-y border-[var(--athar-cream-dark)] bg-white py-5 overflow-hidden" aria-label="آراء الطلاب">
       <div className="marquee-track gap-5">
@@ -274,7 +306,7 @@ function StatsBar() {
    4. FEATURES (GLASSMORPHISM)
 ══════════════════════════════════════════ */
 function FeaturesSection() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const ref = useReveal();
 
   const features = [
@@ -303,7 +335,7 @@ function FeaturesSection() {
 
       <div className="page-container relative">
         <div ref={ref} className="reveal max-w-2xl mb-14">
-          <span className="section-label mb-4">لماذا الأثر؟</span>
+          <span className="section-label mb-4">{locale === 'id' ? 'Mengapa Al-Athar?' : locale === 'ar' ? 'لماذا الأثر؟' : 'Why Al-Athar?'}</span>
           <h2 className="section-heading mt-4">{t.features.title}</h2>
           <GoldDivider />
           <p className="section-desc !mt-2">{t.features.subtitle}</p>
@@ -331,23 +363,53 @@ function FeaturesSection() {
 /* ══════════════════════════════════════════
    5. COURSE TIMELINE
 ══════════════════════════════════════════ */
-const timelineSteps = [
-  { icon: BookMarked, label: 'مبتدئ', title: 'تعلّم القراءة', desc: 'أساسيات النطق والتجويد مع معلم متخصص', color: 'bg-emerald-500', light: 'bg-emerald-50', text: 'text-emerald-600' },
-  { icon: Mic, label: 'متوسط', title: 'صحّح التلاوة', desc: 'تحليل صوتي بالذكاء الاصطناعي وتصحيح فوري', color: 'bg-[var(--athar-gold)]', light: 'bg-[var(--athar-gold-100)]', text: 'text-[var(--athar-gold-muted)]' },
-  { icon: BookOpen, label: 'متقدم', title: 'ابدأ الحفظ', desc: 'نظام سباق/سبق/منزل المُثبَت علمياً', color: 'bg-blue-500', light: 'bg-blue-50', text: 'text-blue-600' },
-  { icon: Award, label: 'خريج', title: 'احصل على شهادتك', desc: 'شهادة معتمدة رقمياً بعد إتمام الدورة', color: 'bg-purple-500', light: 'bg-purple-50', text: 'text-purple-600' },
-];
-
 function CourseTimelineSection() {
+  const { locale } = useI18n();
   const ref = useReveal();
+
+  const sectionLabel = locale === 'id' ? 'Alur Belajar' : locale === 'ar' ? 'مسار التعلم' : 'Learning Path';
+  const heading = locale === 'id' ? 'Perjalanan Anda Dari Nol hingga Ijazah' : locale === 'ar' ? 'رحلتك من الصفر إلى الإجازة' : 'Your Journey from Zero to Ijazah';
+  const desc = locale === 'id' ? 'Empat langkah terstruktur dari awal hingga menguasai bacaan' : locale === 'ar' ? 'أربع مراحل واضحة تأخذك من البداية حتى الاحتراف' : 'Four clear steps taking you from beginner to master';
+
+  const steps = [
+    { 
+      icon: BookMarked, 
+      label: locale === 'id' ? 'Pemula' : locale === 'ar' ? 'مبتدئ' : 'Beginner', 
+      title: locale === 'id' ? 'Belajar Membaca' : locale === 'ar' ? 'تعلّم القراءة' : 'Learn Reading', 
+      desc: locale === 'id' ? 'Dasar-dasar pelafalan & tajwid dengan guru ahli' : locale === 'ar' ? 'أساسيات النطق والتجويد مع معلم متخصص' : 'Pronunciation & Tajweed basics with an expert tutor', 
+      color: 'bg-emerald-500', light: 'bg-emerald-50', text: 'text-emerald-600' 
+    },
+    { 
+      icon: Mic, 
+      label: locale === 'id' ? 'Menengah' : locale === 'ar' ? 'متوسط' : 'Intermediate', 
+      title: locale === 'id' ? 'Perbaiki Pelafalan' : locale === 'ar' ? 'صحّح التلاوة' : 'Correct Recitation', 
+      desc: locale === 'id' ? 'Analisis suara interaktif dengan AI secara instan' : locale === 'ar' ? 'تحليل صوتي بالذكاء الاصطناعي وتصحيح فوري' : 'Interactive AI audio analysis & instant feedback', 
+      color: 'bg-[var(--athar-gold)]', light: 'bg-[var(--athar-gold-100)]', text: 'text-[var(--athar-gold-muted)]' 
+    },
+    { 
+      icon: BookOpen, 
+      label: locale === 'id' ? 'Lanjutan' : locale === 'ar' ? 'متقدم' : 'Advanced', 
+      title: locale === 'id' ? 'Mulai Hafalan' : locale === 'ar' ? 'ابدأ الحفظ' : 'Start Memorization', 
+      desc: locale === 'id' ? 'Sistem hafalan Sabak/Sabki/Manzil yang teruji' : locale === 'ar' ? 'نظام سباق/سبق/منزل المُثبَت علمياً' : 'Proven Sabak/Sabki/Manzil hifz system', 
+      color: 'bg-blue-500', light: 'bg-blue-50', text: 'text-blue-600' 
+    },
+    { 
+      icon: Award, 
+      label: locale === 'id' ? 'Lulusan' : locale === 'ar' ? 'خريج' : 'Graduate', 
+      title: locale === 'id' ? 'Dapatkan Sertifikat' : locale === 'ar' ? 'احصل على شهادتك' : 'Get Certified', 
+      desc: locale === 'id' ? 'Sertifikat resmi terverifikasi setelah lulus' : locale === 'ar' ? 'شهادة معتمدة رقمياً بعد إتمام الدورة' : 'Accredited digital certificate upon completion', 
+      color: 'bg-purple-500', light: 'bg-purple-50', text: 'text-purple-600' 
+    },
+  ];
+
   return (
     <section className="py-24 bg-white">
       <div className="page-container">
         <div ref={ref} className="reveal text-center max-w-2xl mx-auto mb-16">
-          <span className="section-label mb-4">مسار التعلم</span>
-          <h2 className="section-heading mt-4">رحلتك من الصفر إلى الإجازة</h2>
+          <span className="section-label mb-4">{sectionLabel}</span>
+          <h2 className="section-heading mt-4">{heading}</h2>
           <GoldDivider center />
-          <p className="section-desc mx-auto !mt-2">أربع مراحل واضحة تأخذك من البداية حتى الاحتراف</p>
+          <p className="section-desc mx-auto !mt-2">{desc}</p>
         </div>
 
         <div className="relative">
@@ -359,7 +421,7 @@ function CourseTimelineSection() {
           />
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {timelineSteps.map(({ icon: Icon, label, title, desc, color, light, text }, idx) => {
+            {steps.map(({ icon: Icon, label, title, desc, color, light, text }, idx) => {
               const stepRef = useReveal();
               return (
                 <div key={title} ref={stepRef} className={`reveal reveal-delay-${idx + 1} flex flex-col items-center text-center`}>
@@ -439,7 +501,7 @@ function AISectionModern() {
   const words = [
     { text: "الْحَمْدُ", correct: true },
     { text: "لِلَّهِ", correct: true },
-    { text: "رَبِّ", correct: false, errorText: "تنبيه تشكيل: نُطقت بالضم (رَبُّ) والموضع مجرور بالكسرة (رَبِّ)" },
+    { text: "رَبِّ", correct: false, errorText: locale === 'id' ? 'Peringatan Harakat: Dibaca dhommah (Rabbu) padahal seharusnya kasrah (Rabbi)' : locale === 'ar' ? 'تنبيه تشكيل: نُطقت بالضم (رَبُّ) والموضع مجرور بالكسرة (رَبِّ)' : 'Harakat Warning: Pronounced with dhommah (Rabbu) instead of kasrah (Rabbi)' },
     { text: "الْعَالَمِينَ", correct: true }
   ];
 
@@ -464,20 +526,24 @@ function AISectionModern() {
           <div>
             <span className="section-label mb-4">
               <Zap size={14} aria-hidden="true" />
-              مدعوم بالذكاء الاصطناعي
+              {locale === 'id' ? 'Didukung AI' : locale === 'ar' ? 'مدعوم بالذكاء الاصطناعي' : 'AI-Powered'}
             </span>
             <h2 className="font-naskh text-4xl font-bold text-[var(--athar-text)] mt-4">
-              مركز AI لرحلة الحفظ
+              {locale === 'id' ? 'Pusat AI Penghafalan' : locale === 'ar' ? 'مركز AI لرحلة الحفظ' : 'AI Hub for Hifz'}
             </h2>
             <GoldDivider />
             <p className="text-[var(--athar-text-muted)] leading-relaxed">
-              مساعد قرآن، تحليل تلاوة بالصوت، وخطط حفظ يومية — مثل أفضل منصات Hifz العالمية.
+              {locale === 'id' 
+                ? 'Asisten Quran, analisis suara tajwid, dan rencana hifz harian — seperti platform Hifz global terbaik.' 
+                : locale === 'ar' 
+                ? 'مساعد قرآن، تحليل تلاوة بالصوت، وخطط حفظ يومية — مثل أفضل منصات Hifz العالمية.' 
+                : 'Quran assistant, voice analysis, and daily hifz planner — like the top global Hifz platforms.'}
             </p>
             <ul className="mt-6 space-y-3">
               {[
-                { icon: Mic, text: 'تحليل التجويد والتلاوة بالصوت' },
-                { icon: BookOpen, text: 'خطط سباق / سبق / منزل يومية' },
-                { icon: Sparkles, text: 'مساعد ذكي للمعلم والطالب' },
+                { icon: Mic, text: locale === 'id' ? 'Analisis tajwid & bacaan suara' : locale === 'ar' ? 'تحليل التجويد والتلاوة بالصوت' : 'Tajweed & voice analysis' },
+                { icon: BookOpen, text: locale === 'id' ? 'Rencana harian Sabak / Sabki / Manzil' : locale === 'ar' ? 'خطط سباق / سبق / منزل يومية' : 'Daily Sabak / Sabki / Manzil plans' },
+                { icon: Sparkles, text: locale === 'id' ? 'Asisten pintar untuk guru & siswa' : locale === 'ar' ? 'مساعد ذكي للمعلم والطالب' : 'Smart assistant for tutor & student' },
               ].map(({ icon: Icon, text }) => (
                 <li key={text} className="flex items-center gap-3 text-sm text-[var(--athar-text)]">
                   <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/70 shadow-sm border border-[var(--athar-gold)]/20">
@@ -488,7 +554,7 @@ function AISectionModern() {
               ))}
             </ul>
             <LocalizedLink to="/ai" locale={locale} className="btn-gold mt-8 inline-flex">
-              جرّب مركز AI
+              {locale === 'id' ? 'Coba Pusat AI' : locale === 'ar' ? 'جرّب مركز AI' : 'Try AI Center'}
               <ArrowLeft size={18} aria-hidden="true" />
             </LocalizedLink>
           </div>
@@ -501,8 +567,8 @@ function AISectionModern() {
                   {isPlaying ? <span className="flex h-2.5 w-2.5 rounded-full bg-red-600 animate-ping" /> : <Mic size={18} strokeWidth={1.5} />}
                 </span>
                 <div>
-                  <p className="text-xs text-[var(--athar-text-muted)]">{isPlaying ? 'جاري الاستماع للتلاوة...' : 'محاكاة تلاوة تجريبية'}</p>
-                  <p className="text-sm font-semibold text-[var(--athar-text)]">سورة الفاتحة (الآية 2)</p>
+                  <p className="text-xs text-[var(--athar-text-muted)]">{isPlaying ? (locale === 'id' ? 'Mendengarkan bacaan...' : locale === 'ar' ? 'جاري الاستماع للتلاوة...' : 'Listening...') : (locale === 'id' ? 'Simulasi Rekaman' : locale === 'ar' ? 'محاكاة تلاوة تجريبية' : 'Simulated Recitation')}</p>
+                  <p className="text-sm font-semibold text-[var(--athar-text)]">{locale === 'id' ? 'Surah Al-Fatihah (Ayat 2)' : locale === 'ar' ? 'سورة الفاتحة (الآية 2)' : 'Surah Al-Fatihah (Verse 2)'}</p>
                 </div>
               </div>
               
@@ -511,7 +577,7 @@ function AISectionModern() {
                 className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-bold transition shadow-sm ${isPlaying ? 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100' : 'bg-[var(--athar-gold-100)] text-[var(--athar-gold-muted)] border border-[var(--athar-gold)]/30 hover:bg-[var(--athar-gold-200)]'}`}
               >
                 <Play size={10} className={isPlaying ? 'hidden' : 'inline'} />
-                {isPlaying ? 'إيقاف المحاكاة' : 'تشغيل المحاكاة'}
+                {isPlaying ? (locale === 'id' ? 'Hentikan Demo' : locale === 'ar' ? 'إيقاف المحاكاة' : 'Stop Demo') : (locale === 'id' ? 'Mulai Demo' : locale === 'ar' ? 'تشغيل المحاكاة' : 'Start Demo')}
               </button>
             </div>
 
@@ -559,9 +625,9 @@ function AISectionModern() {
             </div>
 
             {[
-              { label: 'التجويد ونبرات الصوت', val: scores.tajweed, color: 'bg-[var(--athar-gold)]' },
-              { label: 'مخارج الحروف الفموية', val: scores.makharij, color: 'bg-emerald-500' },
-              { label: 'الوقف والابتداء والقراءة الصحيحة', val: scores.waqf, color: 'bg-blue-500' },
+              { label: locale === 'id' ? 'Tajwid & Intonasi' : locale === 'ar' ? 'التجويد ونبرات الصوت' : 'Tajweed & Intonation', val: scores.tajweed, color: 'bg-[var(--athar-gold)]' },
+              { label: locale === 'id' ? 'Makhraj Huruf' : locale === 'ar' ? 'مخارج الحروف الفموية' : 'Makhraj & Articulation', val: scores.makharij, color: 'bg-emerald-500' },
+              { label: locale === 'id' ? 'Waqaf & Ibtida' : locale === 'ar' ? 'الوقف والابتداء والقراءة الصحيحة' : 'Waqf & Recitation Flow', val: scores.waqf, color: 'bg-blue-500' },
             ].map(({ label, val, color }) => (
               <div key={label} className="mb-4">
                 <div className="flex justify-between text-xs mb-1.5">
@@ -578,7 +644,9 @@ function AISectionModern() {
             ))}
 
             <p className="mt-4 text-xs text-[var(--athar-text-muted)] border-t border-[var(--athar-gold)]/20 pt-4 text-center">
-              {isPlaying ? 'الذكاء الاصطناعي يقوم بتحليل التلاوة ومطابقتها...' : 'جرّب التلاوة بصوتك في لوحة الطالب للحصول على تقييم فوري'}
+              {isPlaying 
+                ? (locale === 'id' ? 'AI sedang menganalisis dan mencocokkan bacaan...' : locale === 'ar' ? 'الذكاء الاصطناعي يقوم بتحليل التلاوة ومطابقتها...' : 'AI is analyzing and matching the recitation...') 
+                : (locale === 'id' ? 'Coba bacaan suara Anda di dasbor siswa untuk penilaian instan' : locale === 'ar' ? 'جرّب التلاوة بصوتك في لوحة الطالب للحصول على تقييم فوري' : 'Try reciting in the student dashboard for instant feedback')}
             </p>
           </div>
 
@@ -592,12 +660,36 @@ function AISectionModern() {
    7. TEACHERS SECTION
 ══════════════════════════════════════════ */
 function TeachersSection() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const ref = useReveal();
   const teachers = [
-    { id: 1, name: 'الشيخ أحمد محمد', specialty: 'تحفيظ القرآن', rating: 4.9, reviews: 120, initial: 'أ', from: 'emerald' },
-    { id: 2, name: 'الشيخة فاطمة علي', specialty: 'التجويد', rating: 4.8, reviews: 95, initial: 'ف', from: 'amber' },
-    { id: 3, name: 'الشيخ عمر حسن', specialty: 'اللغة العربية', rating: 4.9, reviews: 150, initial: 'ع', from: 'blue' },
+    {
+      id: 1,
+      name: locale === 'id' ? 'Syekh Ahmad Muhammad' : locale === 'ar' ? 'الشيخ أحمد محمد' : 'Sheikh Ahmad Muhammad',
+      specialty: locale === 'id' ? 'Tahfidz Al-Quran' : locale === 'ar' ? 'تحفيظ القرآن' : 'Quran Memorization',
+      rating: 4.9,
+      reviews: 120,
+      initial: locale === 'ar' ? 'أ' : 'A',
+      from: 'emerald'
+    },
+    {
+      id: 2,
+      name: locale === 'id' ? 'Syekhah Fatima Ali' : locale === 'ar' ? 'الشيخة فاطمة علي' : 'Sheikha Fatima Ali',
+      specialty: locale === 'id' ? 'Tajwid' : locale === 'ar' ? 'التجويد' : 'Tajweed',
+      rating: 4.8,
+      reviews: 95,
+      initial: locale === 'ar' ? 'ف' : 'F',
+      from: 'amber'
+    },
+    {
+      id: 3,
+      name: locale === 'id' ? 'Syekh Umar Hasan' : locale === 'ar' ? 'الشيخ عمر حسن' : 'Sheikh Omar Hassan',
+      specialty: locale === 'id' ? 'Bahasa Arab' : locale === 'ar' ? 'اللغة العربية' : 'Arabic Language',
+      rating: 4.9,
+      reviews: 150,
+      initial: locale === 'ar' ? 'ع' : 'U',
+      from: 'blue'
+    },
   ];
 
   const gradients = {
@@ -611,12 +703,12 @@ function TeachersSection() {
       <div className="page-container">
         <div ref={ref} className="reveal flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-14">
           <div>
-            <span className="section-label mb-4">نخبة المعلمين</span>
+            <span className="section-label mb-4">{locale === 'id' ? 'Pengajar Unggulan' : locale === 'ar' ? 'نخبة المعلمين' : 'Featured Tutors'}</span>
             <h2 className="section-heading mt-4">{t.teachers.title}</h2>
             <GoldDivider />
             <p className="section-desc !mx-0 !mt-2">{t.teachers.subtitle}</p>
           </div>
-          <Link to="/teachers" className="btn-secondary shrink-0">{t.teachers.viewAll}</Link>
+          <LocalizedLink to="/teachers" locale={locale} className="btn-secondary shrink-0">{t.teachers.viewAll}</LocalizedLink>
         </div>
 
         <div className="grid md:grid-cols-3 gap-6">
@@ -641,12 +733,13 @@ function TeachersSection() {
                     <span className="font-semibold text-sm text-[var(--athar-text)]">{teacher.rating}</span>
                     <span className="text-xs text-[var(--athar-text-muted)]">({teacher.reviews} {t.teachers.reviews})</span>
                   </div>
-                  <Link
+                  <LocalizedLink
                     to={`/teachers/${teacher.id}`}
+                    locale={locale}
                     className="btn-gold w-full justify-center text-sm !py-2.5"
                   >
                     {t.teachers.bookTrial}
-                  </Link>
+                  </LocalizedLink>
                 </div>
               </article>
             );
@@ -673,20 +766,20 @@ function InteractivePlannerSection() {
 
   const getEstimatedDuration = () => {
     if (path === 'hifz') {
-      if (frequency === 1) return locale === 'ar' ? '4.5 سنوات' : '4.5 Years';
-      if (frequency === 2) return locale === 'ar' ? '2.5 سنة' : '2.5 Years';
-      if (frequency === 3) return locale === 'ar' ? '1.5 سنة' : '1.5 Years';
-      return locale === 'ar' ? '10 أشهر' : '10 Months';
+      if (frequency === 1) return locale === 'id' ? '4.5 Tahun' : locale === 'ar' ? '4.5 سنوات' : '4.5 Years';
+      if (frequency === 2) return locale === 'id' ? '2.5 Tahun' : locale === 'ar' ? '2.5 سنة' : '2.5 Years';
+      if (frequency === 3) return locale === 'id' ? '1.5 Tahun' : locale === 'ar' ? '1.5 سنة' : '1.5 Years';
+      return locale === 'id' ? '10 Bulan' : locale === 'ar' ? '10 أشهر' : '10 Months';
     } else if (path === 'tajweed') {
-      if (frequency === 1) return locale === 'ar' ? '6 أشهر' : '6 Months';
-      if (frequency === 2) return locale === 'ar' ? '4 أشهر' : '4 Months';
-      if (frequency === 3) return locale === 'ar' ? '3 أشهر' : '3 Months';
-      return locale === 'ar' ? '6 أسابيع' : '6 Weeks';
+      if (frequency === 1) return locale === 'id' ? '6 Bulan' : locale === 'ar' ? '6 أشهر' : '6 Months';
+      if (frequency === 2) return locale === 'id' ? '4 Bulan' : locale === 'ar' ? '4 أشهر' : '4 Months';
+      if (frequency === 3) return locale === 'id' ? '3 Bulan' : locale === 'ar' ? '3 أشهر' : '3 Months';
+      return locale === 'id' ? '6 Minggu' : locale === 'ar' ? '6 أسابيع' : '6 Weeks';
     } else {
-      if (frequency === 1) return locale === 'ar' ? '1.5 سنة' : '1.5 Years';
-      if (frequency === 2) return locale === 'ar' ? '9 أشهر' : '9 Months';
-      if (frequency === 3) return locale === 'ar' ? '6 أشهر' : '6 Months';
-      return locale === 'ar' ? '3 أشهر' : '3 Months';
+      if (frequency === 1) return locale === 'id' ? '1.5 Tahun' : locale === 'ar' ? '1.5 سنة' : '1.5 Years';
+      if (frequency === 2) return locale === 'id' ? '9 Bulan' : locale === 'ar' ? '9 أشهر' : '9 Months';
+      if (frequency === 3) return locale === 'id' ? '6 Bulan' : locale === 'ar' ? '6 أشهر' : '6 Months';
+      return locale === 'id' ? '3 Bulan' : locale === 'ar' ? '3 أشهر' : '3 Months';
     }
   };
 
@@ -736,12 +829,12 @@ function InteractivePlannerSection() {
             {isIndonesian && (
               <div>
                 <label className="block text-sm font-bold text-[var(--athar-text)] mb-3">
-                  {locale === 'ar' ? '1. نوع الدراسة:' : '1. Jenis Kelas / Study Mode:'}
+                  {locale === 'id' ? '1. Jenis Kelas:' : locale === 'ar' ? '1. نوع الدراسة:' : '1. Study Mode:'}
                 </label>
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    { id: 'private', label: locale === 'ar' ? 'حصة فردية خاصة' : 'Kelas Privat (1-on-1)', desc: locale === 'ar' ? 'معلم خاص أزهري' : 'Guru Privat Al-Azhar' },
-                    { id: 'group', label: locale === 'ar' ? 'حلقة جماعية اقتصادية' : 'Kelas Grup (Halaqah)', desc: locale === 'ar' ? 'أقل سعر (5-7 طلاب)' : 'Biaya Ekonomis (5-7 siswa)' }
+                    { id: 'private', label: locale === 'id' ? 'Kelas Privat (1-on-1)' : locale === 'ar' ? 'حصة فردية خاصة' : 'Private Class (1-on-1)', desc: locale === 'id' ? 'Guru Privat Al-Azhar' : locale === 'ar' ? 'معلم خاص أزهري' : 'Private Al-Azhar Tutor' },
+                    { id: 'group', label: locale === 'id' ? 'Kelas Grup (Halaqah)' : locale === 'ar' ? 'حلقة جماعية اقتصادية' : 'Group Class (Halaqah)', desc: locale === 'id' ? 'Biaya Ekonomis (5-7 siswa)' : locale === 'ar' ? 'أقل سعر (5-7 طلاب)' : 'Economical (5-7 students)' }
                   ].map(opt => (
                     <button
                       key={opt.id}
@@ -758,13 +851,13 @@ function InteractivePlannerSection() {
 
             <div>
               <label className="block text-sm font-bold text-[var(--athar-text)] mb-3">
-                {isIndonesian ? (locale === 'ar' ? '2. حدد المسار التعليمي:' : '2. Pilih Program Studi:') : (locale === 'ar' ? '1. حدد المسار التعليمي:' : '1. Select Learning Path:')}
+                {isIndonesian ? (locale === 'id' ? '2. Pilih Program Studi:' : locale === 'ar' ? '2. حدد المسار التعليمي:' : '2. Select Learning Path:') : (locale === 'id' ? '1. Pilih Program Studi:' : locale === 'ar' ? '1. حدد المسار التعليمي:' : '1. Select Learning Path:')}
               </label>
               <div className="grid grid-cols-3 gap-3">
                 {[
-                  { id: 'hifz', label: locale === 'ar' ? 'حفظ القرآن وتجويده' : locale === 'id' ? 'Hafalan & Tajwid' : 'Quran Memorization', desc: locale === 'ar' ? 'للكبار والصغار' : 'Dewasa & Anak-anak' },
-                  { id: 'tajweed', label: locale === 'ar' ? 'أحكام التجويد والنطق' : locale === 'id' ? 'Tajwid & Makhraj' : 'Tajweed & Makhraj', desc: locale === 'ar' ? 'تصحيح ومخارج الحروف' : 'Perbaikan Pelafalan' },
-                  { id: 'arabic', label: locale === 'ar' ? 'اللغة العربية الفصحى' : locale === 'id' ? 'Bahasa Arab' : 'Arabic Language', desc: locale === 'ar' ? 'لغير الناطقين بها' : 'Untuk Non-Arab' }
+                  { id: 'hifz', label: locale === 'id' ? 'Hafalan & Tajwid' : locale === 'ar' ? 'حفظ القرآن وتجويده' : 'Quran Memorization', desc: locale === 'id' ? 'Dewasa & Anak-anak' : locale === 'ar' ? 'للكبار والصغار' : 'Adults & Kids' },
+                  { id: 'tajweed', label: locale === 'id' ? 'Tajwid & Makhraj' : locale === 'ar' ? 'أحكام التجويد والنطق' : 'Tajweed & Makhraj', desc: locale === 'id' ? 'Perbaikan Pelafalan' : locale === 'ar' ? 'تصحيح ومخارج الحروف' : 'Recitation Correction' },
+                  { id: 'arabic', label: locale === 'id' ? 'Bahasa Arab' : locale === 'ar' ? 'اللغة العربية الفصحى' : 'Arabic Language', desc: locale === 'id' ? 'Untuk Non-Arab' : locale === 'ar' ? 'لغير الناطقين بها' : 'For Non-Arabic Speakers' }
                 ].map(opt => (
                   <button
                     key={opt.id}
@@ -780,13 +873,13 @@ function InteractivePlannerSection() {
 
             <div>
               <label className="block text-sm font-bold text-[var(--athar-text)] mb-3">
-                {isIndonesian ? (locale === 'ar' ? '3. المستوى الحالي للدارس:' : '3. Tingkat Kemampuan:') : (locale === 'ar' ? '2. المستوى الحالي للدارس:' : '2. Current Level:')}
+                {isIndonesian ? (locale === 'id' ? '3. Tingkat Kemampuan:' : locale === 'ar' ? '3. المستوى الحالي للدارس:' : '3. Current Level:') : (locale === 'id' ? '2. Tingkat Kemampuan:' : locale === 'ar' ? '2. المستوى الحالي للدارس:' : '2. Current Level:')}
               </label>
               <div className="grid grid-cols-3 gap-3">
                 {[
-                  { id: 'beginner', label: locale === 'ar' ? 'مبتدئ' : locale === 'id' ? 'Pemula' : 'Beginner', desc: locale === 'ar' ? 'لا يعرف القراءة' : locale === 'id' ? 'Belum bisa membaca' : 'Cannot read yet' },
-                  { id: 'intermediate', label: locale === 'ar' ? 'متوسط' : locale === 'id' ? 'Menengah' : 'Intermediate', desc: locale === 'ar' ? 'يقرأ ولكن يحتاج ضبطاً' : locale === 'id' ? 'Bisa membaca & butuh perbaikan' : 'Can read but needs polish' },
-                  { id: 'advanced', label: locale === 'ar' ? 'متقدم' : locale === 'id' ? 'Lanjutan' : 'Advanced', desc: locale === 'ar' ? 'حافظ ويبحث عن السند' : locale === 'id' ? 'Hafal & mencari Sanad' : 'Memorized & seeks Sanad' }
+                  { id: 'beginner', label: locale === 'id' ? 'Pemula' : locale === 'ar' ? 'مبتدئ' : 'Beginner', desc: locale === 'id' ? 'Belum bisa membaca' : locale === 'ar' ? 'لا يعرف القراءة' : 'Cannot read yet' },
+                  { id: 'intermediate', label: locale === 'id' ? 'Menengah' : locale === 'ar' ? 'متوسط' : 'Intermediate', desc: locale === 'id' ? 'Bisa membaca & butuh perbaikan' : locale === 'ar' ? 'يقرأ ولكن يحتاج ضبطاً' : 'Can read but needs polish' },
+                  { id: 'advanced', label: locale === 'id' ? 'Lanjutan' : locale === 'ar' ? 'متقدم' : 'Advanced', desc: locale === 'id' ? 'Hafal & mencari Sanad' : locale === 'ar' ? 'حافظ ويبحث عن السند' : 'Memorized & seeks Sanad' }
                 ].map(opt => (
                   <button
                     key={opt.id}
@@ -804,14 +897,14 @@ function InteractivePlannerSection() {
             {(!isIndonesian || studyMode === 'private') ? (
               <div>
                 <label className="block text-sm font-bold text-[var(--athar-text)] mb-3">
-                  {isIndonesian ? (locale === 'ar' ? '4. عدد الساعات في الأسبوع:' : '4. Jumlah Jam Per Minggu:') : (locale === 'ar' ? '3. عدد الساعات في الأسبوع:' : '3. Hours Per Week:')}
+                  {isIndonesian ? (locale === 'id' ? '4. Jumlah Jam Per Minggu:' : locale === 'ar' ? '4. عدد الساعات في الأسبوع:' : '4. Hours Per Week:') : (locale === 'id' ? '3. Jumlah Jam Per Minggu:' : locale === 'ar' ? '3. عدد الساعات في الأسبوع:' : '3. Hours Per Week:')}
                 </label>
                 <div className="grid grid-cols-4 gap-3">
                   {[
-                    { id: 1, label: locale === 'ar' ? 'ساعة واحدة' : '1 Jam', desc: locale === 'ar' ? 'حصة / أسبوع' : '1 sesi / minggu' },
-                    { id: 2, label: locale === 'ar' ? 'ساعتان' : '2 Jam', desc: locale === 'ar' ? '2 حصة / أسبوع' : '2 sesi / minggu' },
-                    { id: 3, label: locale === 'ar' ? '3 ساعات' : '3 Jam', desc: locale === 'ar' ? '3 حصص / أسبوع' : '3 sesi / minggu' },
-                    { id: 5, label: locale === 'ar' ? '5 ساعات' : '5 Jam', desc: locale === 'ar' ? '5 حصص / أسبوع' : '5 sesi / minggu' }
+                    { id: 1, label: locale === 'id' ? '1 Jam' : locale === 'ar' ? 'ساعة واحدة' : '1 Hour', desc: locale === 'id' ? '1 sesi / minggu' : locale === 'ar' ? 'حصة / أسبوع' : '1 session / week' },
+                    { id: 2, label: locale === 'id' ? '2 Jam' : locale === 'ar' ? 'ساعتان' : '2 Hours', desc: locale === 'id' ? '2 sesi / minggu' : locale === 'ar' ? '2 حصة / أسبوع' : '2 sessions / week' },
+                    { id: 3, label: locale === 'id' ? '3 Jam' : locale === 'ar' ? '3 ساعات' : '3 Hours', desc: locale === 'id' ? '3 sesi / minggu' : locale === 'ar' ? '3 حصص / أسبوع' : '3 sessions / week' },
+                    { id: 5, label: locale === 'id' ? '5 Jam' : locale === 'ar' ? '5 ساعات' : '5 Hours', desc: locale === 'id' ? '5 sesi / minggu' : locale === 'ar' ? '5 حصص / أسبوع' : '5 sessions / week' }
                   ].map(opt => (
                     <button
                       key={opt.id}
@@ -827,12 +920,12 @@ function InteractivePlannerSection() {
             ) : (
               <div>
                 <label className="block text-sm font-bold text-[var(--athar-text)] mb-3">
-                  {locale === 'ar' ? '4. عدد الساعات في الأسبوع:' : '4. Jumlah Jam Per Minggu:'}
+                  {locale === 'id' ? '4. Jumlah Jam Per Minggu:' : locale === 'ar' ? '4. عدد الساعات في الأسبوع:' : '4. Hours Per Week:'}
                 </label>
                 <div className="p-4 rounded-xl border border-[var(--athar-gold)]/20 bg-[var(--athar-gold-50)] text-sm text-[var(--athar-gold-muted)] font-semibold flex items-center gap-2">
                   <Clock size={16} />
                   <span>
-                    {locale === 'ar' ? '2 حصة في الأسبوع (مجدولة جماعياً)' : '2 sesi per minggu (Jadwal kelas grup tetap)'}
+                    {locale === 'id' ? '2 sesi per minggu (Jadwal kelas grup tetap)' : locale === 'ar' ? '2 حصة في الأسبوع (مجدولة جماعياً)' : '2 sessions per week (Fixed group schedule)'}
                   </span>
                 </div>
               </div>
@@ -854,7 +947,7 @@ function InteractivePlannerSection() {
                     {locale === 'ar' ? 'المدة المتوقعة للختم / الإنجاز:' : locale === 'id' ? 'Estimasi Durasi Selesai:' : 'Estimated Duration:'}
                   </p>
                   <p className="font-naskh text-3xl font-bold text-[var(--athar-text)] mt-1">
-                    {studyMode === 'group' && isIndonesian ? (locale === 'ar' ? '1.5 سنة' : '1.5 Tahun') : duration}
+                    {studyMode === 'group' && isIndonesian ? (locale === 'id' ? '1.5 Tahun' : locale === 'ar' ? '1.5 سنة' : '1.5 Years') : duration}
                   </p>
                 </div>
 
@@ -878,7 +971,7 @@ function InteractivePlannerSection() {
                       {locale === 'ar' ? 'معدل الحصص شهرياً:' : locale === 'id' ? 'Jumlah Sesi Bulanan:' : 'Monthly Sessions:'}
                     </p>
                     <p className="text-lg font-bold text-[var(--athar-text)] mt-1">
-                      {studyMode === 'group' && isIndonesian ? '8' : frequency * 4} {locale === 'ar' ? 'حصص' : 'sessions'}
+                      {studyMode === 'group' && isIndonesian ? '8' : frequency * 4} {locale === 'id' ? 'sesi' : locale === 'ar' ? 'حصص' : 'sessions'}
                     </p>
                   </div>
                 </div>
@@ -898,19 +991,43 @@ function InteractivePlannerSection() {
 
                 <div className="border-t border-[var(--athar-gold)]/20 pt-4 space-y-2">
                   <p className="text-xs font-bold text-[var(--athar-text-muted)] mb-2">
-                    {locale === 'ar' ? 'المزايا المشمولة في خطتك:' : locale === 'id' ? 'Fasilitas Termasuk:' : 'Included Benefits:'}
+                    {locale === 'id' ? 'Fasilitas Termasuk:' : locale === 'ar' ? 'المزايا المشمولة في خطتك:' : 'Included Benefits:'}
                   </p>
-                  {(studyMode === 'group' && isIndonesian ? [
-                    locale === 'ar' ? 'معلم أزهري مباشر (حلقة جماعية 5-7 طلاب)' : 'Guru Al-Azhar (Kelas grup 5-7 siswa)',
-                    locale === 'ar' ? 'منهج إقرأ الإندونيسي التفاعلي المتكامل' : 'Kurikulum Iqro interaktif lengkap',
-                    locale === 'ar' ? 'شهادة إتمام معتمدة برمز QR عند التخرج' : 'Sertifikat kelulusan terverifikasi QR Code',
-                    locale === 'ar' ? 'سعر اقتصادي مدعوم بالكامل لأندونيسيا' : 'Biaya ekonomis khusus Indonesia'
-                  ] : [
-                    locale === 'ar' ? 'معلم شخصي مباشر 1-on-1 (أزهري مجاز)' : 'Guru privat 1-on-1 langsung dari Mesir',
-                    locale === 'ar' ? 'تقارير أداء دورية لولي الأمر والطالب' : 'Laporan perkembangan siswa berkala',
-                    locale === 'ar' ? 'شهادة تخرج معتمدة برقم تحقق QR Code' : 'Sertifikat kelulusan berlisensi resmi',
-                    locale === 'ar' ? 'إمكانية تسجيل الحصص لإعادة المراجعة' : 'Rekaman sesi tersedia untuk diulang'
-                  ]).map((feat) => (
+                  {(studyMode === 'group' && isIndonesian ? (
+                    locale === 'id' ? [
+                      'Guru Al-Azhar (Kelas grup 5-7 siswa)',
+                      'Kurikulum Iqro interaktif lengkap',
+                      'Sertifikat kelulusan terverifikasi QR Code',
+                      'Biaya ekonomis khusus Indonesia'
+                    ] : locale === 'ar' ? [
+                      'معلم أزهري مباشر (حلقة جماعية 5-7 طلاب)',
+                      'منهج إقرأ الإندونيسي التفاعلي المتكامل',
+                      'شهادة إتمام معتمدة برمز QR عند التخرج',
+                      'سعر اقتصادي مدعوم بالكامل لأندونيسيا'
+                    ] : [
+                      'Direct Al-Azhar tutor (Group class 5-7 students)',
+                      'Complete interactive Iqro curriculum',
+                      'Accredited QR Code completion certificate',
+                      'Fully subsidized economical price for Indonesia'
+                    ]
+                  ) : (
+                    locale === 'id' ? [
+                      'Guru privat 1-on-1 langsung dari Mesir',
+                      'Laporan perkembangan siswa berkala',
+                      'Sertifikat kelulusan berlisensi resmi',
+                      'Rekaman sesi tersedia untuk diulang'
+                    ] : locale === 'ar' ? [
+                      'معلم شخصي مباشر 1-on-1 (أزهري مجاز)',
+                      'تقارير أداء دورية لولي الأمر والطالب',
+                      'شهادة تخرج معتمدة برقم تحقق QR Code',
+                      'إمكانية تسجيل الحصص لإعادة المراجعة'
+                    ] : [
+                      'Direct 1-on-1 private tutor (Azhari certified)',
+                      'Periodic performance reports for parents & students',
+                      'Accredited QR Code completion certificate',
+                      'Option to record sessions for revision'
+                    ]
+                  )).map((feat) => (
                     <div key={feat} className="flex items-start gap-2 text-xs text-[var(--athar-text)]">
                       <CheckCircle2 size={13} className="text-[var(--athar-gold)] mt-0.5 shrink-0" />
                       <span>{feat}</span>
@@ -921,13 +1038,14 @@ function InteractivePlannerSection() {
             </div>
 
             <div className="mt-8">
-              <Link
+              <LocalizedLink
                 to={`/register/student?path=${path}&freq=${studyMode === 'group' ? 2 : frequency}&level=${level}&mode=${studyMode}`}
+                locale={locale}
                 className="btn-gold w-full justify-center text-sm py-3 shadow-lg"
               >
                 {locale === 'ar' ? 'ابدأ خطتك التعليمية الآن' : locale === 'id' ? 'Mulai Belajar Sekarang' : 'Start Your Plan Now'}
                 <ArrowLeft size={16} />
-              </Link>
+              </LocalizedLink>
 
               {isIndonesian && (
                 <div className="mt-4 pt-3 border-t border-[var(--athar-gold)]/20 text-center">
@@ -959,7 +1077,7 @@ function InteractivePlannerSection() {
    8. FAQ
 ══════════════════════════════════════════ */
 function FAQSection() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [open, setOpen] = useState(null);
   const ref = useReveal();
   const faqs = [
@@ -971,7 +1089,7 @@ function FAQSection() {
     <section className="py-24" style={{ background: 'var(--athar-gold-50)' }}>
       <div className="page-container max-w-3xl">
         <div ref={ref} className="reveal text-center mb-12">
-          <span className="section-label mb-4">الأسئلة الشائعة</span>
+          <span className="section-label mb-4">{locale === 'id' ? 'Pertanyaan Umum' : locale === 'ar' ? 'الأسئلة الشائعة' : 'FAQ'}</span>
           <h2 className="section-heading mt-4">{t.faq.title}</h2>
           <GoldDivider center />
           <p className="section-desc mx-auto !mt-2">{t.faq.subtitle}</p>
@@ -1009,7 +1127,7 @@ function FAQSection() {
    9. CTA SECTION
 ══════════════════════════════════════════ */
 function CTASection() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const ref = useReveal();
   return (
     <section className="py-20 bg-white">
@@ -1032,7 +1150,7 @@ function CTASection() {
           />
           <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-[var(--athar-gold)] to-transparent" aria-hidden="true" />
 
-          <span className="section-label mb-6">ابدأ رحلتك</span>
+          <span className="section-label mb-6">{locale === 'id' ? 'Mulai Perjalanan Anda' : locale === 'ar' ? 'ابدأ رحلتك' : 'Start Your Journey'}</span>
           <h2 className="font-naskh text-4xl md:text-5xl font-bold text-[var(--athar-text)] mt-4 text-pretty">
             {t.cta.title}
           </h2>
@@ -1040,17 +1158,18 @@ function CTASection() {
             {t.cta.subtitle}
           </p>
           <div className="mt-8 flex flex-wrap gap-3 justify-center">
-            <Link to="/register/student" className="btn-gold text-base px-8 py-3.5">
+            <LocalizedLink to="/register/student" locale={locale} className="btn-gold text-base px-8 py-3.5">
               {t.cta.button}
               <ArrowLeft size={18} aria-hidden="true" />
-            </Link>
-            <Link
+            </LocalizedLink>
+            <LocalizedLink
               to="/teachers"
+              locale={locale}
               className="inline-flex items-center gap-2 rounded-xl border border-[var(--athar-gold)]/40 bg-white px-7 py-3.5 text-sm font-semibold text-[var(--athar-gold-muted)] hover:bg-[var(--athar-gold-50)] transition"
             >
               <Play size={16} strokeWidth={1.5} />
-              شاهد كيف تعمل المنصة
-            </Link>
+              {locale === 'id' ? 'Lihat Cara Kerja Platform' : locale === 'ar' ? 'شاهد كيف تعمل المنصة' : 'See How It Works'}
+            </LocalizedLink>
           </div>
         </div>
       </div>

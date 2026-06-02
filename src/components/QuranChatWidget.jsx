@@ -36,29 +36,55 @@ export default function QuranChatWidget() {
     }
   };
 
+  const labels = {
+    id: {
+      btn: 'Asisten Quran',
+      header: 'Asisten Quran V4',
+      placeholder: 'Tanya tentang Tajwid atau hafalan...',
+      ask: 'Tanya',
+      link: 'Pusat AI Lengkap →'
+    },
+    ar: {
+      btn: 'مساعد قرآني',
+      header: 'مساعد قرآني V4',
+      placeholder: 'اسأل عن التجويد أو الحفظ...',
+      ask: 'اسأل',
+      link: 'مركز AI الكامل ←'
+    },
+    en: {
+      btn: 'Quran Assistant',
+      header: 'Quran Assistant V4',
+      placeholder: 'Ask about Tajweed or memorization...',
+      ask: 'Ask',
+      link: 'Full AI Hub →'
+    }
+  };
+
+  const active = labels[locale] || labels.en;
+
   return (
     <>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         className="fixed bottom-6 left-6 z-40 flex items-center gap-2 bg-emerald-600 text-white px-4 py-3 rounded-full shadow-lg hover:bg-emerald-700 transition"
-        aria-label="مساعد قرآني"
+        aria-label={active.btn}
       >
         <MessageCircle size={22} />
-        <span className="text-sm font-semibold hidden sm:inline">مساعد قرآني</span>
+        <span className="text-sm font-semibold hidden sm:inline">{active.btn}</span>
       </button>
 
       {open && (
         <div className="fixed bottom-24 left-6 z-40 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-2xl border border-emerald-100 overflow-hidden">
           <div className="bg-emerald-600 text-white px-4 py-3 flex justify-between items-center">
-            <span className="font-bold flex items-center gap-2"><Bot size={18} /> مساعد قرآني V4</span>
+            <span className="font-bold flex items-center gap-2"><Bot size={18} /> {active.header}</span>
             <button type="button" onClick={() => setOpen(false)} className="text-white/80 hover:text-white">✕</button>
           </div>
           <form onSubmit={ask} className="p-3 space-y-2">
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="اسأل عن التجويد أو الحفظ..."
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={active.placeholder}
               className="w-full border rounded-lg px-3 py-2 text-sm" />
             <button type="submit" disabled={loading} className="btn-primary w-full text-sm py-2">
-              {loading ? '...' : 'اسأل'}
+              {loading ? '...' : active.ask}
             </button>
           </form>
           {answer && (
@@ -67,7 +93,7 @@ export default function QuranChatWidget() {
             </div>
           )}
           <Link to="/ai" className="block text-center text-xs text-emerald-600 py-2 border-t hover:bg-emerald-50">
-            مركز AI الكامل →
+            {active.link}
           </Link>
         </div>
       )}

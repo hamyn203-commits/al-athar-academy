@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback } from 'react';
 import { CheckCircle, AlertCircle, Info, AlertTriangle, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useI18n } from '../i18n';
 
 const ToastContext = createContext(null);
 
@@ -124,6 +125,9 @@ function ToastContainer({ toasts, removeToast }) {
 }
 
 function ToastItem({ toast, onClose }) {
+  const { locale } = useI18n();
+  const closeLabel = locale === 'id' ? 'Tutup' : locale === 'ar' ? 'إغلاق' : 'Close';
+
   const icons = {
     success: CheckCircle,
     error: AlertCircle,
@@ -230,7 +234,7 @@ function ToastItem({ toast, onClose }) {
           borderRadius: 'var(--radius-sm)',
           transition: 'all 0.2s'
         }}
-        aria-label="إغلاق"
+        aria-label={closeLabel}
       >
         <X size={18} />
       </button>
