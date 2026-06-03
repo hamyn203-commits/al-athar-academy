@@ -28,10 +28,10 @@
 
 ## 📅 V6.2 — LMS & محتوى (الآن)
 
-- دروس كاملة لكل دورة seed
-- اختبارات gamification مربوطة بنقاط
-- شهادات PDF batch
-- تفعيل مفاتيح Azure (Bedrock, Resend, LiveKit)
+- [x] دروس كاملة لكل دورة seed
+- [x] اختبارات gamification مربوطة بنقاط
+- [ ] شهادات PDF batch
+- [ ] تفعيل مفاتيح Azure (Bedrock, Resend, LiveKit)
 
 ---
 

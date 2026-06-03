@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { Quiz, QuizAttempt } = require('../models/Quiz');
 const Enrollment = require('../models/Enrollment');
+const Progress = require('../models/Progress');
 const { protect, authorize, attachTeacherProfile } = require('../middleware/auth');
 
 // @route   GET /api/quizzes
@@ -291,6 +292,47 @@ router.post('/attempts/:attemptId/submit', protect, async (req, res) => {
     attempt.submittedAt = new Date();
     attempt.timeSpent = (attempt.submittedAt - attempt.startedAt) / 1000;
     await attempt.save();
+
+    // Update Progress model with gamification points if passed
+    if (attempt.isPassed) {
+      try {
+        let progress = await Progress.findOne({ student: req.user.id, course: attempt.quiz.course });
+        if (!progress) {
+          const Lesson = require('../models/Lesson');
+          const lessons = await Lesson.find({ course: attempt.quiz.course }).select('_id');
+          progress = new Progress({
+            student: req.user.id,
+            course: attempt.quiz.course,
+            enrollment: attempt.enrollment,
+            lessonProgress: lessons.map(l => ({
+              lesson: l._id,
+              status: 'not-started'
+            })),
+            overallProgress: {
+              totalLessons: lessons.length
+            }
+          });
+        }
+
+        const quizPoints = attempt.quiz.calculateMaxScore() || 20;
+        await progress.addMilestone(
+          'quiz-passed',
+          { 
+            ar: `اجتياز اختبار: ${attempt.quiz.title.ar}`, 
+            en: `Passed Quiz: ${attempt.quiz.title.en}`, 
+            id: `Lulus Kuis: ${attempt.quiz.title.id || attempt.quiz.title.en}` 
+          },
+          { 
+            ar: `أحسنت! لقد اجتزت اختبار "${attempt.quiz.title.ar}" بنجاح`, 
+            en: `Congratulations! You passed "${attempt.quiz.title.en}"`, 
+            id: `Selamat! Anda berhasil lulus "${attempt.quiz.title.id || attempt.quiz.title.en}"` 
+          },
+          quizPoints
+        );
+      } catch (err) {
+        console.warn('Failed to update gamification progress for quiz attempt:', err.message);
+      }
+    }
 
     const quiz = await Quiz.findById(attempt.quiz._id);
     quiz.stats.completions += 1;

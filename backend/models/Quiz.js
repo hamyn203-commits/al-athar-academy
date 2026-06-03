@@ -19,7 +19,9 @@ const QuizQuestionSchema = new mongoose.Schema({
   options: [{
     text: {
       ar: String,
-      en: String
+      en: String,
+      id: String,
+      ms: String
     },
     isCorrect: Boolean
   }],

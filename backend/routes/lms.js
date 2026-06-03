@@ -128,6 +128,35 @@ router.post('/course/:slug/lesson/:lessonId/complete', protect, async (req, res)
       await lesson.save();
     }
 
+    // Update Progress model for gamification points & streaks
+    let progress = await Progress.findOne({ student: req.user.id, course: course._id });
+    if (!progress) {
+      const lessons = await Lesson.find({ course: course._id }).select('_id');
+      progress = new Progress({
+        student: req.user.id,
+        course: course._id,
+        enrollment: enrollment._id,
+        lessonProgress: lessons.map(l => ({
+          lesson: l._id,
+          status: 'not-started'
+        })),
+        overallProgress: {
+          totalLessons: lessons.length
+        }
+      });
+    }
+
+    const duration = lesson ? lesson.duration : 15;
+    await progress.updateLessonProgress(req.params.lessonId, 'completed', score, duration);
+    
+    // Add the lesson-completed milestone for 10 points
+    await progress.addMilestone(
+      'lesson-completed',
+      { ar: 'أكملت درساً', en: 'Lesson Completed', id: 'Pelajaran Selesai' },
+      { ar: 'أحسنت! لقد أكملت درساً بنجاح', en: 'Great job! You completed a lesson', id: 'Bagus sekali! Anda berhasil menyelesaikan pelajaran' },
+      10
+    );
+
     const updated = await Enrollment.findById(enrollment._id);
     let certificate = null;
 

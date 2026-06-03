@@ -9,8 +9,8 @@
 
 | # | المهمة | الحالة |
 |---|--------|--------|
-| 6.2.1 | دروس seed لكل دورة (3+ lessons) | pending |
-| 6.2.2 | Quiz → gamification points | pending |
+| 6.2.1 | دروس seed لكل دورة (3+ lessons) | ✅ |
+| 6.2.2 | Quiz → gamification points | ✅ |
 | 6.2.3 | شهادات PDF batch | pending |
 | 6.2.4 | Azure keys doc + sync script | pending |
 
