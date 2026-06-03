@@ -12,17 +12,13 @@ const Enrollment = require('../models/Enrollment');
 const Blog = require('../models/Blog');
 const WithdrawRequest = require('../models/WithdrawRequest');
 const { protect, authorize } = require('../middleware/auth');
+const cdnService = require('../services/cdn');
 
 const coursesUploadDir = path.join(__dirname, '..', 'uploads', 'courses');
 if (!fs.existsSync(coursesUploadDir)) fs.mkdirSync(coursesUploadDir, { recursive: true });
 
 const upload = multer({
-  storage: multer.diskStorage({
-    destination: (_, __, cb) => cb(null, coursesUploadDir),
-    filename: (_, file, cb) => {
-      cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(file.originalname)}`);
-    },
-  }),
+  storage: multer.memoryStorage(),
   limits: { fileSize: 200 * 1024 * 1024 },
   fileFilter: (_, file, cb) => {
     const ok = /video|image|pdf|mp4|webm|jpeg|jpg|png/.test(file.mimetype);
@@ -147,11 +143,23 @@ router.put('/teachers/:id', protect, authorize('admin'), async (req, res) => {
   }
 });
 
-router.post('/upload', protect, authorize('admin', 'teacher'), upload.single('file'), (req, res) => {
+router.post('/upload', protect, authorize('admin', 'teacher'), upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'لم يُرفع ملف' });
-  const rel = `/uploads/courses/${req.file.filename}`;
-  const url = `${API_PUBLIC}${rel}`;
-  res.json({ url, path: rel, filename: req.file.filename, mimetype: req.file.mimetype, size: req.file.size });
+  const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(req.file.originalname)}`;
+  try {
+    if (cdnService.isConfigured()) {
+      const url = await cdnService.uploadToCDN(req.file.buffer, filename, req.file.mimetype);
+      res.json({ url, source: 'cdn', filename, mimetype: req.file.mimetype, size: req.file.size });
+    } else {
+      const filePath = path.join(coursesUploadDir, filename);
+      fs.writeFileSync(filePath, req.file.buffer);
+      const rel = `/uploads/courses/${filename}`;
+      const url = `${API_PUBLIC}${rel}`;
+      res.json({ url, path: rel, source: 'local', filename, mimetype: req.file.mimetype, size: req.file.size });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 router.get('/courses', protect, authorize('admin'), async (req, res) => {

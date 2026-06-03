@@ -12,7 +12,7 @@
 | 6.3.1 | Stripe/PayPal donate live | ✅ |
 | 6.3.2 | 9 لغات UI كاملة | ✅ |
 | 6.3.3 | Analytics admin | ✅ |
-| 6.3.4 | CDN للـ uploads | pending |
+| 6.3.4 | CDN للـ uploads | ✅ |
 
 ## V6.2 — مكتمل ✅
 

@@ -40,7 +40,7 @@
 - [x] Stripe/PayPal donate live
 - [x] 9 لغات UI كاملة
 - [x] Analytics admin
-- [ ] CDN للـ uploads
+- [x] CDN للـ uploads
 
 ---
 
