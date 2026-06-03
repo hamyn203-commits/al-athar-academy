@@ -5,14 +5,18 @@
 ## قواعد
 - لا `platform/` | `npm run build` قبل push | push → deploy تلقائي
 
-## V6.2 — الطابور النشط
+## V6.3 — الطابور النشط
 
 | # | المهمة | الحالة |
 |---|--------|--------|
-| 6.2.1 | دروس seed لكل دورة (3+ lessons) | ✅ |
-| 6.2.2 | Quiz → gamification points | ✅ |
-| 6.2.3 | شهادات PDF batch | ✅ |
-| 6.2.4 | Azure keys doc + sync script | ✅ |
+| 6.3.1 | Stripe/PayPal donate live | ✅ |
+| 6.3.2 | 9 لغات UI كاملة | pending |
+| 6.3.3 | Analytics admin | pending |
+| 6.3.4 | CDN للـ uploads | pending |
+
+## V6.2 — مكتمل ✅
+
+دروس seed لكل دورة (3+ lessons)، Quiz → gamification points، شهادات PDF batch، Azure keys doc + sync script.
 
 ## V6.1 — مكتمل ✅
 

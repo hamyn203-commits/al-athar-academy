@@ -68,6 +68,22 @@ router.get('/', protect, authorize('admin'), async (req, res) => {
   }
 });
 
+router.put('/:id/confirm-mock', async (req, res) => {
+  try {
+    const donation = await Donation.findByIdAndUpdate(req.params.id, { status: 'confirmed' }, { new: true });
+    if (!donation) return res.status(404).json({ error: 'التبرع غير موجود' });
+    notifyAdmin({
+      subject: `تأكيد تبرع (تجريبي) — ${donation.amount} ${donation.currency}`,
+      html: `<p>تم تأكيد التبرع بنجاح عبر بوابة الدفع الافتراضية</p>
+             <p>المتبرع: ${donation.isAnonymous ? 'مجهول' : donation.name} (${donation.email})</p>
+             <p>المبلغ: ${donation.amount} ${donation.currency} — الفئة: ${donation.category}</p>`,
+    }).catch(() => {});
+    res.json({ success: true, donation });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
 router.put('/:id/status', protect, authorize('admin'), async (req, res) => {
   try {
     const { status } = req.body;

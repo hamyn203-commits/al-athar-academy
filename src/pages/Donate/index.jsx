@@ -1,10 +1,38 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { HeartHandshake, CircleDollarSign, Users, BookOpen, CheckCircle } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import GlobalHeader from '../../components/GlobalHeader';
 import GlobalFooter from '../../components/GlobalFooter';
 import SEOHead from '../../components/SEOHead';
 import api from '../../lib/api';
+
+const PM_STRINGS = {
+  ar: {
+    method: 'طريقة الدفع التفاعلية',
+    stripe: 'بطاقة ائتمان (Stripe)',
+    paypal: 'حساب PayPal الإلكتروني',
+    manual: 'تعهد بالتبرع غير المباشر (نقدي/تحويل)',
+    payButton: 'الانتقال لبوابة الدفع الآمنة',
+    pledgeButton: 'تعهد بالتبرع الآن',
+  },
+  en: {
+    method: 'Interactive Payment Method',
+    stripe: 'Credit/Debit Card (Stripe)',
+    paypal: 'PayPal Account',
+    manual: 'Manual Pledge (Cash/Bank Transfer)',
+    payButton: 'Proceed to Secure Payment',
+    pledgeButton: 'Submit Donation Pledge',
+  },
+  id: {
+    method: 'Metode Pembayaran Interaktif',
+    stripe: 'Kartu Kredit/Debit (Stripe)',
+    paypal: 'Akun PayPal',
+    manual: 'Komitmen Manual (Tunai/Transfer Bank)',
+    payButton: 'Lanjutkan ke Pembayaran Aman',
+    pledgeButton: 'Kirim Komitmen Donasi',
+  }
+};
 
 const CATEGORIES = [
   { id: 'student', icon: Users, ar: 'كفالة طالب', en: 'Sponsor a Student' },
@@ -17,9 +45,11 @@ const GOAL = 10000;
 
 export default function Donate() {
   const { locale } = useI18n();
+  const navigate = useNavigate();
   const isAr = locale === 'ar';
   const [stats, setStats] = useState({ totalAmount: 0, totalDonors: 0 });
   const [form, setForm] = useState({ name: '', email: '', phone: '', amount: 100, currency: 'USD', category: 'general', message: '', isAnonymous: false });
+  const [paymentMethod, setPaymentMethod] = useState('stripe');
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const [payConfig, setPayConfig] = useState({ paymentEnabled: false });
@@ -38,8 +68,12 @@ export default function Donate() {
     e.preventDefault();
     setLoading(true);
     try {
-      await api.post('/api/donations', form);
-      setDone(true);
+      const res = await api.post('/api/donations', form);
+      if (paymentMethod === 'manual') {
+        setDone(true);
+      } else {
+        navigate(`/donate/checkout-mock?donationId=${res.id}&provider=${paymentMethod}&amount=${form.amount}&currency=${form.currency}&category=${form.category}`);
+      }
     } catch (err) {
       alert(err.message || (isAr ? 'فشل الإرسال' : 'Failed'));
     } finally {
@@ -105,12 +139,31 @@ export default function Donate() {
                 </div>
               </div>
               <textarea placeholder={isAr ? 'رسالة (اختياري)' : 'Message (optional)'} className="input-field min-h-[80px]" value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} />
-              <label className="flex items-center gap-2 text-sm text-gray-600">
+              
+              <div className="space-y-2 border-t border-gray-150 pt-4 text-right-rtl">
+                <label className="text-sm font-bold text-gray-700 block text-right-rtl">{PM_STRINGS[locale]?.method || PM_STRINGS.en.method}</label>
+                <div className="grid gap-2">
+                  {['stripe', 'paypal', 'manual'].map((method) => {
+                    const active = paymentMethod === method;
+                    const labels = PM_STRINGS[locale] || PM_STRINGS.en;
+                    return (
+                      <label key={method} className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition ${active ? 'border-rose-500 bg-rose-50/30' : 'border-gray-100 hover:border-gray-200'} ${isAr ? 'flex-row-reverse' : ''}`}>
+                        <input type="radio" name="paymentMethod" value={method} checked={active} onChange={() => setPaymentMethod(method)} className="text-rose-600 focus:ring-rose-500" />
+                        <span className="text-sm font-semibold text-gray-800 flex-1 text-right-rtl">{labels[method]}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <label className="flex items-center gap-2 text-sm text-gray-600 text-right-rtl">
                 <input type="checkbox" checked={form.isAnonymous} onChange={(e) => setForm({ ...form, isAnonymous: e.target.checked })} />
                 {isAr ? 'تبرع مجهول' : 'Anonymous donation'}
               </label>
               <button type="submit" disabled={loading} className="btn-primary w-full !py-3">
-                {loading ? '...' : isAr ? 'تعهد بالتبرع' : 'Pledge Donation'}
+                {loading ? '...' : (paymentMethod === 'manual' 
+                  ? (PM_STRINGS[locale]?.pledgeButton || PM_STRINGS.en.pledgeButton) 
+                  : (PM_STRINGS[locale]?.payButton || PM_STRINGS.en.payButton))}
               </button>
               <p className="text-xs text-gray-400 text-center">
                 {payConfig.paymentEnabled
