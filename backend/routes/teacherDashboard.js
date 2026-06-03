@@ -7,6 +7,36 @@ const WithdrawRequest = require('../models/WithdrawRequest');
 const { protect, authorize } = require('../middleware/auth');
 
 const SESSION_RATE = 50;
+const isMockMode = !process.env.MONGODB_URI;
+
+// Simple mock-mode fallbacks so the teacher dashboard works in local dev without DB.
+if (isMockMode) {
+  router.get('/profile', protect, authorize('teacher'), (req, res) => {
+    const teacher = {
+      _id: `mock-teacher-${req.user.id}`,
+      personalInfo: { fullName: req.user.name || 'معلم تجريبي', phone: '', country: '' },
+      academicInfo: {},
+      earnings: { pendingEarnings: 0, totalEarned: 0, withdrawnEarnings: 0 },
+      stats: { totalStudents: 0, totalHours: 0, totalSessions: 0 },
+      rating: { average: 0, count: 0 },
+      availability: [],
+    };
+    return res.json({ teacher, wallet: { sessionRate: SESSION_RATE, sessionDurationMinutes: 60, pendingEarnings: 0, totalEarned: 0, withdrawn: 0, completedSessions: 0 } });
+  });
+
+  router.get('/active-students', protect, authorize('teacher'), (req, res) => res.json({ students: [] }));
+  router.get('/tasks', protect, authorize('teacher'), (req, res) => res.json({ tasks: [] }));
+  router.post('/tasks', protect, authorize('teacher'), (req, res) => res.status(201).json({ success: true, task: { _id: `mock-task-${Date.now()}`, ...req.body } }));
+  router.patch('/tasks/:id', protect, authorize('teacher'), (req, res) => res.json({ success: true, task: { _id: req.params.id, ...req.body } }));
+  router.get('/stats', protect, authorize('teacher'), (req, res) => res.json({ totalStudents: 0, totalSessions: 0, totalHours: 0, pendingEarnings: 0, totalEarnings: 0, averageRating: 0, sessionRate: SESSION_RATE }));
+  router.get('/students', protect, authorize('teacher'), (req, res) => res.json({ students: [] }));
+  router.get('/analytics', protect, authorize('teacher'), (req, res) => res.json({ monthlySessions: [], totalCompleted: 0, averageRating: 0, totalStudents: 0, earnings: { daily: 0, weekly: 0, monthly: 0, pending: 0 } }));
+  router.get('/withdrawals', protect, authorize('teacher'), (req, res) => res.json({ withdrawals: [], available: 0 }));
+  router.post('/withdrawals', protect, authorize('teacher'), (req, res) => res.status(201).json({ success: true, withdrawal: { _id: `mock-withdraw-${Date.now()}`, amount: req.body.amount, method: req.body.method, accountInfo: req.body.accountInfo, status: 'pending' } }));
+  router.get('/availability', protect, authorize('teacher'), (req, res) => res.json({ availability: [] }));
+  router.put('/availability', protect, authorize('teacher'), (req, res) => res.json({ success: true, availability: req.body.availability || [] }));
+  router.get('/reviews', protect, authorize('teacher'), (req, res) => res.json({ reviews: [], averageRating: 0, totalReviews: 0 }));
+}
 
 router.get('/profile', protect, authorize('teacher'), async (req, res) => {
   try {
