@@ -185,4 +185,81 @@ router.delete('/:id', protect, authorize('admin'), async (req, res) => {
   }
 });
 
+// @route   POST /api/certificates/batch-generate
+// @desc    Generate certificates in batch for all completed courses
+// @access  Private
+router.post('/batch-generate', protect, async (req, res) => {
+  try {
+    const enrollments = await Enrollment.find({
+      student: req.user.id,
+      status: 'completed',
+      'certificate.issued': { $ne: true }
+    }).populate('course');
+
+    if (!enrollments.length) {
+      return res.json({ message: 'No new certificates to generate', certificates: [] });
+    }
+
+    const generated = [];
+
+    for (const enrollment of enrollments) {
+      const existingCert = await Certificate.findOne({
+        student: req.user.id,
+        course: enrollment.course._id
+      });
+
+      if (existingCert) {
+        enrollment.certificate = {
+          issued: true,
+          issuedAt: existingCert.issuedAt || new Date(),
+          certificateId: existingCert.certificateId,
+          qrCode: existingCert.qrCode
+        };
+        await enrollment.save();
+        generated.push(existingCert);
+        continue;
+      }
+
+      const certificateId = Certificate.generateCertificateId();
+      const verificationUrl = `${process.env.FRONTEND_URL || 'https://al-athar-academy.vercel.app'}/verify-certificate/${certificateId}`;
+      const qrCode = await Certificate.generateQRCode(verificationUrl);
+
+      const certificate = new Certificate({
+        student: req.user.id,
+        course: enrollment.course._id,
+        enrollment: enrollment._id,
+        certificateId,
+        qrCode,
+        metadata: {
+          completionDate: enrollment.completedAt || new Date(),
+          score: enrollment.progress.percentage || 100,
+          instructor: enrollment.course.instructor,
+          duration: enrollment.progress.timeSpent || 0
+        },
+        language: req.body.language || 'ar'
+      });
+
+      await certificate.save();
+
+      enrollment.certificate = {
+        issued: true,
+        issuedAt: new Date(),
+        certificateId,
+        qrCode
+      };
+      await enrollment.save();
+
+      generated.push(certificate);
+    }
+
+    res.status(201).json({
+      message: `Successfully generated ${generated.length} certificate(s)`,
+      certificates: generated
+    });
+  } catch (error) {
+    console.error('Batch generate certificates error:', error);
+    res.status(500).json({ error: 'Failed to generate batch certificates' });
+  }
+});
+
 module.exports = router;

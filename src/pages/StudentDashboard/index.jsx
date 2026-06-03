@@ -141,6 +141,32 @@ export default function StudentDashboard() {
     }
   }, [tab, ready, certificates.length, recordings.length, referral]);
 
+  const downloadAllCertificates = async () => {
+    if (!certificates.length) return;
+    toast.success(
+      locale === 'id' ? 'Memulai unduhan massal...' :
+      locale === 'ar' ? 'بدء تحميل الشهادات...' :
+      'Starting batch download...'
+    );
+
+    for (let i = 0; i < certificates.length; i++) {
+      const c = certificates[i];
+      const certWithStudent = {
+        ...c,
+        student: c.student || { name: user.name }
+      };
+
+      setTimeout(async () => {
+        try {
+          const { downloadCertificatePdf } = await import('../../lib/certificatePdf');
+          await downloadCertificatePdf({ certificate: certWithStudent, locale });
+        } catch (err) {
+          console.error('Failed to download certificate', c._id, err);
+        }
+      }, i * 1500);
+    }
+  };
+
   if (!ready) return null;
 
   const upcomingTrials = trials.filter((s) => s.status === 'accepted' && new Date(s.scheduledAt) >= new Date());
@@ -399,7 +425,15 @@ export default function StudentDashboard() {
 
             {tab === 'certificates' && (
               <div className="space-y-3">
-                <p className="text-sm text-slate-600">{locale === 'id' ? 'Sertifikat kelulusan setelah menyelesaikan kursus' : locale === 'ar' ? 'شهاداتك بعد إكمال الدورات' : 'Your certificates after completing courses'}</p>
+                <div className="flex justify-between items-center flex-wrap gap-2 mb-2">
+                  <p className="text-sm text-slate-600">{locale === 'id' ? 'Sertifikat kelulusan setelah menyelesaikan kursus' : locale === 'ar' ? 'شهاداتك بعد إكمال الدورات' : 'Your certificates after completing courses'}</p>
+                  {certificates.length > 0 && (
+                    <button onClick={downloadAllCertificates}
+                      className="btn-primary text-xs px-3 py-1.5 flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700">
+                      <Award size={14} /> {locale === 'id' ? 'Unduh Semua PDF' : locale === 'ar' ? 'تحميل الكل PDF' : 'Download All PDFs'}
+                    </button>
+                  )}
+                </div>
                 {certificates.length === 0 ? (
                   <div className="text-center py-8">
                     <Award className="mx-auto text-gray-300 mb-3" size={48} />
