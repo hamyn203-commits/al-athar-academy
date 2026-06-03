@@ -33,7 +33,19 @@ $defaults = @{
     EMAIL_FROM = "Al-Athar <noreply@alathar.edu>"
 }
 
-$skipIfEmpty = @("MONGODB_URI", "JWT_SECRET", "JWT_REFRESH_SECRET")
+$skipIfEmpty = @(
+    "MONGODB_URI", 
+    "JWT_SECRET", 
+    "JWT_REFRESH_SECRET", 
+    "AWS_BEARER_TOKEN_BEDROCK", 
+    "RESEND_API_KEY", 
+    "LIVEKIT_API_KEY", 
+    "LIVEKIT_API_SECRET", 
+    "TELEGRAM_BOT_TOKEN", 
+    "TWILIO_ACCOUNT_SID", 
+    "TWILIO_AUTH_TOKEN", 
+    "SEED_SECRET"
+)
 
 function Parse-EnvFile($path) {
     $map = @{}
@@ -65,7 +77,7 @@ $existingNames = $existing | ForEach-Object { $_.name }
 $toSet = @()
 foreach ($entry in $merged.GetEnumerator()) {
     if ($skipIfEmpty -contains $entry.Key -and ($existingNames -contains $entry.Key)) { continue }
-    if ($entry.Key -in @("MONGODB_URI", "JWT_SECRET", "JWT_REFRESH_SECRET") -and -not $entry.Value) { continue }
+    if ($entry.Key -in $skipIfEmpty -and -not $entry.Value) { continue }
     $toSet += "$($entry.Key)=$($entry.Value)"
 }
 

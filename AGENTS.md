@@ -12,7 +12,7 @@
 | 6.2.1 | دروس seed لكل دورة (3+ lessons) | ✅ |
 | 6.2.2 | Quiz → gamification points | ✅ |
 | 6.2.3 | شهادات PDF batch | ✅ |
-| 6.2.4 | Azure keys doc + sync script | pending |
+| 6.2.4 | Azure keys doc + sync script | ✅ |
 
 ## V6.1 — مكتمل ✅
 

@@ -31,7 +31,7 @@
 - [x] دروس كاملة لكل دورة seed
 - [x] اختبارات gamification مربوطة بنقاط
 - [x] شهادات PDF batch
-- [ ] تفعيل مفاتيح Azure (Bedrock, Resend, LiveKit)
+- [x] تفعيل مفاتيح Azure (Bedrock, Resend, LiveKit)
 
 ---
 
