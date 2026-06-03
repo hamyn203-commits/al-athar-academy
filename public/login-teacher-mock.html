@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Mock Teacher Login</title>
+  <script>
+    // Set mock teacher tokens and details
+    localStorage.setItem('token', 'mock-teacher-access-token');
+    localStorage.setItem('accessToken', 'mock-teacher-access-token');
+    localStorage.setItem('refreshToken', 'mock-teacher-refresh-token');
+    localStorage.setItem('user', JSON.stringify({
+      id: '6a1ca87bdedb1cef18df7dc9',
+      email: 'teacher-demo@alathar.edu',
+      role: 'teacher',
+      name: 'الشيخ أحمد محمد'
+    }));
+    localStorage.setItem('locale', 'ar');
+    localStorage.setItem('academy_lang', 'ar');
+    
+    // Redirect directly to teacher dashboard
+    window.location.href = '/ar/teacher/dashboard';
+  </script>
+</head>
+<body>
+  Redirecting to Teacher Dashboard...
+</body>
+</html>

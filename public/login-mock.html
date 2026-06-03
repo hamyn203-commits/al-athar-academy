@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Mock Login</title>
+  <script>
+    localStorage.setItem('token', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMWNhODdiZGVkYjFjZWYxOGRmN2RjOCIsImVtYWlsIjoicWEtc3R1ZGVudC0yMDI2MDYwMTAwMzAxN0B0ZXN0LmFsYXRoYXIuZWR1Iiwicm9sZSI6InN0dWRlbnQiLCJpYXQiOjE3ODAyNjMwOTcsImV4cCI6MTc4MDI2Mzk5N30.J9SvYoWstN8K4NMzAi2DEfY8xIC1a1WioKKyPn4EWjM');
+    localStorage.setItem('accessToken', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMWNhODdiZGVkYjFjZWYxOGRmN2RjOCIsImVtYWlsIjoicWEtc3R1ZGVudC0yMDI2MDYwMTAwMzAxN0B0ZXN0LmFsYXRoYXIuZWR1Iiwicm9sZSI6InN0dWRlbnQiLCJpYXQiOjE3ODAyNjMwOTcsImV4cCI6MTc4MDI2Mzk5N30.J9SvYoWstN8K4NMzAi2DEfY8xIC1a1WioKKyPn4EWjM');
+    localStorage.setItem('refreshToken', 'mock-refresh-token');
+    localStorage.setItem('user', JSON.stringify({
+      id: '6a1ca87bdedb1cef18df7dc8',
+      email: 'qa-student-20260601003017@test.alathar.edu',
+      role: 'student',
+      name: 'QA Student'
+    }));
+    localStorage.setItem('locale', 'id');
+    localStorage.setItem('academy_lang', 'id');
+    localStorage.setItem('academy_students', JSON.stringify([
+      {
+        id: '6a1ca87bdedb1cef18df7dc8',
+        name: 'Siti Rahma (QA Student)',
+        email: 'qa-student-20260601003017@test.alathar.edu',
+        role: 'student',
+        points: 450,
+        level: 'Pemula',
+        streak: 5,
+        homework: 'Menghafal Surah Al-Fatihah Ayat 1-7 dan Surah An-Nas',
+        progress: 35,
+        currentSurah: 'Surah Al-Fatihah',
+        dailyHabits: {
+          adhkar: true,
+          werd: false,
+          murajaah: true
+        },
+        activityData: [
+          { name: 'Sabt', points: 50 },
+          { name: 'Ahad', points: 120 },
+          { name: 'Senin', points: 80 },
+          { name: 'Selasa', points: 150 },
+          { name: 'Rabu', points: 50 },
+          { name: 'Kamis', points: 0 },
+          { name: 'Jumat', points: 0 }
+        ]
+      }
+    ]));
+    window.location.href = '/id/student/dashboard';
+  </script>
+</head>
+<body>
+  Redirecting...
+</body>
+</html>
