@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const { 
   generateAccessToken, 
@@ -9,6 +10,10 @@ const {
   verifyRefreshToken,
   requireRole 
 } = require('../middleware/auth');
+const { addMockUser, findMockUserByEmail, findMockUserById, updateMockUser } = require('../mockStore');
+
+const isMockMode = !process.env.MONGODB_URI;
+const isDBConnected = () => mongoose.connection.readyState === 1;
 
 router.post('/register', async (req, res) => {
   try {
@@ -26,31 +31,62 @@ router.post('/register', async (req, res) => {
       });
     }
 
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (!isMockMode || isDBConnected()) {
+      const existingUser = await User.findOne({ email: email.toLowerCase() });
+      if (existingUser) {
+        return res.status(409).json({ 
+          error: 'Email already registered' 
+        });
+      }
+
+      const user = await User.create({
+        name,
+        email,
+        password,
+        phone,
+        role: role === 'teacher' ? 'teacher' : 'student',
+      });
+
+      if (req.body.referralCode && user.role === 'student') {
+        const { processReferralSignup } = require('./referrals');
+        await processReferralSignup(req.body.referralCode, user._id).catch(() => {});
+      }
+
+      const accessToken = generateAccessToken(user);
+      const refreshToken = generateRefreshToken(user);
+
+      user.lastLogin = new Date();
+      await user.save();
+
+      res.status(201).json({
+        message: 'Registration successful',
+        user,
+        accessToken,
+        refreshToken
+      });
+      return;
+    }
+
+    const existingUser = findMockUserByEmail(email);
     if (existingUser) {
-      return res.status(409).json({ 
-        error: 'Email already registered' 
+      return res.status(409).json({
+        error: 'Email already registered'
       });
     }
 
-    const user = await User.create({
-      name,
+    const user = addMockUser({
+      _id: `mock-${Date.now()}`,
       email,
       password,
+      name,
       phone,
       role: role === 'teacher' ? 'teacher' : 'student',
+      isActive: true,
+      lastLogin: new Date(),
     });
-
-    if (req.body.referralCode && user.role === 'student') {
-      const { processReferralSignup } = require('./referrals');
-      await processReferralSignup(req.body.referralCode, user._id).catch(() => {});
-    }
 
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
-
-    user.lastLogin = new Date();
-    await user.save();
 
     res.status(201).json({
       message: 'Registration successful',
@@ -84,7 +120,9 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
+    const user = isMockMode && !isDBConnected()
+      ? findMockUserByEmail(email)
+      : await User.findOne({ email: email.toLowerCase() }).select('+password');
     
     if (!user) {
       return res.status(401).json({ 
@@ -98,7 +136,9 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    const isPasswordValid = await user.comparePassword(password);
+    const isPasswordValid = isMockMode && !isDBConnected()
+      ? user.password === password
+      : await user.comparePassword(password);
     
     if (!isPasswordValid) {
       return res.status(401).json({ 
@@ -109,8 +149,12 @@ router.post('/login', async (req, res) => {
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
 
-    user.lastLogin = new Date();
-    await user.save();
+    if (!isMockMode || isDBConnected()) {
+      user.lastLogin = new Date();
+      await user.save();
+    } else {
+      updateMockUser(user._id || user.id, { lastLogin: new Date() });
+    }
 
     res.json({
       message: 'Login successful',
@@ -128,7 +172,9 @@ router.post('/login', async (req, res) => {
 
 router.post('/refresh', verifyRefreshToken, async (req, res) => {
   try {
-    const user = await User.findById(req.refreshToken.id);
+    const user = isMockMode && !isDBConnected()
+      ? findMockUserById(req.refreshToken.id)
+      : await User.findById(req.refreshToken.id);
     
     if (!user || !user.isActive) {
       return res.status(401).json({ 
@@ -166,7 +212,9 @@ router.post('/logout', verifyAccessToken, async (req, res) => {
 
 router.get('/me', verifyAccessToken, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    const user = isMockMode && !isDBConnected()
+      ? findMockUserById(req.user.id)
+      : await User.findById(req.user.id);
     
     if (!user) {
       return res.status(404).json({ 
@@ -195,11 +243,16 @@ router.patch('/me', verifyAccessToken, async (req, res) => {
       });
     }
 
-    const user = await User.findByIdAndUpdate(
-      req.user.id,
-      { $set: req.body },
-      { new: true, runValidators: true }
-    );
+    let user;
+    if (isMockMode && !isDBConnected()) {
+      user = updateMockUser(req.user.id, req.body);
+    } else {
+      user = await User.findByIdAndUpdate(
+        req.user.id,
+        { $set: req.body },
+        { new: true, runValidators: true }
+      );
+    }
 
     if (!user) {
       return res.status(404).json({ 

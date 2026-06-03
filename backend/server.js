@@ -3,6 +3,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const mongoose = require('mongoose');
 const helmet = require('helmet');
+const mongoSanitize = require('express-mongo-sanitize');
 const rateLimit = require('express-rate-limit');
 const morgan = require('morgan');
 const fs = require('fs');
@@ -24,13 +25,17 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "https://www.googletagmanager.com", "https://www.clarity.ms"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      scriptSrc: ["'self'", "https://www.googletagmanager.com", "https://www.clarity.ms"],
+      styleSrc: ["'self'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "https:", "blob:"],
       connectSrc: ["'self'", "https:", "wss:"],
       mediaSrc: ["'self'", "blob:"],
-      frameSrc: ["'self'"]
+      frameSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      upgradeInsecureRequests: []
     }
   },
   crossOriginEmbedderPolicy: false
@@ -52,8 +57,16 @@ const authLimiter = rateLimit({
   legacyHeaders: false
 });
 
-app.use('/api/', generalLimiter);
-app.use('/api/auth/login', authLimiter);
+const isMockMode = !process.env.MONGODB_URI;
+const disableRateLimit = process.env.DISABLE_RATE_LIMIT === 'true' || isMockMode;
+
+// Apply rate limiting unless explicitly disabled via env or running in mock mode.
+if (!disableRateLimit) {
+  app.use('/api/', generalLimiter);
+  app.use('/api/auth/login', authLimiter);
+} else {
+  console.log('⚠️ Rate limiting disabled (DISABLE_RATE_LIMIT=%s, isMockMode=%s)', process.env.DISABLE_RATE_LIMIT, isMockMode);
+}
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS 
   ? process.env.ALLOWED_ORIGINS.split(',') 
@@ -74,8 +87,8 @@ app.use(cors({
     const siteUrl = (process.env.SITE_URL || process.env.VITE_SITE_URL || '').replace(/\/$/, '');
     if (siteUrl && origin === siteUrl) return callback(null, true);
     if (/^http:\/\/localhost:\d+$/i.test(origin)) return callback(null, true);
-    // إنتاج: أي HTTPS (دومين مخصص، مشاركة من أي مكان)
-    if (process.env.NODE_ENV === 'production' && /^https:\/\//i.test(origin)) {
+    // Allow Vercel preview domains if no explicit ALLOWED_ORIGINS are configured.
+    if (/^https:\/\/al-athar-academy(-[a-z0-9-]+)?\.vercel\.app$/i.test(origin)) {
       return callback(null, true);
     }
     callback(new Error('Not allowed by CORS'));
@@ -103,8 +116,18 @@ function sanitizeObject(obj) {
 
 app.use((req, res, next) => {
   if (req.body) req.body = sanitizeObject(req.body);
-  if (req.query) req.query = sanitizeObject(req.query);
-  if (req.params) req.params = sanitizeObject(req.params);
+  if (req.query) {
+    const sanitizedQuery = sanitizeObject(req.query);
+    Object.keys(sanitizedQuery).forEach((key) => {
+      req.query[key] = sanitizedQuery[key];
+    });
+  }
+  if (req.params) {
+    const sanitizedParams = sanitizeObject(req.params);
+    Object.keys(sanitizedParams).forEach((key) => {
+      req.params[key] = sanitizedParams[key];
+    });
+  }
   next();
 });
 
