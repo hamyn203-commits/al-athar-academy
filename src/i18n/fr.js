@@ -121,6 +121,10 @@ export default {
     subtitle: 'Rejoignez des milliers d\'étudiants qui apprennent le Coran et l\'arabe avec nous',
     button: 'Inscrivez-vous gratuitement',
   },
+  learningPaths: {
+    title: 'Parcours d\'apprentissage',
+    subtitle: 'Choisissez le parcours adapté à votre parcours éducatif à l\'Académie Al-Athar',
+  },
   footer: {
     about: 'À propos de l\'Académie',
     aboutText: 'L\'Académie Al-Athar est une plateforme éducative mondiale spécialisée dans le Coran, la langue arabe et les études islamiques.',

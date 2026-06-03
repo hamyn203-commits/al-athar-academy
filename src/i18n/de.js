@@ -121,6 +121,10 @@ export default {
     subtitle: 'Schließen Sie sich Tausenden von Schülern an, die mit uns den Koran und Arabisch lernen',
     button: 'Kostenlos registrieren',
   },
+  learningPaths: {
+    title: 'Lernpfade',
+    subtitle: 'Wählen Sie den passenden Weg für Ihre Bildungsreise an der Al-Athar Akademie',
+  },
   footer: {
     about: 'Über die Akademie',
     aboutText: 'Die Al-Athar Akademie ist eine globale Bildungsplattform, die auf Koran, arabische Sprache und islamische Studien spezialisiert ist.',

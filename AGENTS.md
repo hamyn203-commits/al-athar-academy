@@ -10,8 +10,8 @@
 | # | المهمة | الحالة |
 |---|--------|--------|
 | 6.3.1 | Stripe/PayPal donate live | ✅ |
-| 6.3.2 | 9 لغات UI كاملة | pending |
-| 6.3.3 | Analytics admin | pending |
+| 6.3.2 | 9 لغات UI كاملة | ✅ |
+| 6.3.3 | Analytics admin | ✅ |
 | 6.3.4 | CDN للـ uploads | pending |
 
 ## V6.2 — مكتمل ✅

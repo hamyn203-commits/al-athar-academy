@@ -121,6 +121,10 @@ export default {
     subtitle: 'Sertai ribuan pelajar yang belajar Al-Quran dan Bahasa Arab bersama kami',
     button: 'Daftar Percuma',
   },
+  learningPaths: {
+    title: 'Laluan Pembelajaran',
+    subtitle: 'Pilih laluan yang sesuai untuk perjalanan pendidikan anda di Akademi Al-Athar',
+  },
   footer: {
     about: 'Tentang Akademi',
     aboutText: 'Akademi Al-Athar adalah platform pendidikan global yang mengkhusus dalam Al-Quran, Bahasa Arab, dan Pengajian Islam.',

@@ -5,6 +5,7 @@ import {
   Mail, MessageSquare, Plus, Trash2, Upload, Video, Edit3, Send,
   TrendingUp, BriefcaseBusiness, MonitorPlay,
 } from 'lucide-react';
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar, Cell, PieChart, Pie, Legend } from 'recharts';
 import DashboardLayout, { StatCard, TabBar } from '../../components/dashboard/DashboardLayout';
 import { useRequireAuth } from '../../hooks/useRequireAuth';
 import { useToast } from '../../context/ToastProvider';
@@ -233,8 +234,25 @@ export default function AdminDashboard() {
     { id: 'withdrawals', label: `السحوبات (${withdrawals.filter(w => w.status === 'pending').length || '…'})` },
     { id: 'courses', label: 'الدورات' },
     { id: 'blog', label: 'المدونة' },
-    { id: 'growth', label: 'النمو V4' },
+    { id: 'growth', label: 'التحليلات والنمو' },
   ];
+
+  const COLORS = ['#f43f5e', '#3b82f6', '#8b5cf6', '#10b981'];
+
+  const donationPieData = Object.entries(growthSummary.donationsByCategory || {}).map(([name, value]) => ({
+    name: name === 'student' ? 'كفالة طالب' : name === 'teacher' ? 'كفالة معلم' : name === 'halaqa' ? 'كفالة حلقة' : 'تبرع عام',
+    value
+  }));
+
+  const regsData = (growthSummary.monthlyRegs || []).map(r => ({
+    name: r.month,
+    'الطلاب': r.count
+  }));
+
+  const enrollmentsData = (growthSummary.enrollmentsByCourse || []).map(e => ({
+    name: e.name.length > 20 ? e.name.slice(0, 20) + '...' : e.name,
+    'الاشتراكات': e.count
+  }));
 
   return (
     <DashboardLayout title="لوحة تحكم الإدارة" user={user} onLogout={logout}>
@@ -513,6 +531,83 @@ export default function AdminDashboard() {
                 <StatCard label="طلبات توظيف" value={growthSummary.newApplications || 0} icon={BriefcaseBusiness} color="blue" />
                 <StatCard label="فيديوهات" value={growthSummary.publishedVideos || 0} icon={MonitorPlay} color="purple" />
                 <StatCard label="إحالات" value={growthSummary.totalReferrals || 0} icon={Users} color="emerald" />
+              </div>
+
+              {/* Visual Analytics Charts */}
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 my-6">
+                
+                {/* Monthly Registrations Area Chart */}
+                <div className="bg-white p-6 rounded-2xl border shadow-sm flex flex-col text-right-rtl">
+                  <h4 className="font-bold text-gray-800 mb-4 text-right">نمو تسجيل الطلاب (آخر 6 أشهر)</h4>
+                  <div className="h-64 w-full">
+                    {regsData.length === 0 ? (
+                      <div className="h-full flex items-center justify-center text-gray-400 text-sm">لا بيانات كافية للرسم البياني</div>
+                    ) : (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={regsData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                          <defs>
+                            <linearGradient id="colorRegs" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
+                              <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                          <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#64748b' }} axisLine={false} />
+                          <YAxis tick={{ fontSize: 10, fill: '#64748b' }} axisLine={false} />
+                          <Tooltip contentStyle={{ background: '#0f172a', color: '#fff', borderRadius: '12px', border: 'none' }} />
+                          <Area type="monotone" dataKey="الطلاب" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#colorRegs)" />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    )}
+                  </div>
+                </div>
+
+                {/* Course Enrollments Bar Chart */}
+                <div className="bg-white p-6 rounded-2xl border shadow-sm flex flex-col text-right-rtl">
+                  <h4 className="font-bold text-gray-800 mb-4 text-right">توزيع الاشتراكات حسب الدورة</h4>
+                  <div className="h-64 w-full">
+                    {enrollmentsData.length === 0 ? (
+                      <div className="h-full flex items-center justify-center text-gray-400 text-sm">لا اشتراكات نشطة حالياً</div>
+                    ) : (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={enrollmentsData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                          <XAxis dataKey="name" tick={{ fontSize: 8, fill: '#64748b' }} axisLine={false} />
+                          <YAxis tick={{ fontSize: 10, fill: '#64748b' }} axisLine={false} />
+                          <Tooltip contentStyle={{ background: '#0f172a', color: '#fff', borderRadius: '12px', border: 'none' }} />
+                          <Bar dataKey="الاشتراكات" fill="#8b5cf6" radius={[4, 4, 0, 0]}>
+                            {enrollmentsData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    )}
+                  </div>
+                </div>
+
+                {/* Donation Categories Donut Chart */}
+                <div className="bg-white p-6 rounded-2xl border shadow-sm flex flex-col text-right-rtl">
+                  <h4 className="font-bold text-gray-800 mb-4 text-right">حصص فئات التبرعات (نسب مئوية)</h4>
+                  <div className="h-64 w-full relative">
+                    {donationPieData.length === 0 ? (
+                      <div className="h-full flex items-center justify-center text-gray-400 text-sm">لا تبرعات مسجلة بعد</div>
+                    ) : (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie data={donationPieData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                            {donationPieData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip contentStyle={{ background: '#0f172a', color: '#fff', borderRadius: '12px', border: 'none' }} />
+                          <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '11px' }} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    )}
+                  </div>
+                </div>
+
               </div>
 
               <div className="bg-white rounded-xl border p-6">

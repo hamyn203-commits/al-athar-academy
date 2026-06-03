@@ -38,8 +38,8 @@
 ## 📅 V6.3 — Scale
 
 - [x] Stripe/PayPal donate live
-- [ ] 9 لغات UI كاملة
-- [ ] Analytics admin
+- [x] 9 لغات UI كاملة
+- [x] Analytics admin
 - [ ] CDN للـ uploads
 
 ---

@@ -121,6 +121,10 @@ export default {
     subtitle: 'Bizimle Kuran ve Arapça öğrenen binlerce öğrenciye katılın',
     button: 'Ücretsiz Kaydol',
   },
+  learningPaths: {
+    title: 'Öğrenme Yolları',
+    subtitle: 'Al-Athar Akademi\'deki eğitim yolculuğunuz için uygun yolu seçin',
+  },
   footer: {
     about: 'Akademi Hakkında',
     aboutText: 'Al-Athar Akademisi, Kuran, Arapça dili ve İslami çalışmalar konusunda uzmanlaşmış küresel bir eğitim platformudur.',

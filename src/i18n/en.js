@@ -115,6 +115,10 @@ export default {
     subtitle: 'Join thousands of students learning Quran and Arabic with us',
     button: 'Register for Free',
   },
+  learningPaths: {
+    title: 'Learning Paths',
+    subtitle: 'Choose the appropriate path for your educational journey at Al-Athar Academy',
+  },
   footer: {
     about: 'About Academy',
     aboutText: 'Al-Athar Al-Tayyib is a global educational platform specializing in Quran, Arabic language, and Islamic studies.',
