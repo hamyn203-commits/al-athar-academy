@@ -21,6 +21,14 @@ export function MarketProvider({ children }) {
     let active = true;
     const detectGeo = async () => {
       try {
+        if (typeof window !== 'undefined') {
+          const hostname = window.location.hostname;
+          if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1') {
+            // Avoid external GeoIP lookup during local development to prevent CORS and network noise.
+            return;
+          }
+        }
+
         let countryCode = '';
 
         // Check mock country parameter first for QA/testing
