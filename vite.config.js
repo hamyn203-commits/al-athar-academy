@@ -86,17 +86,37 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
+            // React core — أساس التطبيق
+            if (id.includes('/react/') || id.includes('/react-dom/') || id.includes('/react-router') || id.includes('/scheduler/')) {
               return 'vendor';
             }
-            if (id.includes('framer-motion')) {
+            // رسوم بيانية
+            if (id.includes('recharts') || id.includes('d3-') || id.includes('victory-')) {
+              return 'charts';
+            }
+            // حركات
+            if (id.includes('framer-motion') || id.includes('popmotion') || id.includes('hey-listen')) {
               return 'animations';
             }
+            // أيقونات
             if (id.includes('lucide-react')) {
               return 'icons';
             }
-            if (id.includes('@livekit')) {
+            // فيديو مباشر
+            if (id.includes('@livekit') || id.includes('livekit-client')) {
               return 'livekit';
+            }
+            // PDF وتصدير
+            if (id.includes('jspdf') || id.includes('html2canvas') || id.includes('qrcode')) {
+              return 'pdf-export';
+            }
+            // تحقق بيانات
+            if (id.includes('zod')) {
+              return 'validation';
+            }
+            // DOMPurify (أمان HTML)
+            if (id.includes('dompurify') || id.includes('purify')) {
+              return 'security';
             }
           }
         }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { CheckCircle, AlertCircle, Info } from 'lucide-react';
+import { CheckCircle, AlertCircle, Info, Star } from 'lucide-react';
 
 export default function Toast({ message, type = 'success', onClose, duration = 3000 }) {
   const [show, setShow] = useState(true);
@@ -12,8 +12,12 @@ export default function Toast({ message, type = 'success', onClose, duration = 3
     return () => clearTimeout(timer);
   }, [duration, onClose]);
 
-  const icons = { success: CheckCircle, error: AlertCircle, info: Info };
-  const colors = { success: 'var(--emerald)', error: 'var(--danger)', info: 'var(--primary-gold)' };
+  const icons = { success: CheckCircle, error: AlertCircle, info: Star };
+  const colors = {
+    success: 'var(--azhar-green)',
+    error: 'var(--clay-terracotta)',
+    info: 'var(--azhar-gold-leaf)'
+  };
   const Icon = icons[type] || Info;
 
   return (

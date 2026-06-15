@@ -101,7 +101,7 @@ export default function AdminDashboard() {
     setLessons(Array.isArray(r) ? r : []);
   };
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       if (['overview', 'teachers', 'courses'].includes(tab)) await loadCore();
@@ -115,9 +115,9 @@ export default function AdminDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [tab, loadCore, loadMessages, loadCourses, loadBlog, loadWithdrawals, loadGrowth, toast]);
 
-  useEffect(() => { if (ready) load(); }, [ready, tab]);
+  useEffect(() => { if (ready) load(); }, [ready, load]);
 
   if (!ready) return null;
 

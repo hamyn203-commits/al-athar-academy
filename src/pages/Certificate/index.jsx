@@ -16,26 +16,23 @@ export default function CertificateView() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetchCertificate();
-  }, [certificateId]);
-
-  const fetchCertificate = async () => {
-    try {
-      const response = await fetch(`/api/certificates/${certificateId}`);
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch certificate');
+    const fetchCertificate = async () => {
+      try {
+        const response = await fetch(`/api/certificates/${certificateId}`);
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Failed to load certificate');
+        setCertificate(data.certificate);
+        setVerification(data.verification || null);
+      } catch (err) {
+        console.error('Failed to fetch certificate', err);
+        setError(err.message || (locale === 'ar' ? 'حدث خطأ أثناء جلب الشهادة' : 'Failed to load certificate'));
+      } finally {
+        setLoading(false);
       }
+    };
 
-      setCertificate(data.certificate);
-      setVerification(data.verification);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+    fetchCertificate();
+  }, [certificateId, locale]);
 
   const handleDownload = async () => {
     try {
@@ -59,7 +56,7 @@ export default function CertificateView() {
           url: shareUrl
         });
       } catch (err) {
-        console.log('Share cancelled');
+        console.log('Share cancelled', err);
       }
     } else {
       navigator.clipboard.writeText(shareUrl);

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 
 export function useRequireAuth(allowedRoles = []) {
   const navigate = useNavigate();
+  const allowedRolesKey = allowedRoles.join(',');
   const [user, setUser] = useState(null);
   const [ready, setReady] = useState(false);
 
@@ -15,7 +16,8 @@ export function useRequireAuth(allowedRoles = []) {
     }
     try {
       const parsed = JSON.parse(stored);
-      if (allowedRoles.length && !allowedRoles.includes(parsed.role)) {
+      const roles = allowedRolesKey ? allowedRolesKey.split(',') : [];
+      if (roles.length && !roles.includes(parsed.role)) {
         navigate('/');
         return;
       }
@@ -25,7 +27,7 @@ export function useRequireAuth(allowedRoles = []) {
       return;
     }
     setReady(true);
-  }, [navigate, allowedRoles.join(',')]);
+  }, [navigate, allowedRolesKey]);
 
   const logout = () => {
     ['token', 'accessToken', 'refreshToken', 'user'].forEach((k) => localStorage.removeItem(k));

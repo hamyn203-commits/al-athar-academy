@@ -45,46 +45,42 @@ export default class ErrorBoundary extends Component {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: 'var(--bg-main)',
+          background: 'var(--athar-warm-white)',
           padding: '20px',
           direction: 'rtl'
         }}>
-          <div style={{
+          <div className="azhar-card" style={{
             maxWidth: '600px',
             width: '100%',
             textAlign: 'center',
-            padding: '60px 40px',
-            background: 'var(--bg-card)',
-            borderRadius: 'var(--radius-xl)',
-            border: '1px solid var(--border-light)',
-            boxShadow: 'var(--card-shadow)'
+            padding: '60px 40px'
           }}>
             <div style={{
               width: '80px',
               height: '80px',
               margin: '0 auto 24px',
-              background: 'var(--danger-light)',
+              background: 'rgba(220, 38, 38, 0.1)',
               borderRadius: '50%',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center'
             }}>
-              <AlertTriangle size={40} style={{ color: 'var(--danger)' }} />
+              <AlertTriangle size={40} style={{ color: '#dc2626' }} />
             </div>
 
             <h1 style={{
               fontSize: '2rem',
               fontWeight: '800',
-              color: 'var(--text-primary)',
+              color: 'var(--azhar-green-deep)',
               marginBottom: '12px',
-              fontFamily: 'var(--font-arabic-heading)'
+              fontFamily: 'Amiri, serif'
             }}>
               عذراً، حدث خطأ غير متوقع
             </h1>
 
             <p style={{
               fontSize: '1rem',
-              color: 'var(--text-secondary)',
+              color: 'var(--athar-text-muted)',
               marginBottom: '32px',
               lineHeight: '1.7'
             }}>
@@ -96,21 +92,21 @@ export default class ErrorBoundary extends Component {
                 textAlign: 'right',
                 marginBottom: '24px',
                 padding: '16px',
-                background: 'var(--bg-elevated)',
+                background: 'var(--athar-cream)',
                 borderRadius: 'var(--radius-md)',
-                border: '1px solid var(--border-light)'
+                border: '1px solid var(--athar-cream-dark)'
               }}>
                 <summary style={{
                   cursor: 'pointer',
                   fontWeight: '600',
-                  color: 'var(--danger)',
+                  color: '#dc2626',
                   marginBottom: '8px'
                 }}>
                   تفاصيل الخطأ (للمطورين)
                 </summary>
                 <pre style={{
                   fontSize: '0.75rem',
-                  color: 'var(--text-secondary)',
+                  color: 'var(--athar-text-muted)',
                   overflow: 'auto',
                   marginTop: '12px',
                   whiteSpace: 'pre-wrap',
@@ -130,7 +126,7 @@ export default class ErrorBoundary extends Component {
             }}>
               <button
                 onClick={this.handleRetry}
-                className="btn-premium"
+                className="btn-azhar"
                 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
               >
                 <RefreshCw size={18} />
@@ -138,7 +134,7 @@ export default class ErrorBoundary extends Component {
               </button>
               <button
                 onClick={this.handleGoHome}
-                className="btn-premium-outline"
+                className="btn-secondary"
                 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
               >
                 <Home size={18} />

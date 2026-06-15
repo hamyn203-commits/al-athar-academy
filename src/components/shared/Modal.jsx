@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X, Star } from 'lucide-react';
 import { useI18n } from '../../i18n';
 
 export default function Modal({ isOpen, onClose, children, maxWidth = '560px' }) {
@@ -24,6 +24,13 @@ export default function Modal({ isOpen, onClose, children, maxWidth = '560px' })
   return (
     <div className="modal-overlay" onClick={onClose} role="dialog" aria-modal="true">
       <div className="modal-content" style={{ maxWidth }} onClick={(e) => e.stopPropagation()}>
+        {/* ═══ زخرفة علوية أزهرية ═══ */}
+        <div className="flex items-center justify-center gap-2 pt-4 pb-2" aria-hidden="true">
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[var(--azhar-gold-leaf)] to-transparent opacity-40" />
+          <Star size={14} className="text-[var(--azhar-gold-leaf)]" fill="currentColor" />
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[var(--azhar-gold-leaf)] to-transparent opacity-40" />
+        </div>
+
         <button className="modal-close" onClick={onClose} aria-label={locale === 'id' ? 'Tutup' : locale === 'ar' ? 'إغلاق' : 'Close'}>
           <X size={20} />
         </button>

@@ -1,5 +1,5 @@
 import { useNavigate, Link } from 'react-router-dom';
-import { Home, Search, ArrowRight, BookOpen } from 'lucide-react';
+import { Home, BookOpen, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Logo from '../../components/Logo';
 import { useAppContext } from '../../context/AppProvider';

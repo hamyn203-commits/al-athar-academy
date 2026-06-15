@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   User, Lock, Mail, Phone, Eye, EyeOff, ArrowRight, CheckCircle,
-  Sparkles, CheckCircle2, Clock, BookOpen, Award, Globe, ArrowLeft, Star
+  Sparkles, CheckCircle2, Globe, ArrowLeft, Star
 } from 'lucide-react';
 import Logo from '../../components/Logo';
 import { useI18n } from '../../i18n';

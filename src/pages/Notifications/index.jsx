@@ -1,10 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Bell, CheckCheck } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import GlobalHeader from '../../components/GlobalHeader';
 import { api } from '../../lib/api';
 import { useAuth } from '../../hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
 
 function pickText(obj, locale = 'ar') {
   if (!obj) return '';
@@ -19,15 +18,7 @@ export default function NotificationsPage() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/login?redirect=/notifications');
-      return;
-    }
-    load();
-  }, [isAuthenticated, navigate]);
-
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       const data = await api.get('/api/notifications?limit=50', { auth: true });
       setNotifications(data.notifications || []);
@@ -37,7 +28,15 @@ export default function NotificationsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/login?redirect=/notifications');
+      return;
+    }
+    load();
+  }, [isAuthenticated, navigate, load]);
 
   const markAsRead = async (id) => {
     await api.put(`/api/notifications/${id}/read`, {}, { auth: true });

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { User, Lock, Mail, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { User, Lock, Mail, Eye, EyeOff, ArrowRight, Star, ArrowLeft } from 'lucide-react';
 import Logo from '../../components/Logo';
 import { useI18n } from '../../i18n';
 import api from '../../lib/api';
@@ -33,20 +33,17 @@ export default function Login() {
     try {
       const data = await api.post('/api/auth/login', formData);
 
-      localStorage.setItem('token', data.accessToken);
-      localStorage.setItem('refreshToken', data.refreshToken);
       localStorage.setItem('accessToken', data.accessToken);
+      localStorage.setItem('refreshToken', data.refreshToken);
       localStorage.setItem('user', JSON.stringify(data.user));
 
-      if (data.user.role === 'admin') {
-        navigate('/admin');
-      } else if (data.user.role === 'teacher') {
-        navigate('/teacher/dashboard');
-      } else if (data.user.role === 'guardian') {
-        navigate('/guardian/dashboard');
-      } else {
-        navigate('/student/dashboard');
-      }
+      const roleRoutes = {
+        admin: '/admin',
+        teacher: '/teacher/dashboard',
+        guardian: '/guardian/dashboard',
+        student: '/student/dashboard'
+      };
+      navigate(roleRoutes[data.user.role] || '/student/dashboard');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -55,40 +52,30 @@ export default function Login() {
   };
 
   return (
-    <div style={{ 
-      minHeight: '100vh', 
-      display: 'flex', 
-      alignItems: 'center', 
-      justifyContent: 'center', 
-      padding: '20px',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-    }}>
-      <motion.div 
-        initial={{ scale: 0.9, opacity: 0 }} 
+    <div className="geo-pattern-light min-h-screen flex items-center justify-center p-5 relative">
+      <div className="absolute inset-0 bg-gradient-to-br from-[var(--azhar-green-deep)]/5 via-transparent to-[var(--azhar-gold-leaf)]/5 pointer-events-none" />
+
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="glass-card"
-        style={{ 
-          width: '100%', 
-          maxWidth: '480px', 
-          padding: '40px 30px',
-          background: 'rgba(255, 255, 255, 0.95)',
-          borderRadius: '20px',
-          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)'
-        }}
+        className="azhar-card w-full max-w-md p-8 sm:p-10 relative overflow-hidden"
       >
-        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-          <Logo size={80} showText={false} />
-          <h2 style={{ 
-            margin: '20px 0 8px', 
-            fontSize: '2rem',
-            fontWeight: 'bold',
-            color: '#1a202c'
-          }}>
+        <div className="flex items-center justify-center gap-2 mb-6" aria-hidden="true">
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[var(--azhar-gold-leaf)] to-transparent opacity-40" />
+          <Star size={14} className="text-[var(--azhar-gold-leaf)]" fill="currentColor" />
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[var(--azhar-gold-leaf)] to-transparent opacity-40" />
+        </div>
+
+        <div className="text-center mb-8">
+          <div className="flex justify-center">
+            <Logo size={80} showText={false} />
+          </div>
+          <h2 className="font-amiri text-3xl font-bold text-[var(--azhar-green-deep)] mt-5 mb-2">
             {locale === 'ar' ? 'تسجيل الدخول' : 'Login'}
           </h2>
-          <p style={{ color: '#718096', fontSize: '0.95rem' }}>
-            {locale === 'ar' 
-              ? 'ادخل إلى حسابك للمتابعة' 
+          <p className="text-sm text-[var(--athar-text-muted)]">
+            {locale === 'ar'
+              ? 'ادخل إلى حسابك للمتابعة'
               : 'Sign in to your account to continue'}
           </p>
         </div>
@@ -97,112 +84,53 @@ export default function Login() {
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            style={{
-              background: '#fed7d7',
-              border: '1px solid #fc8181',
-              borderRadius: '10px',
-              padding: '12px 16px',
-              marginBottom: '20px',
-              color: '#c53030',
-              fontSize: '0.9rem'
-            }}
+            className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-5 text-sm text-red-600"
           >
             {error}
           </motion.div>
         )}
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
           <div>
-            <label style={{ 
-              display: 'block', 
-              marginBottom: '8px', 
-              fontSize: '0.9rem', 
-              fontWeight: '600',
-              color: '#2d3748'
-            }}>
+            <label className="block mb-2 text-sm font-semibold text-[var(--azhar-green-deep)]">
               {locale === 'ar' ? 'البريد الإلكتروني' : 'Email'}
             </label>
-            <div style={{ position: 'relative' }}>
-              <Mail size={20} style={{ 
-                position: 'absolute', 
-                right: '16px', 
-                top: '50%', 
-                transform: 'translateY(-50%)',
-                color: '#a0aec0'
-              }} />
+            <div className="relative">
+              <Mail size={20} className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--azhar-gold-leaf)] pointer-events-none" />
               <input
                 type="email"
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
                 required
-                placeholder={locale === 'ar' ? 'example@email.com' : 'example@email.com'}
-                style={{
-                  width: '100%',
-                  padding: '14px 50px 14px 16px',
-                  border: '2px solid #e2e8f0',
-                  borderRadius: '10px',
-                  fontSize: '1rem',
-                  transition: 'all 0.3s',
-                  outline: 'none'
-                }}
-                onFocus={(e) => e.target.style.borderColor = '#667eea'}
-                onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                placeholder="example@email.com"
+                className="input-field !pl-4 !pr-12 !py-3.5 text-base"
+                dir="auto"
               />
             </div>
           </div>
 
           <div>
-            <label style={{ 
-              display: 'block', 
-              marginBottom: '8px', 
-              fontSize: '0.9rem', 
-              fontWeight: '600',
-              color: '#2d3748'
-            }}>
+            <label className="block mb-2 text-sm font-semibold text-[var(--azhar-green-deep)]">
               {locale === 'ar' ? 'كلمة المرور' : 'Password'}
             </label>
-            <div style={{ position: 'relative' }}>
-              <Lock size={20} style={{ 
-                position: 'absolute', 
-                right: '16px', 
-                top: '50%', 
-                transform: 'translateY(-50%)',
-                color: '#a0aec0'
-              }} />
+            <div className="relative">
+              <Lock size={20} className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--azhar-gold-leaf)] pointer-events-none" />
               <input
                 type={showPassword ? 'text' : 'password'}
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
                 required
-                placeholder={locale === 'ar' ? '••••••••' : '••••••••'}
-                style={{
-                  width: '100%',
-                  padding: '14px 50px 14px 50px',
-                  border: '2px solid #e2e8f0',
-                  borderRadius: '10px',
-                  fontSize: '1rem',
-                  transition: 'all 0.3s',
-                  outline: 'none'
-                }}
-                onFocus={(e) => e.target.style.borderColor = '#667eea'}
-                onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                placeholder="••••••••"
+                className="input-field !pl-12 !pr-12 !py-3.5 text-base"
+                dir="auto"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                style={{
-                  position: 'absolute',
-                  left: '16px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: '#a0aec0',
-                  padding: '4px'
-                }}
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--athar-text-muted)] hover:text-[var(--azhar-green)] transition p-0.5"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
@@ -212,33 +140,10 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading}
-            style={{
-              width: '100%',
-              padding: '14px',
-              background: loading ? '#cbd5e0' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              color: 'white',
-              border: 'none',
-              borderRadius: '10px',
-              fontSize: '1rem',
-              fontWeight: '600',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              transition: 'all 0.3s',
-              boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)'
-            }}
+            className="btn-azhar w-full !py-3.5 text-base disabled:opacity-70 disabled:cursor-not-allowed"
           >
             {loading ? (
-              <div style={{ 
-                width: '20px', 
-                height: '20px', 
-                border: '3px solid rgba(255, 255, 255, 0.3)',
-                borderTop: '3px solid white',
-                borderRadius: '50%',
-                animation: 'spin 1s linear infinite'
-              }} />
+              <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin" />
             ) : (
               <>
                 {locale === 'ar' ? 'تسجيل الدخول' : 'Login'}
@@ -248,82 +153,44 @@ export default function Login() {
           </button>
         </form>
 
-        <div style={{ 
-          marginTop: '30px', 
-          textAlign: 'center',
-          paddingTop: '20px',
-          borderTop: '1px solid #e2e8f0'
-        }}>
-          <p style={{ color: '#718096', fontSize: '0.9rem', marginBottom: '10px' }}>
+        <div className="mt-8 pt-5 border-t border-[var(--athar-cream-dark)] text-center">
+          <p className="text-sm text-[var(--athar-text-muted)] mb-3">
             {locale === 'ar' ? 'ليس لديك حساب؟' : "Don't have an account?"}
           </p>
-          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+          <div className="flex gap-3 justify-center">
             <button
               onClick={() => navigate('/register/student')}
-              style={{
-                padding: '10px 20px',
-                background: 'white',
-                color: '#667eea',
-                border: '2px solid #667eea',
-                borderRadius: '10px',
-                fontSize: '0.9rem',
-                fontWeight: '600',
-                cursor: 'pointer',
-                transition: 'all 0.3s'
-              }}
+              className="btn-secondary text-sm !py-2.5"
             >
-              <User size={16} style={{ display: 'inline', marginRight: '6px' }} />
+              <User size={16} />
               {locale === 'ar' ? 'طالب' : 'Student'}
             </button>
             <button
               onClick={() => navigate('/teacher/register')}
-              style={{
-                padding: '10px 20px',
-                background: 'white',
-                color: '#764ba2',
-                border: '2px solid #764ba2',
-                borderRadius: '10px',
-                fontSize: '0.9rem',
-                fontWeight: '600',
-                cursor: 'pointer',
-                transition: 'all 0.3s'
-              }}
+              className="btn-gold text-sm !py-2.5"
             >
-              <User size={16} style={{ display: 'inline', marginRight: '6px' }} />
+              <User size={16} />
               {locale === 'ar' ? 'معلم' : 'Teacher'}
             </button>
           </div>
         </div>
 
-        <div style={{ marginTop: '20px', textAlign: 'center' }}>
+        <div className="mt-5 text-center space-y-2">
           <button
             onClick={() => navigate('/setup-admin')}
-            style={{ background: 'none', border: 'none', color: '#718096', fontSize: '0.85rem', cursor: 'pointer', marginBottom: '8px', display: 'block', width: '100%' }}
+            className="block w-full text-xs text-[var(--athar-text-muted)] hover:text-[var(--azhar-green)] transition cursor-pointer bg-transparent border-none"
           >
             {locale === 'ar' ? 'إعداد أدمن لأول مرة؟' : 'First-time admin setup?'}
           </button>
           <button
             onClick={() => navigate('/')}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#667eea',
-              fontSize: '0.9rem',
-              cursor: 'pointer',
-              textDecoration: 'underline'
-            }}
+            className="inline-flex items-center gap-1.5 text-sm text-[var(--azhar-green)] hover:text-[var(--azhar-green-deep)] underline underline-offset-2 transition cursor-pointer bg-transparent border-none"
           >
+            <ArrowLeft size={14} />
             {locale === 'ar' ? 'العودة للصفحة الرئيسية' : 'Back to Home'}
           </button>
         </div>
       </motion.div>
-
-      <style>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 }

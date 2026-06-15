@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Calendar, Users, Star, Wallet, ClipboardList,
@@ -55,7 +55,7 @@ export default function TeacherDashboard() {
   const [aiResult, setAiResult] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       const [prof, st, tr, pendReg, sess, stud, tsk, wdr] = await Promise.all([
         api.get('/api/teachers/dashboard/profile', { auth: true }),
@@ -81,9 +81,9 @@ export default function TeacherDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
-  useEffect(() => { if (ready) load(); }, [ready]);
+  useEffect(() => { if (ready) load(); }, [ready, load]);
 
   useEffect(() => {
     if (!ready) return;

@@ -21,10 +21,9 @@ export default function KidsLettersGame({ locale = 'ar' }) {
   const [score, setScore] = useState(0);
   const [picked, setPicked] = useState(null);
   const [done, setDone] = useState(false);
-  const [seed, setSeed] = useState(0);
 
   const current = LETTERS[idx];
-  const options = useMemo(() => pickOptions(current.ar), [idx, seed]);
+  const options = useMemo(() => pickOptions(current.ar), [current.ar]);
 
   const pick = (letter) => {
     if (picked) return;
@@ -32,11 +31,11 @@ export default function KidsLettersGame({ locale = 'ar' }) {
     if (letter === current.ar) setScore((s) => s + 1);
     setTimeout(() => {
       if (idx + 1 >= LETTERS.length) setDone(true);
-      else { setIdx((n) => n + 1); setPicked(null); setSeed((s) => s + 1); }
+      else { setIdx((n) => n + 1); setPicked(null); }
     }, 600);
   };
 
-  const reset = () => { setIdx(0); setScore(0); setPicked(null); setDone(false); setSeed((s) => s + 1); };
+  const reset = () => { setIdx(0); setScore(0); setPicked(null); setDone(false); };
 
   if (done) {
     return (

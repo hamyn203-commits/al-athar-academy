@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ChevronRight, ChevronLeft, CheckCircle, Circle, BookOpen, Award, Menu, X } from 'lucide-react';
+import { ChevronRight, ChevronLeft, CheckCircle, Circle, Award, Menu, X } from 'lucide-react';
 import { useRequireAuth } from '../../hooks/useRequireAuth';
 import { useToast } from '../../context/ToastProvider';
 import { useI18n } from '../../i18n';
@@ -59,13 +59,13 @@ export default function CourseLearn() {
         setLoading(false);
       }
     })();
-  }, [ready, slug]);
+  }, [ready, loadCourse, navigate, toast, slug]);
 
   useEffect(() => {
     if (!ready || !lessons.length) return;
     const targetId = lessonId || lessons[0]?._id;
     if (targetId) loadLesson(targetId).catch(() => toast.error('تعذر تحميل الدرس'));
-  }, [ready, lessonId, lessons, slug]);
+  }, [ready, lessonId, lessons, loadLesson, toast]);
 
   const goToLesson = (id) => {
     navigate(`/courses/${slug}/learn/${id}`);

@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { AlertTriangle, X } from 'lucide-react';
+import { AlertTriangle, X, Star } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppContext } from '../../context/AppProvider';
 
@@ -34,9 +34,9 @@ export default function ConfirmDialog({
   }, [isOpen, onClose, isLoading]);
 
   const colors = {
-    warning: { bg: 'rgba(251, 191, 36, 0.1)', border: '#f59e0b', icon: '#f59e0b' },
-    danger: { bg: 'var(--danger-light)', border: 'var(--danger)', icon: 'var(--danger)' },
-    info: { bg: 'rgba(166, 132, 83, 0.1)', border: 'var(--primary-gold)', icon: 'var(--primary-gold)' }
+    warning: { bg: 'rgba(212, 168, 67, 0.1)', border: 'var(--azhar-gold-leaf)', icon: 'var(--azhar-gold-leaf)' },
+    danger: { bg: 'rgba(220, 38, 38, 0.1)', border: '#dc2626', icon: '#dc2626' },
+    info: { bg: 'rgba(22, 101, 52, 0.1)', border: 'var(--azhar-green)', icon: 'var(--azhar-green)' }
   };
 
   const color = colors[type] || colors.warning;
@@ -90,7 +90,11 @@ export default function ConfirmDialog({
                 alignItems: 'center',
                 justifyContent: 'center'
               }}>
-                <AlertTriangle size={36} style={{ color: color.icon }} />
+                {type === 'danger' ? (
+                  <AlertTriangle size={36} style={{ color: color.icon }} />
+                ) : (
+                  <Star size={36} style={{ color: color.icon }} fill="currentColor" />
+                )}
               </div>
 
               <div>
@@ -99,15 +103,16 @@ export default function ConfirmDialog({
                   style={{
                     fontSize: '1.3rem',
                     fontWeight: '800',
-                    color: 'var(--text-primary)',
-                    marginBottom: '8px'
+                    color: 'var(--azhar-green-deep)',
+                    marginBottom: '8px',
+                    fontFamily: 'Amiri, serif'
                   }}
                 >
                   {title || t.confirm?.title || 'تأكيد'}
                 </h3>
                 <p style={{
                   fontSize: '0.95rem',
-                  color: 'var(--text-secondary)',
+                  color: 'var(--athar-text-muted)',
                   lineHeight: '1.7'
                 }}>
                   {message || t.confirm?.message || 'هل أنت متأكد من هذا الإجراء؟'}
@@ -122,7 +127,7 @@ export default function ConfirmDialog({
               }}>
                 <button
                   onClick={onClose}
-                  className="btn-premium-outline"
+                  className="btn-secondary"
                   style={{ flex: 1, justifyContent: 'center' }}
                   disabled={isLoading}
                 >
@@ -130,11 +135,10 @@ export default function ConfirmDialog({
                 </button>
                 <button
                   onClick={onConfirm}
-                  className="btn-premium"
+                  className={type === 'danger' ? 'btn-gold' : 'btn-azhar'}
                   style={{ 
                     flex: 1, 
                     justifyContent: 'center',
-                    background: type === 'danger' ? 'var(--danger)' : undefined
                   }}
                   disabled={isLoading}
                 >

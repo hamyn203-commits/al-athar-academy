@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../../config';
 import {
-  BookOpen, BookOpenCheck, Users, Mic, UserPlus, AlertCircle,
+  BookOpen, BookOpenCheck, Users, Mic, UserPlus,
   Trophy, Video, CheckCircle, Square, Send,
   Flame, Star, Activity, CheckSquare, Target,
 } from 'lucide-react';
@@ -11,14 +11,13 @@ import { motion } from 'framer-motion';
 import Logo from '../../components/Logo';
 import AudioPlayer from '../../components/shared/AudioPlayer';
 import VideoModal from '../../components/shared/VideoModal';
-import EmptyState from '../../components/shared/EmptyState';
 import { useAudioPlayer } from '../../hooks/useAudioPlayer';
 import { useAudioRecorder } from '../../hooks/useAudioRecorder';
 import { useGamification } from '../../hooks/useGamification';
 import { sheikhs, quizQuestion } from '../../data/mockData';
 import { useAppContext } from '../../context/AppProvider';
 
-function LoginView({ studentsData, onLogin, navigate, defaultGamification, setStudentsData, t }) {
+function LoginView({ navigate, t }) {
   // التحقق من وجود token
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -317,7 +316,7 @@ function RecordingTab({ profile, t }) {
 
 export default function StudentPortal() {
   const navigate = useNavigate();
-  const { studentsData, setStudentsData, loggedInStudentId, handleStudentLogin, handleStudentLogout, activeStudentProfile, updateStudentData, defaultGamification, t } = useAppContext();
+  const { loggedInStudentId, handleStudentLogin, handleStudentLogout, activeStudentProfile, updateStudentData, defaultGamification, t } = useAppContext();
   const [subTab, setSubTab] = useState('dashboard');
   const [videoModal, setVideoModal] = useState({ open: false, video: null });
   const { toggleHabit } = useGamification(activeStudentProfile, updateStudentData, defaultGamification);
@@ -325,7 +324,7 @@ export default function StudentPortal() {
   const days = t.days;
 
   if (!loggedInStudentId) {
-    return <LoginView studentsData={studentsData} onLogin={handleStudentLogin} navigate={navigate} defaultGamification={defaultGamification} setStudentsData={setStudentsData} t={t} />;
+    return <LoginView onLogin={handleStudentLogin} navigate={navigate} t={t} />;
   }
 
   const sPoints = activeStudentProfile?.points || 0;

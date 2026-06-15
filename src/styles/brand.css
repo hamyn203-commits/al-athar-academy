@@ -1,5 +1,10 @@
-/* Al-Athar Academy — Visual identity v6.4 (White/Gold Premium) */
+/* ═══════════════════════════════════════════════════════════════════
+   Al-Athar Academy — Visual identity v7.0 (Azhari Luxurious)
+   مستوحى من جامعة الأزهر الشريف — تصميم فاخر أزهري
+   ═══════════════════════════════════════════════════════════════════ */
+
 :root {
+  /* ── الهوية الأساسية (الأصلية) ── */
   --athar-navy: #0a1628;
   --athar-navy-mid: #0f2744;
   --athar-emerald: #0d9488;
@@ -19,40 +24,194 @@
   --primary-gold: var(--athar-gold);
   --clay-terracotta: #b45309;
   --text-secondary: var(--athar-text-muted);
+
+  /* ── الألوان الأزهرية الجديدة ── */
+  --azhar-green-deep: #14532d;
+  --azhar-green: #166534;
+  --azhar-green-mid: #15803d;
+  --azhar-green-light: #22c55e;
+  --azhar-green-50: #f0fdf4;
+  --azhar-gold-leaf: #d4a843;
+  --azhar-gold-bright: #f0c75e;
+  --azhar-gold-dark: #8b6914;
+  --azhar-cream-parchment: #f5ead0;
+  --azhar-brown-warm: #78350f;
+  --azhar-teal: #0f766e;
+  --azhar-teal-light: #14b8a6;
+
+  /* ── الظلال ── */
   --shadow-brand: 0 4px 24px -4px rgba(10, 22, 40, 0.08);
   --shadow-brand-lg: 0 20px 50px -12px rgba(10, 22, 40, 0.15);
   --shadow-gold: 0 4px 20px -4px rgba(201, 162, 39, 0.25);
   --shadow-gold-lg: 0 12px 40px -8px rgba(201, 162, 39, 0.35);
+  --shadow-azhar: 0 4px 24px -4px rgba(20, 83, 45, 0.15);
+  --shadow-azhar-lg: 0 20px 50px -12px rgba(20, 83, 45, 0.2);
+  --shadow-azhar-gold: 0 8px 32px -4px rgba(212, 168, 67, 0.3);
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   الأنماط الهندجية الإسلامية
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* نجمة ثمانية — Islamic Star Pattern */
+.azhar-star-pattern {
+  position: relative;
+}
+.azhar-star-pattern::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%23d4a843' stroke-opacity='0.08' stroke-width='0.7'%3E%3Cpath d='M60 10l12 36 36 12-36 12-12 36-12-36-36-12 36-12z'/%3E%3Cpath d='M60 30l6 18 18 6-18 6-6 18-6-18-18-6 18-6z' opacity='0.5'/%3E%3Ccircle cx='60' cy='60' r='4' opacity='0.3'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 120px 120px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* زخرفة عربية — Arabesque Pattern */
+.azhar-arabesque {
+  position: relative;
+}
+.azhar-arabesque::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cg fill='none' stroke='%23d4a843' stroke-opacity='0.06' stroke-width='0.5'%3E%3Cpath d='M50 5 Q75 25 50 50 Q25 25 50 5z'/%3E%3Cpath d='M50 50 Q75 75 50 95 Q25 75 50 50z'/%3E%3Cpath d='M5 50 Q25 25 50 50 Q25 75 5 50z'/%3E%3Cpath d='M50 50 Q75 25 95 50 Q75 75 50 50z'/%3E%3Ccircle cx='50' cy='50' r='8'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 100px 100px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   الأنماط الأصلية (محدّحة)
+   ═══════════════════════════════════════════════════════════════════ */
 
 .geo-pattern-athar {
   background-color: var(--athar-navy);
   background-image:
-    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(201, 162, 39, 0.15), transparent),
-    url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23c9a227' stroke-opacity='0.06' stroke-width='0.5'%3E%3Cpath d='M40 0l5 15 15 5-15 5-5 15-5-15-15-5 15-5z'/%3E%3C/g%3E%3C/svg%3E");
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(20, 83, 45, 0.2), transparent),
+    radial-gradient(ellipse 60% 40% at 80% 80%, rgba(212, 168, 67, 0.08), transparent),
+    url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23d4a843' stroke-opacity='0.07' stroke-width='0.5'%3E%3Cpath d='M40 0l5 15 15 5-15 5-5 15-5-15-15-5 15-5z'/%3E%3Ccircle cx='40' cy='40' r='2' opacity='0.4'/%3E%3C/g%3E%3C/svg%3E");
 }
 
+/* White/Gold Hero pattern — محدّح بأزرار أزهرية */
+.geo-pattern-light {
+  background-color: var(--athar-warm-white);
+  background-image:
+    radial-gradient(ellipse 70% 40% at 80% 50%, rgba(20, 83, 45, 0.04), transparent),
+    radial-gradient(ellipse 50% 30% at 20% 70%, rgba(212, 168, 67, 0.06), transparent),
+    url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23d4a843' stroke-opacity='0.07' stroke-width='0.6'%3E%3Cpath d='M50 10l6 18 18 6-18 6-6 18-6-18-18-6 18-6z'/%3E%3Cpath d='M50 35l3 9 9 3-9 3-3 9-3-9-9-3 9-3z' opacity='0.5'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   الفواصل والعناصر الزخرفية
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* فاصل ذهبي بسيط */
 .gold-divider {
   height: 3px;
   width: 4rem;
   border-radius: 999px;
-  background: linear-gradient(90deg, var(--athar-gold), var(--athar-gold-light), var(--athar-gold));
+  background: linear-gradient(90deg, var(--azhar-gold-dark), var(--azhar-gold-leaf), var(--azhar-gold-bright), var(--azhar-gold-leaf), var(--azhar-gold-dark));
 }
 
+/* فاصل إسلامي مزخرف — Islamic Ornate Divider */
+.azhar-divider {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 2rem 0;
+}
+.azhar-divider::before,
+.azhar-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--azhar-gold-leaf), transparent);
+}
+.azhar-divider-icon {
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--azhar-gold-leaf);
+}
+
+/* فاصل مقوس — Arched Divider */
+.azhar-arch-divider {
+  position: relative;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.azhar-arch-divider::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 200px;
+  height: 40px;
+  border: 2px solid var(--azhar-gold-leaf);
+  border-bottom: none;
+  border-radius: 100px 100px 0 0;
+  opacity: 0.3;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   النصوص والتأثيرات
+   ═══════════════════════════════════════════════════════════════════ */
+
 .text-gradient-gold {
-  background: linear-gradient(135deg, var(--athar-gold-light) 0%, var(--athar-gold) 50%, var(--athar-gold-muted) 100%);
+  background: linear-gradient(135deg, var(--azhar-gold-bright) 0%, var(--azhar-gold-leaf) 40%, var(--azhar-gold-dark) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
 .text-gradient-brand {
-  background: linear-gradient(135deg, #6ee7b7 0%, var(--athar-emerald) 40%, var(--athar-gold-light) 100%);
+  background: linear-gradient(135deg, var(--azhar-green-light) 0%, var(--azhar-green) 40%, var(--azhar-gold-leaf) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
+/* تأثير Gold Leaf shimmer */
+@keyframes goldShimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.azhar-shimmer {
+  background: linear-gradient(90deg,
+    var(--azhar-gold-dark),
+    var(--azhar-gold-bright),
+    var(--azhar-gold-leaf),
+    var(--azhar-gold-bright),
+    var(--azhar-gold-dark));
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: goldShimmer 4s ease-in-out infinite;
+}
+
+/* دوران النجمة الإسلامية */
+@keyframes starRotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.azhar-star-spin {
+  animation: starRotate 20s linear infinite;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   الأزرار
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* الزر الرئيسي الذهبي — محدّح */
 .btn-gold {
   display: inline-flex;
   align-items: center;
@@ -63,53 +222,192 @@
   font-size: 0.875rem;
   font-weight: 600;
   color: var(--athar-navy);
-  background: linear-gradient(135deg, var(--athar-gold-light), var(--athar-gold));
-  box-shadow: 0 4px 14px rgba(201, 162, 39, 0.35);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  background: linear-gradient(135deg, var(--azhar-gold-bright), var(--azhar-gold-leaf), var(--azhar-gold-dark));
+  background-size: 200% 100%;
+  box-shadow: 0 4px 14px rgba(212, 168, 67, 0.4);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-position 0.4s ease;
 }
 .btn-gold:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(201, 162, 39, 0.45);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(212, 168, 67, 0.5);
+  background-position: 100% 0;
 }
 
+/* الزر الأخضر الأزهري */
+.btn-azhar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: white;
+  background: linear-gradient(135deg, var(--azhar-green), var(--azhar-green-deep));
+  box-shadow: 0 4px 14px rgba(20, 83, 45, 0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.btn-azhar:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(20, 83, 45, 0.45);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   البطاقات
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* بطاقة فاخرة — Premium Card */
 .card-premium {
   border-radius: 1rem;
   border: 1px solid var(--athar-cream-dark);
   background: var(--athar-surface);
   box-shadow: var(--shadow-brand);
   transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+.card-premium::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--azhar-gold-dark), var(--azhar-gold-leaf), var(--azhar-gold-bright), var(--azhar-gold-leaf), var(--azhar-gold-dark));
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 .card-premium:hover {
-  border-color: rgba(201, 162, 39, 0.35);
+  border-color: rgba(212, 168, 67, 0.4);
   box-shadow: var(--shadow-brand-lg);
   transform: translateY(-2px);
 }
+.card-premium:hover::before {
+  opacity: 1;
+}
 
-/* Glassmorphism card */
+/* بطاقة الزجاج — Glass Card */
 .glass-card {
   border-radius: 1.25rem;
-  border: 1px solid rgba(201, 162, 39, 0.2);
+  border: 1px solid rgba(212, 168, 67, 0.2);
   background: rgba(255, 255, 255, 0.72);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  box-shadow: 0 8px 32px -8px rgba(201, 162, 39, 0.15), 0 2px 8px rgba(0,0,0,0.04);
+  box-shadow: 0 8px 32px -8px rgba(212, 168, 67, 0.15), 0 2px 8px rgba(0,0,0,0.04);
   transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+.glass-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--azhar-gold-leaf), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 .glass-card:hover {
-  border-color: rgba(201, 162, 39, 0.45);
-  box-shadow: 0 16px 48px -8px rgba(201, 162, 39, 0.25), 0 4px 16px rgba(0,0,0,0.06);
+  border-color: rgba(212, 168, 67, 0.5);
+  box-shadow: 0 16px 48px -8px rgba(212, 168, 67, 0.25), 0 4px 16px rgba(0,0,0,0.06);
   transform: translateY(-4px);
 }
-
-/* White/Gold Hero pattern */
-.geo-pattern-light {
-  background-color: var(--athar-warm-white);
-  background-image:
-    radial-gradient(ellipse 70% 40% at 80% 50%, rgba(201, 162, 39, 0.08), transparent),
-    url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23c9a227' stroke-opacity='0.07' stroke-width='0.6'%3E%3Cpath d='M50 10l6 18 18 6-18 6-6 18-6-18-18-6 18-6z'/%3E%3Cpath d='M50 35l3 9 9 3-9 3-3 9-3-9-9-3 9-3z' opacity='0.5'/%3E%3C/g%3E%3C/svg%3E");
+.glass-card:hover::before {
+  opacity: 1;
 }
 
-/* Scroll reveal animations */
+/* ═══════════════════════════════════════════════════════════════════
+   البطاقات والأطر الأزهرية الجديدة
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* بطاقة أزهرية — Azhari Card */
+.azhar-card {
+  border: 2px solid rgba(212, 168, 67, 0.3);
+  border-radius: 1rem;
+  background: white;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.azhar-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--azhar-gold-dark), var(--azhar-gold-leaf), var(--azhar-gold-bright), var(--azhar-gold-leaf), var(--azhar-gold-dark));
+}
+.azhar-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--azhar-gold-dark), var(--azhar-gold-leaf), var(--azhar-gold-bright), var(--azhar-gold-leaf), var(--azhar-gold-dark));
+}
+.azhar-card:hover {
+  border-color: var(--azhar-gold-leaf);
+  box-shadow: var(--shadow-azhar-gold);
+}
+
+/* إطار مزخرف — Ornate Frame */
+.azhar-frame {
+  position: relative;
+  border: 2px solid var(--azhar-gold-leaf);
+  border-radius: 1rem;
+  padding: 2rem;
+  background: white;
+}
+.azhar-frame::before,
+.azhar-frame::after {
+  content: '✦';
+  position: absolute;
+  color: var(--azhar-gold-leaf);
+  font-size: 1.2rem;
+  line-height: 1;
+}
+.azhar-frame::before {
+  top: -0.6rem;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.azhar-frame::after {
+  bottom: -0.6rem;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* بطاقة مقوسة — Arched Card */
+.azhar-arch-card {
+  position: relative;
+  border: 1px solid rgba(212, 168, 67, 0.25);
+  border-radius: 0 0 1rem 1rem;
+  background: white;
+  overflow: hidden;
+}
+.azhar-arch-card .arch-top {
+  position: relative;
+  height: 60px;
+  background: linear-gradient(135deg, var(--azhar-green-deep), var(--azhar-green));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  clip-path: ellipse(70% 100% at 50% 0%);
+}
+.azhar-arch-card .arch-top svg {
+  color: var(--azhar-gold-leaf);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   الحركات
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ظهور تدريجي — Scroll Reveal */
 .reveal {
   opacity: 0;
   transform: translateY(28px);
@@ -125,7 +423,7 @@
 .reveal-delay-4 { transition-delay: 0.4s; }
 .reveal-delay-5 { transition-delay: 0.5s; }
 
-/* Marquee animation */
+/* شريط متحرك — Marquee */
 @keyframes marquee-rtl {
   from { transform: translateX(0); }
   to   { transform: translateX(-50%); }
@@ -137,10 +435,145 @@
 }
 .marquee-track:hover { animation-play-state: paused; }
 
+/* نبضة ذهبية — Gold Pulse */
+@keyframes goldPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(212, 168, 67, 0.4); }
+  50% { box-shadow: 0 0 0 12px rgba(212, 168, 67, 0); }
+}
+
+.azhar-pulse {
+  animation: goldPulse 2s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   تخطيط الصفحة
+   ═══════════════════════════════════════════════════════════════════ */
+
+.page-container {
+  max-width: 80rem;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+@media (min-width: 640px) {
+  .page-container { padding-left: 1.5rem; padding-right: 1.5rem; }
+}
+
+@media (min-width: 1024px) {
+  .page-container { padding-left: 2rem; padding-right: 2rem; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Dark Mode — أزهري ليلي فاخر
+   ═══════════════════════════════════════════════════════════════════ */
+
+[data-theme="dark"] {
+  --athar-navy: #0a1628;
+  --athar-navy-mid: #0f2744;
+  --athar-emerald: #0d9488;
+  --athar-emerald-deep: #047857;
+  --athar-gold: #c9a227;
+  --athar-gold-light: #e8d48b;
+  --athar-gold-muted: #a68453;
+  --athar-gold-50: #1a1508;
+  --athar-gold-100: #2a2210;
+  --athar-gold-200: #3d3318;
+  --athar-cream: #1a1a1a;
+  --athar-cream-dark: #2a2a2a;
+  --athar-warm-white: #121212;
+  --athar-surface: #1e1e1e;
+  --athar-text: #e8e0d0;
+  --athar-text-muted: #9a8e7a;
+  --primary-gold: var(--athar-gold);
+  --clay-terracotta: #d97706;
+  --text-secondary: var(--athar-text-muted);
+
+  --azhar-green-deep: #166534;
+  --azhar-green: #22c55e;
+  --azhar-green-mid: #4ade80;
+  --azhar-green-light: #86efac;
+  --azhar-green-50: #052e16;
+  --azhar-gold-leaf: #f0c75e;
+  --azhar-gold-bright: #fde68a;
+  --azhar-gold-dark: #d4a843;
+  --azhar-cream-parchment: #2a2418;
+  --azhar-brown-warm: #d97706;
+  --azhar-teal: #14b8a6;
+  --azhar-teal-light: #5eead4;
+
+  --shadow-brand: 0 4px 24px -4px rgba(0, 0, 0, 0.4);
+  --shadow-brand-lg: 0 20px 50px -12px rgba(0, 0, 0, 0.5);
+  --shadow-gold: 0 4px 20px -4px rgba(201, 162, 39, 0.2);
+  --shadow-gold-lg: 0 12px 40px -8px rgba(201, 162, 39, 0.3);
+  --shadow-azhar: 0 4px 24px -4px rgba(34, 197, 94, 0.15);
+  --shadow-azhar-lg: 0 20px 50px -12px rgba(34, 197, 94, 0.2);
+  --shadow-azhar-gold: 0 8px 32px -4px rgba(240, 199, 94, 0.25);
+}
+
+[data-theme="dark"] body {
+  background: var(--athar-warm-white);
+  color: var(--athar-text);
+}
+
+[data-theme="dark"] .geo-pattern-light {
+  background-color: var(--athar-warm-white);
+}
+
+[data-theme="dark"] .glass-card {
+  background: rgba(30, 30, 30, 0.8);
+  border-color: rgba(240, 199, 94, 0.15);
+}
+
+[data-theme="dark"] .card-modern {
+  background: var(--athar-surface);
+  border-color: var(--athar-cream-dark);
+}
+
+[data-theme="dark"] .azhar-card {
+  background: var(--athar-surface);
+  border-color: rgba(240, 199, 94, 0.2);
+}
+
+[data-theme="dark"] .input-field {
+  background: #2a2a2a;
+  border-color: #3a3a3a;
+  color: var(--athar-text);
+}
+
+[data-theme="dark"] .btn-secondary {
+  background: #2a2a2a;
+  border-color: #3a3a3a;
+  color: var(--athar-gold-light);
+}
+
+[data-theme="dark"] .section-heading {
+  color: var(--azhar-gold-leaf);
+}
+
+[data-theme="dark"] .loading-overlay {
+  background: rgba(18, 18, 18, 0.95);
+}
+
+[data-theme="dark"] .marquee-track > div {
+  background: var(--athar-surface);
+  border-color: var(--athar-cream-dark);
+}
+
+[data-theme="dark"] .gold-divider {
+  background: linear-gradient(90deg, var(--azhar-gold-dark), var(--azhar-gold-leaf), var(--azhar-gold-dark));
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   وسائل النقل (Accessibility)
+   ═══════════════════════════════════════════════════════════════════ */
+
 @media (prefers-reduced-motion: reduce) {
   .btn-gold:hover,
   .card-premium:hover,
-  .glass-card:hover {
+  .glass-card:hover,
+  .azhar-card:hover {
     transform: none;
   }
   .reveal {
@@ -149,6 +582,15 @@
     transition: none;
   }
   .marquee-track {
+    animation: none;
+  }
+  .azhar-shimmer {
+    animation: none;
+  }
+  .azhar-star-spin {
+    animation: none;
+  }
+  .azhar-pulse {
     animation: none;
   }
 }

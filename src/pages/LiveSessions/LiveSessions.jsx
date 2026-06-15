@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Radio, Plus, Users, Calendar, Clock, Play, 
-  Video, BookOpen, Trash2, Edit3, Copy, Check
+  Video, BookOpen, Trash2, Copy, Check
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Logo from '../../components/Logo';
@@ -22,11 +22,6 @@ export default function LiveSessions() {
   const [liveStatus, setLiveStatus] = useState({ configured: false });
   const [demoLoading, setDemoLoading] = useState(false);
 
-  useEffect(() => {
-    fetchSessions();
-    fetch(`${API_BASE_URL}/api/live/status`).then((r) => r.json()).then(setLiveStatus).catch(() => {});
-  }, []);
-
   const fetchSessions = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/live/sessions`);
@@ -41,6 +36,11 @@ export default function LiveSessions() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchSessions();
+    fetch(`${API_BASE_URL}/api/live/status`).then((r) => r.json()).then(setLiveStatus).catch(() => {});
+  }, []);
 
   const copyLink = (roomId) => {
     const link = `${window.location.origin}/live/${roomId}`;

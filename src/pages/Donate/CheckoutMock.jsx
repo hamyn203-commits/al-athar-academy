@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { CreditCard, ShieldCheck, Lock, AlertCircle, Sparkles, CheckCircle2, ChevronRight, CornerDownLeft } from 'lucide-react';
+import { CreditCard, ShieldCheck, Lock, AlertCircle, Sparkles, CheckCircle2, CornerDownLeft } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import GlobalHeader from '../../components/GlobalHeader';
 import GlobalFooter from '../../components/GlobalFooter';
@@ -89,7 +89,6 @@ export default function CheckoutMock() {
   const { locale } = useI18n();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const isAr = locale === 'ar';
   
   const strings = LOCALIZATION[locale] || LOCALIZATION.en;
 

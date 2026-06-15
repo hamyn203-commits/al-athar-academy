@@ -7,7 +7,6 @@ import {
   Calendar, 
   User, 
   Clock, 
-  Tag,
   ChevronRight,
   BookOpen
 } from 'lucide-react';
@@ -195,8 +194,6 @@ const mockArticles = [
 ];
 
 function ArticleCard({ article, locale }) {
-  const { t } = useI18n();
-  
   const categoryColors = {
     quran: 'bg-emerald-100 text-emerald-700',
     tajweed: 'bg-blue-100 text-blue-700',
@@ -275,7 +272,7 @@ function ArticleCard({ article, locale }) {
 }
 
 export default function Blog() {
-  const { t, locale } = useI18n();
+  const { locale } = useI18n();
   const [articles, setArticles] = useState(mockArticles);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');

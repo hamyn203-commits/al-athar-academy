@@ -188,7 +188,7 @@ export function validateForm(schema, data) {
     }
 
     return { success: true, data: result.data };
-  } catch (error) {
+  } catch {
     return { 
       success: false, 
       errors: { _form: 'حدث خطأ في التحقق من البيانات' } 

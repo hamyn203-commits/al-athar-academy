@@ -10,24 +10,27 @@ export default function Leaderboard({ users, currentUser, limit = 10 }) {
     .slice(0, limit);
 
   const getRankIcon = (rank) => {
-    if (rank === 1) return <Trophy size={24} style={{ color: '#FFD700' }} />;
+    if (rank === 1) return <Trophy size={24} style={{ color: '#d4a843' }} />;
     if (rank === 2) return <Medal size={24} style={{ color: '#C0C0C0' }} />;
     if (rank === 3) return <Medal size={24} style={{ color: '#CD7F32' }} />;
-    return <span style={{ fontWeight: '700', color: 'var(--text-muted)' }}>#{rank}</span>;
+    return <span style={{ fontWeight: '700', color: 'var(--athar-text-muted)' }}>#{rank}</span>;
   };
 
   return (
-    <div className="premium-card" style={{ padding: 0, overflow: 'hidden' }}>
+    <div className="azhar-card" style={{ padding: 0, overflow: 'hidden' }}>
+      {/* ═══ Header أزهري ═══ */}
       <div style={{
         padding: '20px 24px',
-        background: 'linear-gradient(135deg, var(--primary-gold-dark), var(--clay-terracotta))',
+        background: 'linear-gradient(135deg, var(--azhar-green-deep), var(--azhar-green))',
         color: '#fff',
         display: 'flex',
         alignItems: 'center',
         gap: '12px'
       }}>
-        <Trophy size={28} />
-        <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '800' }}>
+        <div className="w-10 h-10 rounded-full bg-[var(--azhar-gold-leaf)]/20 flex items-center justify-center">
+          <Trophy size={24} className="text-[var(--azhar-gold-leaf)]" />
+        </div>
+        <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '800', fontFamily: 'Amiri, serif' }}>
           {t.leaderboard?.title || 'لوحة المتصدرين'}
         </h3>
       </div>
@@ -37,9 +40,9 @@ export default function Leaderboard({ users, currentUser, limit = 10 }) {
           <div style={{
             textAlign: 'center',
             padding: '40px 20px',
-            color: 'var(--text-muted)'
+            color: 'var(--athar-text-muted)'
           }}>
-            <Award size={48} style={{ opacity: 0.3, marginBottom: '12px' }} />
+            <Award size={48} style={{ opacity: 0.3, marginBottom: '12px', color: 'var(--azhar-gold-leaf)' }} />
             <p>{t.leaderboard?.noData || 'لا توجد بيانات بعد'}</p>
           </div>
         ) : (
@@ -59,8 +62,8 @@ export default function Leaderboard({ users, currentUser, limit = 10 }) {
                     alignItems: 'center',
                     gap: '16px',
                     padding: '12px 16px',
-                    background: isCurrentUser ? 'rgba(166, 132, 83, 0.1)' : 'var(--bg-elevated)',
-                    border: isCurrentUser ? '2px solid var(--primary-gold)' : '1px solid var(--border-light)',
+                    background: isCurrentUser ? 'rgba(212, 168, 67, 0.08)' : 'var(--athar-surface)',
+                    border: isCurrentUser ? '2px solid var(--azhar-gold-leaf)' : '1px solid var(--athar-cream-dark)',
                     borderRadius: 'var(--radius-md)',
                     transition: 'all 0.2s'
                   }}
@@ -78,14 +81,15 @@ export default function Leaderboard({ users, currentUser, limit = 10 }) {
                     width: '48px',
                     height: '48px',
                     borderRadius: '50%',
-                    background: 'var(--primary-gold)',
+                    background: 'linear-gradient(135deg, var(--azhar-green), var(--azhar-green-deep))',
                     color: '#fff',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     fontWeight: '700',
                     fontSize: '1.2rem',
-                    flexShrink: 0
+                    flexShrink: 0,
+                    boxShadow: '0 2px 8px rgba(20, 83, 45, 0.2)'
                   }}>
                     {user.name?.charAt(0) || '؟'}
                   </div>
@@ -94,7 +98,7 @@ export default function Leaderboard({ users, currentUser, limit = 10 }) {
                     <div style={{
                       fontWeight: '700',
                       fontSize: '0.95rem',
-                      color: 'var(--text-primary)',
+                      color: 'var(--athar-text)',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap'
@@ -104,7 +108,7 @@ export default function Leaderboard({ users, currentUser, limit = 10 }) {
                         <span style={{
                           marginLeft: '8px',
                           fontSize: '0.75rem',
-                          color: 'var(--primary-gold)',
+                          color: 'var(--azhar-gold-leaf)',
                           fontWeight: '600'
                         }}>
                           ({t.leaderboard?.you || 'أنت'})
@@ -113,7 +117,7 @@ export default function Leaderboard({ users, currentUser, limit = 10 }) {
                     </div>
                     <div style={{
                       fontSize: '0.8rem',
-                      color: 'var(--text-secondary)',
+                      color: 'var(--athar-text-muted)',
                       marginTop: '2px'
                     }}>
                       {user.level || t.leaderboard?.student || 'طالب'}
@@ -127,13 +131,14 @@ export default function Leaderboard({ users, currentUser, limit = 10 }) {
                     <div style={{
                       fontWeight: '800',
                       fontSize: '1.1rem',
-                      color: 'var(--primary-gold-dark)'
+                      color: 'var(--azhar-gold-dark)',
+                      fontFamily: 'Amiri, serif'
                     }}>
                       {user.points || 0}
                     </div>
                     <div style={{
                       fontSize: '0.75rem',
-                      color: 'var(--text-muted)'
+                      color: 'var(--athar-text-muted)'
                     }}>
                       {t.student?.points || 'نقطة'}
                     </div>

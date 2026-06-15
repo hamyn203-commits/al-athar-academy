@@ -27,13 +27,14 @@ export default function LazyImage({
       }
     );
 
-    if (imgRef.current) {
-      observer.observe(imgRef.current);
+    const imageNode = imgRef.current;
+    if (imageNode) {
+      observer.observe(imageNode);
     }
 
     return () => {
-      if (imgRef.current) {
-        observer.unobserve(imgRef.current);
+      if (imageNode) {
+        observer.unobserve(imageNode);
       }
     };
   }, [src]);

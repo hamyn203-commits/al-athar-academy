@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Calendar, CheckCircle, FileText, Star, Trophy, BookOpen,
@@ -94,7 +94,7 @@ export default function StudentDashboard() {
   const [bookForm, setBookForm] = useState(emptyBook);
   const [booking, setBooking] = useState(false);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       const [prof, st, tr, sess, hw, tch, ev, rev, enrollments, ref] = await Promise.all([
         api.get('/api/students/dashboard/profile', { auth: true }),
@@ -123,9 +123,9 @@ export default function StudentDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [locale, toast]);
 
-  useEffect(() => { if (ready) load(); }, [ready]);
+  useEffect(() => { if (ready) load(); }, [ready, load]);
 
   useEffect(() => {
     if (!ready) return;

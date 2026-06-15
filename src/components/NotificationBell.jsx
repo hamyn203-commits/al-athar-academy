@@ -14,12 +14,6 @@ export default function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
 
-  useEffect(() => {
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
   const fetchNotifications = async () => {
     try {
       if (!api.getToken()) return;
@@ -30,6 +24,12 @@ export default function NotificationBell() {
       console.error('Error fetching notifications:', error);
     }
   };
+
+  useEffect(() => {
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const markAsRead = async (id) => {
     try {

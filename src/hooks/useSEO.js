@@ -1,5 +1,5 @@
 import { useI18n } from '../i18n';
-import { SITE_URL, ALTERNATE_NAMES, ALTERNATE_SLOGANS, OG_LOCALE, SEO_LOCALES, localePath } from '../seo/brand';
+import { SITE_URL, ALTERNATE_NAMES, OG_LOCALE, SEO_LOCALES, localePath } from '../seo/brand';
 
 export function useSEO() {
   const { locale, t } = useI18n();

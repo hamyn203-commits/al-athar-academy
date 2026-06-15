@@ -1,6 +1,16 @@
 import { useState, useEffect, useCallback, createContext, useContext } from 'react';
 import { API_BASE_URL } from '../config';
 
+/** يتحقق من انتهاء صلاحية JWT دون طلب شبكة */
+function isTokenExpired(token) {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return Date.now() >= payload.exp * 1000;
+  } catch {
+    return true; // إذا لم يمكن تحليله → نعتبره منتهياً
+  }
+}
+
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
@@ -19,7 +29,7 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('refreshToken');
   }, []);
 
-  const refreshAccessToken = async (token) => {
+  const refreshAccessToken = useCallback(async (token) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
         method: 'POST',
@@ -42,16 +52,22 @@ export function AuthProvider({ children }) {
       console.error('Token refresh failed:', error);
       const isNetworkError = error instanceof TypeError || error.message?.includes('fetch') || error.message?.includes('NetworkError');
       if (isNetworkError) {
-        setIsAuthenticated(true);
+        // تحقق من صلاحية الـ token قبل قبوله
         const localAccess = localStorage.getItem('accessToken') || localStorage.getItem('token');
-        if (localAccess) setAccessToken(localAccess);
+        if (localAccess && !isTokenExpired(localAccess)) {
+          setIsAuthenticated(true);
+          setAccessToken(localAccess);
+        } else {
+          // Token منتهٍ — تسجيل خروج
+          logout();
+        }
       } else {
         logout();
       }
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [logout]);
 
   useEffect(() => {
     const storedToken = localStorage.getItem('refreshToken');
@@ -64,7 +80,7 @@ export function AuthProvider({ children }) {
     } else {
       setIsLoading(false);
     }
-  }, []);
+  }, [refreshAccessToken]);
 
   const login = async (email, password) => {
     try {
@@ -195,7 +211,7 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const authFetch = useCallback(async (url, options = {}) => {
+  const authFetch = useCallback(async function authFetch(url, options = {}) {
     if (!accessToken) {
       throw new Error('Not authenticated');
     }
@@ -222,7 +238,7 @@ export function AuthProvider({ children }) {
     }
 
     return response;
-  }, [accessToken, refreshToken, logout]);
+  }, [accessToken, refreshToken, logout, refreshAccessToken]);
 
   const value = {
     user,

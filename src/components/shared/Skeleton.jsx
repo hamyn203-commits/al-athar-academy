@@ -1,20 +1,19 @@
-export function Skeleton({ width, height, borderRadius = '8px', style = {} }) {
+export function Skeleton({ width, height, className = '', style = {} }) {
   return (
     <div
-      className="skeleton"
+      className={`animate-pulse rounded-lg bg-[var(--athar-cream-dark)]/40 ${className}`}
       style={{
         width: width || '100%',
         height: height || '20px',
-        borderRadius,
         ...style
       }}
     />
   );
 }
 
-export function SkeletonText({ lines = 3, style = {} }) {
+export function SkeletonText({ lines = 3, className = '' }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', ...style }}>
+    <div className={`flex flex-col gap-2 ${className}`}>
       {Array.from({ length: lines }).map((_, i) => (
         <Skeleton
           key={i}
@@ -26,43 +25,33 @@ export function SkeletonText({ lines = 3, style = {} }) {
   );
 }
 
-export function SkeletonAvatar({ size = 48, style = {} }) {
+export function SkeletonAvatar({ size = 48, className = '' }) {
   return (
-    <Skeleton
-      width={`${size}px`}
-      height={`${size}px`}
-      borderRadius="50%"
-      style={style}
+    <div
+      className={`animate-pulse rounded-full bg-[var(--athar-cream-dark)]/40 ${className}`}
+      style={{ width: size, height: size }}
     />
   );
 }
 
-export function SkeletonCard({ style = {} }) {
+export function SkeletonCard({ className = '' }) {
   return (
-    <div
-      className="premium-card"
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '16px',
-        ...style
-      }}
-    >
+    <div className={`azhar-card flex flex-col gap-4 p-6 ${className}`}>
       <Skeleton height="24px" width="70%" />
       <SkeletonText lines={3} />
-      <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
-        <Skeleton height="36px" width="100px" borderRadius="var(--radius-md)" />
-        <Skeleton height="36px" width="100px" borderRadius="var(--radius-md)" />
+      <div className="flex gap-3 mt-2">
+        <Skeleton height="36px" width="100px" />
+        <Skeleton height="36px" width="100px" />
       </div>
     </div>
   );
 }
 
-export function SkeletonTable({ rows = 5, columns = 4, style = {} }) {
+export function SkeletonTable({ rows = 5, columns = 4, className = '' }) {
   return (
-    <div className="premium-card" style={{ padding: 0, overflow: 'hidden', ...style }}>
-      <div style={{ padding: '16px', borderBottom: '1px solid var(--border-light)' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${columns}, 1fr)`, gap: '16px' }}>
+    <div className={`azhar-card overflow-hidden ${className}`}>
+      <div className="p-4 border-b border-[var(--athar-cream-dark)]">
+        <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}>
           {Array.from({ length: columns }).map((_, i) => (
             <Skeleton key={i} height="16px" />
           ))}
@@ -71,12 +60,9 @@ export function SkeletonTable({ rows = 5, columns = 4, style = {} }) {
       {Array.from({ length: rows }).map((_, i) => (
         <div
           key={i}
-          style={{
-            padding: '16px',
-            borderBottom: i < rows - 1 ? '1px solid var(--border-light)' : 'none'
-          }}
+          className={`p-4 ${i < rows - 1 ? 'border-b border-[var(--athar-cream-dark)]' : ''}`}
         >
-          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${columns}, 1fr)`, gap: '16px' }}>
+          <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}>
             {Array.from({ length: columns }).map((_, j) => (
               <Skeleton key={j} height="14px" />
             ))}
@@ -87,25 +73,17 @@ export function SkeletonTable({ rows = 5, columns = 4, style = {} }) {
   );
 }
 
-export function SkeletonList({ items = 5, style = {} }) {
+export function SkeletonList({ items = 5, className = '' }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', ...style }}>
+    <div className={`flex flex-col gap-3 ${className}`}>
       {Array.from({ length: items }).map((_, i) => (
         <div
           key={i}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-            padding: '12px',
-            background: 'var(--bg-card)',
-            borderRadius: 'var(--radius-md)',
-            border: '1px solid var(--border-light)'
-          }}
+          className="flex items-center gap-3 p-3 bg-[var(--athar-surface)] rounded-xl border border-[var(--athar-cream-dark)]"
         >
           <SkeletonAvatar size={40} />
-          <div style={{ flex: 1 }}>
-            <Skeleton height="16px" width="60%" style={{ marginBottom: '8px' }} />
+          <div className="flex-1">
+            <Skeleton height="16px" width="60%" className="mb-2" />
             <Skeleton height="12px" width="40%" />
           </div>
         </div>
@@ -114,18 +92,18 @@ export function SkeletonList({ items = 5, style = {} }) {
   );
 }
 
-export function SkeletonDashboard({ style = {} }) {
+export function SkeletonDashboard({ className = '' }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', ...style }}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
+    <div className={`flex flex-col gap-6 ${className}`}>
+      <div className="grid gap-5 grid-cols-[repeat(auto-fit,minmax(240px,1fr))]">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="stat-card">
+          <div key={i} className="azhar-card p-5">
             <Skeleton height="14px" width="60%" />
-            <Skeleton height="32px" width="40%" style={{ marginTop: '8px' }} />
+            <Skeleton height="32px" width="40%" className="mt-2" />
           </div>
         ))}
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+      <div className="grid gap-5 grid-cols-[repeat(auto-fit,minmax(300px,1fr))]">
         <SkeletonCard />
         <SkeletonCard />
       </div>

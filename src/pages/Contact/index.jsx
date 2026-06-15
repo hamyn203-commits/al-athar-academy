@@ -17,7 +17,7 @@ import SEOHead from '../../components/SEOHead';
 import api from '../../lib/api';
 
 export default function Contact() {
-  const { t, locale } = useI18n();
+  const { locale } = useI18n();
   const [formData, setFormData] = useState({
     name: '',
     email: '',

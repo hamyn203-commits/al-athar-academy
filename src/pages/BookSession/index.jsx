@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Calendar, Clock, CheckCircle, Info, Globe, AlertCircle } from 'lucide-react';
+import api from '../../lib/api';
 
 export default function BookSession() {
   const { teacherId } = useParams();
@@ -15,26 +16,25 @@ export default function BookSession() {
   const [showConfirmation, setShowConfirmation] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
     if (!token) {
       navigate('/login?redirect=/book-trial/' + teacherId);
       return;
     }
 
+    const fetchTeacher = async () => {
+      try {
+        const data = await api.get(`/api/teachers/${teacherId}`);
+        setTeacher(data);
+      } catch (error) {
+        console.error('Error fetching teacher:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchTeacher();
   }, [teacherId, navigate]);
-
-  const fetchTeacher = async () => {
-    try {
-      const response = await fetch(`/api/teachers/${teacherId}`);
-      const data = await response.json();
-      setTeacher(data);
-    } catch (error) {
-      console.error('Error fetching teacher:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -47,33 +47,19 @@ export default function BookSession() {
     setSubmitting(true);
 
     try {
-      const token = localStorage.getItem('token');
       const scheduledAt = new Date(`${selectedDate}T${selectedTime}`);
 
-      const response = await fetch('/api/sessions/trial', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          teacherId,
-          scheduledAt,
-          timezone,
-          notes
-        })
-      });
+      await api.post('/api/sessions/trial', {
+        teacherId,
+        scheduledAt,
+        timezone,
+        notes
+      }, { auth: true });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        alert('✅ تم إرسال طلب الحصة التجريبية بنجاح!\n\nسيتم إعلامك عند موافقة المعلم عبر البريد الإلكتروني.');
-        navigate('/student/dashboard');
-      } else {
-        alert(data.error || 'حدث خطأ أثناء الحجز');
-      }
-    } catch (error) {
-      alert('حدث خطأ أثناء الحجز');
+      alert('✅ تم إرسال طلب الحصة التجريبية بنجاح!\n\nسيتم إعلامك عند موافقة المعلم عبر البريد الإلكتروني.');
+      navigate('/student/dashboard');
+    } catch (err) {
+      alert(err.message || 'حدث خطأ أثناء الحجز');
     } finally {
       setSubmitting(false);
     }

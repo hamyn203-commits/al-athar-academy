@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Star, MapPin, Clock, Award, BookOpen, Video, Calendar, CheckCircle } from 'lucide-react';
+import { Star, MapPin, Award, BookOpen, CheckCircle, Clock } from 'lucide-react';
+import api from '../../lib/api';
 
 export default function TeacherProfile() {
   const { id } = useParams();
@@ -11,36 +12,34 @@ export default function TeacherProfile() {
   const [activeTab, setActiveTab] = useState('about');
 
   useEffect(() => {
+    const fetchTeacher = async () => {
+      try {
+        const data = await api.get(`/api/teachers/${id}`);
+        if (!data._id) {
+          setTeacher(null);
+          return;
+        }
+        setTeacher(data);
+      } catch (error) {
+        console.error('Error fetching teacher:', error);
+        setTeacher(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const fetchReviews = async () => {
+      try {
+        const data = await api.get(`/api/reviews/teacher/${id}`);
+        setReviews(data.reviews || []);
+      } catch (error) {
+        console.error('Error fetching reviews:', error);
+      }
+    };
+
     fetchTeacher();
     fetchReviews();
   }, [id]);
-
-  const fetchTeacher = async () => {
-    try {
-      const response = await fetch(`/api/teachers/${id}`);
-      const data = await response.json();
-      if (!response.ok || data.error || !data._id) {
-        setTeacher(null);
-        return;
-      }
-      setTeacher(data);
-    } catch (error) {
-      console.error('Error fetching teacher:', error);
-      setTeacher(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchReviews = async () => {
-    try {
-      const response = await fetch(`/api/reviews/teacher/${id}`);
-      const data = await response.json();
-      setReviews(data.reviews);
-    } catch (error) {
-      console.error('Error fetching reviews:', error);
-    }
-  };
 
   const handleBookTrial = () => {
     const token = localStorage.getItem('token');

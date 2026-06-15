@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MonitorPlay, Play, BookOpen, Filter } from 'lucide-react';
+import { MonitorPlay, Play, BookOpen } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import GlobalHeader from '../../components/GlobalHeader';
 import GlobalFooter from '../../components/GlobalFooter';

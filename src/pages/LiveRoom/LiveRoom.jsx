@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   LiveKitRoom, 
@@ -36,7 +36,7 @@ function LiveRoomContent({ isHost }) {
   const room = useRoomContext();
   const localParticipant = useLocalParticipant();
 
-  const addMessage = async (text, sender, isMe, lang) => {
+  const addMessage = useCallback(async (text, sender, isMe, lang) => {
     let displayText = text;
     let original = null;
     if (autoTranslate && lang && lang !== myLang) {
@@ -54,7 +54,7 @@ function LiveRoomContent({ isHost }) {
       timestamp: new Date().toLocaleTimeString(),
       isMe,
     }]);
-  };
+  }, [autoTranslate, myLang]);
 
   useEffect(() => {
     if (!room) return;
@@ -75,7 +75,7 @@ function LiveRoomContent({ isHost }) {
 
     room.on('dataReceived', handleDataReceived);
     return () => room.off('dataReceived', handleDataReceived);
-  }, [room, myLang, autoTranslate]);
+  }, [room, myLang, autoTranslate, addMessage]);
 
   const sendMessage = async (e) => {
     e.preventDefault();

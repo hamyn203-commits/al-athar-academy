@@ -25,7 +25,7 @@ export default function Pagination({
       <button
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
-        className="btn-premium-outline"
+        className="btn-secondary"
         style={{
           padding: '8px 12px',
           opacity: currentPage === 1 ? 0.5 : 1,
@@ -43,7 +43,7 @@ export default function Pagination({
               key={`ellipsis-${i}`}
               style={{
                 padding: '8px 12px',
-                color: 'var(--text-muted)',
+                color: 'var(--athar-text-muted)',
                 fontSize: '0.9rem'
               }}
             >
@@ -58,9 +58,11 @@ export default function Pagination({
             onClick={() => onPageChange(page)}
             style={{
               padding: '8px 14px',
-              background: currentPage === page ? 'var(--primary-gold)' : 'var(--bg-card)',
-              color: currentPage === page ? '#fff' : 'var(--text-primary)',
-              border: `1px solid ${currentPage === page ? 'var(--primary-gold)' : 'var(--border-light)'}`,
+              background: currentPage === page
+                ? 'linear-gradient(135deg, var(--azhar-green), var(--azhar-green-deep))'
+                : 'var(--athar-surface)',
+              color: currentPage === page ? '#fff' : 'var(--athar-text)',
+              border: `1px solid ${currentPage === page ? 'var(--azhar-green)' : 'var(--athar-cream-dark)'}`,
               borderRadius: 'var(--radius-md)',
               cursor: 'pointer',
               fontWeight: currentPage === page ? '700' : '500',
@@ -78,7 +80,7 @@ export default function Pagination({
       <button
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
-        className="btn-premium-outline"
+        className="btn-secondary"
         style={{
           padding: '8px 12px',
           opacity: currentPage === totalPages ? 0.5 : 1,

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Search, Filter, Star, MapPin, Clock, Award, BookOpen, Users, ChevronDown } from 'lucide-react';
 import { v4Markets } from '../../data/v4Data';
@@ -25,11 +25,7 @@ export default function Teachers() {
   const [pagination, setPagination] = useState({ page: 1, total: 0, pages: 0 });
   const [showFilters, setShowFilters] = useState(false);
 
-  useEffect(() => {
-    fetchTeachers();
-  }, [filters, pagination.page, sortBy]);
-
-  const fetchTeachers = async () => {
+  const fetchTeachers = useCallback(async () => {
     try {
       const params = new URLSearchParams({
         page: pagination.page,
@@ -62,7 +58,11 @@ export default function Teachers() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters, pagination.page, sortBy, searchQuery]);
+
+  useEffect(() => {
+    fetchTeachers();
+  }, [fetchTeachers]);
 
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
