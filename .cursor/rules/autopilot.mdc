@@ -1,16 +1,53 @@
 ---
-description: Autopilot overnight development for Al-Athar Academy V4
+description: Autopilot development rules for Al-Athar Academy
 alwaysApply: true
 ---
 
 # Autopilot Al-Athar
 
-When working autonomously or on scheduled runs:
-1. Read `AGENTS.md` and pick the first `pending` backlog item only.
-2. Do not touch `platform/`.
-3. Run `npm run build` before committing.
-4. Push to `master` to trigger deploy (Azure backend + Vercel frontend).
-5. Mark the backlog item `done` in `AGENTS.md`.
-6. Reply in Arabic, concise.
+## النطاق — إلزامي
 
-Stack: React 19 + Vite + Tailwind | Express 5 + MongoDB Cosmos | Vercel + Azure.
+Autopilot يشتغل على branch ويفتح Pull Request. **ممنوع الـ push المباشر على `master`.**
+
+### ملفات محرّمة — تحتاج موافقة بشرية صريحة
+
+- `backend/middleware/auth.js`
+- `backend/routes/setup.js`
+- `backend/server.js`
+- `AZURE_KEYS.md`
+- `.github/workflows/**`
+- `.cursor/rules/**`
+- `package.json` · `package-lock.json`
+- `platform/`
+
+لو المهمة محتاجة تعديل في أي ملف منهم: اوقف، اكتب المطلوب في وصف الـ PR، واستنى مراجعة بشرية.
+
+### ممنوع كذلك
+
+- `npm install` أو أي تعديل في `dependencies` / `devDependencies`
+- `prettier` أو `eslint --fix` على ملف كامل — عدّل السطور المقصودة بس
+- إنشاء أو تعديل أي endpoint بيمنح صلاحيات (`role = 'admin'`)
+- تعطيل أي حماية (rate limit · CORS · helmet · CSP) ولو مؤقتاً
+- كتابة أي مفتاح أو سر داخل الكود أو التوثيق
+
+## سير العمل
+
+1. اقرأ `AGENTS.md` وخد أول بند `pending` واحد بس.
+2. اعمل branch من أحدث `master` باسم `auto/<short-task>`.
+3. `npm run lint` و `npm run build --ignore-scripts` لازم يعدّوا قبل الـ commit.
+4. commits صغيرة — واحد لكل تغيير منطقي.
+5. افتح PR. الـ deploy يحصل بعد المِرج البشري، مش من الـ push.
+6. في وصف الـ PR اكتب: خلّصت ايه · سيبت ايه وليه · مشاكل جديدة لقيتها.
+7. مشكلة جديدة = بند جديد في `AGENTS.md`، مش إصلاح في نفس الـ PR.
+8. علّم البند `done` بعد المِرج بس.
+9. رد بالعربي، مختصر.
+
+## تعدد الوكلاء
+
+لو أكتر من وكيل شغال بالتوازي: كل وكيل يملك ملفات محددة، ومحدش تاني يلمسها. لو محتاج تغيير في ملف مش ملكك، سيب علامة `// TODO(lane): ...` واكتبها في وصف الـ PR.
+
+## متغيرات الألوان المعتمدة
+
+استخدم `--athar-navy` · `--athar-gold` · `--azhar-green` · `--athar-cream` · `--athar-text-muted` فقط. ممنوع كتابة hex مباشرة في أي ملف.
+
+Stack: React 19 + Vite + Tailwind 4 | Express 5 + MongoDB Cosmos | Vercel + Azure.
