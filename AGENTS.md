@@ -14,6 +14,13 @@
 | 6.3.3 | Analytics admin | ✅ |
 | 6.3.4 | CDN للـ uploads | ✅ |
 
+## V6.2.1 — أمان إضافي (مكتمل حديثاً)
+
+| # | المهمة | الحالة |
+|---|--------|--------|
+| 1 | تأمين `/api/setup/ensure-admin` بـ `SEED_SECRET` | ✅ |
+| 2 | إزالة ثغرة `TEST_ADMIN_EMAILS` وحذف حسابات الاختبار | ✅ |
+
 ## V6.2 — مكتمل ✅
 
 دروس seed لكل دورة (3+ lessons)، Quiz → gamification points، شهادات PDF batch، Azure keys doc + sync script.
