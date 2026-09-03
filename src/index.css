@@ -93,6 +93,14 @@ body {
   @apply inline-flex items-center justify-center gap-2 rounded-xl border border-white/25 bg-white/10 px-6 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20;
 }
 
+.btn-primary:focus-visible,
+.btn-secondary:focus-visible,
+.btn-ghost-light:focus-visible,
+.btn-gold:focus-visible {
+  outline: 2px solid var(--azhar-gold-leaf);
+  outline-offset: 2px;
+}
+
 /* ═══════════════════════════════════════════════════════════════════
    البطاقات
    ═══════════════════════════════════════════════════════════════════ */
@@ -134,9 +142,13 @@ body {
    ═══════════════════════════════════════════════════════════════════ */
 
 .input-field {
-  @apply w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none transition;
-  @apply focus:border-[var(--azhar-green)] focus:ring-2;
-  focus-ring-color: rgba(22, 101, 52, 0.2);
+  @apply w-full rounded-xl border bg-white px-4 py-2.5 text-sm outline-none transition;
+  border-color: var(--athar-cream-dark);
+  color: var(--athar-text);
+}
+.input-field:focus {
+  border-color: var(--azhar-green);
+  box-shadow: 0 0 0 3px rgba(22, 101, 52, 0.2);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
