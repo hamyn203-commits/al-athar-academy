@@ -1,12 +1,20 @@
 const express = require('express');
+const crypto = require('crypto');
 const router = express.Router();
 const User = require('../models/User');
 
 const SEED_SECRET = process.env.SEED_SECRET;
 
+function safeEqual(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string') return false;
+  const bufA = Buffer.from(a), bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
 function requireSeedSecret(req, res, next) {
-  const provided = req.headers['x-seed-secret'] || req.query.seed_secret;
-  if (!SEED_SECRET || provided !== SEED_SECRET) {
+  const provided = req.headers['x-seed-secret'];
+  if (!SEED_SECRET || !safeEqual(provided, SEED_SECRET)) {
     return res.status(403).json({ error: 'ممنوع: سر التهيئة غير صالح' });
   }
   next();
