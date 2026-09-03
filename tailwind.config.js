@@ -21,21 +21,17 @@ export default {
           500: '#c9a227', 600: '#a8861f', 700: '#856a18', 800: '#63500f', 900: '#42350a',
         },
 
-        /* ── الألوان الأزهرية ── */
-        azhar: {
-          'green-deep': '#14532d',
-          'green': '#166534',
-          'green-mid': '#15803d',
-          'green-light': '#22c55e',
-          'green-50': '#f0fdf4',
-          'gold-leaf': '#d4a843',
-          'gold-bright': '#f0c75e',
-          'gold-dark': '#8b6914',
-          'cream-parchment': '#f5ead0',
-          'brown-warm': '#78350f',
-          'teal': '#0f766e',
-          'teal-light': '#14b8a6',
-        },
+        /* ── ملاحظة معمارية: ممنوع تكرار الألوان الأزهرية هنا ──────────────
+           الألوان الأزهرية (azhar-green, gold-leaf, teal, cream-parchment …)
+           معرّفة كمتغيّرات CSS في src/styles/brand.css، ولكل واحدة منها نسخة
+           خاصة بالوضع الليلي تحت [data-theme="dark"].
+
+           قيم Tailwind ثابتة وقت البناء ولا تعرف شيئاً عن الوضع الليلي، فلو
+           عرّفناها هنا فكلاس مثل bg-azhar-green سيبقى بنفس اللون في الليل.
+
+           الاستخدام الصحيح:
+             bg-[var(--azhar-green)]     أو    كلاس جاهز من brand.css
+           ──────────────────────────────────────────────────────────────── */
       },
 
       fontFamily: {
@@ -52,9 +48,9 @@ export default {
         'slide-down': 'slideDown 0.5s ease-out',
         'scale-in': 'scaleIn 0.3s ease-out',
         'bounce-slow': 'bounce 2s infinite',
-        'gold-shimmer': 'goldShimmer 4s ease-in-out infinite',
-        'star-rotate': 'starRotate 20s linear infinite',
-        'gold-pulse': 'goldPulse 2s ease-in-out infinite',
+        /* الحركات الأزهرية (goldShimmer / starRotate / goldPulse) معرّفة في
+           brand.css، وبلوك prefers-reduced-motion هناك يوقفها احتراماً
+           لإعدادات المستخدم. تكرارها هنا يتجاوز ذلك الحماية — لا تضفها. */
       },
 
       keyframes: {
@@ -74,26 +70,11 @@ export default {
           '0%': { transform: 'scale(0.9)', opacity: '0' },
           '100%': { transform: 'scale(1)', opacity: '1' },
         },
-        goldShimmer: {
-          '0%': { backgroundPosition: '-200% center' },
-          '100%': { backgroundPosition: '200% center' },
-        },
-        starRotate: {
-          '0%': { transform: 'rotate(0deg)' },
-          '100%': { transform: 'rotate(360deg)' },
-        },
-        goldPulse: {
-          '0%, 100%': { boxShadow: '0 0 0 0 rgba(212, 168, 67, 0.4)' },
-          '50%': { boxShadow: '0 0 0 12px rgba(212, 168, 67, 0)' },
-        },
       },
 
-      boxShadow: {
-        'azhar': '0 4px 24px -4px rgba(20, 83, 45, 0.15)',
-        'azhar-lg': '0 20px 50px -12px rgba(20, 83, 45, 0.2)',
-        'azhar-gold': '0 8px 32px -4px rgba(212, 168, 67, 0.3)',
-        'gold-glow': '0 0 20px rgba(212, 168, 67, 0.3)',
-      },
+      /* الظلال الأزهرية متغيّرات في brand.css:
+         var(--shadow-azhar) / var(--shadow-azhar-lg) / var(--shadow-azhar-gold)
+         لا تُكرّر هنا كـ shadow-azhar وأخواتها. */
     },
   },
   plugins: [],
