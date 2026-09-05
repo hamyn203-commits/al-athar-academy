@@ -5,6 +5,14 @@ const KEY = 'alathartayyib2026seokey01';
 const LOCALES = ['ar', 'en', 'fr', 'de', 'tr', 'ur', 'id', 'ms', 'ku'];
 const PAGES = ['', '/teachers', '/courses', '/blog', '/contact', '/about', '/teacher/register', '/login', '/faq'];
 
+// Only ping search engines on a real deploy. Local `npm run build` would
+// otherwise fire 81 network requests and print a wall of failures.
+const enabled = process.env.SEO_SUBMIT === 'true' || process.env.VERCEL_ENV === 'production';
+if (!enabled) {
+  console.log('IndexNow: skipped (set SEO_SUBMIT=true to submit).');
+  process.exit(0);
+}
+
 const urls = [];
 LOCALES.forEach((loc) => {
   PAGES.forEach((p) => urls.push(`${SITE}/${loc}${p}`));
@@ -37,7 +45,7 @@ try {
     }),
   });
   console.log(`IndexNow batch POST: ${r.status}`);
-} catch (e) {
+} catch {
   console.log('IndexNow batch POST: skipped');
 }
 

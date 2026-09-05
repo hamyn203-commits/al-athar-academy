@@ -9,7 +9,10 @@
   "theme_color": "#a68453",
   "lang": "ar",
   "dir": "rtl",
-  "categories": ["education", "lifestyle"],
+  "categories": [
+    "education",
+    "lifestyle"
+  ],
   "icons": [
     {
       "src": "/icons/icon-72x72.png",
@@ -60,47 +63,53 @@
       "purpose": "any maskable"
     }
   ],
-  "screenshots": [
-    {
-      "src": "/screenshots/desktop-1.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide"
-    },
-    {
-      "src": "/screenshots/mobile-1.png",
-      "sizes": "750x1334",
-      "type": "image/png",
-      "form_factor": "narrow"
-    }
-  ],
   "shortcuts": [
     {
       "name": "بوابة الطالب",
       "short_name": "الطالب",
       "description": "الدخول إلى بوابة الطالب",
       "url": "/student",
-      "icons": [{ "src": "/icons/student-icon.png", "sizes": "192x192" }]
+      "icons": [
+        {
+          "src": "/icons/student-icon.png",
+          "sizes": "192x192"
+        }
+      ]
     },
     {
       "name": "بوابة المعلم",
       "short_name": "المعلم",
       "description": "الدخول إلى بوابة المعلم",
       "url": "/teacher",
-      "icons": [{ "src": "/icons/teacher-icon.png", "sizes": "192x192" }]
+      "icons": [
+        {
+          "src": "/icons/teacher-icon.png",
+          "sizes": "192x192"
+        }
+      ]
     },
     {
       "name": "المتصدرين",
       "short_name": "بطولة",
       "url": "/leaderboard",
-      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+      "icons": [
+        {
+          "src": "/icons/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
     },
     {
       "name": "الحصص المباشرة",
       "short_name": "مباشر",
       "description": "الحصص المباشرة",
       "url": "/live",
-      "icons": [{ "src": "/icons/live-icon.png", "sizes": "192x192" }]
+      "icons": [
+        {
+          "src": "/icons/live-icon.png",
+          "sizes": "192x192"
+        }
+      ]
     }
   ]
 }

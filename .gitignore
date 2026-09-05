@@ -42,3 +42,12 @@ backend/*.log
 proofshot-artifacts/
 
 .vercel
+
+# Build/deploy artifacts (never commit these)
+*.zip
+deploy-folder/
+deploy-package.json
+
+# Stray screenshot output (misnamed CLI artifacts)
+--full-page
+proof-*.png

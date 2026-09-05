@@ -58,14 +58,26 @@ const authLimiter = rateLimit({
 });
 
 const isMockMode = !process.env.MONGODB_URI;
-const disableRateLimit = process.env.DISABLE_RATE_LIMIT === 'true' || isMockMode;
+const isProduction = process.env.NODE_ENV === 'production';
 
-// Apply rate limiting unless explicitly disabled via env or running in mock mode.
-if (!disableRateLimit) {
+// Rate limiting may only be switched off outside production, and only by an
+// explicit opt-in. A missing MONGODB_URI must never silently disable it —
+// a bad deploy would otherwise expose the API with no brute-force protection.
+const disableRateLimit = !isProduction && process.env.DISABLE_RATE_LIMIT === 'true';
+
+if (disableRateLimit) {
+  console.log('⚠️ Rate limiting disabled explicitly via DISABLE_RATE_LIMIT (non-production only).');
+} else {
   app.use('/api/', generalLimiter);
   app.use('/api/auth/login', authLimiter);
-} else {
-  console.log('⚠️ Rate limiting disabled (DISABLE_RATE_LIMIT=%s, isMockMode=%s)', process.env.DISABLE_RATE_LIMIT, isMockMode);
+  if (isProduction && process.env.DISABLE_RATE_LIMIT === 'true') {
+    console.warn('⚠️ DISABLE_RATE_LIMIT is ignored in production — rate limiting stays enabled.');
+  }
+}
+
+if (isProduction && isMockMode) {
+  console.error('❌ FATAL: MONGODB_URI is not set while NODE_ENV=production. Refusing to start in mock mode.');
+  process.exit(1);
 }
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS 
