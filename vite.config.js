@@ -129,8 +129,17 @@ export default defineConfig({
     include: ['react', 'react-dom', 'react-router-dom']
   },
   server: {
+    // Bind to all interfaces so the dev server is reachable from outside the
+    // container (sandbox/preview environments, LAN devices).
+    host: true,
+    // Allow proxied preview hostnames in addition to localhost.
+    allowedHosts: ['.e2b.app', 'localhost', '127.0.0.1'],
     proxy: {
       '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
+      '/uploads': {
         target: 'http://localhost:5000',
         changeOrigin: true,
       },
