@@ -1,5 +1,5 @@
 {
-  "name": "-----",
+  "name": "al-athar-academy",
   "private": true,
   "version": "6.3.0",
   "type": "module",
@@ -10,7 +10,7 @@
     "seo:submit": "node scripts/submit-indexnow.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
-    "start": "node server.js"
+    "start": "vite preview"
   },
   "dependencies": {
     "@livekit/components-react": "^2.9.21",

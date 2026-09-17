@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import Header from '../../components/Header';
+import GlobalHeader from '../../components/GlobalHeader';
 import SEOHead from '../../components/SEOHead';
 import { useI18n } from '../../i18n';
 import { localizedPath } from '../../lib/locale';
@@ -247,7 +247,7 @@ export default function GlobalPlatform() {
         title: 'أكاديمية الأثر V4 | منصة تعليم إسلامية عالمية',
         description: 'V4: توسع عالمي، 9 لغات، 6 أسواق، AI، LMS، لوحات تشغيل — ترقية أكاديمية الأثر.',
       }} />
-      <Header />
+      <GlobalHeader />
       <main id="main-content" className="v4-page">
         <section className="v4-hero">
           <div className="v4-hero-content">

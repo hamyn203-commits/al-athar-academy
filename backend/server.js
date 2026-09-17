@@ -3,7 +3,6 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const mongoose = require('mongoose');
 const helmet = require('helmet');
-const mongoSanitize = require('express-mongo-sanitize');
 const rateLimit = require('express-rate-limit');
 const morgan = require('morgan');
 const fs = require('fs');
@@ -87,10 +86,6 @@ app.use(cors({
     const siteUrl = (process.env.SITE_URL || process.env.VITE_SITE_URL || '').replace(/\/$/, '');
     if (siteUrl && origin === siteUrl) return callback(null, true);
     if (/^http:\/\/localhost:\d+$/i.test(origin)) return callback(null, true);
-    // Allow Vercel preview domains if no explicit ALLOWED_ORIGINS are configured.
-    if (/^https:\/\/al-athar-academy(-[a-z0-9-]+)?\.vercel\.app$/i.test(origin)) {
-      return callback(null, true);
-    }
     callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
