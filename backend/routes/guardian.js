@@ -323,4 +323,94 @@ router.get('/reports/:studentId', protect, authorize('guardian', 'admin'), async
   }
 });
 
+/**
+ * @route   GET /api/guardian/upcoming-sessions
+ * @desc    جلب الحصص والحلقات القادمة لجميع أبناء ولي الأمر مع حالة الحضور والاعتذار
+ * @access  Private (Guardian, Admin)
+ */
+router.get('/upcoming-sessions', protect, authorize('guardian', 'admin'), async (req, res) => {
+  try {
+    let guardian = await Guardian.findOne({ user: req.user.id });
+    let childIds = [];
+    if (guardian && guardian.children && guardian.children.length > 0) {
+      childIds = guardian.children.map(c => c.student);
+    } else {
+      const user = await User.findById(req.user.id);
+      if (user && user.children && user.children.length > 0) {
+        childIds = user.children;
+      }
+    }
+
+    if (childIds.length === 0) {
+      return res.json({ success: true, sessions: [] });
+    }
+
+    // Also find any circles where children are enrolled
+    const childrenUsers = await User.find({ _id: { $in: childIds } }).select('_id name circle');
+    const circleIds = childrenUsers.map(c => c.circle).filter(Boolean);
+
+    const now = new Date();
+    // Fetch upcoming sessions from 2 hours ago to future
+    const threshold = new Date(now.getTime() - 2 * 60 * 60 * 1000);
+
+    const upcoming = await Session.find({
+      $or: [
+        { student: { $in: childIds } },
+        { circle: { $in: circleIds } },
+        { 'attendance.student': { $in: childIds } }
+      ],
+      scheduledAt: { $gte: threshold },
+      status: { $in: ['pending', 'accepted'] }
+    })
+    .populate('teacher', 'personalInfo')
+    .populate('circle', 'name level schedule capacity')
+    .sort({ scheduledAt: 1 })
+    .limit(10)
+    .lean();
+
+    const formattedSessions = upcoming.map(sess => {
+      // Determine which child this belongs to
+      let child = null;
+      if (sess.student) {
+        child = childrenUsers.find(c => c._id.toString() === sess.student.toString());
+      } else if (sess.circle) {
+        child = childrenUsers.find(c => c.circle && c.circle.toString() === sess.circle._id.toString());
+      }
+
+      // Check RSVP / attendance status
+      const att = sess.attendance?.find(a => child && a.student && a.student.toString() === child._id.toString());
+      
+      const teacherName = sess.teacher?.personalInfo?.fullName || 'معلم الأكاديمية';
+      const teacherPhone = sess.teacher?.personalInfo?.whatsapp || sess.teacher?.personalInfo?.phone || '';
+
+      const diffMs = new Date(sess.scheduledAt).getTime() - now.getTime();
+      const diffHours = diffMs / (1000 * 60 * 60);
+
+      return {
+        _id: sess._id,
+        scheduledAt: sess.scheduledAt,
+        duration: sess.duration,
+        meetingLink: sess.meetingLink || `/room/session-${sess._id}`,
+        type: sess.type,
+        status: sess.status,
+        circleName: sess.circle?.name || (sess.type === 'trial' ? 'حصة تجريبية مجانية' : 'حلقة فردية'),
+        child: child ? { id: child._id, name: child.name } : null,
+        teacher: {
+          name: teacherName,
+          phone: teacherPhone
+        },
+        rsvp: att ? att.status : 'pending', // 'confirmed', 'excused', 'attended', 'pending'
+        canExcuseWithCompensation: diffHours >= 6,
+        hoursUntilSession: Math.round(diffHours * 10) / 10
+      };
+    });
+
+    res.json({ success: true, sessions: formattedSessions });
+  } catch (error) {
+    console.error('Get upcoming sessions error:', error);
+    res.status(500).json({ error: 'حدث خطأ أثناء جلب الحصص القادمة' });
+  }
+});
+
 module.exports = router;
+
