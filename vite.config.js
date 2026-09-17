@@ -11,6 +11,7 @@ function generateSitemap() {
   
   const pages = [
     { url: '/', priority: '1.0', changefreq: 'weekly' },
+    { url: '/free-trial', priority: '1.0', changefreq: 'weekly' },
     { url: '/teachers', priority: '0.9', changefreq: 'daily' },
     { url: '/courses', priority: '0.9', changefreq: 'weekly' },
     { url: '/blog', priority: '0.8', changefreq: 'daily' },

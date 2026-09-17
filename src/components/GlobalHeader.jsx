@@ -68,9 +68,22 @@ export default function GlobalHeader() {
             })}
           </nav>
 
-          <div className="hidden md:flex items-center gap-1">
+          <div className="hidden md:flex items-center gap-1.5">
             <ThemeToggle />
             <LanguageSwitcher />
+
+            {/* ═══ زر الحصة التجريبية البارز ═══ */}
+            <Link
+              to={lp('/free-trial')}
+              className="relative group inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs md:text-sm font-bold text-[var(--athar-navy)] bg-gradient-to-r from-[var(--azhar-gold-bright)] via-[var(--azhar-gold-leaf)] to-[var(--azhar-gold-bright)] bg-[length:200%_auto] hover:bg-[position:right_center] shadow-sm hover:shadow-md hover:shadow-amber-500/25 transition-all duration-300 border border-amber-300/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-600"
+            >
+              <Sparkles size={14} className="text-amber-950 animate-pulse" />
+              <span>{t?.common?.freeTrial || (locale === 'ar' ? 'احجز حصتك مجاناً' : 'Free Trial')}</span>
+              <span className="hidden xl:inline-block px-1.5 py-0.2 rounded-full text-[10px] font-black bg-emerald-800 text-white leading-tight">
+                100% {locale === 'ar' ? 'مجاناً' : 'Free'}
+              </span>
+            </Link>
+
             {isAuthenticated ? (
               <>
                 <NotificationBell />
@@ -97,6 +110,21 @@ export default function GlobalHeader() {
         {isMenuOpen && (
           <div className="md:hidden border-t border-[var(--azhar-gold-leaf)]/20 py-4 relative">
             <nav className="flex flex-col gap-1">
+              {/* ═══ زر الحصة التجريبية في الموبايل ═══ */}
+              <Link
+                to={lp('/free-trial')}
+                onClick={() => setIsMenuOpen(false)}
+                className="rounded-xl p-3 text-sm font-bold flex items-center justify-between gap-2 text-slate-900 bg-gradient-to-r from-[var(--azhar-gold-bright)] via-[var(--azhar-gold-leaf)] to-[var(--azhar-gold-bright)] shadow-md mb-3 border border-amber-400/60"
+              >
+                <div className="flex items-center gap-2">
+                  <Sparkles size={18} className="text-amber-950" />
+                  <span>{t?.common?.freeTrial || (locale === 'ar' ? 'احجز حصتك التجريبية مجاناً' : 'Book Free Trial')}</span>
+                </div>
+                <span className="px-2 py-0.5 rounded-full text-xs font-black bg-emerald-800 text-white">
+                  100% {locale === 'ar' ? 'مجاناً' : 'Free'}
+                </span>
+              </Link>
+
               {navLinks.map((link) => (
                 <Link key={link.path} to={link.path} onClick={() => setIsMenuOpen(false)}
                   className={`rounded-lg px-3 py-2.5 text-sm font-medium flex items-center gap-2 ${isActive(link.path) ? 'bg-[var(--azhar-green-50)] text-[var(--azhar-green-deep)] ring-1 ring-[var(--azhar-gold-leaf)]/30' : 'text-slate-700 hover:bg-[var(--azhar-gold-50)]'}`}>

@@ -222,6 +222,8 @@ app.use('/api/videos', require('./routes/videos'));
 app.use('/api/careers', require('./routes/careers'));
 app.use('/api/women', require('./routes/women'));
 app.use('/api/system', require('./routes/system'));
+app.use('/api/circles', require('./routes/circles'));
+app.use('/api/trials', require('./routes/trials'));
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });

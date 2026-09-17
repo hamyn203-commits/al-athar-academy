@@ -24,6 +24,7 @@ const TeacherDashboard = lazy(() => import('./pages/TeacherDashboard'));
 const StudentDashboard = lazy(() => import('./pages/StudentDashboard'));
 const GuardianDashboard = lazy(() => import('./pages/GuardianDashboard'));
 const BookSession = lazy(() => import('./pages/BookSession'));
+const FreeTrial = lazy(() => import('./pages/FreeTrial/FreeTrial'));
 const GlobalPlatform = lazy(() => import('./pages/GlobalPlatform/GlobalPlatform'));
 const MarketsIndex = lazy(() => import('./pages/Markets'));
 const MarketDetail = lazy(() => import('./pages/Markets/MarketDetail'));
@@ -94,6 +95,8 @@ function pageRoutes() {
       <Route path="teacher/dashboard" element={<TeacherDashboard />} />
       <Route path="teachers" element={<Teachers />} />
       <Route path="teachers/:id" element={<TeacherProfile />} />
+      <Route path="free-trial" element={<FreeTrial />} />
+      <Route path="trial" element={<FreeTrial />} />
       <Route path="book-trial/:teacherId" element={<BookSession />} />
       <Route path="global-platform" element={<GlobalPlatform />} />
       <Route path="markets" element={<MarketsIndex />} />

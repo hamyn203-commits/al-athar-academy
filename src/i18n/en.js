@@ -20,6 +20,8 @@ export default {
     language: 'Language',
     arabic: 'العربية',
     english: 'English',
+    freeTrial: 'Book Free Trial',
+    freeTrialShort: 'Free Trial',
   },
   hero: {
     title: 'Learn Quran & Arabic',
