@@ -1,0 +1,746 @@
+/* ═══════════════════════════════════════════════════════════════════
+   Al-Athar Academy — Classroom V7.3 Styles
+   المصحف المتزامن، إدارة حلقة الـ 10 طلاب، وضع المراقب الصامت
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── وضع المراقب الصامت (Guardian / Observer Banner) ── */
+.observer-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: linear-gradient(135deg, rgba(15, 118, 110, 0.95), rgba(20, 83, 45, 0.95));
+  color: #ffffff;
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  border-bottom: 1px solid rgba(212, 168, 67, 0.3);
+  box-shadow: var(--shadow-brand);
+  z-index: 50;
+  animation: slideDown 0.3s ease-out;
+}
+
+.observer-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(212, 168, 67, 0.2);
+  border: 1px solid var(--azhar-gold-leaf);
+  color: var(--azhar-gold-bright);
+  padding: 4px 10px;
+  border-radius: var(--radius-full, 9999px);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* ── المصحف الرقمي المتزامن (Synced Mushaf) ── */
+.synced-mushaf-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--athar-warm-white);
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  box-shadow: var(--shadow-brand-lg);
+}
+
+.mushaf-theme-parchment {
+  background: #fbf7ee;
+  color: #2c2010;
+}
+
+.mushaf-theme-night {
+  background: #0d1520;
+  color: #e6ebf2;
+}
+
+.mushaf-theme-white {
+  background: #ffffff;
+  color: #111827;
+}
+
+.mushaf-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--athar-cream-dark);
+  z-index: 20;
+}
+
+.mushaf-theme-night .mushaf-top-bar {
+  background: rgba(13, 21, 32, 0.85);
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+.mushaf-meta-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.surah-badge {
+  font-family: 'Amiri', serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--azhar-green-deep);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mushaf-theme-night .surah-badge {
+  color: var(--azhar-gold-bright);
+}
+
+.page-indicator {
+  font-size: 0.82rem;
+  color: var(--athar-text-muted);
+  background: var(--athar-cream);
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.mushaf-theme-night .page-indicator {
+  background: rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
+}
+
+.sync-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.sync-status-synced {
+  background: rgba(22, 101, 52, 0.12);
+  color: var(--azhar-green-deep);
+  border: 1px solid rgba(22, 101, 52, 0.3);
+}
+
+.mushaf-theme-night .sync-status-synced {
+  background: rgba(34, 197, 94, 0.15);
+  color: #86efac;
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.sync-status-independent {
+  background: rgba(180, 83, 9, 0.12);
+  color: var(--clay-terracotta);
+  border: 1px solid rgba(180, 83, 9, 0.3);
+}
+
+.mushaf-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mushaf-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid var(--athar-cream-dark);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mushaf-icon-btn:hover {
+  background: rgba(212, 168, 67, 0.15);
+  border-color: var(--azhar-gold-leaf);
+  color: var(--azhar-gold-dark);
+}
+
+.mushaf-theme-night .mushaf-icon-btn:hover {
+  color: var(--azhar-gold-bright);
+}
+
+/* ── منطقة عرض الصفحة (Page View Canvas) ── */
+.mushaf-viewport {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  position: relative;
+}
+
+.mushaf-page-frame {
+  width: 100%;
+  max-width: 720px;
+  min-height: 850px;
+  position: relative;
+  background: #ffffff;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  border: 8px solid #f3ece0;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 32px;
+  transition: transform 0.2s ease;
+}
+
+.mushaf-theme-parchment .mushaf-page-frame {
+  background: #fffdf7;
+  border-color: #ebdcc4;
+}
+
+.mushaf-theme-night .mushaf-page-frame {
+  background: #141e2b;
+  border-color: #1e2d42;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+/* إطار قرآني زخرفي داخلي */
+.mushaf-page-inner-border {
+  position: absolute;
+  inset: 10px;
+  border: 2px solid rgba(212, 168, 67, 0.45);
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+.mushaf-page-inner-border::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border: 1px dashed rgba(212, 168, 67, 0.3);
+  border-radius: 2px;
+}
+
+/* رأس السورة والبسملة */
+.surah-header-ornament {
+  background: linear-gradient(135deg, rgba(20, 83, 45, 0.08), rgba(212, 168, 67, 0.12));
+  border: 2px solid var(--azhar-gold-leaf);
+  border-radius: 12px;
+  padding: 8px 16px;
+  margin: 0 auto 16px auto;
+  text-align: center;
+  position: relative;
+  width: 85%;
+}
+
+.mushaf-theme-night .surah-header-ornament {
+  background: rgba(212, 168, 67, 0.1);
+  border-color: var(--azhar-gold-leaf);
+}
+
+.surah-name-title {
+  font-family: 'Amiri', serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--azhar-green-deep);
+  margin: 0;
+}
+
+.mushaf-theme-night .surah-name-title {
+  color: var(--azhar-gold-bright);
+}
+
+.bismillah-text {
+  font-family: 'Scheherazade New', serif;
+  font-size: 1.6rem;
+  text-align: center;
+  margin: 8px 0 16px 0;
+  color: var(--azhar-gold-dark);
+}
+
+.mushaf-theme-night .bismillah-text {
+  color: var(--azhar-gold-bright);
+}
+
+/* نص الآيات القرآني العثماني */
+.mushaf-verses-flow {
+  font-family: 'Scheherazade New', 'Amiri', 'Noto Naskh Arabic', serif;
+  font-size: 1.65rem;
+  line-height: 2.3;
+  text-align: justify;
+  text-align-last: center;
+  direction: rtl;
+  user-select: text;
+  flex: 1;
+}
+
+.mushaf-verse-span {
+  display: inline;
+  position: relative;
+  padding: 2px 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.mushaf-verse-span:hover {
+  background: rgba(212, 168, 67, 0.15);
+}
+
+/* تظليل الآية الذهبي المتزامن (Golden Quranic Aura) */
+.mushaf-verse-highlighted {
+  background: linear-gradient(120deg, rgba(245, 158, 11, 0.28), rgba(212, 168, 67, 0.42));
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.45);
+  border-radius: 6px;
+  font-weight: 600;
+  color: var(--azhar-green-deep);
+  animation: glowAyah 2s ease-in-out infinite alternate;
+}
+
+.mushaf-theme-night .mushaf-verse-highlighted {
+  background: linear-gradient(120deg, rgba(245, 158, 11, 0.35), rgba(212, 168, 67, 0.5));
+  color: #fff9e6;
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.6);
+}
+
+@keyframes glowAyah {
+  0% { box-shadow: 0 0 8px rgba(245, 158, 11, 0.3); }
+  100% { box-shadow: 0 0 16px rgba(245, 158, 11, 0.65); }
+}
+
+.ayah-number-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 6px;
+  color: var(--azhar-gold-dark);
+  font-size: 1.15rem;
+  font-family: 'Amiri', serif;
+  user-select: none;
+}
+
+.mushaf-theme-night .ayah-number-badge {
+  color: var(--azhar-gold-bright);
+}
+
+/* صورة الصفحة عالية الدقة (High-Res Image Mode) */
+.mushaf-page-image-wrapper {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.mushaf-page-image {
+  max-width: 100%;
+  max-height: 80vh;
+  object-fit: contain;
+  border-radius: 6px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+}
+
+/* أزرار تقليب الصفحة الجانبية العائمة */
+.mushaf-nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 1px solid var(--athar-cream-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--azhar-green-deep);
+  z-index: 30;
+  transition: all 0.2s ease;
+}
+
+.mushaf-nav-btn:hover:not(:disabled) {
+  background: var(--azhar-green-deep);
+  color: #ffffff;
+  transform: translateY(-50%) scale(1.08);
+}
+
+.mushaf-nav-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.mushaf-nav-prev {
+  right: 16px;
+}
+
+.mushaf-nav-next {
+  left: 16px;
+}
+
+.mushaf-theme-night .mushaf-nav-btn {
+  background: rgba(20, 30, 45, 0.9);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: var(--azhar-gold-bright);
+}
+
+/* شريط التنبيه الفردي للطالب */
+.independent-reading-alert {
+  background: rgba(217, 119, 6, 0.12);
+  border-top: 1px solid rgba(217, 119, 6, 0.25);
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: var(--clay-terracotta);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   إدارة حلقة الـ 10 طلاب (Circle Turn Manager)
+   ═══════════════════════════════════════════════════════════════════ */
+.circle-manager-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--athar-cream-dark);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--shadow-brand);
+  height: 100%;
+}
+
+.circle-manager-header {
+  padding: 14px 18px;
+  background: linear-gradient(135deg, rgba(20, 83, 45, 0.05), rgba(212, 168, 67, 0.08));
+  border-bottom: 1px solid var(--athar-cream-dark);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.circle-manager-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.circle-manager-title h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--azhar-green-deep);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.circle-count-badge {
+  font-size: 0.75rem;
+  background: rgba(22, 101, 52, 0.12);
+  color: var(--azhar-green-deep);
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-weight: 700;
+}
+
+/* مؤقت التسميع التنازلي (Recitation Countdown Timer) */
+.recitation-timer-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  background: #f8fafc;
+  border-bottom: 1px solid var(--athar-cream-dark);
+  position: relative;
+  overflow: hidden;
+}
+
+.timer-active {
+  background: linear-gradient(135deg, rgba(20, 83, 45, 0.08), rgba(22, 163, 74, 0.06));
+}
+
+.timer-warning {
+  background: linear-gradient(135deg, rgba(217, 119, 6, 0.1), rgba(245, 158, 11, 0.08));
+}
+
+.timer-critical {
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.12), rgba(239, 68, 68, 0.08));
+  animation: pulseCritical 1s ease-in-out infinite;
+}
+
+@keyframes pulseCritical {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.85; }
+}
+
+.timer-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.timer-clock {
+  font-family: monospace;
+  font-size: 1.45rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--azhar-green-deep);
+}
+
+.timer-warning .timer-clock {
+  color: #b45309;
+}
+
+.timer-critical .timer-clock {
+  color: #dc2626;
+}
+
+.timer-progress-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.timer-progress-fill {
+  height: 100%;
+  background: var(--azhar-green-mid);
+  transition: width 1s linear;
+}
+
+.timer-warning .timer-progress-fill {
+  background: #f59e0b;
+}
+
+.timer-critical .timer-progress-fill {
+  background: #ef4444;
+}
+
+/* شبكة مقاعد الـ 10 طلاب */
+.students-circle-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  padding: 12px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+@media (max-width: 640px) {
+  .students-circle-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.student-seat-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--athar-cream-dark);
+  background: #ffffff;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.student-seat-card:hover {
+  border-color: var(--azhar-gold-leaf);
+  box-shadow: var(--shadow-brand);
+}
+
+.student-seat-card.is-reciting {
+  border: 2px solid var(--azhar-gold-leaf);
+  background: linear-gradient(135deg, rgba(212, 168, 67, 0.08), rgba(20, 83, 45, 0.04));
+  box-shadow: 0 4px 16px rgba(212, 168, 67, 0.25);
+}
+
+.student-seat-card.is-online {
+  border-right: 4px solid var(--azhar-green-light);
+}
+
+.student-seat-card.is-offline {
+  opacity: 0.65;
+  background: #fafafa;
+}
+
+.seat-avatar-wrap {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--athar-cream);
+  color: var(--azhar-green-deep);
+  font-weight: 700;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.seat-number-chip {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--azhar-gold-dark);
+  color: #ffffff;
+  font-size: 0.65rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+.seat-info {
+  margin-right: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.seat-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--athar-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+}
+
+.seat-status-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  font-size: 0.72rem;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.status-dot-online {
+  background: #22c55e;
+  box-shadow: 0 0 6px #22c55e;
+}
+
+.status-dot-offline {
+  background: #94a3b8;
+}
+
+.status-dot-reciting {
+  background: #f59e0b;
+  animation: pulse 1s infinite;
+}
+
+/* شارة رفع اليد والدور */
+.raised-hand-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(245, 158, 11, 0.15);
+  color: #b45309;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+/* أدوات المعلم أسفل مدير الحلقة */
+.circle-teacher-toolbar {
+  padding: 12px 16px;
+  background: var(--athar-cream);
+  border-top: 1px solid var(--athar-cream-dark);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-mute-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: rgba(220, 38, 38, 0.1);
+  color: #dc2626;
+  border: 1px solid rgba(220, 38, 38, 0.25);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-mute-all:hover {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.btn-raise-hand {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(212, 168, 67, 0.15), rgba(245, 158, 11, 0.2));
+  color: var(--azhar-gold-dark);
+  border: 1px solid var(--azhar-gold-leaf);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-raise-hand:hover {
+  background: var(--azhar-gold-leaf);
+  color: #ffffff;
+}
+
+.btn-raise-hand.is-raised {
+  background: #f59e0b;
+  color: #ffffff;
+  border-color: #d97706;
+}
+
+/* ── تنبيه فلتر الأمان الأخلاقي (Chat Safety Alert) ── */
+.chat-safety-warning {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #991b1b;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 8px;
+  animation: shake 0.4s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-4px); }
+  40%, 80% { transform: translateX(4px); }
+}

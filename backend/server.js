@@ -144,6 +144,8 @@ const connectDB = async () => {
       socketTimeoutMS: 45000,
     });
     console.log('✅ Connected to MongoDB Successfully!');
+    const { startScheduler } = require('./services/scheduler');
+    startScheduler();
   } catch (error) {
     console.error('❌ Database connection error:', error.message);
     console.log('⚠️ Running in Mock Mode due to DB connection failure');
@@ -205,6 +207,7 @@ app.use('/api/assignments', require('./routes/assignments'));
 app.use('/api/quizzes', require('./routes/quizzes'));
 app.use('/api/progress', require('./routes/progress'));
 app.use('/api/guardians', require('./routes/guardians'));
+app.use('/api/guardian', require('./routes/guardian'));
 app.use('/api/gamification', require('./routes/gamification'));
 app.use('/api/audio', require('./routes/audio'));
 app.use('/api/live', require('./routes/live'));

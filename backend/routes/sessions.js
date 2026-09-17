@@ -333,4 +333,197 @@ router.get('/admin/all', protect, authorize('admin'), async (req, res) => {
   }
 });
 
+// @route   POST /api/sessions/:id/rsvp
+// @desc    Confirm attendance or excuse absence (with 6-hour policy check)
+// @access  Private (Student, Guardian, Admin)
+router.post('/:id/rsvp', protect, async (req, res) => {
+  try {
+    const { status, excuseReason } = req.body;
+    const studentId = req.body.studentId || req.user.id;
+
+    if (!status || !['confirmed', 'excused'].includes(status)) {
+      return res.status(400).json({ error: 'الحالة غير صالحة. يجب أن تكون confirmed أو excused' });
+    }
+
+    const session = await Session.findById(req.params.id);
+    if (!session) {
+      return res.status(404).json({ error: 'الحصة غير موجودة' });
+    }
+
+    // Verify permission: student herself, or guardian of student, or admin
+    if (req.user.role !== 'admin' && req.user.id !== studentId.toString()) {
+      const Guardian = require('../models/Guardian');
+      const guardian = await Guardian.findOne({ user: req.user.id, 'children.student': studentId });
+      if (!guardian) {
+        return res.status(403).json({ error: 'غير مصرح بتعديل حضور هذا الطالب' });
+      }
+    }
+
+    const now = new Date();
+    const scheduledTime = new Date(session.scheduledAt);
+    const diffHours = (scheduledTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+    let eligibleForCompensation = false;
+    let lateExcuse = false;
+
+    if (status === 'excused') {
+      if (diffHours >= 6) {
+        eligibleForCompensation = true;
+      } else {
+        lateExcuse = true;
+      }
+    }
+
+    // Update or insert attendance record for this student
+    if (!session.attendance) {
+      session.attendance = [];
+    }
+
+    const existingIndex = session.attendance.findIndex(
+      (a) => a.student && a.student.toString() === studentId.toString()
+    );
+
+    const attendanceStatus = status === 'confirmed' ? 'pending' : 'excused';
+
+    const attendanceRecord = {
+      student: studentId,
+      status: attendanceStatus,
+      excuseReason: excuseReason || (status === 'confirmed' ? 'تأكيد الحضور مسبقاً' : ''),
+      excusedAt: status === 'excused' ? now : undefined,
+      eligibleForCompensation
+    };
+
+    if (existingIndex > -1) {
+      session.attendance[existingIndex].status = attendanceStatus;
+      session.attendance[existingIndex].excuseReason = attendanceRecord.excuseReason;
+      if (status === 'excused') {
+        session.attendance[existingIndex].excusedAt = now;
+        session.attendance[existingIndex].eligibleForCompensation = eligibleForCompensation;
+      }
+    } else {
+      session.attendance.push(attendanceRecord);
+    }
+
+    await session.save();
+
+    // Update student model if exists
+    const Student = require('../models/Student');
+    const studentRecord = await Student.findOne({ user: studentId });
+    if (studentRecord) {
+      studentRecord.lastUpdate = status === 'excused' ? (eligibleForCompensation ? 'معتذر (مستحق تعويض)' : 'معتذر (متأخر)') : 'مؤكد الحضور';
+      await studentRecord.save();
+    }
+
+    res.json({
+      success: true,
+      message: status === 'confirmed'
+        ? 'تم تأكيد الحضور بنجاح'
+        : (eligibleForCompensation
+            ? 'تم قبول الاعتذار بنجاح ومستحق لحصة تعويضية (قبل 6 ساعات)'
+            : 'تم تسجيل الاعتذار، ولكنه اعتذار متأخر (أقل من 6 ساعات قبل موعد الحصة)'),
+      status,
+      eligibleForCompensation,
+      lateExcuse,
+      diffHours: Math.round(diffHours * 10) / 10
+    });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// @route   POST /api/sessions/:id/report
+// @desc    Save session evaluation report and immediately dispatch WhatsApp report card
+// @access  Private (Teacher, Admin)
+router.post('/:id/report', protect, authorize('teacher', 'admin'), async (req, res) => {
+  try {
+    const { studentReports } = req.body;
+    const session = await Session.findById(req.params.id);
+
+    if (!session) {
+      return res.status(404).json({ error: 'الحصة غير موجودة' });
+    }
+
+    const reportsInput = Array.isArray(studentReports) ? studentReports : [req.body];
+    if (reportsInput.length === 0 || (!reportsInput[0].student && !session.student)) {
+      return res.status(400).json({ error: 'بيانات التقرير أو معرف الطالب مطلوبة' });
+    }
+
+    const { sendSessionReport } = require('../services/whatsapp');
+    const { resolveGuardianOrStudentPhone } = require('../services/scheduler');
+    const User = require('../models/User');
+
+    if (!session.studentReports) {
+      session.studentReports = [];
+    }
+
+    const results = [];
+
+    for (const reportItem of reportsInput) {
+      const studentId = reportItem.student || reportItem.studentId || session.student;
+      if (!studentId) continue;
+
+      const studentUser = await User.findById(studentId).select('name phone whatsappPhone guardian');
+
+      const memScore = reportItem.memorizationScore != null ? Number(reportItem.memorizationScore) : undefined;
+      const tajScore = reportItem.tajweedScore != null ? Number(reportItem.tajweedScore) : undefined;
+
+      const reportData = {
+        student: studentId,
+        memorizationScore: memScore,
+        tajweedScore: tajScore,
+        surahRecited: reportItem.surahRecited || '',
+        fromAyah: reportItem.fromAyah ? Number(reportItem.fromAyah) : undefined,
+        toAyah: reportItem.toAyah ? Number(reportItem.toAyah) : undefined,
+        nextHomework: reportItem.nextHomework || reportItem.homework || '',
+        notes: reportItem.notes || '',
+        sentToWhatsApp: false,
+        sentAt: undefined
+      };
+
+      // Dispatch WhatsApp report to guardian/student
+      try {
+        const recipientPhone = await resolveGuardianOrStudentPhone(studentUser);
+        if (recipientPhone) {
+          const waResult = await sendSessionReport(session, studentUser, reportData, recipientPhone);
+          if (waResult?.success) {
+            reportData.sentToWhatsApp = true;
+            reportData.sentAt = new Date();
+          }
+        } else {
+          console.warn(`⚠️ [Session Report] No phone found for student ${studentUser?.name} (${studentId})`);
+        }
+      } catch (waErr) {
+        console.error('❌ [Session Report] WhatsApp dispatch failed:', waErr.message);
+      }
+
+      // Upsert report in session.studentReports
+      const existingIdx = session.studentReports.findIndex(
+        (r) => r.student && r.student.toString() === studentId.toString()
+      );
+      if (existingIdx > -1) {
+        session.studentReports[existingIdx] = { ...session.studentReports[existingIdx].toObject(), ...reportData };
+      } else {
+        session.studentReports.push(reportData);
+      }
+
+      results.push({
+        studentId,
+        studentName: studentUser?.name,
+        sentToWhatsApp: reportData.sentToWhatsApp
+      });
+    }
+
+    await session.save();
+
+    res.json({
+      success: true,
+      message: 'تم حفظ تقرير الحصة وإرساله بنجاح',
+      sessionReports: session.studentReports,
+      dispatchSummary: results
+    });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
 module.exports = router;

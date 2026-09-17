@@ -72,7 +72,8 @@ const SessionSchema = new mongoose.Schema({
     student: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     status: { type: String, enum: ['attended', 'absent', 'excused', 'pending'], default: 'pending' },
     excuseReason: String,
-    excusedAt: Date
+    excusedAt: Date,
+    eligibleForCompensation: { type: Boolean, default: false }
   }],
   studentReports: [{
     student: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
