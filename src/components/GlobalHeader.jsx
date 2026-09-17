@@ -23,6 +23,7 @@ export default function GlobalHeader() {
   const navLinks = [
     { path: lp('/teachers'), label: t.common.teachers },
     { path: lp('/courses'), label: t.common.courses },
+    { path: lp('/tracks'), label: locale === 'ar' ? 'المسارات' : 'Tracks' },
     { path: lp('/ai'), label: 'AI', icon: Sparkles },
     { path: lp('/library'), label: locale === 'ar' ? 'المكتبة' : 'Library' },
     { path: lp('/leaderboard'), label: locale === 'ar' ? 'البطولة' : 'Leaderboard' },

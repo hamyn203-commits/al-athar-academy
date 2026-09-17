@@ -9,6 +9,7 @@ import SEOHead from '../../components/SEOHead';
 import api from '../../lib/api';
 import KidsQuizGame from '../../components/games/KidsQuizGame';
 import KidsLettersGame from '../../components/games/KidsLettersGame';
+import KidsCompetitionsAndAwards from '../../components/kids/KidsCompetitionsAndAwards';
 
 const FEATURES = [
   { icon: Gamepad2, ar: 'ألعاب تعليمية ممتعة', en: 'Fun educational games' },
@@ -52,6 +53,36 @@ export default function KidsProgram() {
             );
           })}
         </section>
+        {/* ═══ نظام مسابقات الأطفال والجوائز النصف سنوية (كل 6 أشهر) ═══ */}
+        <div className="max-w-6xl mx-auto px-4 pb-16">
+          <KidsCompetitionsAndAwards />
+        </div>
+
+        {/* ═══ دعوة للانضمام لمسار تأسيس الأطفال ═══ */}
+        <section className="max-w-4xl mx-auto px-4 pb-16">
+          <div className="bg-gradient-to-r from-emerald-900 to-teal-950 text-white rounded-3xl p-8 shadow-xl border border-emerald-500/30 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="space-y-2 text-center md:text-right">
+              <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-400/20 text-amber-300">
+                {isAr ? 'المسار المنهجي التأسيسي' : 'Foundational Track'}
+              </span>
+              <h3 className="text-2xl font-bold">
+                {isAr ? 'مسار تأسيس الأطفال: القاعدة النورانية ونور البيان' : 'Kids Foundation: Noorania & Noor Al-Bayan'}
+              </h3>
+              <p className="text-emerald-100 text-sm max-w-xl">
+                {isAr
+                  ? 'منهج متكامل لضبط مخارج الحروف، التلقين بالصوت والصورة، والتهجئة بالرسم العثماني مع كبار المعلمين المتخصصين.'
+                  : 'Complete program for phonetics, interactive pronunciation, and reading directly from the Mushaf.'}
+              </p>
+            </div>
+            <Link
+              to={localizedPath('/tracks', locale)}
+              className="shrink-0 px-6 py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 shadow-md hover:scale-105 transition"
+            >
+              {isAr ? 'استكشف مسار الأطفال' : 'Explore Kids Track'}
+            </Link>
+          </div>
+        </section>
+
         <section className="max-w-xl mx-auto px-4 pb-8">
           <h2 className="font-bold text-xl mb-4 text-center">{isAr ? 'لعبة التجويد السريعة' : 'Quick Tajweed Quiz'}</h2>
           <KidsQuizGame locale={locale} />
