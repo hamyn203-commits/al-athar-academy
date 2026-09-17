@@ -31,8 +31,43 @@ const UserSchema = new mongoose.Schema({
   },
   role: { 
     type: String, 
-    enum: ['student', 'teacher', 'admin', 'guardian'],
+    enum: ['student', 'teacher', 'admin', 'guardian', 'supervisor'],
     default: 'student'
+  },
+  guardian: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  children: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
+  whatsappPhone: {
+    type: String,
+    trim: true
+  },
+  gender: {
+    type: String,
+    enum: ['male', 'female']
+  },
+  age: {
+    type: Number,
+    min: 4,
+    max: 100
+  },
+  currentLevel: {
+    type: String,
+    enum: ['beginner', 'intermediate', 'advanced', 'ijazah'],
+    default: 'beginner'
+  },
+  preferredTrack: {
+    type: String,
+    enum: ['memorization', 'tajweed_ijazah', 'kids_foundation'],
+    default: 'memorization'
+  },
+  circle: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'GroupCircle'
   },
   avatar: {
     type: String,
