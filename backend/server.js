@@ -8,7 +8,7 @@ const morgan = require('morgan');
 const fs = require('fs');
 const path = require('path');
 
-dotenv.config();
+dotenv.config({ path: path.join(__dirname, '.env') });
 
 const uploadsDir = path.join(__dirname, 'uploads', 'teachers');
 const homeworkDir = path.join(__dirname, 'uploads', 'homework');
@@ -280,7 +280,13 @@ process.on('uncaughtException', (err) => {
   process.exit(1);
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
   console.log(`🔒 Security: Helmet + Rate Limit + Mongo Sanitize enabled`);
 });
+
+// Keep process active
+setInterval(() => {}, 1000 * 60 * 60);
+
+module.exports = app;
+
