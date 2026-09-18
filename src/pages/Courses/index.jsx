@@ -10,8 +10,12 @@ import {
   Star, 
   BookOpen,
   DollarSign,
-  ChevronDown
+  ChevronDown,
+  Award,
+  Sparkles,
+  ArrowRight
 } from 'lucide-react';
+import { localizedPath } from '../../lib/locale';
 import GlobalHeader from '../../components/GlobalHeader';
 import GlobalFooter from '../../components/GlobalFooter';
 import SEOHead from '../../components/SEOHead';
@@ -185,8 +189,39 @@ export default function Courses() {
           </div>
         </section>
 
+        {/* ═══ المسارات التعليمية الثلاثة البارزة ═══ */}
+        <section className="container mx-auto px-4 -mt-10 mb-8 relative z-20">
+          <div className="bg-gradient-to-r from-emerald-950 via-[var(--azhar-green-deep)] to-slate-900 rounded-2xl p-6 md:p-8 text-white shadow-xl border border-emerald-500/30">
+            <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
+              <div className="space-y-2 text-center lg:text-right">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-400/20 text-amber-300 text-xs font-bold">
+                  <Sparkles size={14} />
+                  <span>{locale === 'ar' ? 'المسارات التخصصية المعتمدة' : 'Accredited Structured Tracks'}</span>
+                </div>
+                <h2 className="text-2xl md:text-3xl font-bold">
+                  {locale === 'ar' ? 'هل تبحث عن مسار منهجي متكامل؟' : 'Looking for a Structured Track?'}
+                </h2>
+                <p className="text-emerald-100 text-sm max-w-2xl">
+                  {locale === 'ar'
+                    ? 'مسار التحفيظ والمراجعة المتقنة • مسار الإجازة وشرح المتون التجويدية • مسار تأسيس الأطفال بالقاعدة النورانية ونور البيان.'
+                    : 'Memorization & Revision • Ijazah & Tajweed Matn • Kids Foundation (Noorania & Noor Al-Bayan).'}
+                </p>
+              </div>
+
+              <Link
+                to={localizedPath('/tracks', locale)}
+                className="shrink-0 px-6 py-3 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-bold text-sm shadow-md hover:shadow-lg hover:scale-105 transition-all flex items-center gap-2"
+              >
+                <Award size={18} />
+                <span>{locale === 'ar' ? 'استكشف المسارات بالتفصيل' : 'Explore Tracks Details'}</span>
+                <ArrowRight size={16} />
+              </Link>
+            </div>
+          </div>
+        </section>
+
         {/* Search and Filters */}
-        <section className="container mx-auto px-4 -mt-8">
+        <section className="container mx-auto px-4">
           <div className="bg-white rounded-xl shadow-lg p-6">
             <div className="flex flex-col md:flex-row gap-4">
               {/* Search */}

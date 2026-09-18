@@ -501,6 +501,32 @@ export default function StudentDashboard() {
                     ))}
                   </div>
                 )}
+
+                {/* ═══ بطاقة مسابقة الأثر النصف سنوية والجوائز ═══ */}
+                <div className="mt-6 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-300 rounded-2xl p-6">
+                  <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div className="space-y-1 text-center md:text-right">
+                      <div className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-800 bg-amber-200/60 px-3 py-1 rounded-full">
+                        <Trophy size={14} />
+                        <span>{locale === 'ar' ? 'مسابقة براعم الأثر النصف سنوية (كل 6 أشهر)' : 'Semi-Annual Kids Contest'}</span>
+                      </div>
+                      <h4 className="text-lg font-bold text-slate-900">
+                        {locale === 'ar' ? 'لوحة شرف الأبطال والجوائز الكبرى' : 'Little Champions Hall of Fame & Grand Prizes'}
+                      </h4>
+                      <p className="text-xs text-slate-600 max-w-xl">
+                        {locale === 'ar'
+                          ? 'جوائز قيمة: حقيبة طالب القرآن، المصحف الإلكتروني الناطق، درع بطل الأثر الصغير، وتاج الوقار للأبوين.'
+                          : 'Prizes: Elite Quran backpack, speaking audio Mushaf, hero trophy, and Crown of Dignity for parents.'}
+                      </p>
+                    </div>
+                    <Link
+                      to="/programs/kids"
+                      className="shrink-0 px-5 py-2.5 rounded-xl font-bold text-xs bg-amber-600 text-white shadow-md hover:bg-amber-700 transition"
+                    >
+                      {locale === 'ar' ? 'استعراض المسابقة والتسجيل' : 'View Contest & Register'}
+                    </Link>
+                  </div>
+                </div>
               </div>
             )}
 

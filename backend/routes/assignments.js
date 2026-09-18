@@ -53,6 +53,25 @@ router.get('/', protect, async (req, res) => {
   }
 });
 
+// @route   GET /api/assignments/my-submissions
+// @desc    Get all submissions for the current user
+// @access  Private
+router.get('/my-submissions', protect, async (req, res) => {
+  try {
+    const submissions = await AssignmentSubmission.find({ student: req.user.id })
+      .populate({
+        path: 'assignment',
+        populate: { path: 'course', select: 'title' }
+      })
+      .sort({ submittedAt: -1 });
+
+    res.json(submissions);
+  } catch (error) {
+    console.error('Get my submissions error:', error);
+    res.status(500).json({ error: 'Failed to fetch submissions' });
+  }
+});
+
 // @route   GET /api/assignments/:id
 // @desc    Get a single assignment
 // @access  Private
@@ -262,25 +281,6 @@ router.put('/submissions/:submissionId/grade', protect, authorize('teacher', 'ad
   } catch (error) {
     console.error('Grade submission error:', error);
     res.status(400).json({ error: error.message });
-  }
-});
-
-// @route   GET /api/assignments/my-submissions
-// @desc    Get all submissions for the current user
-// @access  Private
-router.get('/my-submissions', protect, async (req, res) => {
-  try {
-    const submissions = await AssignmentSubmission.find({ student: req.user.id })
-      .populate({
-        path: 'assignment',
-        populate: { path: 'course', select: 'title' }
-      })
-      .sort({ submittedAt: -1 });
-
-    res.json(submissions);
-  } catch (error) {
-    console.error('Get my submissions error:', error);
-    res.status(500).json({ error: 'Failed to fetch submissions' });
   }
 });
 

@@ -3,7 +3,7 @@
 const SITE = 'https://al-athar-academy.vercel.app';
 const KEY = 'alathartayyib2026seokey01';
 const LOCALES = ['ar', 'en', 'fr', 'de', 'tr', 'ur', 'id', 'ms', 'ku'];
-const PAGES = ['', '/teachers', '/courses', '/blog', '/contact', '/about', '/teacher/register', '/login', '/faq'];
+const PAGES = ['', '/free-trial', '/teachers', '/courses', '/blog', '/contact', '/about', '/teacher/register', '/login', '/faq'];
 
 const urls = [];
 LOCALES.forEach((loc) => {
@@ -13,15 +13,19 @@ LOCALES.forEach((loc) => {
 let ok = 0;
 let fail = 0;
 
-for (const url of urls) {
-  const api = `https://www.bing.com/indexnow?url=${encodeURIComponent(url)}&key=${KEY}`;
-  try {
-    const r = await fetch(api);
-    if (r.status === 200 || r.status === 202) ok++;
-    else fail++;
-  } catch {
-    fail++;
-  }
+const chunkSize = 10;
+for (let i = 0; i < urls.length; i += chunkSize) {
+  const batch = urls.slice(i, i + chunkSize);
+  await Promise.all(batch.map(async (url) => {
+    const api = `https://www.bing.com/indexnow?url=${encodeURIComponent(url)}&key=${KEY}`;
+    try {
+      const r = await fetch(api, { signal: AbortSignal.timeout(2000) });
+      if (r.status === 200 || r.status === 202) ok++;
+      else fail++;
+    } catch {
+      fail++;
+    }
+  }));
 }
 
 // POST batch لـ IndexNow (بعض الشبكات)

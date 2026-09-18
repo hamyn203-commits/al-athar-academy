@@ -1,6 +1,6 @@
 # Autopilot — أكاديمية الأثر
 
-> اقرأ **ROADMAP.md** أولاً. نفّذ أول بند من **V6.2**.
+> اقرأ **ROADMAP.md** أولاً. نفّذ أول بند من **V7 — المعمارية والأمان**.
 
 ## قواعد
 - لا `platform/` | `npm run build` قبل push | push → deploy تلقائي

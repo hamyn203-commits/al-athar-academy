@@ -123,6 +123,20 @@ router.put('/read-all', protect, async (req, res) => {
   }
 });
 
+// @route   DELETE /api/notifications/clear-all
+// @desc    Delete all notifications
+// @access  Private
+router.delete('/clear-all', protect, async (req, res) => {
+  try {
+    await Notification.deleteMany({ user: req.user.id });
+
+    res.json({ message: 'All notifications cleared' });
+  } catch (error) {
+    console.error('Clear all error:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
 // @route   DELETE /api/notifications/:id
 // @desc    Delete a notification
 // @access  Private
@@ -140,20 +154,6 @@ router.delete('/:id', protect, async (req, res) => {
     res.json({ message: 'Notification deleted' });
   } catch (error) {
     console.error('Delete notification error:', error);
-    res.status(400).json({ error: error.message });
-  }
-});
-
-// @route   DELETE /api/notifications/clear-all
-// @desc    Delete all notifications
-// @access  Private
-router.delete('/clear-all', protect, async (req, res) => {
-  try {
-    await Notification.deleteMany({ user: req.user.id });
-
-    res.json({ message: 'All notifications cleared' });
-  } catch (error) {
-    console.error('Clear all error:', error);
     res.status(400).json({ error: error.message });
   }
 });

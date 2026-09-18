@@ -24,6 +24,7 @@ const TeacherDashboard = lazy(() => import('./pages/TeacherDashboard'));
 const StudentDashboard = lazy(() => import('./pages/StudentDashboard'));
 const GuardianDashboard = lazy(() => import('./pages/GuardianDashboard'));
 const BookSession = lazy(() => import('./pages/BookSession'));
+const FreeTrial = lazy(() => import('./pages/FreeTrial/FreeTrial'));
 const GlobalPlatform = lazy(() => import('./pages/GlobalPlatform/GlobalPlatform'));
 const MarketsIndex = lazy(() => import('./pages/Markets'));
 const MarketDetail = lazy(() => import('./pages/Markets/MarketDetail'));
@@ -50,6 +51,7 @@ const VideoLibrary = lazy(() => import('./pages/Library'));
 const Careers = lazy(() => import('./pages/Careers'));
 const RevertsProgram = lazy(() => import('./pages/Programs/Reverts'));
 const KidsProgram = lazy(() => import('./pages/Programs/Kids'));
+const TracksPage = lazy(() => import('./pages/Tracks'));
 const MobileAppPage = lazy(() => import('./pages/Mobile'));
 const LeaderboardPage = lazy(() => import('./pages/Leaderboard'));
 const NotificationsPage = lazy(() => import('./pages/Notifications'));
@@ -74,6 +76,7 @@ function pageRoutes() {
       <Route path="setup-admin" element={<SetupAdmin />} />
       <Route path="forgot-password" element={<ForgotPassword />} />
       <Route path="register/student" element={<Register />} />
+      <Route path="register/teacher" element={<TeacherRegistration />} />
       <Route path="about" element={<About />} />
       <Route path="faq" element={<FAQPage />} />
       <Route path="privacy" element={<Privacy />} />
@@ -94,6 +97,8 @@ function pageRoutes() {
       <Route path="teacher/dashboard" element={<TeacherDashboard />} />
       <Route path="teachers" element={<Teachers />} />
       <Route path="teachers/:id" element={<TeacherProfile />} />
+      <Route path="free-trial" element={<FreeTrial />} />
+      <Route path="trial" element={<FreeTrial />} />
       <Route path="book-trial/:teacherId" element={<BookSession />} />
       <Route path="global-platform" element={<GlobalPlatform />} />
       <Route path="markets" element={<MarketsIndex />} />
@@ -110,6 +115,8 @@ function pageRoutes() {
       <Route path="careers" element={<Careers />} />
       <Route path="programs/reverts" element={<RevertsProgram />} />
       <Route path="programs/kids" element={<KidsProgram />} />
+      <Route path="kids" element={<KidsProgram />} />
+      <Route path="tracks" element={<TracksPage />} />
       <Route path="leaderboard" element={<LeaderboardPage />} />
       <Route path="app" element={<MobileAppPage />} />
       <Route path="notifications" element={<NotificationsPage />} />

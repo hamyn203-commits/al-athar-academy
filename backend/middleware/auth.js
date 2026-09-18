@@ -1,5 +1,4 @@
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
@@ -101,28 +100,6 @@ const requireRole = (...roles) => {
   };
 };
 
-const optionalAuth = async (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return next();
-  }
-
-  const token = authHeader.split(' ')[1];
-
-  try {
-    const decoded = jwt.verify(
-      token, 
-      JWT_SECRET || 'dev-only-fallback-secret'
-    );
-    req.user = decoded;
-  } catch (error) {
-    // Token invalid but we continue without user
-  }
-
-  next();
-};
-
 const attachTeacherProfile = async (req, res, next) => {
   if (req.user && req.user.role === 'teacher') {
     const Teacher = require('../models/Teacher');
@@ -140,7 +117,6 @@ module.exports = {
   verifyAccessToken,
   verifyRefreshToken,
   requireRole,
-  optionalAuth,
   attachTeacherProfile,
   protect: verifyAccessToken,
   authorize: requireRole

@@ -38,6 +38,26 @@ router.get('/my-attempts/list', protect, async (req, res) => {
   }
 });
 
+// @route   GET /api/quizzes/my-attempts
+// @desc    Get all quiz attempts for the current user
+// @access  Private
+router.get('/my-attempts', protect, async (req, res) => {
+  try {
+    const attempts = await QuizAttempt.find({ student: req.user.id })
+      .populate({
+        path: 'quiz',
+        select: 'title type',
+        populate: { path: 'course', select: 'title' }
+      })
+      .sort({ submittedAt: -1 });
+
+    res.json(attempts);
+  } catch (error) {
+    console.error('Get my attempts error:', error);
+    res.status(500).json({ error: 'Failed to fetch attempts' });
+  }
+});
+
 // @route   GET /api/quizzes/:id
 // @desc    Get a single quiz
 // @access  Private
@@ -395,26 +415,6 @@ router.get('/:id/attempts', protect, authorize('teacher', 'admin'), async (req, 
     res.json(attempts);
   } catch (error) {
     console.error('Get attempts error:', error);
-    res.status(500).json({ error: 'Failed to fetch attempts' });
-  }
-});
-
-// @route   GET /api/quizzes/my-attempts
-// @desc    Get all quiz attempts for the current user
-// @access  Private
-router.get('/my-attempts', protect, async (req, res) => {
-  try {
-    const attempts = await QuizAttempt.find({ student: req.user.id })
-      .populate({
-        path: 'quiz',
-        select: 'title type',
-        populate: { path: 'course', select: 'title' }
-      })
-      .sort({ submittedAt: -1 });
-
-    res.json(attempts);
-  } catch (error) {
-    console.error('Get my attempts error:', error);
     res.status(500).json({ error: 'Failed to fetch attempts' });
   }
 });

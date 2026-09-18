@@ -41,4 +41,30 @@ backend/*.log
 # Proofshot artifacts
 proofshot-artifacts/
 
+# Archives & Deployment bundles
+*.zip
+*.tar.gz
+deploy-folder/
+azure-webapp-logs*/
+
+# Media & QA Artifacts
+screenshots/
+tmp/
+backend/tmp/
+ش/
+*.png
+!public/**/*.png
+!src/**/*.png
+
+# Linters, Reports & Temporary test state
+eslint-warnings*.json
+.lint-output.txt
+qa-student-state.json
+
+# Uploads
+uploads/
+backend/uploads/
+
 .vercel
+
+

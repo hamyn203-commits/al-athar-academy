@@ -26,6 +26,8 @@ export default {
     urdu: 'اردو',
     indonesian: 'Indonesia',
     malay: 'Melayu',
+    freeTrial: 'Réserver un cours d\'essai gratuit',
+    freeTrialShort: 'Essai gratuit',
   },
   hero: {
     title: 'Apprenez le Coran et l\'Arabe',

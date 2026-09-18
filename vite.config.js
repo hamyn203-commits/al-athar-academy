@@ -11,6 +11,7 @@ function generateSitemap() {
   
   const pages = [
     { url: '/', priority: '1.0', changefreq: 'weekly' },
+    { url: '/free-trial', priority: '1.0', changefreq: 'weekly' },
     { url: '/teachers', priority: '0.9', changefreq: 'daily' },
     { url: '/courses', priority: '0.9', changefreq: 'weekly' },
     { url: '/blog', priority: '0.8', changefreq: 'daily' },
@@ -131,9 +132,10 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',
+        target: 'http://127.0.0.1:4000',
         changeOrigin: true,
       },
     },
   },
 });
+

@@ -3,13 +3,12 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const mongoose = require('mongoose');
 const helmet = require('helmet');
-const mongoSanitize = require('express-mongo-sanitize');
 const rateLimit = require('express-rate-limit');
 const morgan = require('morgan');
 const fs = require('fs');
 const path = require('path');
 
-dotenv.config();
+dotenv.config({ path: path.join(__dirname, '.env') });
 
 const uploadsDir = path.join(__dirname, 'uploads', 'teachers');
 const homeworkDir = path.join(__dirname, 'uploads', 'homework');
@@ -87,10 +86,6 @@ app.use(cors({
     const siteUrl = (process.env.SITE_URL || process.env.VITE_SITE_URL || '').replace(/\/$/, '');
     if (siteUrl && origin === siteUrl) return callback(null, true);
     if (/^http:\/\/localhost:\d+$/i.test(origin)) return callback(null, true);
-    // Allow Vercel preview domains if no explicit ALLOWED_ORIGINS are configured.
-    if (/^https:\/\/al-athar-academy(-[a-z0-9-]+)?\.vercel\.app$/i.test(origin)) {
-      return callback(null, true);
-    }
     callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
@@ -149,6 +144,8 @@ const connectDB = async () => {
       socketTimeoutMS: 45000,
     });
     console.log('✅ Connected to MongoDB Successfully!');
+    const { startScheduler } = require('./services/scheduler');
+    startScheduler();
   } catch (error) {
     console.error('❌ Database connection error:', error.message);
     console.log('⚠️ Running in Mock Mode due to DB connection failure');
@@ -210,6 +207,7 @@ app.use('/api/assignments', require('./routes/assignments'));
 app.use('/api/quizzes', require('./routes/quizzes'));
 app.use('/api/progress', require('./routes/progress'));
 app.use('/api/guardians', require('./routes/guardians'));
+app.use('/api/guardian', require('./routes/guardian'));
 app.use('/api/gamification', require('./routes/gamification'));
 app.use('/api/audio', require('./routes/audio'));
 app.use('/api/live', require('./routes/live'));
@@ -227,6 +225,9 @@ app.use('/api/videos', require('./routes/videos'));
 app.use('/api/careers', require('./routes/careers'));
 app.use('/api/women', require('./routes/women'));
 app.use('/api/system', require('./routes/system'));
+app.use('/api/circles', require('./routes/circles'));
+app.use('/api/trials', require('./routes/trials'));
+app.use('/api/finance', require('./routes/finance'));
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
@@ -279,7 +280,19 @@ process.on('uncaughtException', (err) => {
   process.exit(1);
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
   console.log(`🔒 Security: Helmet + Rate Limit + Mongo Sanitize enabled`);
 });
+
+server.on('error', (err) => {
+  console.error('SERVER LISTEN ERROR:', err);
+});
+
+
+
+// Keep process active
+setInterval(() => {}, 1000 * 60 * 60);
+
+module.exports = app;
+

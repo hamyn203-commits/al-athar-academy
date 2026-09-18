@@ -247,6 +247,35 @@
   background-position: 100% 0;
 }
 
+@keyframes goldShimmer {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.btn-gold-shimmer {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.75rem;
+  padding: 0.85rem 1.75rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0a1628;
+  background: linear-gradient(110deg, #d4a843 0%, #fae8a4 30%, #f0c75e 60%, #c9a227 100%);
+  background-size: 200% 200%;
+  animation: goldShimmer 5s ease infinite;
+  box-shadow: 0 4px 18px rgba(212, 168, 67, 0.45);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.btn-gold-shimmer:hover {
+  transform: translateY(-2.5px) scale(1.02);
+  box-shadow: 0 10px 30px rgba(212, 168, 67, 0.6);
+}
+
+
 /* الزر الأخضر الأزهري */
 .btn-azhar {
   display: inline-flex;

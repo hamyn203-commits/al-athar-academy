@@ -12,9 +12,11 @@ import {
 } from '@livekit/components-react';
 import '@livekit/components-styles';
 import './LiveRoom.css';
+import '../../components/classroom/classroom.css';
 import { 
   Mic, MicOff, Video, VideoOff, Monitor, MonitorOff, 
-  PhoneOff, Users, MessageSquare, Send, X, ArrowRight, Languages
+  PhoneOff, Users, MessageSquare, Send, X, ArrowRight, 
+  Languages, BookOpen, Shield, Sparkles, AlertTriangle, Eye
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Logo from '../../components/Logo';
@@ -23,15 +25,28 @@ import { API_BASE_URL } from '../../config';
 import { LangSelect } from '../../components/live/SessionTranslateChat';
 import { translateText } from '../../lib/translateApi';
 import { detectBrowserLocale } from '../../lib/locale';
+import SyncedMushaf from '../../components/classroom/SyncedMushaf';
+import CircleTurnManager from '../../components/classroom/CircleTurnManager';
+import { inspectMessage } from '../../components/classroom/ChatSafetyFilter';
 
-function LiveRoomContent({ isHost }) {
+function LiveRoomContent({ isHost, isObserver, participantName, roomId }) {
   const { t } = useAppContext();
+  
+  // شاشات الفصل الذكي (المصحف المتزامن / حلقة الـ 10 طلاب / شبكة الكاميرات)
+  const [activeTab, setActiveTab] = useState('mushaf'); // 'mushaf' | 'circle' | 'video'
+
+  // حالة الشات
   const [showChat, setShowChat] = useState(false);
   const [chatMessages, setChatMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
+  const [safetyWarning, setSafetyWarning] = useState(null);
+
+  // الترجمة الفورية
   const [myLang, setMyLang] = useState(detectBrowserLocale());
   const [partnerLang, setPartnerLang] = useState(myLang === 'ar' ? 'id' : 'ar');
   const [autoTranslate, setAutoTranslate] = useState(true);
+
+  // LiveKit hooks
   const participants = useParticipants();
   const room = useRoomContext();
   const localParticipant = useLocalParticipant();
@@ -61,15 +76,24 @@ function LiveRoomContent({ isHost }) {
 
     const handleDataReceived = async (payload, participant) => {
       try {
-        const message = JSON.parse(new TextDecoder().decode(payload));
-        await addMessage(
-          message.text,
-          participant?.name || 'Unknown',
-          false,
-          message.lang || 'ar'
-        );
+        const raw = new TextDecoder().decode(payload);
+        const message = JSON.parse(raw);
+
+        // تصفية أحداث المزامنة للمصحف والحلقة لمنع تداخلها مع الشات
+        if (message.type === 'MUSHAF_ACTION' || message.type === 'CIRCLE_ACTION') {
+          return;
+        }
+
+        if (message.text) {
+          await addMessage(
+            message.text,
+            participant?.name || 'Unknown',
+            false,
+            message.lang || 'ar'
+          );
+        }
       } catch (e) {
-        console.error('Failed to parse message:', e);
+        console.error('Failed to parse incoming message:', e);
       }
     };
 
@@ -77,11 +101,22 @@ function LiveRoomContent({ isHost }) {
     return () => room.off('dataReceived', handleDataReceived);
   }, [room, myLang, autoTranslate, addMessage]);
 
+  // إرسال رسالة شات آمنة مع فحص الشات الأخلاقي
   const sendMessage = async (e) => {
     e.preventDefault();
     if (!newMessage.trim() || !localParticipant.localParticipant) return;
 
+    // فحص الأمان الأخلاقي وحظر أرقام الهواتف والروابط والبريد
+    const inspection = inspectMessage(newMessage);
+    if (!inspection.isSafe) {
+      setSafetyWarning(inspection.warning);
+      return;
+    }
+
+    setSafetyWarning(null);
+
     const messageData = {
+      type: 'chat',
       text: newMessage,
       lang: myLang,
       timestamp: Date.now(),
@@ -109,11 +144,45 @@ function LiveRoomContent({ isHost }) {
 
   return (
     <div className="live-room-container">
+      {/* ── شريط وضع المراقب الصامت (ولي أمر / مشرف) ── */}
+      {isObserver && (
+        <div className="observer-banner">
+          <div className="flex items-center gap-2">
+            <Shield size={16} className="text-amber-300" />
+            <span>
+              أهلاً بك في وضع المراقب الصامت. تم إغلاق الكاميرا والمايكروفون تلقائياً لضمان خصوصيتك وهدوء الحلقة القرآنية.
+            </span>
+          </div>
+          <span className="observer-badge">
+            <Eye size={12} />
+            استماع ومشاهدة فقط
+          </span>
+        </div>
+      )}
+
+      {/* ── رأس الغرفة المباشرة ── */}
       <div className="live-room-header">
         <div className="live-room-header-right">
           <Logo size={40} showText />
           <div className="live-room-info">
-            <h2>{t.live.title}</h2>
+            <div className="flex items-center gap-2">
+              <h2>{t.live.title}</h2>
+              {isObserver ? (
+                <span className="observer-badge">
+                  <Shield size={12} />
+                  مراقب / ولي أمر
+                </span>
+              ) : isHost ? (
+                <span className="teacher-badge">
+                  <Sparkles size={12} />
+                  الشيخ المعلم
+                </span>
+              ) : (
+                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-900">
+                  طالب
+                </span>
+              )}
+            </div>
             <div className="live-room-stats">
               <span className="live-badge">
                 <span className="live-dot"></span>
@@ -126,10 +195,37 @@ function LiveRoomContent({ isHost }) {
             </div>
           </div>
         </div>
+
+        {/* أزرار تبديل وجهة الفصل (المصحف / الحلقة / الكاميرات) */}
+        <div className="live-room-tabs">
+          <button
+            className={`room-tab-btn ${activeTab === 'mushaf' ? 'active' : ''}`}
+            onClick={() => setActiveTab('mushaf')}
+          >
+            <BookOpen size={16} />
+            <span>المصحف المتزامن</span>
+          </button>
+          <button
+            className={`room-tab-btn ${activeTab === 'circle' ? 'active' : ''}`}
+            onClick={() => setActiveTab('circle')}
+          >
+            <Users size={16} />
+            <span>حلقة الـ 10 طلاب</span>
+          </button>
+          <button
+            className={`room-tab-btn ${activeTab === 'video' ? 'active' : ''}`}
+            onClick={() => setActiveTab('video')}
+          >
+            <Video size={16} />
+            <span>شبكة الكاميرات</span>
+          </button>
+        </div>
+
         <div className="live-room-header-left">
           <button 
             className={`chat-toggle-btn ${showChat ? 'active' : ''}`}
             onClick={() => setShowChat(!showChat)}
+            title="المحادثة الفورية"
           >
             <MessageSquare size={20} />
             {chatMessages.length > 0 && (
@@ -139,12 +235,45 @@ function LiveRoomContent({ isHost }) {
         </div>
       </div>
 
+      {/* ── جسم الغرفة الرئيسي ── */}
       <div className="live-room-main">
-        <div className="video-area">
-          <VideoConference />
+        {/* العرض المختار */}
+        <div className="flex-1 flex flex-col relative overflow-hidden bg-slate-900">
+          {activeTab === 'mushaf' && (
+            <div className="w-full h-full p-2 flex flex-col">
+              <SyncedMushaf
+                room={room}
+                localParticipant={localParticipant}
+                isTeacher={isHost}
+                isObserver={isObserver}
+              />
+            </div>
+          )}
+
+          {activeTab === 'circle' && (
+            <div className="w-full h-full p-3 flex flex-col overflow-y-auto">
+              <CircleTurnManager
+                room={room}
+                localParticipant={localParticipant}
+                participants={participants}
+                isTeacher={isHost}
+                isObserver={isObserver}
+                currentUserName={participantName}
+              />
+            </div>
+          )}
+
+          {activeTab === 'video' && (
+            <div className="video-area">
+              <VideoConference />
+            </div>
+          )}
+
+          {/* مشغّل الصوت المشترك للغرفة دائماً مفعل للاستماع */}
           <RoomAudioRenderer />
         </div>
 
+        {/* ── لوحة الشات الجانبية مع فلتر الأمان الأخلاقي ── */}
         <AnimatePresence>
           {showChat && (
             <motion.div 
@@ -161,6 +290,7 @@ function LiveRoomContent({ isHost }) {
                 </button>
               </div>
 
+              {/* ترجمة فورية */}
               <div className="p-3 border-b bg-emerald-50/80 space-y-2">
                 <div className="flex items-center gap-2 text-xs font-medium text-emerald-800">
                   <Languages size={14} /> ترجمة فورية
@@ -175,6 +305,7 @@ function LiveRoomContent({ isHost }) {
                 </label>
               </div>
               
+              {/* الرسائل */}
               <div className="chat-messages">
                 {chatMessages.length === 0 ? (
                   <div className="chat-empty">
@@ -197,11 +328,32 @@ function LiveRoomContent({ isHost }) {
                 )}
               </div>
 
+              {/* تنبيه فلتر الأمان الأخلاقي اللحظي */}
+              {safetyWarning && (
+                <div className="p-3 bg-red-50 border-t border-red-200 text-red-900 text-xs flex items-start gap-2">
+                  <AlertTriangle size={16} className="text-red-600 shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="font-bold mb-0.5">تنبيه خصوصية وسلامة الغرفة:</p>
+                    <p>{safetyWarning}</p>
+                  </div>
+                  <button 
+                    onClick={() => setSafetyWarning(null)}
+                    className="text-red-500 hover:text-red-700 font-bold"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+
+              {/* إدخال الرسالة */}
               <form className="chat-input-form" onSubmit={sendMessage}>
                 <input
                   type="text"
                   value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
+                  onChange={(e) => {
+                    setNewMessage(e.target.value);
+                    if (safetyWarning) setSafetyWarning(null);
+                  }}
                   placeholder={t.live.typeMessage}
                   className="chat-input"
                 />
@@ -214,20 +366,34 @@ function LiveRoomContent({ isHost }) {
         </AnimatePresence>
       </div>
 
+      {/* ── أشرطة التحكم السفلية ── */}
       <div className="live-room-controls">
         <div className="controls-group">
-          <TrackToggle source="microphone">
-            {(isEnabled) => isEnabled ? <Mic size={24} /> : <MicOff size={24} />}
-          </TrackToggle>
-          
-          <TrackToggle source="camera">
-            {(isEnabled) => isEnabled ? <Video size={24} /> : <VideoOff size={24} />}
-          </TrackToggle>
+          {/* وضع المراقب: أزرار الصوت والكاميرا مغلقة تماماً */}
+          {isObserver ? (
+            <div className="observer-media-locked" title="الكاميرا والمايك مغلقان في وضع المراقب الصامت">
+              <div className="observer-lock-pill">
+                <MicOff size={18} className="text-red-400" />
+                <VideoOff size={18} className="text-red-400" />
+                <span>وضع المراقب الصامت (مشاهدة فقط)</span>
+              </div>
+            </div>
+          ) : (
+            <>
+              <TrackToggle source="microphone">
+                {(isEnabled) => isEnabled ? <Mic size={24} /> : <MicOff size={24} />}
+              </TrackToggle>
+              
+              <TrackToggle source="camera">
+                {(isEnabled) => isEnabled ? <Video size={24} /> : <VideoOff size={24} />}
+              </TrackToggle>
 
-          {isHost && (
-            <TrackToggle source="screen_share">
-              {(isEnabled) => isEnabled ? <Monitor size={24} /> : <MonitorOff size={24} />}
-            </TrackToggle>
+              {isHost && (
+                <TrackToggle source="screen_share">
+                  {(isEnabled) => isEnabled ? <Monitor size={24} /> : <MonitorOff size={24} />}
+                </TrackToggle>
+              )}
+            </>
           )}
         </div>
 
@@ -250,8 +416,11 @@ export default function LiveRoom() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const isHost = searchParams.get('host') === 'true';
-  const participantName = searchParams.get('name') || 'مشارك';
+  // استخراج الصلاحيات والدور من الرابط
+  const isHost = searchParams.get('host') === 'true' || searchParams.get('teacher') === 'true';
+  const roleParam = searchParams.get('role');
+  const isObserver = roleParam === 'guardian' || roleParam === 'supervisor' || roleParam === 'observer' || searchParams.get('observer') === 'true';
+  const participantName = searchParams.get('name') || (isObserver ? 'مراقب أكاديمي' : isHost ? 'الشيخ المعلم' : 'طالب');
 
   useEffect(() => {
     const fetchToken = async () => {
@@ -263,7 +432,7 @@ export default function LiveRoom() {
           body: JSON.stringify({
             roomName: roomId,
             participantName,
-            isHost
+            isHost: isHost && !isObserver
           })
         });
 
@@ -283,7 +452,7 @@ export default function LiveRoom() {
     if (roomId) {
       fetchToken();
     }
-  }, [roomId, participantName, isHost]);
+  }, [roomId, participantName, isHost, isObserver]);
 
   if (loading) {
     return (
@@ -317,14 +486,19 @@ export default function LiveRoom() {
 
   return (
     <LiveKitRoom
-      video={true}
-      audio={true}
+      video={!isObserver}
+      audio={!isObserver}
       token={token}
       serverUrl={serverUrl}
       data-lk-theme="default"
       onDisconnected={() => navigate('/')}
     >
-      <LiveRoomContent isHost={isHost} />
+      <LiveRoomContent 
+        isHost={isHost} 
+        isObserver={isObserver}
+        participantName={participantName}
+        roomId={roomId}
+      />
     </LiveKitRoom>
   );
 }

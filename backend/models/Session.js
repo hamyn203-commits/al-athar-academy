@@ -3,8 +3,11 @@ const mongoose = require('mongoose');
 const SessionSchema = new mongoose.Schema({
   student: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
+    ref: 'User'
+  },
+  circle: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'GroupCircle'
   },
   teacher: {
     type: mongoose.Schema.Types.ObjectId,
@@ -13,7 +16,7 @@ const SessionSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['trial', 'regular', 'assessment'],
+    enum: ['trial', 'regular', 'assessment', 'group_circle'],
     default: 'regular'
   },
   status: {
@@ -64,6 +67,31 @@ const SessionSchema = new mongoose.Schema({
   rescheduledFrom: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Session'
+  },
+  attendance: [{
+    student: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    status: { type: String, enum: ['attended', 'absent', 'excused', 'pending'], default: 'pending' },
+    excuseReason: String,
+    excusedAt: Date,
+    eligibleForCompensation: { type: Boolean, default: false }
+  }],
+  studentReports: [{
+    student: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    memorizationScore: { type: Number, min: 0, max: 10 },
+    tajweedScore: { type: Number, min: 0, max: 10 },
+    surahRecited: String,
+    fromAyah: Number,
+    toAyah: Number,
+    nextHomework: String,
+    notes: String,
+    sentToWhatsApp: { type: Boolean, default: false },
+    sentAt: Date
+  }],
+  reminders: {
+    dayBeforeSent: { type: Boolean, default: false },
+    dayBeforeSentAt: Date,
+    halfHourSent: { type: Boolean, default: false },
+    halfHourSentAt: Date
   }
 }, { timestamps: true });
 

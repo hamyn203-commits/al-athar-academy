@@ -20,6 +20,8 @@ export default {
     language: 'اللغة',
     arabic: 'العربية',
     english: 'English',
+    freeTrial: 'احجز حصتك التجريبية مجاناً',
+    freeTrialShort: 'حصة تجريبية مجانية',
   },
   hero: {
     title: 'تعلم القرآن واللغة العربية',
