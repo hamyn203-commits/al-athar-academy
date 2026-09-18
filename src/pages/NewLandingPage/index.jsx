@@ -13,6 +13,7 @@ import TeachersSection from './sections/TeachersSection';
 import InteractivePlannerSection from './sections/InteractivePlannerSection';
 import FAQSection from './sections/FAQSection';
 import CTASection from './sections/CTASection';
+import MobileStickyBar from '../../components/MobileStickyBar';
 
 export default function NewLandingPage() {
   const { t } = useI18n();
@@ -20,7 +21,7 @@ export default function NewLandingPage() {
     <>
       <SEOHead page={{ title: t.hero.title, description: t.hero.subtitle, url: '/', type: 'website' }} />
       <GlobalHeader />
-      <main className="bg-white">
+      <main className="bg-white pb-16 md:pb-0">
         <HeroSection />
         <SocialProofStrip />
         <StatsBar />
@@ -33,6 +34,7 @@ export default function NewLandingPage() {
         <FAQSection />
         <CTASection />
       </main>
+      <MobileStickyBar />
       <GlobalFooter />
     </>
   );
