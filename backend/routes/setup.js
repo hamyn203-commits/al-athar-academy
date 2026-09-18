@@ -1,8 +1,12 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const User = require('../models/User');
+const { addMockUser, findMockUserByEmail, updateMockUser } = require('../mockStore');
 
 const TEST_ADMIN_EMAILS = ['test@test.com', 'admin-test@alathar.test'];
+const isMockMode = !process.env.MONGODB_URI;
+const isDBConnected = () => mongoose.connection.readyState === 1;
 
 router.post('/ensure-admin', async (req, res) => {
   try {
@@ -12,6 +16,38 @@ router.post('/ensure-admin', async (req, res) => {
     }
 
     const normalizedEmail = email.toLowerCase().trim();
+
+    // Development / Mock mode fallback when MongoDB is not connected
+    if (isMockMode || !isDBConnected()) {
+
+      let mockUser = findMockUserByEmail(normalizedEmail);
+      if (mockUser) {
+        updateMockUser(mockUser._id || mockUser.id, {
+          name,
+          password,
+          role: 'admin',
+          isActive: true
+        });
+        return res.status(200).json({
+          message: 'تم ترقية حسابك إلى أدمن — سجّل دخولك الآن',
+          email: normalizedEmail,
+        });
+      }
+
+      mockUser = addMockUser({
+        name,
+        email: normalizedEmail,
+        password,
+        role: 'admin',
+        isActive: true,
+      });
+
+      return res.status(201).json({
+        message: 'تم إنشاء حساب الأدمن بنجاح',
+        email: mockUser.email,
+      });
+    }
+
     let admins = await User.find({ role: 'admin' }).select('email _id');
 
     const onlyTestAdmins = admins.length > 0 && admins.every((a) =>
@@ -58,6 +94,7 @@ router.post('/ensure-admin', async (req, res) => {
       message: 'تم إنشاء حساب الأدمن بنجاح',
       email: user.email,
     });
+
   } catch (error) {
     if (error.code === 11000) {
       return res.status(409).json({ error: 'البريد مسجل مسبقاً — جرّب تسجيل الدخول' });
