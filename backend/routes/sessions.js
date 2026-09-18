@@ -1,10 +1,15 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const Session = require('../models/Session');
 const Teacher = require('../models/Teacher');
 const { protect, authorize } = require('../middleware/auth');
 const meetingService = require('../services/meetingService');
 const { notifyTeacherForSessionRequest, notifySessionAccepted, notifyUser } = require('../utils/notify');
+
+const isMockMode = !process.env.MONGODB_URI;
+const isDBConnected = () => mongoose.connection.readyState === 1;
+
 
 router.post('/trial', protect, async (req, res) => {
   try {
@@ -113,6 +118,50 @@ router.post('/regular', protect, async (req, res) => {
 router.get('/my-sessions', protect, async (req, res) => {
   try {
     const { status, type, page = 1, limit = 10 } = req.query;
+
+    if (isMockMode || !isDBConnected()) {
+      const mockSessions = [
+        {
+          _id: 'mock-sess-1',
+          id: 'mock-sess-1',
+          type: 'regular',
+          status: 'accepted',
+          scheduledAt: new Date(Date.now() + 3600000 * 3).toISOString(),
+          student: { _id: 'std-1', name: 'عمر خالد المنشاوي', email: 'omar@example.com' },
+          teacher: { _id: 'tch-1', user: { name: req.user?.name || 'الشيخ المعلم' } },
+          notes: 'حصة تسميع سورة الكهف والتدريب على أحكام الراءات',
+          roomUrl: '/live/room-athar-demo',
+        },
+        {
+          _id: 'mock-sess-2',
+          id: 'mock-sess-2',
+          type: 'trial',
+          status: 'pending',
+          scheduledAt: new Date(Date.now() + 3600000 * 24).toISOString(),
+          student: { _id: 'std-2', name: 'ياسين محمود', email: 'yassine@example.com' },
+          teacher: { _id: 'tch-1', user: { name: req.user?.name || 'الشيخ المعلم' } },
+          notes: 'حصة تجريبية لتحديد المستوى وتأسيس نور البيان',
+          roomUrl: '/live/room-trial-102',
+        },
+        {
+          _id: 'mock-sess-3',
+          id: 'mock-sess-3',
+          type: 'regular',
+          status: 'pending',
+          scheduledAt: new Date(Date.now() + 3600000 * 48).toISOString(),
+          student: { _id: 'std-3', name: 'إبراهيم مصطفى', email: 'ibrahim@example.com' },
+          teacher: { _id: 'tch-1', user: { name: req.user?.name || 'الشيخ المعلم' } },
+          notes: 'حلقة جماعية 10 طلاب - مسار الإتقان والتجويد',
+          roomUrl: '/live/room-athar-group',
+        },
+      ].filter((s) => (!status || s.status === status) && (!type || s.type === type));
+
+      return res.json({
+        sessions: mockSessions,
+        pagination: { page: 1, limit: 10, total: mockSessions.length, pages: 1 },
+      });
+    }
+
     const filter = {};
 
     if (req.user.role === 'student') {
@@ -126,6 +175,7 @@ router.get('/my-sessions', protect, async (req, res) => {
     } else {
       return res.status(403).json({ error: 'Access denied' });
     }
+
 
     if (status) filter.status = status;
     if (type) filter.type = type;

@@ -285,6 +285,12 @@ const server = app.listen(PORT, () => {
   console.log(`🔒 Security: Helmet + Rate Limit + Mongo Sanitize enabled`);
 });
 
+server.on('error', (err) => {
+  console.error('SERVER LISTEN ERROR:', err);
+});
+
+
+
 // Keep process active
 setInterval(() => {}, 1000 * 60 * 60);
 

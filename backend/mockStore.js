@@ -31,9 +31,48 @@ function updateMockUser(id, updates) {
   return user;
 }
 
+const teachers = [];
+const tasks = [];
+const withdrawals = [];
+
+function addMockTeacher(teacher) {
+  const existingIndex = teachers.findIndex((t) => t.user === teacher.user || t.user?._id === teacher.user);
+  if (existingIndex >= 0) {
+    teachers[existingIndex] = { ...teachers[existingIndex], ...teacher };
+    return teachers[existingIndex];
+  }
+  const newT = {
+    _id: teacher._id || `mock-teacher-${Date.now()}`,
+    id: teacher.id || `mock-teacher-${Date.now()}`,
+    status: teacher.status || 'approved',
+    isVerified: true,
+    rating: { average: 4.9, count: 18 },
+    hourlyRate: 50,
+    wallet: { pendingEarnings: 850, totalWithdrawn: 3400 },
+    ...teacher,
+  };
+  teachers.push(newT);
+  return newT;
+}
+
+function findMockTeacherByUserId(userId) {
+  if (!userId) return null;
+  return teachers.find((t) => t.user === userId || t.user?._id === userId || t.user?.id === userId);
+}
+
+function getMockTeachers() {
+  return teachers;
+}
+
 module.exports = {
   addMockUser,
   findMockUserByEmail,
   findMockUserById,
   updateMockUser,
+  addMockTeacher,
+  findMockTeacherByUserId,
+  getMockTeachers,
+  tasks,
+  withdrawals,
 };
+

@@ -76,6 +76,7 @@ function pageRoutes() {
       <Route path="setup-admin" element={<SetupAdmin />} />
       <Route path="forgot-password" element={<ForgotPassword />} />
       <Route path="register/student" element={<Register />} />
+      <Route path="register/teacher" element={<TeacherRegistration />} />
       <Route path="about" element={<About />} />
       <Route path="faq" element={<FAQPage />} />
       <Route path="privacy" element={<Privacy />} />
