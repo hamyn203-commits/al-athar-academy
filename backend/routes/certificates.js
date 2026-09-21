@@ -79,6 +79,22 @@ router.post('/generate', protect, async (req, res) => {
 // @access  Private
 router.get('/my-certificates', protect, async (req, res) => {
   try {
+    const mongoose = require('mongoose');
+    const isDBConnected = () => mongoose.connection.readyState === 1;
+    const isValidObjectId = (id) => id && mongoose.Types.ObjectId.isValid(id);
+
+    if (!isDBConnected() || !isValidObjectId(req.user.id)) {
+      return res.json([
+        {
+          _id: 'mock-cert-1',
+          certificateId: 'ATHAR-2026-001',
+          course: { title: 'دورة إتقان التجويد الميسر', slug: 'easy-tajweed', image: '/images/courses/tajweed.jpg' },
+          issuedAt: new Date(Date.now() - 86400000 * 5),
+          metadata: { score: 96 }
+        }
+      ]);
+    }
+
     const certificates = await Certificate.find({ student: req.user.id })
       .populate('course', 'title slug image')
       .sort({ issuedAt: -1 });

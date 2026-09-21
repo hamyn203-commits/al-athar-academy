@@ -455,7 +455,7 @@ router.post('/:id/rsvp', protect, async (req, res) => {
       (a) => a.student && a.student.toString() === studentId.toString()
     );
 
-    const attendanceStatus = status === 'confirmed' ? 'pending' : 'excused';
+    const attendanceStatus = status === 'confirmed' ? 'confirmed' : 'excused';
 
     const attendanceRecord = {
       student: studentId,

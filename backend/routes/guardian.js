@@ -406,34 +406,48 @@ router.get('/reports/:studentId', protect, authorize('guardian', 'admin'), async
 router.get('/upcoming-sessions', protect, authorize('guardian', 'admin'), async (req, res) => {
   try {
     if (!isDBConnected() || !isValidObjectId(req.user.id)) {
+      const now = new Date();
+      const sess1Date = new Date(now.getTime() + 86400000 * 2);
+      const sess2Date = new Date(now.getTime() + 86400000 * 4);
+      const diff1 = (sess1Date.getTime() - now.getTime()) / (1000 * 60 * 60);
+      const diff2 = (sess2Date.getTime() - now.getTime()) / (1000 * 60 * 60);
+
       return res.json({
         success: true,
         sessions: [
           {
             _id: 'sess-up-1',
-            scheduledAt: new Date(Date.now() + 86400000 * 2),
+            scheduledAt: sess1Date,
             duration: 45,
             type: 'regular',
             status: 'accepted',
-            meetingUrl: 'http://localhost:3500/live/room-circle-1',
-            teacherName: 'الشيخ أحمد منصور',
-            circleName: 'حلقة الإمام قالون',
-            childName: 'عبد الله أحمد',
-            childId: 'mock-child-1',
-            rsvp: { status: 'confirmed' }
+            meetingLink: '/live/room-circle-1?role=guardian&observer=true',
+            circleName: 'حلقة الإمام قالون (بنين - مبتدئ)',
+            child: { id: 'mock-child-1', name: 'عبد الله أحمد' },
+            teacher: {
+              name: 'الشيخ أحمد منصور',
+              phone: '+201012345678'
+            },
+            rsvp: 'confirmed',
+            canExcuseWithCompensation: diff1 >= 6,
+            hoursUntilSession: Math.round(diff1 * 10) / 10
           },
           {
             _id: 'sess-up-2',
-            scheduledAt: new Date(Date.now() + 86400000 * 4),
+            scheduledAt: sess2Date,
             duration: 45,
             type: 'regular',
             status: 'accepted',
-            meetingUrl: 'http://localhost:3500/live/room-circle-1',
-            teacherName: 'الشيخ أحمد منصور',
-            circleName: 'حلقة الإمام قالون',
-            childName: 'عبد الله أحمد',
-            childId: 'mock-child-1',
-            rsvp: { status: 'pending' }
+            meetingLink: '/live/room-circle-1?role=guardian&observer=true',
+            circleName: 'حلقة الإمام قالون (بنين - مبتدئ)',
+            child: { id: 'mock-child-1', name: 'عبد الله أحمد' },
+            teacher: {
+              name: 'الشيخ أحمد منصور',
+              phone: '+201012345678'
+            },
+            rsvp: 'pending',
+            canExcuseWithCompensation: diff2 >= 6,
+            hoursUntilSession: Math.round(diff2 * 10) / 10
           }
         ]
       });
@@ -499,7 +513,7 @@ router.get('/upcoming-sessions', protect, authorize('guardian', 'admin'), async 
         _id: sess._id,
         scheduledAt: sess.scheduledAt,
         duration: sess.duration,
-        meetingLink: sess.meetingLink || `/room/session-${sess._id}`,
+        meetingLink: sess.meetingLink || `/live/session-${sess._id}?role=guardian&observer=true`,
         type: sess.type,
         status: sess.status,
         circleName: sess.circle?.name || (sess.type === 'trial' ? 'حصة تجريبية مجانية' : 'حلقة فردية'),
@@ -518,6 +532,77 @@ router.get('/upcoming-sessions', protect, authorize('guardian', 'admin'), async 
   } catch (error) {
     console.error('Get upcoming sessions error:', error);
     res.status(500).json({ error: 'حدث خطأ أثناء جلب الحصص القادمة' });
+  }
+});
+
+// @route   POST /api/guardian/link-child
+// @desc    Link student to guardian by email or student code
+// @access  Private (Guardian)
+router.post('/link-child', protect, authorize('guardian', 'admin'), async (req, res) => {
+  try {
+    const { email, studentEmail, studentCode, relationship = 'father' } = req.body;
+    const targetEmail = (email || studentEmail || '').toLowerCase().trim();
+
+    if (!targetEmail && !studentCode) {
+      return res.status(400).json({ error: 'البريد الإلكتروني للطالب أو كود الطالب مطلوب' });
+    }
+
+    if (isMockMode || !isDBConnected()) {
+      return res.json({
+        success: true,
+        message: 'تم ربط الابن بنجاح بحساب ولي الأمر',
+        child: {
+          _id: 'mock-child-' + Date.now(),
+          name: 'عبد الرحمن خالد',
+          email: targetEmail || 'student@alathar.test',
+          relationship
+        }
+      });
+    }
+
+    let student = null;
+    if (targetEmail) {
+      student = await User.findOne({ email: targetEmail, role: 'student' });
+    } else if (studentCode) {
+      student = await User.findOne({ studentCode, role: 'student' });
+    }
+
+    if (!student) {
+      return res.status(404).json({ error: 'لم يتم العثور على حساب الطالب بهذا البريد أو الكود' });
+    }
+
+    let guardian = await Guardian.findOne({ user: req.user.id });
+    if (!guardian) {
+      guardian = new Guardian({
+        user: req.user.id,
+        children: []
+      });
+    }
+
+    const alreadyLinked = guardian.children.some(c => c.student && c.student.toString() === student._id.toString());
+    if (alreadyLinked) {
+      return res.status(400).json({ error: 'هذا الطالب مرتبط بالفعل بحسابك' });
+    }
+
+    guardian.children.push({
+      student: student._id,
+      relationship,
+      permissions: { viewReports: true, manageAttendance: true, receiveAlerts: true }
+    });
+    await guardian.save();
+
+    res.json({
+      success: true,
+      message: 'تم ربط الابن بنجاح',
+      child: {
+        _id: student._id,
+        name: student.name,
+        email: student.email,
+        relationship
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 

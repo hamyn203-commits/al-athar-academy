@@ -190,10 +190,11 @@ app.get('/api/health', (req, res) => {
 app.use('/api/markets', require('./routes/markets'));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/auth', require('./routes/verification'));
-app.use('/api/students', require('./routes/students'));
 app.use('/api/students/dashboard', require('./routes/studentDashboard'));
-app.use('/api/teachers', require('./routes/teachers'));
+app.use('/api/student-dashboard', require('./routes/studentDashboard'));
+app.use('/api/students', require('./routes/students'));
 app.use('/api/teachers/dashboard', require('./routes/teacherDashboard'));
+app.use('/api/teachers', require('./routes/teachers'));
 app.use('/api/translate', require('./routes/translate'));
 app.use('/api/sessions', require('./routes/sessions'));
 app.use('/api/sessions/:id/translate', require('./routes/sessionTranslate'));

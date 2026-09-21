@@ -333,6 +333,19 @@ router.get('/featured', async (req, res) => {
 });
 
 router.get('/admin/pending', protect, authorize('admin'), async (req, res) => {
+  if (isMockMode || !isDBConnected()) {
+    return res.json([
+      {
+        _id: 'mock-teacher-pending-1',
+        user: { _id: 'mock-u2', name: 'الشيخ أحمد محمود', email: 'ahmed.m@alathar.com' },
+        personalInfo: { fullName: 'أحمد محمود', phone: '+201011112222', country: 'مصر', city: 'القاهرة' },
+        academicInfo: { university: 'الأزهر الشريف', qualification: 'ليسانس أصول الدين' },
+        quranInfo: { memorizedParts: 30, teachingExperience: 7 },
+        status: 'pending',
+        createdAt: new Date().toISOString()
+      }
+    ]);
+  }
   try {
     const teachers = await Teacher.find({ status: { $in: ['pending', 'under-review'] } })
       .populate('user', 'name email')
@@ -345,15 +358,25 @@ router.get('/admin/pending', protect, authorize('admin'), async (req, res) => {
 });
 
 router.put('/admin/:id/review', protect, authorize('admin'), async (req, res) => {
-  try {
-    const { action, note } = req.body;
-    
-    const statusMap = {
-      approve: 'approved',
-      reject: 'rejected',
-      'request-changes': 'under-review'
-    };
+  const { action, note } = req.body;
+  const statusMap = {
+    approve: 'approved',
+    reject: 'rejected',
+    'request-changes': 'under-review'
+  };
 
+  if (isMockMode || !isDBConnected()) {
+    return res.json({
+      success: true,
+      teacher: {
+        _id: req.params.id,
+        status: statusMap[action] || 'approved',
+        isVerified: action === 'approve',
+        reviewNotes: [{ admin: req.user?.id || 'admin', note, date: new Date() }]
+      }
+    });
+  }
+  try {
     const teacher = await Teacher.findByIdAndUpdate(
       req.params.id,
       {

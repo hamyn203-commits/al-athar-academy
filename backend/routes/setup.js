@@ -8,7 +8,7 @@ const TEST_ADMIN_EMAILS = ['test@test.com', 'admin-test@alathar.test'];
 const isMockMode = !process.env.MONGODB_URI;
 const isDBConnected = () => mongoose.connection.readyState === 1;
 
-router.post('/ensure-admin', async (req, res) => {
+const ensureAdminHandler = async (req, res) => {
   try {
     const { name, email, password } = req.body;
     if (!name || !email || !password || password.length < 8) {
@@ -101,6 +101,9 @@ router.post('/ensure-admin', async (req, res) => {
     }
     res.status(400).json({ error: error.message });
   }
-});
+};
+
+router.post('/ensure-admin', ensureAdminHandler);
+router.post('/admin', ensureAdminHandler);
 
 module.exports = router;

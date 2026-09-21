@@ -163,15 +163,20 @@ router.get('/evaluations', protect, authorize('student'), async (req, res) => {
           {
             _id: 'mock-eval-1',
             scheduledAt: new Date(Date.now() - 86400000 * 2),
-            teacher: { name: 'الشيخ أحمد منصور', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150' },
+            teacher: {
+              _id: 'mock-teacher-1',
+              user: { name: 'الشيخ أحمد منصور', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150' }
+            },
             teacherEvaluation: {
-              attendance: 'attended',
-              rating: 5,
-              tajweedLevel: 'ممتاز',
-              memorizationQuality: 'قوي ومتقن',
+              attendance: 5,
+              memorization: 5,
+              tajweed: 5,
+              behavior: 5,
+              commitment: 5,
+              overallNotes: 'ما شاء الله تبارك الله، تلاوة خاشعة وإتقان تام لأحكام النون الساكنة والميم والتنوين.',
               notes: 'ما شاء الله تبارك الله، تلاوة خاشعة وإتقان تام لأحكام النون الساكنة والميم والتنوين.',
               assignedHomework: [
-                { title: 'حفظ سورة مريم من آية 1 إلى 15', type: 'audio' }
+                { title: 'حفظ سورة مريم من آية 1 إلى 15', description: 'حفظ سورة مريم من آية 1 إلى 15 مع الترتيل', type: 'audio' }
               ]
             }
           }

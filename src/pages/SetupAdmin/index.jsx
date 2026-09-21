@@ -31,7 +31,7 @@ export default function SetupAdmin() {
         <div className="text-center mb-6">
           <Logo size={60} showText={false} />
           <h1 className="text-xl font-bold mt-4">إعداد حساب الأدمن</h1>
-          <p className="text-sm text-gray-500 mt-1">مرة واحدة فقط — إذا لم يكن هناك أدmin بعد</p>
+          <p className="text-sm text-gray-500 mt-1">مرة واحدة فقط — إذا لم يكن هناك مدير بعد</p>
         </div>
         {done ? (
           <div className="text-center space-y-4">

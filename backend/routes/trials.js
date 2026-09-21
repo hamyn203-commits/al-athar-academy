@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const TrialRequest = require('../models/TrialRequest');
 const Session = require('../models/Session');
 const Teacher = require('../models/Teacher');
@@ -8,6 +9,28 @@ const User = require('../models/User');
 const { protect, authorize } = require('../middleware/auth');
 const meetingService = require('../services/meetingService');
 const { notifyUser } = require('../utils/notify');
+
+const isMockMode = !process.env.MONGODB_URI;
+const isDBConnected = () => mongoose.connection.readyState === 1;
+
+const MOCK_TRIALS = [
+  {
+    _id: 'mock-trial-1',
+    studentName: 'عمر خالد',
+    guardianName: 'خالد عبد الرحمن',
+    whatsappPhone: '+201012345678',
+    phone: '+201012345678',
+    email: 'khaled@example.com',
+    age: 10,
+    gender: 'male',
+    preferredTrack: 'memorization',
+    preferredTeacherGender: 'male',
+    country: 'مصر',
+    city: 'القاهرة',
+    status: 'pending',
+    createdAt: new Date().toISOString()
+  }
+];
 
 // Phone & WhatsApp sanitization helper
 function normalizePhone(rawPhone) {
@@ -66,6 +89,28 @@ router.post('/', async (req, res) => {
     const validTeacherGenders = ['male', 'female', 'any'];
     const teacherGender = validTeacherGenders.includes(preferredTeacherGender) ? preferredTeacherGender : 'any';
 
+    if (isMockMode || !isDBConnected()) {
+      const mockTrialId = 'mock-trial-' + Date.now();
+      const mockObj = {
+        _id: mockTrialId,
+        studentName: studentName.trim(),
+        guardianName: guardianName ? guardianName.trim() : '',
+        whatsappPhone: cleanWhatsApp,
+        age: parsedAge,
+        gender,
+        preferredTrack: track,
+        status: 'pending',
+        createdAt: new Date().toISOString()
+      };
+      MOCK_TRIALS.unshift(mockObj);
+      return res.status(201).json({
+        success: true,
+        message: 'تم استقبال طلب الحصة التجريبية المجانية بنجاح! سيتواصل معك منسق الأكاديمية عبر الواتساب لتأكيد الموعد.',
+        trialId: mockTrialId,
+        trial: mockObj
+      });
+    }
+
     const trial = new TrialRequest({
       studentName: studentName.trim(),
       guardianName: guardianName ? guardianName.trim() : '',
@@ -101,8 +146,27 @@ router.post('/', async (req, res) => {
 // @desc    Get all trial requests with filters (status, track)
 // @access  Protected (admin, teacher)
 router.get('/', protect, authorize('admin', 'teacher'), async (req, res) => {
+  const { status, track, gender, page = 1, limit = 20 } = req.query;
+  const pageNum = Math.max(1, parseInt(page, 10) || 1);
+  const limitNum = Math.min(50, Math.max(1, parseInt(limit, 10) || 20));
+
+  if (isMockMode || !isDBConnected()) {
+    let filtered = [...MOCK_TRIALS];
+    if (status) filtered = filtered.filter(t => t.status === status);
+    if (track) filtered = filtered.filter(t => t.preferredTrack === track);
+    if (gender) filtered = filtered.filter(t => t.gender === gender);
+    return res.json({
+      success: true,
+      trials: filtered,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total: filtered.length,
+        pages: 1
+      }
+    });
+  }
   try {
-    const { status, track, gender, page = 1, limit = 20 } = req.query;
     const filter = {};
 
     if (status) filter.status = status;

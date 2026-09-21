@@ -105,12 +105,13 @@ export default function GuardianDashboard() {
   };
 
   // RSVP Submission (Confirm or Excuse)
-  const handleRsvp = async (sessionId, status, reason = '') => {
-    if (!selectedChildId) return;
+  const handleRsvp = async (sessionId, status, reason = '', targetStudentId = null) => {
+    const studentIdToUse = targetStudentId || selectedChildId;
+    if (!studentIdToUse) return;
     setSubmittingRsvp(true);
     try {
       const res = await api.post(`/api/sessions/${sessionId}/rsvp`, {
-        studentId: selectedChildId,
+        studentId: studentIdToUse,
         status,
         excuseReason: reason
       }, { auth: true });
@@ -315,8 +316,10 @@ export default function GuardianDashboard() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {upcomingSessions.map((session) => {
                         const dateObj = new Date(session.scheduledAt);
-                        const isConfirmed = session.rsvp === 'confirmed';
-                        const isExcused = session.rsvp === 'excused';
+                        const rsvpVal = typeof session.rsvp === 'object' ? session.rsvp?.status : session.rsvp;
+                        const isConfirmed = rsvpVal === 'confirmed';
+                        const isExcused = rsvpVal === 'excused';
+                        const sessionChildId = session.child?.id || session.childId || selectedChildId;
 
                         return (
                           <div key={session._id} className="border border-emerald-100/80 rounded-xl p-5 bg-white shadow-sm hover:shadow-md transition">
@@ -355,7 +358,7 @@ export default function GuardianDashboard() {
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                   <Users size={16} className="text-gray-400 shrink-0" />
-                                  <span>المعلم: <strong className="text-gray-800">{session.teacher?.name}</strong></span>
+                                  <span>المعلم: <strong className="text-gray-800">{session.teacher?.name || 'معلم الحلقة'}</strong></span>
                                 </div>
                                 {session.teacher?.phone && (
                                   <a
@@ -377,7 +380,7 @@ export default function GuardianDashboard() {
                                 <>
                                   <button
                                     type="button"
-                                    onClick={() => handleRsvp(session._id, 'confirmed')}
+                                    onClick={() => handleRsvp(session._id, 'confirmed', '', sessionChildId)}
                                     disabled={submittingRsvp}
                                     className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-bold transition shadow-sm active:scale-95"
                                   >
@@ -397,7 +400,7 @@ export default function GuardianDashboard() {
                                 <div className="w-full flex items-center justify-between text-xs text-gray-500">
                                   <span>تم تسجيل ردك بنجاح في سجل الحلقة</span>
                                   <a
-                                    href={session.meetingLink}
+                                    href={session.meetingLink || session.meetingUrl || `/live/session-${session._id}?role=guardian&observer=true`}
                                     className="inline-flex items-center gap-1 text-emerald-700 font-bold hover:underline"
                                   >
                                     <span>دخول الغرفة كمراقب صامت</span>
@@ -719,7 +722,7 @@ export default function GuardianDashboard() {
               <div className="flex items-center gap-2 pt-2">
                 <button
                   type="button"
-                  onClick={() => handleRsvp(excuseModalSession._id, 'excused', excuseReason)}
+                  onClick={() => handleRsvp(excuseModalSession._id, 'excused', excuseReason, excuseModalSession.child?.id || excuseModalSession.childId || selectedChildId)}
                   disabled={submittingRsvp}
                   className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-sm transition shadow-sm disabled:opacity-50"
                 >

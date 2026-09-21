@@ -1,16 +1,88 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const GroupCircle = require('../models/GroupCircle');
 const User = require('../models/User');
 const Teacher = require('../models/Teacher');
 const { protect, authorize } = require('../middleware/auth');
 
+const isMockMode = !process.env.MONGODB_URI;
+const isDBConnected = () => mongoose.connection.readyState === 1;
+
+const MOCK_CIRCLES = [
+  {
+    _id: 'mock-circle-1',
+    name: 'حلقة الإتقان (حفص عن عاصم)',
+    code: 'CR-ITQAN-101',
+    track: 'memorization',
+    level: 'intermediate',
+    gender: 'all',
+    capacity: 10,
+    currentCount: 6,
+    availableSeats: 4,
+    isFull: false,
+    status: 'active',
+    teacher: {
+      personalInfo: { fullName: 'الشيخ أحمد محمود' },
+      user: { name: 'الشيخ أحمد محمود', email: 'ahmed@alathar.com' }
+    },
+    schedule: {
+      days: ['Monday', 'Wednesday'],
+      time: '18:00',
+      timezone: 'Africa/Cairo'
+    },
+    students: []
+  },
+  {
+    _id: 'mock-circle-2',
+    name: 'حلقة البراعم للصغار',
+    code: 'CR-KIDS-202',
+    track: 'kids_foundation',
+    level: 'beginner',
+    gender: 'all',
+    capacity: 8,
+    currentCount: 5,
+    availableSeats: 3,
+    isFull: false,
+    status: 'active',
+    teacher: {
+      personalInfo: { fullName: 'الشيخة فاطمة الزهراء' },
+      user: { name: 'الشيخة فاطمة الزهراء', email: 'fatima@alathar.com' }
+    },
+    schedule: {
+      days: ['Sunday', 'Tuesday'],
+      time: '16:00',
+      timezone: 'Africa/Cairo'
+    },
+    students: []
+  }
+];
+
 // @route   GET /api/circles
 // @desc    Get group circles with filtering (track, level, gender, status)
 // @access  Public / Protected
 router.get('/', async (req, res) => {
+  const { track, level, gender, status, page = 1, limit = 20 } = req.query;
+  const pageNum = Math.max(1, parseInt(page, 10) || 1);
+  const limitNum = Math.min(50, Math.max(1, parseInt(limit, 10) || 20));
+
+  if (isMockMode || !isDBConnected()) {
+    let filtered = [...MOCK_CIRCLES];
+    if (track) filtered = filtered.filter(c => c.track === track);
+    if (level) filtered = filtered.filter(c => c.level === level);
+    if (gender && gender !== 'all') filtered = filtered.filter(c => c.gender === gender || c.gender === 'all');
+    return res.json({
+      success: true,
+      circles: filtered,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total: filtered.length,
+        pages: 1
+      }
+    });
+  }
   try {
-    const { track, level, gender, status, page = 1, limit = 20 } = req.query;
     const filter = {};
 
     if (track) filter.track = track;
@@ -71,6 +143,19 @@ router.get('/', async (req, res) => {
 // @desc    Get details of a single circle with teacher, students, and schedule
 // @access  Public / Protected
 router.get('/:id', async (req, res) => {
+  if (isMockMode || !isDBConnected()) {
+    const found = MOCK_CIRCLES.find(c => c._id === req.params.id) || MOCK_CIRCLES[0];
+    return res.json({
+      success: true,
+      circle: found,
+      stats: {
+        currentCount: found.currentCount,
+        capacity: found.capacity,
+        availableSeats: found.availableSeats,
+        isFull: found.isFull
+      }
+    });
+  }
   try {
     const circle = await GroupCircle.findById(req.params.id)
       .populate({

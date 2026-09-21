@@ -8,22 +8,25 @@ if (process.env.NODE_ENV === 'production' && (!JWT_SECRET || JWT_SECRET === 'cha
   process.exit(1);
 }
 
+const DEFAULT_JWT_SECRET = 'al-athar-academy-dev-fallback-secret-2026';
+const DEFAULT_REFRESH_SECRET = 'al-athar-academy-dev-refresh-secret-2026';
+
 const generateAccessToken = (user) => {
   return jwt.sign(
     { 
-      id: user._id, 
+      id: user._id || user.id, 
       email: user.email, 
       role: user.role 
     },
-    JWT_SECRET || 'dev-only-fallback-secret',
+    JWT_SECRET || DEFAULT_JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRES_IN || '15m' }
   );
 };
 
 const generateRefreshToken = (user) => {
   return jwt.sign(
-    { id: user._id },
-    JWT_REFRESH_SECRET || 'dev-only-fallback-refresh-secret',
+    { id: user._id || user.id },
+    JWT_REFRESH_SECRET || DEFAULT_REFRESH_SECRET,
     { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d' }
   );
 };
@@ -42,7 +45,7 @@ const verifyAccessToken = (req, res, next) => {
   try {
     const decoded = jwt.verify(
       token, 
-      process.env.JWT_SECRET || 'fallback-secret-change-in-production'
+      JWT_SECRET || DEFAULT_JWT_SECRET
     );
     req.user = decoded;
     next();

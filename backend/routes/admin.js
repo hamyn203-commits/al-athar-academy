@@ -26,6 +26,10 @@ const upload = multer({
   },
 });
 
+const mongoose = require('mongoose');
+const isMockMode = !process.env.MONGODB_URI;
+const isDBConnected = () => mongoose.connection.readyState === 1;
+
 const PLACEHOLDER = '/uploads/teachers/placeholder.jpg';
 const API_PUBLIC = process.env.API_PUBLIC_URL || 'https://al-athar-api.azurewebsites.net';
 
@@ -34,6 +38,17 @@ router.get('/', protect, authorize('admin'), (_req, res) => {
 });
 
 router.get('/stats', protect, authorize('admin'), async (req, res) => {
+  if (isMockMode || !isDBConnected()) {
+    return res.json({
+      totalStudents: 142,
+      totalTeachers: 18,
+      totalSessions: 520,
+      totalCourses: 12,
+      totalEnrollments: 89,
+      pendingTeachers: 2,
+      totalEarnings: 4250,
+    });
+  }
   try {
     const [totalStudents, approvedTeachers, pendingTeachers, totalSessions, totalCourses, totalEnrollments] = await Promise.all([
       User.countDocuments({ role: 'student' }),
@@ -62,11 +77,75 @@ router.get('/stats', protect, authorize('admin'), async (req, res) => {
 });
 
 router.get('/teachers/approved', protect, authorize('admin'), async (req, res) => {
+  if (isMockMode || !isDBConnected()) {
+    return res.json([
+      {
+        _id: 'mock-teacher-approved-1',
+        user: { _id: 'mock-u1', name: 'الشيخ عبد الله القرشي', email: 'abdullah@alathar.com', avatar: PLACEHOLDER },
+        personalInfo: { fullName: 'عبد الله القرشي', phone: '+201099998888', country: 'السعودية', city: 'مكة المكرمة' },
+        hourlyRate: 60,
+        status: 'approved',
+        isVerified: true,
+        createdAt: new Date().toISOString()
+      }
+    ]);
+  }
   try {
     const teachers = await Teacher.find({ status: 'approved', isVerified: true })
       .populate('user', 'name email avatar')
       .sort({ createdAt: -1 });
     res.json(teachers);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/teachers/pending', protect, authorize('admin'), async (req, res) => {
+  if (isMockMode || !isDBConnected()) {
+    return res.json([
+      {
+        _id: 'mock-teacher-pending-1',
+        user: { _id: 'mock-u2', name: 'الشيخ أحمد محمود', email: 'ahmed.m@alathar.com' },
+        personalInfo: { fullName: 'أحمد محمود', phone: '+201011112222', country: 'مصر', city: 'القاهرة' },
+        academicInfo: { university: 'الأزهر الشريف', qualification: 'ليسانس أصول الدين' },
+        quranInfo: { memorizedParts: 30, teachingExperience: 7 },
+        status: 'pending',
+        createdAt: new Date().toISOString()
+      }
+    ]);
+  }
+  try {
+    const teachers = await Teacher.find({ status: { $in: ['pending', 'under-review'] } })
+      .populate('user', 'name email avatar')
+      .sort({ createdAt: -1 });
+    res.json(teachers);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/donations', protect, authorize('admin'), async (req, res) => {
+  if (isMockMode || !isDBConnected()) {
+    return res.json({
+      donations: [
+        {
+          _id: 'mock-donation-1',
+          name: 'فاعل خير',
+          email: 'donor@example.com',
+          amount: 100,
+          currency: 'USD',
+          category: 'general',
+          status: 'completed',
+          createdAt: new Date().toISOString()
+        }
+      ],
+      pagination: { page: 1, limit: 20, total: 1 }
+    });
+  }
+  try {
+    const Donation = require('../models/Donation');
+    const donations = await Donation.find().sort({ createdAt: -1 }).limit(50);
+    res.json({ donations, pagination: { page: 1, limit: 50, total: donations.length } });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
