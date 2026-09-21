@@ -83,7 +83,7 @@ export default function Donate() {
 
   return (
     <>
-      <SEOHead page={{ url: '/donate', title: isAr ? 'تبرع | أكاديمية الأثر' : 'Donate | Al-Athar', description: isAr ? 'كفالة طالب أو معلم أو حلقة قرآن' : 'Sponsor students, teachers, or halaqas' }} />
+      <SEOHead page={{ url: '/donate', title: isAr ? 'تبرع | أكاديمية وَحْيٌ وَنَمَاء' : 'Donate | Wahy Wa Namaa', description: isAr ? 'كفالة طالب أو معلم أو حلقة قرآن' : 'Sponsor students, teachers, or halaqas' }} />
       <GlobalHeader />
       <main className="min-h-screen bg-gradient-to-b from-rose-50 to-white py-16 px-4">
         <div className="max-w-4xl mx-auto">

@@ -10,7 +10,7 @@ export async function downloadCertificatePdf({ certificate, locale = 'ar' }) {
   doc.rect(0, 0, 297, 40, 'F');
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(22);
-  doc.text(ar ? 'شهادة إتمام — أكاديمية الأثر' : 'Certificate — Al-Athar Academy', 148, 18, { align: 'center' });
+  doc.text(ar ? 'شهادة إتمام — أكاديمية وَحْيٌ وَنَمَاء' : 'Certificate — Wahy Wa Namaa Academy', 148, 18, { align: 'center' });
   doc.setFontSize(12);
   doc.text('V4.0', 148, 28, { align: 'center' });
 

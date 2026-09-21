@@ -23,7 +23,7 @@ export default function FeaturesSection() {
       }} aria-hidden="true" />
       <div className="page-container relative">
         <div ref={ref} className="reveal max-w-2xl mb-14">
-          <span className="section-label mb-4">{locale === 'id' ? 'Mengapa Al-Athar?' : locale === 'ar' ? 'لماذا الأثر؟' : 'Why Al-Athar?'}</span>
+          <span className="section-label mb-4">{locale === 'id' ? 'Mengapa Wahy Wa Namaa?' : locale === 'ar' ? 'لماذا وَحْيٌ وَنَمَاء؟' : 'Why Wahy Wa Namaa?'}</span>
           <h2 className="section-heading mt-4">{t.features.title}</h2>
           <GoldDivider />
           <p className="section-desc !mt-2">{t.features.subtitle}</p>

@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { useI18n } from '../i18n';
 import { localizedPath, DEFAULT_LOCALE } from '../lib/locale';
-import { Menu, X, Sparkles, Star } from 'lucide-react';
+import { Menu, X, ArrowLeft, ArrowRight, Sparkles, Search } from 'lucide-react';
 import LanguageSwitcher from './LanguageSwitcher';
 import NotificationBell from './NotificationBell';
 import UserMenu from './UserMenu';
@@ -12,6 +12,8 @@ import { useAuth } from '../hooks/useAuth';
 
 export default function GlobalHeader() {
   const { t, locale } = useI18n();
+  const isAr = locale === 'ar';
+  const ArrowIcon = isAr ? ArrowLeft : ArrowRight;
   const { isAuthenticated } = useAuth();
   const { locale: paramLocale } = useParams();
   const activeLocale = paramLocale || DEFAULT_LOCALE;
@@ -21,69 +23,62 @@ export default function GlobalHeader() {
   const lp = (path) => localizedPath(path, activeLocale);
 
   const navLinks = [
-    { path: lp('/teachers'), label: t.common.teachers },
-    { path: lp('/courses'), label: t.common.courses },
-    { path: lp('/tracks'), label: locale === 'ar' ? 'المسارات' : 'Tracks' },
-    { path: lp('/ai'), label: 'AI', icon: Sparkles },
-    { path: lp('/library'), label: locale === 'ar' ? 'المكتبة' : 'Library' },
-    { path: lp('/leaderboard'), label: locale === 'ar' ? 'البطولة' : 'Leaderboard' },
-    { path: lp('/donate'), label: locale === 'ar' ? 'تبرع' : 'Donate' },
-    { path: lp('/blog'), label: t.common.blog },
-    { path: lp('/about'), label: t.common.about },
+    { path: lp('/'), label: isAr ? 'الرئيسية' : 'Home' },
+    { path: lp('/about'), label: isAr ? 'عن الأكاديمية' : 'About' },
+    { path: lp('/courses'), label: isAr ? 'البرامج' : 'Programs' },
+    { path: lp('/teachers'), label: isAr ? 'المعلمون' : 'Teachers' },
+    { path: lp('/tracks'), label: isAr ? 'المسارات' : 'Tracks' },
+    { path: lp('/blog'), label: isAr ? 'المدونة' : 'Blog' },
+    { path: lp('/contact'), label: isAr ? 'اتصل بنا' : 'Contact' },
   ];
 
-  const isActive = (path) =>
-    location.pathname === path || location.pathname.endsWith(path.replace(`/${activeLocale}`, ''));
+  const isActive = (path) => {
+    if (path === lp('/') || path === `/${activeLocale}` || path === `/${activeLocale}/`) {
+      return location.pathname === path || location.pathname === `/${activeLocale}`;
+    }
+    return location.pathname === path || location.pathname.startsWith(path);
+  };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-[var(--athar-cream-dark)] bg-white/95 backdrop-blur-xl shadow-sm">
-      {/* ═══ الخط الأزهري العلوي — ذهبي مزخرف ═══ */}
-      <div className="h-1 w-full bg-gradient-to-r from-[var(--azhar-gold-dark)] via-[var(--azhar-gold-leaf)] to-[var(--azhar-gold-dark)]" aria-hidden="true" />
+    <header className="sticky top-0 z-50 bg-[#f7f4ed]/95 backdrop-blur-md border-b border-[#e7decb] transition-colors">
+      <div className="page-container">
+        <div className="flex h-20 items-center justify-between gap-4">
+          
+          {/* ═══ الشعار الرسمي — وَحْيٌ وَنَمَاء ═══ */}
+          <div className="flex items-center gap-3">
+            <BrandLogo to={lp('/')} size="md" />
+          </div>
 
-      {/* ═══ نمط هندسي إسلامي خفيف على الخلفية ═══ */}
-      <div className="absolute inset-0 azhar-star-pattern opacity-30 pointer-events-none" aria-hidden="true" />
-
-      <div className="page-container relative">
-        <div className="flex h-16 items-center justify-between gap-4">
-          <BrandLogo to={lp('/')} size="md" />
-
-          {/* ═══ شريط التنقل — أزهري ═══ */}
-          <nav className="hidden lg:flex items-center gap-1 rounded-full border-2 border-[var(--azhar-gold-leaf)]/30 bg-[var(--athar-cream)]/80 p-1" aria-label="Main">
+          {/* ═══ شريط التنقل الرئيسي — مينيمال دولي راقٍ ═══ */}
+          <nav className="hidden lg:flex items-center gap-7" aria-label="Main Navigation">
             {navLinks.map((link) => {
-              const Icon = link.icon;
               const active = isActive(link.path);
               return (
                 <Link
                   key={link.path}
                   to={link.path}
-                  className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-600 ${
+                  className={`relative py-2 text-sm font-semibold tracking-wide transition-colors ${
                     active
-                      ? 'bg-white text-[var(--azhar-green-deep)] shadow-sm ring-2 ring-[var(--azhar-gold-leaf)]/40 shadow-azhar-gold/20'
-                      : 'text-slate-600 hover:text-[var(--azhar-green-deep)] hover:bg-white/50'
+                      ? 'text-[#0e382b] font-bold'
+                      : 'text-[#4e5852] hover:text-[#0e382b]'
                   }`}
                 >
-                  {Icon && <Icon size={14} strokeWidth={1.5} aria-hidden="true" />}
-                  {link.label}
+                  <span>{link.label}</span>
+                  {active && (
+                    <span
+                      className="absolute bottom-0 inset-x-0 h-[2px] bg-[#c5a059] rounded-full"
+                      aria-hidden="true"
+                    />
+                  )}
                 </Link>
               );
             })}
           </nav>
 
-          <div className="hidden md:flex items-center gap-1.5">
+          {/* ═══ الإجراءات — اللغة والحساب والدعوة للعمل ═══ */}
+          <div className="hidden md:flex items-center gap-3">
             <ThemeToggle />
             <LanguageSwitcher />
-
-            {/* ═══ زر الحصة التجريبية البارز ═══ */}
-            <Link
-              to={lp('/free-trial')}
-              className="relative group inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs md:text-sm font-bold text-[var(--athar-navy)] bg-gradient-to-r from-[var(--azhar-gold-bright)] via-[var(--azhar-gold-leaf)] to-[var(--azhar-gold-bright)] bg-[length:200%_auto] hover:bg-[position:right_center] shadow-sm hover:shadow-md hover:shadow-amber-500/25 transition-all duration-300 border border-amber-300/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-600"
-            >
-              <Sparkles size={14} className="text-amber-950 animate-pulse" />
-              <span>{t?.common?.freeTrial || (locale === 'ar' ? 'احجز حصتك مجاناً' : 'Free Trial')}</span>
-              <span className="hidden xl:inline-block px-1.5 py-0.2 rounded-full text-[10px] font-black bg-emerald-800 text-white leading-tight">
-                100% {locale === 'ar' ? 'مجاناً' : 'Free'}
-              </span>
-            </Link>
 
             {isAuthenticated ? (
               <>
@@ -92,68 +87,84 @@ export default function GlobalHeader() {
               </>
             ) : (
               <>
-                <Link to={lp('/login')} className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:text-[var(--azhar-green-deep)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-600 transition">
+                <Link
+                  to={lp('/login')}
+                  className="rounded-full px-4 py-2 text-sm font-bold text-[#0e382b] hover:bg-black/5 transition"
+                >
                   {t.common.login}
                 </Link>
-                <Link to={lp('/register/student')} className="btn-primary !py-2 !px-4 text-sm">
-                  {t.common.register}
+                <Link
+                  to={lp('/free-trial')}
+                  className="inline-flex items-center gap-2 rounded-full px-6 py-2.5 text-sm font-bold text-white bg-[#0e382b] hover:bg-[#14533e] shadow-sm hover:shadow-md transition-all duration-200 group"
+                >
+                  <span>{isAr ? 'ابدأ رحلتك' : 'Join Now'}</span>
+                  <ArrowIcon size={15} className="transition-transform group-hover:translate-x-[-2px] rtl:group-hover:translate-x-[-2px] ltr:group-hover:translate-x-[2px]" />
                 </Link>
               </>
             )}
           </div>
 
-          <button type="button" onClick={() => setIsMenuOpen(!isMenuOpen)} className="md:hidden rounded-lg p-2 text-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-600" aria-label={isMenuOpen ? (locale === 'id' ? 'Tutup menu' : locale === 'ar' ? 'إغلاق القائمة' : 'Close menu') : (locale === 'id' ? 'Buka menu' : locale === 'ar' ? 'فتح القائمة' : 'Open menu')} aria-expanded={isMenuOpen}>
-            {isMenuOpen ? <X size={22} aria-hidden="true" /> : <Menu size={22} aria-hidden="true" />}
+          {/* زر قائمة الموبايل */}
+          <button
+            type="button"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="lg:hidden rounded-xl p-2 text-[#0e382b] hover:bg-black/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#0e382b]"
+            aria-label={isMenuOpen ? 'إغلاق القائمة' : 'فتح القائمة'}
+            aria-expanded={isMenuOpen}
+          >
+            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
+
         </div>
 
-        {/* ═══ القائمة المنسدلة — أزهرية ═══ */}
+        {/* ═══ القائمة المنسدلة للهواتف ═══ */}
         {isMenuOpen && (
-          <div className="md:hidden border-t border-[var(--azhar-gold-leaf)]/20 py-4 relative">
-            <nav className="flex flex-col gap-1">
-              {/* ═══ زر الحصة التجريبية في الموبايل ═══ */}
+          <div className="lg:hidden border-t border-[#e7decb] py-5 px-2 bg-[#f7f4ed]">
+            <nav className="flex flex-col gap-2">
               <Link
                 to={lp('/free-trial')}
                 onClick={() => setIsMenuOpen(false)}
-                className="rounded-xl p-3 text-sm font-bold flex items-center justify-between gap-2 text-slate-900 bg-gradient-to-r from-[var(--azhar-gold-bright)] via-[var(--azhar-gold-leaf)] to-[var(--azhar-gold-bright)] shadow-md mb-3 border border-amber-400/60"
+                className="w-full mb-3 rounded-full p-3 text-sm font-bold flex items-center justify-between text-white bg-[#0e382b] shadow-md"
               >
-                <div className="flex items-center gap-2">
-                  <Sparkles size={18} className="text-amber-950" />
-                  <span>{t?.common?.freeTrial || (locale === 'ar' ? 'احجز حصتك التجريبية مجاناً' : 'Book Free Trial')}</span>
-                </div>
-                <span className="px-2 py-0.5 rounded-full text-xs font-black bg-emerald-800 text-white">
-                  100% {locale === 'ar' ? 'مجاناً' : 'Free'}
-                </span>
+                <span>{isAr ? 'ابدأ رحلتك (حصة تجريبية مجانية)' : 'Start Your Journey (Free Trial)'}</span>
+                <ArrowIcon size={16} />
               </Link>
 
               {navLinks.map((link) => (
-                <Link key={link.path} to={link.path} onClick={() => setIsMenuOpen(false)}
-                  className={`rounded-lg px-3 py-2.5 text-sm font-medium flex items-center gap-2 ${isActive(link.path) ? 'bg-[var(--azhar-green-50)] text-[var(--azhar-green-deep)] ring-1 ring-[var(--azhar-gold-leaf)]/30' : 'text-slate-700 hover:bg-[var(--azhar-gold-50)]'}`}>
-                  {link.icon && <link.icon size={16} />}
-                  {link.label}
+                <Link
+                  key={link.path}
+                  to={link.path}
+                  onClick={() => setIsMenuOpen(false)}
+                  className={`rounded-xl px-4 py-3 text-sm font-semibold flex items-center justify-between transition ${
+                    isActive(link.path)
+                      ? 'bg-[#0e382b]/10 text-[#0e382b] font-bold'
+                      : 'text-[#4e5852] hover:bg-black/5'
+                  }`}
+                >
+                  <span>{link.label}</span>
+                  {isActive(link.path) && <span className="w-1.5 h-1.5 rounded-full bg-[#c5a059]" />}
                 </Link>
               ))}
-              <Link to={lp('/app')} onClick={() => setIsMenuOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-medium text-[var(--azhar-gold-dark)] flex items-center gap-2">
-                <Star size={16} />
-                {locale === 'ar' ? 'تطبيق الهاتف' : 'Mobile app'}
-              </Link>
-              <div className="mt-3 flex flex-col gap-2 border-t border-[var(--azhar-gold-leaf)]/20 pt-3">
-                <div className="flex items-center gap-2 px-3">
+
+              <div className="mt-4 pt-4 border-t border-[#e7decb] flex items-center justify-between px-2">
+                <div className="flex items-center gap-2">
                   <ThemeToggle />
                   <LanguageSwitcher />
                 </div>
-                {isAuthenticated ? (
-                  <><NotificationBell /><UserMenu locale={activeLocale} /></>
-                ) : (
-                  <>
-                    <Link to={lp('/login')} onClick={() => setIsMenuOpen(false)} className="px-3 py-2 text-sm text-slate-700 hover:text-[var(--azhar-green-deep)]">{t.common.login}</Link>
-                    <Link to={lp('/register/student')} onClick={() => setIsMenuOpen(false)} className="btn-primary mx-3">{t.common.register}</Link>
-                  </>
+                {!isAuthenticated && (
+                  <Link
+                    to={lp('/login')}
+                    onClick={() => setIsMenuOpen(false)}
+                    className="px-4 py-2 text-sm font-bold text-[#0e382b]"
+                  >
+                    {t.common.login}
+                  </Link>
                 )}
               </div>
             </nav>
           </div>
         )}
+
       </div>
     </header>
   );

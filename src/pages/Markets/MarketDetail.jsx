@@ -24,7 +24,7 @@ export default function MarketDetail() {
     <>
       <SEOHead page={{
         url: `/markets/${slug}`,
-        title: isAr ? `${market.region} | أكاديمية الأثر V4` : `${market.regionEn} | Al-Athar V4`,
+        title: isAr ? `${market.region} | أكاديمية وَحْيٌ وَنَمَاء V4` : `${market.regionEn} | Wahy Wa Namaa V4`,
         description: isAr
           ? `تحفيظ القرآن في ${market.region} — ${market.currency} · ${market.timezone}`
           : `Quran education in ${market.regionEn} — ${market.currency} · ${market.timezone}`,

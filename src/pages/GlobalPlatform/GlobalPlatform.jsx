@@ -244,8 +244,8 @@ export default function GlobalPlatform() {
     <>
       <SEOHead page={{
         url: '/global-platform',
-        title: 'أكاديمية الأثر V4 | منصة تعليم إسلامية عالمية',
-        description: 'V4: توسع عالمي، 9 لغات، 6 أسواق، AI، LMS، لوحات تشغيل — ترقية أكاديمية الأثر.',
+        title: 'أكاديمية وَحْيٌ وَنَمَاء V4 | منصة تعليم إسلامية عالمية',
+        description: 'V4: توسع عالمي، 9 لغات، 6 أسواق، AI، LMS، لوحات تشغيل — منصة وَحْيٌ وَنَمَاء.',
       }} />
       <GlobalHeader />
       <main id="main-content" className="v4-page">
@@ -253,11 +253,11 @@ export default function GlobalPlatform() {
           <div className="v4-hero-content">
             <span className="badge-gold">
               <Globe2 size={16} aria-hidden="true" />
-              Al-Athar Academy V4.0
+              Wahy Wa Namaa Academy V4.0
             </span>
-            <h1>أكاديمية الأثر العالمية</h1>
+            <h1>أكاديمية وَحْيٌ وَنَمَاء العالمية</h1>
             <p>
-              تحويل أكاديمية الأثر من أكاديمية لتحفيظ القرآن إلى منصة تعليم إسلامية عالمية متعددة اللغات، العملات، المناطق الزمنية، واللوحات التشغيلية مع دعم الذكاء الاصطناعي.
+              منصة وَحْيٌ وَنَمَاء لتعليم القرآن الكريم وتزكية النفس والنمو الإنساني — منصة تعليم إسلامية عالمية متعددة اللغات، العملات، المناطق الزمنية، واللوحات التشغيلية مع دعم الذكاء الاصطناعي.
             </p>
             <div className="v4-actions">
               <Link to="/markets" className="btn-premium-outline">

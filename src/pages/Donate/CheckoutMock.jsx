@@ -10,7 +10,7 @@ import api from '../../lib/api';
 const LOCALIZATION = {
   ar: {
     title: 'بوابة الدفع الآمنة (تجريبي)',
-    subtitle: 'أكاديمية الأثر الطيب - نظام الدفع الافتراضي',
+    subtitle: 'أكاديمية وَحْيٌ وَنَمَاء - نظام الدفع الافتراضي',
     cardNumber: 'رقم البطاقة',
     cardExpiry: 'تاريخ الانتهاء',
     cardCvc: 'رمز التحقق (CVC)',
@@ -20,7 +20,7 @@ const LOCALIZATION = {
     paypalEmail: 'البريد الإلكتروني لـ PayPal',
     paypalPass: 'كلمة المرور',
     processing: 'جاري معالجة المعاملة المالية...',
-    confirming: 'جاري تأكيد التبرع في خوادم الأثر...',
+    confirming: 'جاري تأكيد التبرع في خوادم وَحْيٌ وَنَمَاء...',
     successTitle: 'تم التبرع بنجاح!',
     successSub: 'جزاكم الله خيراً. تم إرسال إيصال التبرع إلى بريدك الإلكتروني.',
     goBack: 'العودة لصفحة التبرعات',
@@ -35,7 +35,7 @@ const LOCALIZATION = {
   },
   en: {
     title: 'Secure Checkout Portal (Sandbox)',
-    subtitle: 'Al-Athar Academy - Simulated Payment Gateway',
+    subtitle: 'Wahy Wa Namaa Academy - Simulated Payment Gateway',
     cardNumber: 'Card Number',
     cardExpiry: 'Expiration Date',
     cardCvc: 'CVC / CVV',
@@ -45,7 +45,7 @@ const LOCALIZATION = {
     paypalEmail: 'PayPal Email Address',
     paypalPass: 'Password',
     processing: 'Processing secure payment...',
-    confirming: 'Confirming donation with Al-Athar servers...',
+    confirming: 'Confirming donation with Wahy Wa Namaa servers...',
     successTitle: 'Donation Completed!',
     successSub: 'May Allah reward you. A pledge confirmation has been sent to your email.',
     goBack: 'Return to Donate Page',
@@ -60,7 +60,7 @@ const LOCALIZATION = {
   },
   id: {
     title: 'Portal Pembayaran Aman (Sandbox)',
-    subtitle: 'Akademi Al-Athar - Gerbang Pembayaran Simulasi',
+    subtitle: 'Akademi Wahy Wa Namaa - Gerbang Pembayaran Simulasi',
     cardNumber: 'Nomor Kartu',
     cardExpiry: 'Tanggal Kedaluwarsa',
     cardCvc: 'Kode CVC / CVV',
@@ -70,7 +70,7 @@ const LOCALIZATION = {
     paypalEmail: 'Alamat Email PayPal',
     paypalPass: 'Kata Sandi',
     processing: 'Memproses pembayaran aman...',
-    confirming: 'Mengonfirmasi donasi dengan server Al-Athar...',
+    confirming: 'Mengonfirmasi donasi dengan server Wahy Wa Namaa...',
     successTitle: 'Donasi Berhasil Selesai!',
     successSub: 'Semoga Allah membalas kebaikan Anda. Konfirmasi donasi telah dikirim ke email Anda.',
     goBack: 'Kembali ke Halaman Donasi',

@@ -10,8 +10,8 @@ export default function MobileStickyBar() {
   const whatsappNumber = '201000000000'; // رقم واتساب الأكاديمية
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
     locale === 'ar'
-      ? 'السلام عليكم، أود الاستفسار عن حجز حصة تجريبية مجانية في أكاديمية الأثر الطيب'
-      : 'Hello, I would like to inquire about booking a free trial Quran session at Al-Athar Academy'
+      ? 'السلام عليكم، أود الاستفسار عن حجز حصة تجريبية مجانية في أكاديمية وَحْيٌ وَنَمَاء'
+      : 'Hello, I would like to inquire about booking a free trial Quran session at Wahy Wa Namaa Academy'
   )}`;
 
   return (

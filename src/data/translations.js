@@ -33,13 +33,13 @@ export const translations = {
       developedBy: 'تم تصميم وتطوير هذا النظام بواسطة م/حسام السبعاوي'
     },
     hero: {
-      title: 'أثرٌ يُساوي حياة',
+      title: 'وَحْيٌ وَنَمَاء',
       subtitle: 'أكاديمية رائدة لتعليم وتجويد القرآن الكريم والعلوم الشرعية، نخطو معك خطوة بخطوة في رحلتك مع كتاب الله تحت إشراف نخبة من كبار المقرئين والمشايخ الأجلاء بسند متصل.',
       joinAsStudent: 'انضم الآن كطالب',
       teacherPortal: 'بوابة المدرسين'
     },
     about: {
-      badge: 'لماذا الأثر الطيب؟',
+      badge: 'لماذا وَحْيٌ وَنَمَاء؟',
       title: 'تجربة تعليمية فريدة ومتكاملة',
       features: [
         {
@@ -51,13 +51,13 @@ export const translations = {
           desc: 'الحصول على إجازات بروايات مختلفة للقرآن الكريم متصلة السند بسبل تيسير وتوثيق تليق بأهل القرآن.'
         },
         {
-          title: 'أثرٌ يدوم وينفع',
+          title: 'نماءٌ إنساني مستمر',
           desc: 'نحن لا نهدف فقط للحفظ الآلي، بل نركز على فهم المعاني، تدبر الآيات، وغرس القيم القرآنية في سلوك الطالب.'
         }
       ]
     },
     sheikhs: {
-      badge: 'شيوخ الأثر الطيب',
+      badge: 'مشايخ وَحْيٌ وَنَمَاء',
       title: 'استمع وشاهد نخبة من مشايخنا الفضلاء',
       subtitle: 'تصفح ملفات المشايخ واستمع لتلاواتهم أو شاهد الفيديو التعريفي لهم',
       watchVideo: 'عرض الفيديو',
@@ -65,26 +65,26 @@ export const translations = {
     },
     honors: {
       badge: 'لوحة الشرف والتميز',
-      title: 'شرف الإنجاز وأثر المعرفة',
+      title: 'شرف الإنجاز ونماء المعرفة',
       subtitle: 'نحتفي بطلابنا المتميزين الذين نالوا الإجازات وتوجوا في المسابقات القرآنية'
     },
     contact: {
-      badge: 'تواصل معنا',
-      title: 'دعنا نتحدث عن مسارك القرآني',
-      description: 'لديك استفسار حول المناهج، طريقة الحفظ الفردي، أو تود الانضمام لأحد الحلقات مباشرة؟ أرسل لنا رسالة وسنقوم بالرد عليك في أسرع وقت.',
-      contactHours: 'مواعيد الاتصال',
-      hoursValue: 'يومياً من ٢:٠٠ ظهراً حتى ١٠:٠٠ مساءً',
-      nameLabel: 'الاسم الكامل',
-      namePlaceholder: 'الاسم ثلاثي…',
-      phoneLabel: 'رقم الجوال (واتساب)',
+      badge: 'اتصل بنا',
+      title: 'لنتحدث عن رحلتك القرآنية',
+      description: 'لديك استفسار عن المناهج، طرق الحفظ الفردية، أو ترغب بالانضمام لحلقة مباشرة؟ أرسل لنا رسالة وسنرد عليك في أقرب وقت.',
+      contactHours: 'أوقات التواصل',
+      hoursValue: 'يومياً من 2:00 ظهراً حتى 10:00 مساءً',
+      nameLabel: 'الاسم بالكامل',
+      namePlaceholder: 'اكتب اسمك الكريم…',
+      phoneLabel: 'رقم الهاتف (واتساب)',
       messageLabel: 'الرسالة أو الاستفسار',
       messagePlaceholder: 'اكتب هنا تفاصيل طلبك أو الاستفسار…',
       sendButton: 'إرسال الرسالة',
       sentSuccess: 'تم الإرسال بنجاح ✓'
     },
     footer: {
-      rights: 'جميع الحقوق محفوظة لأكاديمية الأثر الطيب',
-      slogan: 'شعارنا أثرٌ يساوي حياة'
+      rights: 'جميع الحقوق محفوظة لأكاديمية وَحْيٌ وَنَمَاء',
+      slogan: 'شعارنا: نتعلم القرآن، نحفظه، وننمو به.'
     },
     student: {
       title: 'بوابة دخول الطالب',
@@ -297,13 +297,13 @@ export const translations = {
       developedBy: 'Designed & Developed by Eng. Hossam Al-Sabawi'
     },
     hero: {
-      title: 'A Legacy Worth a Life',
-      subtitle: 'A leading academy for Quran memorization and Tajweed, walking with you step by step in your journey with the Book of Allah under the supervision of elite reciters and scholars with connected chains of narration.',
+      title: 'WAHY WA NAMAA',
+      subtitle: 'Learn the Quran. Memorize it. Grow through it. A leading academy for Quran memorization and Tajweed, walking with you step by step in your journey with the Book of Allah under the supervision of elite reciters and scholars with connected chains of narration.',
       joinAsStudent: 'Join as Student',
       teacherPortal: 'Teacher Portal'
     },
     about: {
-      badge: 'Why Al-Athar Al-Tayyib?',
+      badge: 'Why Wahy Wa Namaa?',
       title: 'A Unique & Complete Learning Experience',
       features: [
         {
@@ -315,13 +315,13 @@ export const translations = {
           desc: 'Obtain Ijazahs in various Quran recitations with connected chains of narration through methods befitting the people of Quran.'
         },
         {
-          title: 'A Lasting Beneficial Legacy',
+          title: 'A Lasting Beneficial Growth',
           desc: 'We don\'t just aim for mechanical memorization, but focus on understanding meanings, reflecting on verses, and instilling Quranic values in student behavior.'
         }
       ]
     },
     sheikhs: {
-      badge: 'Al-Athar Al-Tayyib Sheikhs',
+      badge: 'Wahy Wa Namaa Sheikhs',
       title: 'Listen & Watch Our Esteemed Sheikhs',
       subtitle: 'Browse sheikh profiles, listen to their recitations, or watch their introduction videos',
       watchVideo: 'Watch Video',
@@ -347,8 +347,8 @@ export const translations = {
       sentSuccess: 'Sent Successfully ✓'
     },
     footer: {
-      rights: 'All rights reserved to Al-Athar Al-Tayyib Academy',
-      slogan: 'Our slogan: A Legacy Worth a Life'
+      rights: 'All rights reserved to Wahy Wa Namaa Academy',
+      slogan: 'Our motto: Learn the Quran. Memorize it. Grow through it.'
     },
     student: {
       title: 'Student Portal Login',
@@ -561,13 +561,13 @@ export const translations = {
       developedBy: 'Dirancang & Dikembangkan oleh Eng. Hossam Al-Sabawi'
     },
     hero: {
-      title: 'Warisan Seharga Kehidupan',
-      subtitle: 'Akademi terkemuka untuk hafalan dan Tajwid Al-Quran, melangkah bersama Anda dalam perjalanan dengan Kitab Allah di bawah pengawasan para qari dan ulama elit dengan sanad yang bersambung.',
+      title: 'WAHY WA NAMAA',
+      subtitle: 'Pelajari Al-Quran, hafalkan, dan bertumbuh dengannya. Akademi terkemuka untuk hafalan dan Tajwid Al-Quran, melangkah bersama Anda dalam perjalanan dengan Kitab Allah di bawah pengawasan para qari dan ulama elit dengan sanad yang bersambung.',
       joinAsStudent: 'Daftar sebagai Siswa',
       teacherPortal: 'Portal Guru'
     },
     about: {
-      badge: 'Mengapa Al-Athar Al-Tayyib?',
+      badge: 'Mengapa WAHY WA NAMAA?',
       title: 'Pengalaman Belajar Unik & Lengkap',
       features: [
         {
@@ -579,13 +579,13 @@ export const translations = {
           desc: 'Dapatkan ijazah dalam berbagai qiraat Al-Quran dengan sanad bersambung melalui metode yang layak bagi Ahlul Quran.'
         },
         {
-          title: 'Warisan Abadi yang Bermanfaat',
+          title: 'Pertumbuhan Karakter yang Bermanfaat',
           desc: 'Kami tidak hanya bertujuan hafalan mekanis, tetapi fokus pada pemahaman makna, merenungkan ayat, dan menanamkan nilai-nilai Quran dalam perilaku siswa.'
         }
       ]
     },
     sheikhs: {
-      badge: 'Para Syekh Al-Athar Al-Tayyib',
+      badge: 'Para Syekh WAHY WA NAMAA',
       title: 'Dengarkan & Saksikan Para Syekh Mulia Kami',
       subtitle: 'Jelajahi profil syekh, dengarkan bacaan mereka, atau tonton video perkenalan mereka',
       watchVideo: 'Tonton Video',
@@ -611,8 +611,8 @@ export const translations = {
       sentSuccess: 'Berhasil Dikirim ✓'
     },
     footer: {
-      rights: 'Hak cipta Akademi Al-Athar Al-Tayyib',
-      slogan: 'Slogan kami: Warisan Seharga Kehidupan'
+      rights: 'Hak cipta Akademi WAHY WA NAMAA',
+      slogan: 'Slogan kami: Pelajari Al-Quran, hafalkan, dan bertumbuh dengannya.'
     },
     student: {
       title: 'Login Portal Siswa',
@@ -825,13 +825,13 @@ export const translations = {
       developedBy: 'Müh. Hossam Al-Sabawi tarafından tasarlandı ve geliştirildi'
     },
     hero: {
-      title: 'Hayata Değer Bir Miras',
-      subtitle: 'Kur\'an ezberleme ve tecvid alanında öncü bir akademi, Allah\'ın Kitabı ile yolculuğunuzda senetli hocalar gözetiminde adım adım sizinle yürüyoruz.',
+      title: 'WAHY WA NAMAA',
+      subtitle: 'Kuran\'ı öğreniyoruz, ezberliyoruz ve onunla büyüyoruz. Kur\'an ezberleme ve tecvid alanında öncü bir akademi, Allah\'ın Kitabı ile yolculuğunuzda senetli hocalar gözetiminde adım adım sizinle yürüyoruz.',
       joinAsStudent: 'Öğrenci Olarak Katıl',
       teacherPortal: 'Öğretmen Portalı'
     },
     about: {
-      badge: 'Neden Al-Athar Al-Tayyib?',
+      badge: 'Neden WAHY WA NAMAA?',
       title: 'Benzersiz ve Kapsamlı Bir Öğrenme Deneyimi',
       features: [
         {
@@ -843,13 +843,13 @@ export const translations = {
           desc: 'Kur\'an-ı Kerim\'in çeşitli kıraatlerinde, Kur\'an ehline yaraşır yöntemlerle bağlı senetlerle icazet alın.'
         },
         {
-          title: 'Kalıcı ve Faydalı Bir Miras',
+          title: 'Kalıcı dan Faydalı Bir Gelişim',
           desc: 'Sadece mekanik ezberlemeyi hedeflemiyoruz, anlamları anlamaya, ayetleri düşünmeye ve Kur\'ani değerleri öğrenci davranışına yerleştirmeye odaklanıyoruz.'
         }
       ]
     },
     sheikhs: {
-      badge: 'Al-Athar Al-Tayyib Hocaları',
+      badge: 'WAHY WA NAMAA Hocaları',
       title: 'Değerli Hocalarımızı Dinleyin ve İzleyin',
       subtitle: 'Hoca profillerini inceleyin, tilavetlerini dinleyin veya tanıtım videolarını izleyin',
       watchVideo: 'Videoyu İzle',
@@ -875,8 +875,8 @@ export const translations = {
       sentSuccess: 'Başarıyla Gönderildi ✓'
     },
     footer: {
-      rights: 'Al-Athar Al-Tayyib Akademisi tüm hakları saklıdır',
-      slogan: 'Sloganımız: Hayata Değer Bir Miras'
+      rights: 'Wahy Wa Namaa Akademisi tüm hakları saklıdır',
+      slogan: 'Sloganımız: Kuran\'ı öğreniyoruz, ezberliyoruz ve onunla büyüyoruz.'
     },
     student: {
       title: 'Öğrenci Portalı Girişi',

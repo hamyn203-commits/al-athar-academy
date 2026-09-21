@@ -189,8 +189,8 @@ export default function Register() {
             <div className="flex items-center gap-3 mb-8">
               <Logo size={42} showText={false} />
               <div>
-                <h1 className="font-naskh text-lg font-bold tracking-wide">أكاديمية الأثر الطيب</h1>
-                <p className="text-[10px] text-[var(--athar-gold-light)]">أثر يساوي حياة</p>
+                <h1 className="font-naskh text-lg font-bold tracking-wide">أكاديمية وَحْيٌ وَنَمَاء</h1>
+                <p className="text-[10px] text-[var(--wn-gold)]">نتعلم القرآن، نحفظه، وننمو به.</p>
               </div>
             </div>
 

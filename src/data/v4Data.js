@@ -94,7 +94,7 @@ export const v4Markets = [
 ];
 
 export const v4Languages = [
-  { code: 'ar', name: 'العربية', dir: 'RTL', seo: 'ar/al-athar-quran-academy' },
+  { code: 'ar', name: 'العربية', dir: 'RTL', seo: 'ar/wahy-namaa-quran-academy' },
   { code: 'en', name: 'English', dir: 'LTR', seo: 'en/quran-memorization-online' },
   { code: 'fr', name: 'Français', dir: 'LTR', seo: 'fr/apprendre-le-coran' },
   { code: 'tr', name: 'Türkçe', dir: 'LTR', seo: 'tr/online-kuran-egitimi' },

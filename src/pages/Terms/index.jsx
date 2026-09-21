@@ -5,11 +5,11 @@ import SEOHead from '../../components/SEOHead';
 export default function Terms() {
   return (
     <div className="min-h-screen bg-white" dir="rtl">
-      <SEOHead title="الشروط والأحكام" description="شروط استخدام أكاديمية الأثر" />
+      <SEOHead title="الشروط والأحكام" description="شروط استخدام أكاديمية وَحْيٌ وَنَمَاء" />
       <GlobalHeader />
       <div className="container mx-auto px-4 py-16 max-w-3xl prose prose-lg">
         <h1>الشروط والأحكام</h1>
-        <p>باستخدامك لمنصة أكاديمية الأثر، فإنك توافق على الشروط التالية:</p>
+        <p>باستخدامك لمنصة أكاديمية وَحْيٌ وَنَمَاء، فإنك توافق على الشروط التالية:</p>
         <h2>استخدام المنصة</h2>
         <p>المنصة مخصصة للتعليم الشرعي والقرآني. يُمنع أي استخدام مخالف للشريعة أو القانون.</p>
         <h2>حسابات المستخدمين</h2>

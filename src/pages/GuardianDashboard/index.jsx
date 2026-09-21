@@ -559,7 +559,7 @@ export default function GuardianDashboard() {
               <div className="space-y-6 mt-4">
                 <div className="bg-emerald-50/60 border border-emerald-100 rounded-xl p-5">
                   <h4 className="font-bold text-emerald-900 text-base mb-2 font-arabic">
-                    سياسة الحضور والحصص التعويضية في أكاديمية الأثر
+                    سياسة الحضور والحصص التعويضية في أكاديمية وَحْيٌ وَنَمَاء
                   </h4>
                   <ul className="text-sm text-emerald-800/90 space-y-1.5 list-disc list-inside">
                     <li>يتم إرسال تذكير بالحصة قبل 24 ساعة عبر الواتساب لتأكيد الحضور أو تقديم اعتذار.</li>

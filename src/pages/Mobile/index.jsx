@@ -21,12 +21,12 @@ export default function MobileAppPage() {
 
   return (
     <>
-      <SEOHead page={{ url: '/app', title: isAr ? 'تطبيق الهاتف' : 'Mobile App', description: isAr ? 'ثبّت أكاديمية الأثر على هاتفك' : 'Install Al-Athar Academy on your phone' }} />
+      <SEOHead page={{ url: '/app', title: isAr ? 'تطبيق الهاتف' : 'Mobile App', description: isAr ? 'ثبّت أكاديمية وَحْيٌ وَنَمَاء على هاتفك' : 'Install Wahy Wa Namaa Academy on your phone' }} />
       <GlobalHeader />
       <main className="min-h-screen bg-gradient-to-b from-emerald-50 to-white py-16 px-4">
         <div className="max-w-lg mx-auto text-center">
           <Smartphone className="mx-auto text-emerald-600 mb-6" size={56} />
-          <h1 className="text-3xl font-bold mb-3">{isAr ? 'تطبيق أكاديمية الأثر' : 'Al-Athar Mobile App'}</h1>
+          <h1 className="text-3xl font-bold mb-3">{isAr ? 'تطبيق أكاديمية وَحْيٌ وَنَمَاء' : 'Wahy Wa Namaa Mobile App'}</h1>
           <p className="text-gray-600 mb-10">{isAr ? 'PWA — بدون متجر، تحديثات فورية، وصول للحصص والشهادات' : 'PWA — no store needed, instant updates, access lessons & certificates'}</p>
 
           <div className="space-y-4 text-right mb-10">

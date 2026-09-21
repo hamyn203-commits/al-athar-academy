@@ -22,7 +22,7 @@ export async function enableWebPush() {
   const reg = await navigator.serviceWorker.ready;
   const token = `web-${crypto.randomUUID?.() || Date.now()}`;
 
-  await reg.showNotification('أكاديمية الأثر', {
+  await reg.showNotification('أكاديمية وَحْيٌ وَنَمَاء', {
     body: 'تم تفعيل الإشعارات — ستصلك تنبيهات الحصص والإنجازات',
     icon: '/icons/icon-192x192.png',
     badge: '/icons/badge-72x72.png',

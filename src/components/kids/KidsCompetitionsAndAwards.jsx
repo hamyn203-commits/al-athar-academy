@@ -178,14 +178,14 @@ export default function KidsCompetitionsAndAwards() {
     },
     {
       id: 'scholarship',
-      title: isAr ? 'درع بطل الأثر ومنحة دراسية مجانية' : 'Al-Athar Hero Trophy & Full Scholarship',
+      title: isAr ? 'درع بطل وَحْيٌ وَنَمَاء ومنحة دراسية مجانية' : 'Wahy Wa Namaa Hero Trophy & Full Scholarship',
       tag: isAr ? 'منحة التميز' : 'Full Scholarship',
       color: 'border-purple-300 bg-gradient-to-b from-purple-50/80 to-white',
       desc: isAr
         ? 'كأس المسابقة الذهبي مع مكافأة مالية تشجيعية ومنحة دراسية مجانية كاملة للدورة النصف سنوية القادمة بالأكاديمية.'
         : 'Championship gold trophy, cash encouragement award, and 100% free tuition for the next semester.',
       features: isAr ? [
-        'كأس الأثر الذهبي المحفور للمركز الأول',
+        'كأس وَحْيٌ وَنَمَاء الذهبي المحفور للمركز الأول',
         'مكافأة مالية تشجيعية تُسلّم لولي الأمر',
         'منحة دراسية مجانية 6 أشهر كاملة',
         'لقاء مباشر مع كبار علماء الأزهر الشريف'

@@ -94,8 +94,8 @@ export default function FreeTrial() {
 
   useEffect(() => {
     document.title = activeLocale === 'ar'
-      ? 'احجز حصتك التجريبية المجانية 100% | أكاديمية الأثر الطيب'
-      : 'Book 100% Free Trial Class | Al-Athar Academy';
+      ? 'احجز حصتك التجريبية المجانية 100% | أكاديمية وَحْيٌ وَنَمَاء'
+      : 'Book 100% Free Trial Class | Wahy Wa Namaa Academy';
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [step, activeLocale]);
 
@@ -199,7 +199,7 @@ export default function FreeTrial() {
       submittingBtn: 'جاري تسجيل وتأكيد الحصة...',
       // Success State
       successTitle: 'تهانينا! تم تسجيل طلب حصتك التجريبية بنجاح',
-      successSubtitle: 'أهلاً بكم في رحاب الأثر الطيب. طلبكم قيد المعالجة السريعة الآن من فريق الشؤون التعليمية.',
+      successSubtitle: 'أهلاً بكم في رحاب أكاديمية وَحْيٌ وَنَمَاء. طلبكم قيد المعالجة السريعة الآن من فريق الشؤون التعليمية.',
       refNumber: 'رقم الحجز المرجعي الخاص بك',
       copyRef: 'نسخ الرقم',
       copied: 'تم النسخ!',
@@ -319,7 +319,7 @@ export default function FreeTrial() {
       submitBtn: 'Confirm 100% Free Trial Now 🚀',
       submittingBtn: 'Registering your trial session...',
       successTitle: 'Congratulations! Free Trial Session Reserved',
-      successSubtitle: 'Welcome to Al-Athar Academy. Your request is now being processed by our academic advisory team.',
+      successSubtitle: 'Welcome to Wahy Wa Namaa Academy. Your request is now being processed by our academic advisory team.',
       refNumber: 'Your Booking Reference ID',
       copyRef: 'Copy Code',
       copied: 'Copied!',
@@ -460,8 +460,8 @@ export default function FreeTrial() {
     };
 
     const message = activeLocale === 'ar'
-      ? `السلام عليكم ورحمة الله وبركاته 🌿\nأكاديمية الأثر الطيب — أود تأكيد موعد الحصة التجريبية المجانية:\n• رقم الحجز: ${bookingRef}\n• اسم الطالب: ${formData.studentName}\n• السن: ${formData.age} سنة (${formData.gender === 'male' ? 'ذكر' : 'أنثى'})\n• المسار: ${trackNames[formData.track]}\n• الفترة المفضلة: ${periodNames[formData.preferredPeriod]}\n• رقم التواصل: ${formData.countryCode} ${formData.whatsapp}\n\nأرجو تأكيد الموعد وإرسال رابط القاعة الافتراضية، جزاكم الله خيراً.`
-      : `Assalamu Alaikum,\nAl-Athar Academy — I would like to confirm my Free Trial Class:\n• Booking Ref: ${bookingRef}\n• Student Name: ${formData.studentName}\n• Age: ${formData.age} (${formData.gender})\n• Track: ${trackNames[formData.track]}\n• Preferred Time: ${periodNames[formData.preferredPeriod]}\n\nPlease confirm our slot and send the virtual class link. Jazakum Allah Khair.`;
+      ? `السلام عليكم ورحمة الله وبركاته 🌿\nأكاديمية وَحْيٌ وَنَمَاء — أود تأكيد موعد الحصة التجريبية المجانية:\n• رقم الحجز: ${bookingRef}\n• اسم الطالب: ${formData.studentName}\n• السن: ${formData.age} سنة (${formData.gender === 'male' ? 'ذكر' : 'أنثى'})\n• المسار: ${trackNames[formData.track]}\n• الفترة المفضلة: ${periodNames[formData.preferredPeriod]}\n• رقم التواصل: ${formData.countryCode} ${formData.whatsapp}\n\nأرجو تأكيد الموعد وإرسال رابط القاعة الافتراضية، جزاكم الله خيراً.`
+      : `Assalamu Alaikum,\nWahy Wa Namaa Academy — I would like to confirm my Free Trial Class:\n• Booking Ref: ${bookingRef}\n• Student Name: ${formData.studentName}\n• Age: ${formData.age} (${formData.gender})\n• Track: ${trackNames[formData.track]}\n• Preferred Time: ${periodNames[formData.preferredPeriod]}\n\nPlease confirm our slot and send the virtual class link. Jazakum Allah Khair.`;
 
     return `https://wa.me/${rawNumber}?text=${encodeURIComponent(message)}`;
   };

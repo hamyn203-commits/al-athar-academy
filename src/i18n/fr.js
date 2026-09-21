@@ -1,10 +1,10 @@
 export default {
   common: {
-    appName: 'Al-Athar Al-Tayyib',
-    appNameFull: 'Académie Al-Athar Al-Tayyib',
-    slogan: "L'impact égale la vie",
-    seoDescription: "Al-Athar Al-Tayyib — académie mondiale du Coran, Tajweed et arabe. Notre devise : L'impact égale la vie",
-    seoKeywords: 'Al-Athar Al-Tayyib, Académie Al-Athar, Al Athar Al Tayyib, impact égale vie, Coran en ligne, Tajweed',
+    appName: 'WAHY WA NAMAA',
+    appNameFull: 'Académie WAHY WA NAMAA',
+    slogan: 'Apprendre le Coran, le mémoriser, et grandir avec lui.',
+    seoDescription: 'WAHY WA NAMAA — Académie mondiale du Saint Coran, Tajweed et récitation par Sanad ininterrompu.',
+    seoKeywords: 'WAHY WA NAMAA, Académie WAHY WA NAMAA, Coran en ligne, Tajweed, Sanad, mémorisation Coran',
     home: 'Accueil',
     about: 'À propos',
     teachers: 'Enseignants',
@@ -45,7 +45,7 @@ export default {
     rating: 'Évaluation',
   },
   features: {
-    title: 'Pourquoi choisir l\'Académie Al-Athar?',
+    title: 'Pourquoi choisir l\'Académie WAHY WA NAMAA?',
     subtitle: 'Nous offrons une expérience d\'apprentissage unique et complète',
     feature1: {
       title: 'Enseignants certifiés',
@@ -125,11 +125,11 @@ export default {
   },
   learningPaths: {
     title: 'Parcours d\'apprentissage',
-    subtitle: 'Choisissez le parcours adapté à votre parcours éducatif à l\'Académie Al-Athar',
+    subtitle: 'Choisissez le parcours adapté à votre parcours éducatif à l\'Académie WAHY WA NAMAA',
   },
   footer: {
     about: 'À propos de l\'Académie',
-    aboutText: 'L\'Académie Al-Athar est une plateforme éducative mondiale spécialisée dans le Coran, la langue arabe et les études islamiques.',
+    aboutText: 'L\'Académie WAHY WA NAMAA est une plateforme éducative mondiale de référence pour l\'apprentissage et la mémorisation du Coran par Sanad ininterrompu.',
     quickLinks: 'Liens rapides',
     courses: 'Cours',
     teachers: 'Enseignants',

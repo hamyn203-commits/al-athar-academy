@@ -17,14 +17,14 @@ export default function About() {
 
   return (
     <div className="min-h-screen bg-white">
-      <SEOHead title={t.common.about} description="تعرف على أكاديمية الأثر — منصة تعليم إسلامي عالمية" />
+      <SEOHead title={t.common.about} description="تعرف على أكاديمية وَحْيٌ وَنَمَاء — منصة تعليم إسلامي عالمية" />
       <GlobalHeader />
       <section className="bg-gradient-to-br from-emerald-900 to-green-800 text-white py-20">
         <div className="container mx-auto px-4 text-center">
           <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-4xl md:text-5xl font-bold mb-4">
             {t.common.about}
           </motion.h1>
-          <p className="text-emerald-100 text-lg max-w-2xl mx-auto">أثرٌ يساوي حياة — منصة تعليمية عالمية للقرآن واللغة العربية والدراسات الإسلامية</p>
+          <p className="text-emerald-100 text-lg max-w-2xl mx-auto">نتعلم القرآن، نحفظه، وننمو به. — منصة تعليمية عالمية للقرآن الكريم واللغة العربية والعلوم الشرعية</p>
         </div>
       </section>
       <section className="container mx-auto px-4 py-16 grid md:grid-cols-2 gap-8">

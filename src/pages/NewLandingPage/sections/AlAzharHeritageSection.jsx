@@ -70,7 +70,7 @@ export default function AlAzharHeritageSection() {
             <div className="inline-flex items-center gap-3 bg-gradient-to-r from-emerald-950/40 via-emerald-900/40 to-emerald-950/40 border border-emerald-500/30 rounded-2xl p-6 max-w-2xl mx-auto shadow-md">
               <span className="text-3xl">🇮🇩</span>
               <p className="text-left text-xs md:text-sm text-emerald-200 leading-relaxed">
-                <strong>Catatan Khusus Indonesia:</strong> Kami memahami pentingnya Sanad dari Syekh Mesir. Semua kelas privat di Al-Athar diampu langsung oleh lulusan Al-Azhar Kairo asli Arab, bukan guru lokal.
+                <strong>Catatan Khusus Indonesia:</strong> Kami memahami pentingnya Sanad dari Syekh Mesir. Semua kelas privat di Wahy Wa Namaa diampu langsung oleh lulusan Al-Azhar Kairo asli Arab, bukan guru lokal.
               </p>
             </div>
           </div>

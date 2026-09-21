@@ -155,7 +155,7 @@ export default function CertificateView() {
                 {locale === 'ar' ? 'شهادة إتمام' : 'Certificate of Completion'}
               </h1>
               <p className="text-emerald-100">
-                {locale === 'ar' ? 'أكاديمية الأثر الطيب' : 'Al-Athar Academy'}
+                {locale === 'ar' ? 'أكاديمية وَحْيٌ وَنَمَاء' : 'Wahy Wa Namaa Academy'}
               </p>
             </div>
 

@@ -37,7 +37,7 @@ export default function PwaInstallPrompt() {
   return (
     <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-6 md:max-w-sm z-[100] bg-white border border-emerald-200 shadow-xl rounded-2xl p-4 flex gap-3 items-start">
       <div className="flex-1">
-        <p className="font-bold text-sm text-gray-900">{locale === 'id' ? 'Instal Aplikasi Al-Athar' : locale === 'ar' ? 'ثبّت تطبيق الأثر' : 'Install Al-Athar App'}</p>
+        <p className="font-bold text-sm text-gray-900">{locale === 'id' ? 'Instal Aplikasi Wahy Wa Namaa' : locale === 'ar' ? 'ثبّت تطبيق وَحْيٌ وَنَمَاء' : 'Install Wahy Wa Namaa App'}</p>
         <p className="text-xs text-gray-500 mt-1">{locale === 'id' ? 'Akses cepat ke sesi dan sertifikat langsung dari layar ponsel Anda' : locale === 'ar' ? 'وصول سريع للحصص والشهادات من شاشة الهاتف' : 'Quick access to sessions and certificates directly from your mobile screen'}</p>
         <button type="button" onClick={install} className="mt-3 inline-flex items-center gap-1.5 bg-emerald-600 text-white text-xs font-semibold px-3 py-2 rounded-lg">
           <Download size={14} /> {locale === 'id' ? 'Instal' : locale === 'ar' ? 'تثبيت' : 'Install'}

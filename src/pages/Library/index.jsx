@@ -176,7 +176,7 @@ const DIGITAL_BOOKS = [
     id: 'letters-articulation-guide',
     title: 'دليل مخارج الحروف وصفاتها المصور للأطفال والناشئة',
     titleEn: 'Illustrated Phonetics & Articulation Guide for Kids',
-    author: 'قسم المناهج والوسائل التعليمية — أكاديمية الأثر الطيب',
+    author: 'قسم المناهج والوسائل التعليمية — أكاديمية وَحْيٌ وَنَمَاء',
     category: 'kids',
     categoryName: 'تأسيس الأطفال',
     pages: 42,
@@ -238,7 +238,7 @@ export default function LibraryPage() {
 <html dir="rtl" lang="ar">
 <head>
 <meta charset="UTF-8">
-<title>${book.title} | أكاديمية الأثر الطيب</title>
+<title>${book.title} | أكاديمية وَحْيٌ وَنَمَاء</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap');
   body { font-family: 'Amiri', serif; margin: 40px; background: #faf9f6; color: #1e293b; line-height: 1.8; }
@@ -254,7 +254,7 @@ export default function LibraryPage() {
 </head>
 <body>
   <div class="header">
-    <div class="logo">أكاديمية الأثر الطيب لتعليم القرآن الكريم والعلوم الشرعية</div>
+    <div class="logo">أكاديمية وَحْيٌ وَنَمَاء لتعليم القرآن الكريم والنمو الإنساني</div>
     <div class="meta">المكتبة الرقمية المعتمدة • متاح للاستخدام التعليمي والخيري</div>
     <div class="title">${book.title}</div>
     <div class="meta">الناظم / المحقق: ${book.author} | عدد الصفحات: ${book.pages} صفحة</div>
@@ -268,7 +268,7 @@ export default function LibraryPage() {
   `).join('')}
 
   <div class="footer">
-    تم استخراج هذه النسخة الإلكترونية رسمياً من منصة أكاديمية الأثر الطيب (al-athar.com). جميع الحقوق محفوظة لطلبة العلم وأهل القرآن.
+    تم استخراج هذه النسخة الإلكترونية رسمياً من منصة أكاديمية وَحْيٌ وَنَمَاء (wahy-namaa.com). جميع الحقوق محفوظة لطلبة العلم وأهل القرآن.
   </div>
 </body>
 </html>`;
@@ -277,7 +277,7 @@ export default function LibraryPage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `${book.id}-al-athar-academy.html`;
+    link.download = `${book.id}-wahy-namaa-academy.html`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -294,9 +294,9 @@ export default function LibraryPage() {
       <SEOHead
         page={{
           url: '/library',
-          title: isAr ? 'المكتبة الرقمية القرآنية والمتون المعتمدة | الأثر' : 'Digital Quranic Library & Texts | Al-Athar',
+          title: isAr ? 'المكتبة الرقمية القرآنية والمتون المعتمدة | وَحْيٌ وَنَمَاء' : 'Digital Quranic Library & Texts | Wahy Wa Namaa',
           description: isAr
-            ? 'مكتبة الأثر الرقمية: متون التجويد المعتمدة (تحفة الأطفال، الجزرية، الشاطبية)، مصاحف التجويد الملونة برواية حفص وورش، وكتب تأسيس الأطفال (نور البيان والقاعدة النورانية) مع إمكانية التحميل المباشر والقراءة.'
+            ? 'مكتبة وَحْيٌ وَنَمَاء الرقمية: متون التجويد المعتمدة (تحفة الأطفال، الجزرية، الشاطبية)، مصاحف التجويد الملونة برواية حفص وورش، وكتب تأسيس الأطفال (نور البيان والقاعدة النورانية) مع إمكانية التحميل المباشر والقراءة.'
             : 'Download approved Tajweed texts (Tuhfa, Jazariyyah, Shatibiyyah), colored Tajweed Mushafs, and kids foundation books with free PDF download and preview.'
         }}
       />

@@ -30,7 +30,7 @@ export default function WomenPortal() {
 
   return (
     <>
-      <SEOHead page={{ url: '/women', title: isAr ? 'أكاديمية النساء | الأثر' : 'Women Academy | Al-Athar', description: isAr ? 'قسم مستقل — معلمات وطالبات فقط' : 'Dedicated section — female teachers and students only' }} />
+      <SEOHead page={{ url: '/women', title: isAr ? 'أكاديمية النساء | وَحْيٌ وَنَمَاء' : 'Women Academy | Wahy Wa Namaa', description: isAr ? 'قسم مستقل — معلمات وطالبات فقط' : 'Dedicated section — female teachers and students only' }} />
       <GlobalHeader />
       <main className="min-h-screen bg-gradient-to-b from-purple-50 to-white">
         <section className="py-16 px-4 text-center">

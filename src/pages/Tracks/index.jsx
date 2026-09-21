@@ -138,7 +138,7 @@ export default function TracksPage() {
       <SEOHead
         page={{
           url: '/tracks',
-          title: isAr ? 'المسارات التعليمية التخصصية | أكاديمية الأثر الطيب' : 'Educational Tracks | Al-Athar Academy',
+          title: isAr ? 'المسارات التعليمية التخصصية | أكاديمية وَحْيٌ وَنَمَاء' : 'Educational Tracks | Wahy Wa Namaa Academy',
           description: isAr
             ? 'اكتشف المسارات التعليمية الثلاثة: مسار التحفيظ والمراجعة، مسار الإجازة وشرح المتون التجويدية بالسند المتصل، ومسار تأسيس الأطفال بالقاعدة النورانية ونور البيان.'
             : 'Explore the 3 educational tracks: Memorization & Revision, Ijazah & Tajweed Matn, and Kids Quranic Foundation.'
@@ -246,7 +246,7 @@ export default function TracksPage() {
                     </h3>
                     <p className="text-slate-600 text-sm">
                       {isAr
-                        ? 'القرآن أشد تفلتاً من الإبل في عقلها؛ لذا تعتمد أكاديمية الأثر على هذا الثلاثي الذهبي اليومي:'
+                        ? 'القرآن أشد تفلتاً من الإبل في عقلها؛ لذا تعتمد أكاديمية وَحْيٌ وَنَمَاء على هذا الثلاثي الذهبي اليومي:'
                         : 'Retention requires disciplined stratification between new memorization and structured historical revision:'}
                     </p>
                   </div>

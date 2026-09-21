@@ -287,7 +287,7 @@ export default function Blog() {
             title: { [locale]: p.title, ar: p.title },
             excerpt: { [locale]: p.excerpt, ar: p.excerpt },
             category: p.category,
-            author: p.authorName || 'أكاديمية الأثر',
+            author: p.authorName || 'أكاديمية وَحْيٌ وَنَمَاء',
             date: p.createdAt,
             readTime: `${p.readTime} min`,
             tags: p.tags || [],

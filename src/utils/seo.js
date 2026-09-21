@@ -6,15 +6,15 @@ export const generateMetaTags = ({
   url,
   type = 'website'
 }) => {
-  const defaultImage = '/og-image.jpg';
-  const defaultUrl = 'https://al-athar-academy.vercel.app';
+  const defaultImage = '/images/hero-reference-prompt10.png';
+  const defaultUrl = 'https://wahy-wa-namaa.academy';
   
   return {
-    title: `${title} | أكاديمية الأثر الطيب`,
+    title: `${title} | أكاديمية وَحْيٌ وَنَمَاء`,
     meta: [
       { name: 'description', content: description },
       { name: 'keywords', content: keywords },
-      { name: 'author', content: 'أكاديمية الأثر الطيب' },
+      { name: 'author', content: 'أكاديمية وَحْيٌ وَنَمَاء | WAHY WA NAMAA' },
       { name: 'robots', content: 'index, follow' },
       
       // Open Graph
@@ -24,7 +24,7 @@ export const generateMetaTags = ({
       { property: 'og:url', content: url || defaultUrl },
       { property: 'og:type', content: type },
       { property: 'og:locale', content: 'ar_EG' },
-      { property: 'og:site_name', content: 'أكاديمية الأثر الطيب' },
+      { property: 'og:site_name', content: 'أكاديمية وَحْيٌ وَنَمَاء' },
       
       // Twitter Card
       { name: 'twitter:card', content: 'summary_large_image' },
@@ -47,32 +47,27 @@ export const generateStructuredData = ({
     organization: {
       '@context': 'https://schema.org',
       '@type': 'EducationalOrganization',
-      name: 'أكاديمية الأثر الطيب',
-      url: 'https://al-athar-academy.vercel.app',
-      logo: 'https://al-athar-academy.vercel.app/logo.png',
-      description: 'منصة تعليم القرآن الكريم واللغة العربية عبر الإنترنت',
+      name: 'أكاديمية وَحْيٌ وَنَمَاء',
+      url: 'https://wahy-wa-namaa.academy',
+      logo: 'https://wahy-wa-namaa.academy/favicon.svg',
+      description: 'أكاديمية عالمية لتعليم القرآن الكريم والتجويد والقراءات بالسند المتصل — نتعلم القرآن، نحفظه، وننمو به.',
       address: {
         '@type': 'PostalAddress',
         addressCountry: 'EG'
-      },
-      sameAs: [
-        'https://www.facebook.com/alatharacademy',
-        'https://www.twitter.com/alatharacademy',
-        'https://www.instagram.com/alatharacademy'
-      ]
+      }
     },
     teacher: {
       '@context': 'https://schema.org',
       '@type': 'Person',
       name: data.name,
       image: data.image,
-      jobTitle: 'معلم قرآن كريم',
+      jobTitle: 'معلم قرآن كريم ومجاز بالسند',
       worksFor: {
         '@type': 'EducationalOrganization',
-        name: 'أكاديمية الأثر الطيب'
+        name: 'أكاديمية وَحْيٌ وَنَمَاء'
       },
       description: data.bio,
-      knowsAbout: ['القرآن الكريم', 'التجويد', 'الحفظ', 'الإجازة'],
+      knowsAbout: ['القرآن الكريم', 'التجويد', 'الحفظ', 'الإجازة بالسند المتصل'],
       hasCredential: data.certificates,
       aggregateRating: data.rating ? {
         '@type': 'AggregateRating',
@@ -87,8 +82,8 @@ export const generateStructuredData = ({
       description: data.description,
       provider: {
         '@type': 'EducationalOrganization',
-        name: 'أكاديمية الأثر الطيب',
-        url: 'https://al-athar-academy.vercel.app'
+        name: 'أكاديمية وَحْيٌ وَنَمَاء',
+        url: 'https://wahy-wa-namaa.academy'
       },
       educationalLevel: data.level,
       inLanguage: 'ar',
@@ -119,32 +114,32 @@ export const generateStructuredData = ({
 export const pageMeta = {
   home: {
     title: 'الرئيسية',
-    description: 'أكاديمية الأثر الطيب - منصة تعليم القرآن الكريم واللغة العربية عبر الإنترنت مع أفضل المعلمين المجازين',
-    keywords: 'تعليم القرآن, تحفيظ القرآن, تجويد, إجازة, لغة عربية, تعليم عن بعد, معلم قرآن'
+    description: 'أكاديمية وَحْيٌ وَنَمَاء — نتعلم القرآن، نحفظه، وننمو به. منصة تعليم وتحفيظ القرآن الكريم مع نخبة المعلمين المجازين',
+    keywords: 'وحي ونماء, تعليم القرآن, تحفيظ القرآن, تجويد, إجازة, لغة عربية, تعليم عن بعد, معلم قرآن'
   },
   teachers: {
     title: 'المعلمون',
-    description: 'اختر معلمك من نخبة من أفضل المعلمين المجازين في تعليم القرآن الكريم والتجويد',
-    keywords: 'معلم قرآن, معلم تجويد, معلم مجاز, أفضل معلم, اختيار معلم'
+    description: 'اختر معلمك من نخبة من كبار المقرئين المجازين بالسند المتصل في أكاديمية وَحْيٌ وَنَمَاء',
+    keywords: 'معلم قرآن, معلم تجويد, معلم مجاز, سند متصل, اختيار معلم'
   },
   teacherProfile: (name) => ({
     title: `الملف الشخصي - ${name}`,
-    description: `تعرف على ${name} - معلم قرآن كريم مجاز في أكاديمية الأثر الطيب`,
+    description: `تعرف على ${name} - معلم قرآن كريم مجاز في أكاديمية وَحْيٌ وَنَمَاء`,
     keywords: `${name}, معلم قرآن, ملف شخصي, سيرة ذاتية`
   }),
   register: {
     title: 'تسجيل معلم جديد',
-    description: 'انضم لفريق معلمي أكاديمية الأثر الطيب وابدأ رحلتك في تعليم القرآن الكريم',
-    keywords: 'تسجيل معلم, انضم كمعلم, عمل معلم قرآن'
+    description: 'انضم لفريق معلمي أكاديمية وَحْيٌ وَنَمَاء وشارك في رسالة تعليم كتاب الله',
+    keywords: 'تسجيل معلم, انضم كمعلم, تعليم قرآن'
   },
   studentDashboard: {
     title: 'لوحة تحكم الطالب',
-    description: 'إدارة حصصك وواجباتك وتقييماتك في أكاديمية الأثر الطيب',
+    description: 'إدارة حصصك وواجباتك وتقييماتك في أكاديمية وَحْيٌ وَنَمَاء',
     keywords: 'لوحة الطالب, حصصي, واجباتي, تقييماتي'
   },
   teacherDashboard: {
     title: 'لوحة تحكم المعلم',
-    description: 'إدارة طلابك وحصصك وأرباحك في أكاديمية الأثر الطيب',
-    keywords: 'لوحة المعلم, إدارة الطلاب, الأرباح, الحصص'
+    description: 'إدارة طلابك وحصصك وجداولك في أكاديمية وَحْيٌ وَنَمَاء',
+    keywords: 'لوحة المعلم, إدارة الطلاب, الحصص'
   }
 };

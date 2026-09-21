@@ -46,7 +46,7 @@ export default function TeacherRegistration() {
 
   return (
     <>
-      <SEOHead page={{ title: 'تسجيل معلم', description: 'انضم كمعلم قرآن في أكاديمية الأثر الطيب', url: '/teacher/register' }} />
+      <SEOHead page={{ title: 'تسجيل معلم', description: 'انضم كمعلم قرآن في أكاديمية وَحْيٌ وَنَمَاء', url: '/teacher/register' }} />
       <GlobalHeader />
 
       <div className="min-h-screen bg-gradient-to-b from-slate-50 via-emerald-50/30 to-white py-10" dir="rtl">

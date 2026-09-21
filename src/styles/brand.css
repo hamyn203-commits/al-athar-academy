@@ -13,54 +13,67 @@
    ═══════════════════════════════════════════════════════════════════ */
 
 /* ═══════════════════════════════════════════════════════════════════
-   Al-Athar Academy — Visual identity v7.0 (Azhari Luxurious)
-   مستوحى من جامعة الأزهر الشريف — تصميم فاخر أزهري
+   Wahy Wa Namaa Academy — Visual Identity (Prompt 10)
+   هوية وَحْيٌ وَنَمَاء — الأناقة المعمارية، الرصانة التعليمية، والنمو الإنساني
    ═══════════════════════════════════════════════════════════════════ */
 
 :root {
-  /* ── الهوية الأساسية (الأصلية) ── */
-  --athar-navy: #0a1628;
-  --athar-navy-mid: #0f2744;
-  --athar-emerald: #0d9488;
-  --athar-emerald-deep: #047857;
-  --athar-gold: #c9a227;
-  --athar-gold-light: #e8d48b;
-  --athar-gold-muted: #a68453;
-  --athar-gold-50: #fdfbf3;
-  --athar-gold-100: #faf4dc;
-  --athar-gold-200: #f3e4a8;
-  --athar-cream: #f7f5f0;
-  --athar-cream-dark: #ede9e1;
-  --athar-warm-white: #fffef9;
-  --athar-surface: #ffffff;
-  --athar-text: #1a1207;
-  --athar-text-muted: #6b5e3e;
-  --primary-gold: var(--athar-gold);
-  --clay-terracotta: #b45309;
-  --text-secondary: var(--athar-text-muted);
+  /* ═══ الهوية الرسمية المعتمدة — وَحْيٌ وَنَمَاء (Brand Identity Prompt 10) ═══ */
+  --wn-forest: #0c2b20;           /* Deep Forest Green - الأساس الرصين */
+  --wn-forest-dark: #081f17;      /* Darker shade */
+  --wn-emerald: #134e3a;          /* Dark Emerald - الثانوي الراقي */
+  --wn-emerald-light: #1b634b;    /* Light Emerald for subtle accents */
+  --wn-ivory: #faf8f4;            /* Warm Ivory - خلفية فسيحة */
+  --wn-ivory-soft: #f6f3eb;       /* Soft Ivory */
+  --wn-charcoal: #1e2421;         /* Charcoal Text */
+  --wn-stone: #4a534e;            /* Stone Muted Text */
+  --wn-gold: #c5a059;             /* Muted Antique Gold - تمييز ثانوي */
+  --wn-gold-light: #e0c58a;       /* Light Antique Gold */
+  --wn-gold-dark: #8c6e33;        /* Dark Antique Gold */
 
-  /* ── الألوان الأزهرية الجديدة ── */
-  --azhar-green-deep: #14532d;
-  --azhar-green: #166534;
-  --azhar-green-mid: #15803d;
-  --azhar-green-light: #22c55e;
-  --azhar-green-50: #f0fdf4;
-  --azhar-gold-leaf: #d4a843;
-  --azhar-gold-bright: #f0c75e;
-  --azhar-gold-dark: #8b6914;
-  --azhar-cream-parchment: #f5ead0;
-  --azhar-brown-warm: #78350f;
-  --azhar-teal: #0f766e;
-  --azhar-teal-light: #14b8a6;
+  /* ── توافقية المتغيرات السابقة (Backward Compatibility) ── */
+  --athar-navy: var(--wn-forest);
+  --athar-navy-mid: var(--wn-forest-dark);
+  --athar-emerald: var(--wn-emerald);
+  --athar-emerald-deep: var(--wn-forest);
+  --athar-gold: var(--wn-gold);
+  --athar-gold-light: var(--wn-gold-light);
+  --athar-gold-muted: var(--wn-gold-dark);
+  --athar-gold-50: #fcfaf5;
+  --athar-gold-100: #f6efe1;
+  --athar-gold-200: #eedebd;
+  --athar-cream: var(--wn-ivory);
+  --athar-cream-dark: var(--wn-ivory-soft);
+  --athar-warm-white: #ffffff;
+  --athar-surface: #ffffff;
+  --athar-text: var(--wn-charcoal);
+  --athar-text-muted: var(--wn-stone);
+  --primary-gold: var(--wn-gold);
+  --clay-terracotta: #b45309;
+  --text-secondary: var(--wn-stone);
+
+  /* ── الألوان المؤسسية ── */
+  --azhar-green-deep: var(--wn-forest);
+  --azhar-green: var(--wn-emerald);
+  --azhar-green-mid: var(--wn-emerald-light);
+  --azhar-green-light: #2d8a68;
+  --azhar-green-50: #f2f7f4;
+  --azhar-gold-leaf: var(--wn-gold);
+  --azhar-gold-bright: var(--wn-gold-light);
+  --azhar-gold-dark: var(--wn-gold-dark);
+  --azhar-cream-parchment: var(--wn-ivory-soft);
+  --azhar-brown-warm: #684a20;
+  --azhar-teal: var(--wn-emerald);
+  --azhar-teal-light: #2d8a68;
 
   /* ── الظلال ── */
-  --shadow-brand: 0 4px 24px -4px rgba(10, 22, 40, 0.08);
-  --shadow-brand-lg: 0 20px 50px -12px rgba(10, 22, 40, 0.15);
-  --shadow-gold: 0 4px 20px -4px rgba(201, 162, 39, 0.25);
-  --shadow-gold-lg: 0 12px 40px -8px rgba(201, 162, 39, 0.35);
-  --shadow-azhar: 0 4px 24px -4px rgba(20, 83, 45, 0.15);
-  --shadow-azhar-lg: 0 20px 50px -12px rgba(20, 83, 45, 0.2);
-  --shadow-azhar-gold: 0 8px 32px -4px rgba(212, 168, 67, 0.3);
+  --shadow-brand: 0 4px 24px -4px rgba(12, 43, 32, 0.08);
+  --shadow-brand-lg: 0 20px 50px -12px rgba(12, 43, 32, 0.14);
+  --shadow-gold: 0 4px 20px -4px rgba(197, 160, 89, 0.22);
+  --shadow-gold-lg: 0 12px 40px -8px rgba(197, 160, 89, 0.3);
+  --shadow-azhar: 0 4px 24px -4px rgba(19, 78, 58, 0.14);
+  --shadow-azhar-lg: 0 20px 50px -12px rgba(19, 78, 58, 0.18);
+  --shadow-azhar-gold: 0 8px 32px -4px rgba(197, 160, 89, 0.25);
 }
 
 /* ═══════════════════════════════════════════════════════════════════

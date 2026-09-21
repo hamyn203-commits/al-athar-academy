@@ -35,7 +35,7 @@ export default function Careers() {
 
   return (
     <>
-      <SEOHead page={{ url: '/careers', title: isAr ? 'التوظيف | الأثر' : 'Careers | Al-Athar', description: isAr ? 'انضم لفريق أكاديمية الأثر' : 'Join Al-Athar Academy team' }} />
+      <SEOHead page={{ url: '/careers', title: isAr ? 'التوظيف | وَحْيٌ وَنَمَاء' : 'Careers | Wahy Wa Namaa', description: isAr ? 'انضم لفريق أكاديمية وَحْيٌ وَنَمَاء' : 'Join Wahy Wa Namaa Academy team' }} />
       <GlobalHeader />
       <main className="min-h-screen bg-gradient-to-b from-blue-50 to-white py-16 px-4">
         <div className="max-w-4xl mx-auto">

@@ -1,10 +1,10 @@
 export default {
   common: {
-    appName: 'Al-Athar Al-Tayyib',
-    appNameFull: 'Al-Athar Al-Tayyib Academy',
-    slogan: 'Impact Equals Life',
-    seoDescription: 'Al-Athar Al-Tayyib — global academy for Quran, Tajweed and Arabic. Our motto: Impact Equals Life',
-    seoKeywords: 'Al-Athar Al-Tayyib, Al Athar Al Tayyib, Al-Athar Academy, Impact Equals Life, Quran academy, online Quran',
+    appName: 'WAHY WA NAMAA',
+    appNameFull: 'Wahy Wa Namaa Academy',
+    slogan: 'Learn the Quran. Memorize it. Grow through it.',
+    seoDescription: 'Wahy Wa Namaa — International Quran Academy for memorization, Tajweed and continuous Sanad. Learn the Quran. Memorize it. Grow through it.',
+    seoKeywords: 'Wahy Wa Namaa, Wahy Wa Namaa Academy, Learn the Quran, Quran Academy, Online Quran Tajweed, Sanad Ijazah',
     home: 'Home',
     about: 'About',
     teachers: 'Teachers',
@@ -39,7 +39,7 @@ export default {
     rating: 'Rating',
   },
   features: {
-    title: 'Why Choose Al-Athar Al-Tayyib?',
+    title: 'Why Choose Wahy Wa Namaa?',
     subtitle: 'We offer a unique and comprehensive learning experience',
     feature1: {
       title: 'Certified Teachers',
@@ -119,11 +119,11 @@ export default {
   },
   learningPaths: {
     title: 'Learning Paths',
-    subtitle: 'Choose the appropriate path for your educational journey at Al-Athar Academy',
+    subtitle: 'Choose the appropriate path for your educational journey at Wahy Wa Namaa Academy',
   },
   footer: {
     about: 'About Academy',
-    aboutText: 'Al-Athar Al-Tayyib is a global educational platform specializing in Quran, Arabic language, and Islamic studies.',
+    aboutText: 'Wahy Wa Namaa is a premier global Quran academy dedicated to nurturing noble character, steadfast memorization, and moral growth under accredited scholars with unbroken Sanad.',
     quickLinks: 'Quick Links',
     courses: 'Courses',
     teachers: 'Teachers',

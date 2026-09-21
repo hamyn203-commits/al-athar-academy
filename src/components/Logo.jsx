@@ -1,38 +1,47 @@
+import React from 'react';
 import { motion } from 'framer-motion';
 import { useI18n } from '../i18n';
-import AtharEmblem from './AtharEmblem';
+import WahyNamaaEmblem from './WahyNamaaEmblem';
 
-export default function Logo({ size = 40, showText = true }) {
-  const { t, locale } = useI18n();
-  const c = t.common;
+export default function Logo({ size = 42, showText = true, variant = 'dark' }) {
+  const { locale } = useI18n();
+  const isLight = variant === 'light';
 
   return (
     <motion.div
       className="logo-container flex items-center gap-3 select-none"
-      whileHover={{ scale: 1.04 }}
-      whileTap={{ scale: 0.96 }}
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
     >
       <div className="shrink-0 flex items-center justify-center">
-        <AtharEmblem size={size} glow={true} />
+        <WahyNamaaEmblem size={size} variant={isLight ? 'light' : 'default'} glow={!isLight} />
       </div>
 
       {showText && (
         <div className="flex flex-col leading-tight">
           <span
-            className="text-gradient-gold logo-title font-black"
-            style={{ fontSize: `${Math.max(14, size * 0.45)}px`, lineHeight: '1.2' }}
+            className={`font-black tracking-tight font-serif ${
+              isLight ? 'text-white' : 'text-[#0e382b]'
+            }`}
+            style={{ 
+              fontSize: `${Math.max(15, size * 0.44)}px`, 
+              lineHeight: '1.2' 
+            }}
           >
-            {c.appNameFull || c.appName}
+            وَحْيٌ وَنَمَاء
           </span>
           <span
-            className="text-[var(--text-secondary)] font-medium"
-            style={{ fontSize: `${Math.max(10, size * 0.26)}px` }}
+            className={`font-bold tracking-[0.2em] uppercase leading-none mt-0.5 ${
+              isLight ? 'text-[#f1e5c5]' : 'text-[#14533e]'
+            }`}
+            style={{ 
+              fontSize: `${Math.max(9, size * 0.23)}px` 
+            }}
           >
-            {c.slogan || (locale === 'ar' ? 'لتعليم القرآن الكريم والقراءات' : 'Holy Quran Academy')}
+            WAHY WA NAMAA
           </span>
         </div>
       )}
     </motion.div>
   );
 }
-

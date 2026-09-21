@@ -101,10 +101,10 @@ export default function Contact() {
         page={{
           title: locale === 'ar' ? 'اتصل بنا' : 'Contact Us',
           description: locale === 'ar' 
-            ? 'تواصل مع أكاديمية الأثر الطيب - نحن هنا لمساعدتك' 
-            : 'Get in touch with Al-Athar Academy - We are here to help you',
+            ? 'تواصل مع أكاديمية وَحْيٌ وَنَمَاء - نحن هنا لمساعدتك' 
+            : 'Get in touch with Wahy Wa Namaa Academy - We are here to help you',
           url: '/contact',
-          keywords: 'contact, support, help, al-athar academy',
+          keywords: 'contact, support, help, wahy wa namaa academy',
           type: 'website'
         }}
       />

@@ -17,7 +17,7 @@ export default function MarketsIndex() {
     <>
       <SEOHead page={{
         url: '/markets',
-        title: isAr ? 'أسواق أكاديمية الأثر العالمية | V4' : 'Al-Athar Global Markets | V4',
+        title: isAr ? 'أسواق أكاديمية وَحْيٌ وَنَمَاء العالمية | V4' : 'Wahy Wa Namaa Global Markets | V4',
         description: isAr
           ? 'اختر سوقك: العربي، الأمريكي، الأوروبي، التركي، الإندونيسي، جنوب آسيا — أسعار وعملات محلية.'
           : 'Choose your market: Arab World, Americas, Europe, Turkey, Indonesia, South Asia — local pricing.',
@@ -30,7 +30,7 @@ export default function MarketsIndex() {
               <Globe2 size={16} /> V4 · {isAr ? 'التوسع العالمي' : 'Global Expansion'}
             </span>
             <h1 className="text-4xl font-bold text-gray-900 mb-4">
-              {isAr ? 'أسواق أكاديمية الأثر' : 'Al-Athar Academy Markets'}
+              {isAr ? 'أسواق أكاديمية وَحْيٌ وَنَمَاء' : 'Wahy Wa Namaa Academy Markets'}
             </h1>
             <p className="text-gray-600 max-w-2xl mx-auto">
               {isAr

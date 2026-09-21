@@ -123,14 +123,14 @@ export default function GlobalFooter() {
         </div>
 
         <div className="border-t border-white/10 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-sm">
-          <p className="text-slate-500">
-            © {new Date().getFullYear()} Al-Athar Academy. {t.footer.rights}
+          <p className="text-slate-400">
+            © {new Date().getFullYear()} {activeLocale === 'ar' ? 'أكاديمية وَحْيٌ وَنَمَاء' : 'Wahy Wa Namaa Academy'}. {t.footer.rights}
           </p>
           <div className="flex gap-6">
-            <Link to={lp('/privacy')} className="text-slate-500 hover:text-[var(--athar-gold-light)] transition-colors">
+            <Link to={lp('/privacy')} className="text-slate-400 hover:text-[var(--wn-gold-light)] transition-colors">
               {t.footer.privacy}
             </Link>
-            <Link to={lp('/terms')} className="text-slate-500 hover:text-[var(--athar-gold-light)] transition-colors">
+            <Link to={lp('/terms')} className="text-slate-400 hover:text-[var(--wn-gold-light)] transition-colors">
               {t.footer.terms}
             </Link>
           </div>

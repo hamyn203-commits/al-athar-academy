@@ -19,7 +19,7 @@ export default function FAQPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <SEOHead title="الأسئلة الشائعة" description="إجابات على أكثر الأسئلة شيوعاً عن أكاديمية الأثر" />
+      <SEOHead title="الأسئلة الشائعة" description="إجابات على أكثر الأسئلة شيوعاً عن أكاديمية وَحْيٌ وَنَمَاء" />
       <GlobalHeader />
       <div className="container mx-auto px-4 py-16 max-w-3xl">
         <h1 className="text-4xl font-bold text-center mb-4">{t.faq?.title || 'الأسئلة الشائعة'}</h1>
