@@ -38,6 +38,7 @@ export default function StudentJourneySection() {
       desc: isAr
         ? 'حفظ الآيات المقررة وفق منهجية التكرار الذكي، والتسميع المباشر داخل الحلقة أو الجلسة الخاصة، مع المراجعة الصغرى المستمرة لما سبق حفظه.'
         : 'Daily retention via smart spaced repetition, live recitation before the Sheikh, and continuous short-term cycle consolidation.',
+      icon: Compass,
       deliverables: [
         isAr ? 'تسميع يومي وتوثيق بالدرجات' : 'Daily recitation & grading log',
         isAr ? 'مراجعة صغرى لا تنقطع' : 'Unbroken short-cycle reviews',
@@ -51,6 +52,7 @@ export default function StudentJourneySection() {
       desc: isAr
         ? 'المراجعة الكبرى للأجزاء المكتملة، ربط المتشابهات اللفظية في السور، تطبيق متون التجويد الدقيقة، وخوض اختبارات مرحلية معتمدة.'
         : 'Major cumulative recitation of full Juz, unraveling Mutashabihat parallels, applied Tajweed rules, and milestone exams.',
+      icon: Award,
       deliverables: [
         isAr ? 'سرد الأجزاء سرداً متصلاً' : 'Full Juz uninterrupted recitation',
         isAr ? 'ضبط المتشابهات ومواضع اللبس' : 'Mutashabihat mastery',
@@ -64,6 +66,7 @@ export default function StudentJourneySection() {
       desc: isAr
         ? 'ثمرة الرحلة: تحول الآيات إلى نور يضيء سلوك الطالب وأخلاقه، واستعداد الحفاظ المتقنين لنيل الإجازة بالسند المتصل لنقل الأثر للأجيال القادمة.'
         : 'The ultimate fruit: verses transform into character, conduct, and wisdom. Qualified scholars attain unbroken Sanad to transmit the divine light.',
+      icon: Sprout,
       deliverables: [
         isAr ? 'تطبيق عملي وتزكية مستمرة' : 'Living Quranic moral conduct',
         isAr ? 'الإجازة بالسند المتصل لمن أتم' : 'Unbroken Sanad for full graduates',

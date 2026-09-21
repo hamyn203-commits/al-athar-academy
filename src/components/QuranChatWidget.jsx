@@ -134,13 +134,13 @@ export default function QuranChatWidget() {
         type="button"
         onClick={() => setOpen((v) => !v)}
         className="fixed bottom-6 left-6 z-40 flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white px-4 py-3 rounded-full shadow-xl transition-all duration-300 active:scale-95 group border-2 border-emerald-300/30"
-        aria-label="مساعد الأثر لخدمة العملاء"
+        aria-label="مساعد وحي ونماء لخدمة العملاء"
       >
         <div className="relative">
           <MessageCircle size={22} className="animate-pulse" />
           <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-amber-400 rounded-full ring-2 ring-white" />
         </div>
-        <span className="text-sm font-bold hidden sm:inline font-arabic">مساعد الأثر الذكي</span>
+        <span className="text-sm font-bold hidden sm:inline font-arabic">مساعد وحي ونماء الذكي</span>
       </button>
 
       {/* Chat Modal Box */}

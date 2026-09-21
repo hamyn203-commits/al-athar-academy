@@ -157,9 +157,9 @@ export default function HeroSection() {
 
                 {/* الصورة السينمائية الإنسانية الرسمية لرحلة القرآن */}
                 <img
-                  src="/images/hero-reference-prompt10.png"
+                  src="/images/hero-wahy-namaa.jpg"
                   alt={isAr ? 'رحلة الإنسان مع القرآن الكريم في أكاديمية وحي ونماء' : 'The Human Journey with the Holy Quran at Wahy Wa Namaa Academy'}
-                  className="w-full h-[380px] sm:h-[450px] lg:h-[500px] object-cover object-right-top transition-transform duration-700 hover:scale-102"
+                  className="w-full h-[380px] sm:h-[450px] lg:h-[500px] object-cover object-center transition-transform duration-700 hover:scale-102"
                   loading="eager"
                   fetchPriority="high"
                 />
