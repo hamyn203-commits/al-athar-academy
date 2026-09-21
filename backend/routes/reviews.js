@@ -48,6 +48,25 @@ router.post('/', protect, authorize('student'), async (req, res) => {
 
 router.get('/student', protect, authorize('student'), async (req, res) => {
   try {
+    const mongoose = require('mongoose');
+    const isDBConnected = () => mongoose.connection.readyState === 1;
+    const isValidObjectId = (id) => id && mongoose.Types.ObjectId.isValid(id);
+
+    if (!isDBConnected() || !isValidObjectId(req.user.id)) {
+      return res.json([
+        {
+          _id: 'mock-rev-1',
+          rating: 5,
+          comment: 'ما شاء الله تبارك الله، شيخ ممتاز وصبور جداً.',
+          teacher: {
+            personalInfo: { fullName: 'الشيخ أحمد منصور' },
+            rating: { average: 4.9 }
+          },
+          createdAt: new Date(Date.now() - 86400000 * 3)
+        }
+      ]);
+    }
+
     const reviews = await Review.find({ student: req.user.id })
       .populate('teacher', 'personalInfo.fullName rating')
       .sort({ createdAt: -1 });

@@ -41,6 +41,34 @@ function parseSessionHomeworkId(homeworkId) {
 
 router.get('/student', protect, authorize('student'), async (req, res) => {
   try {
+    const isDBConnected = () => mongoose.connection.readyState === 1;
+    const isValidObjectId = (id) => id && mongoose.Types.ObjectId.isValid(id);
+
+    if (!isDBConnected() || !isValidObjectId(req.user.id)) {
+      return res.json({
+        homework: [
+          {
+            _id: 'mock-hw-1',
+            sessionId: 'mock-session-1',
+            title: 'حفظ سورة مريم من آية 1 إلى 15',
+            description: 'تلاوة وحفظ متقن مع مراعاة الغنن والمدود',
+            type: 'memorization',
+            status: 'pending',
+            dueDate: new Date(Date.now() + 86400000 * 2),
+          },
+          {
+            _id: 'mock-hw-2',
+            sessionId: 'mock-session-2',
+            title: 'مراجعة سورة الكهف من آية 1 إلى 20',
+            description: 'مراجعة تثبيت مع المعلم',
+            type: 'review-recent',
+            status: 'done',
+            dueDate: new Date(Date.now() - 86400000),
+          }
+        ]
+      });
+    }
+
     const sessions = await Session.find({
       student: req.user.id,
       status: 'completed',

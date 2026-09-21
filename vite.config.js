@@ -130,6 +130,8 @@ export default defineConfig({
     include: ['react', 'react-dom', 'react-router-dom']
   },
   server: {
+    port: 3500,
+    host: '127.0.0.1',
     proxy: {
       '/api': {
         target: 'http://127.0.0.1:4000',
@@ -137,5 +139,6 @@ export default defineConfig({
       },
     },
   },
+
 });
 

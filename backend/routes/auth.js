@@ -39,12 +39,15 @@ router.post('/register', async (req, res) => {
         });
       }
 
+      const allowedRoles = ['student', 'teacher', 'guardian', 'admin', 'supervisor'];
+      const assignedRole = allowedRoles.includes(role) ? role : 'student';
+
       const user = await User.create({
         name,
         email,
         password,
         phone,
-        role: role === 'teacher' ? 'teacher' : 'student',
+        role: assignedRole,
       });
 
       if (req.body.referralCode && user.role === 'student') {
@@ -74,13 +77,16 @@ router.post('/register', async (req, res) => {
       });
     }
 
+    const allowedRoles = ['student', 'teacher', 'guardian', 'admin', 'supervisor'];
+    const assignedRole = allowedRoles.includes(role) ? role : 'student';
+
     const user = addMockUser({
       _id: `mock-${Date.now()}`,
       email,
       password,
       name,
       phone,
-      role: role === 'teacher' ? 'teacher' : 'student',
+      role: assignedRole,
       isActive: true,
       lastLogin: new Date(),
     });

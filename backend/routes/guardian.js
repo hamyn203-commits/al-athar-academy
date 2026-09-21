@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const router = express.Router();
 const Guardian = require('../models/Guardian');
 const User = require('../models/User');
@@ -7,6 +8,10 @@ const Session = require('../models/Session');
 const GroupCircle = require('../models/GroupCircle');
 const Progress = require('../models/Progress');
 const { protect, authorize } = require('../middleware/auth');
+const { getMockGuardianChildren, addMockGuardianChild } = require('../mockStore');
+
+const isDBConnected = () => mongoose.connection.readyState === 1;
+const isValidObjectId = (id) => id && mongoose.Types.ObjectId.isValid(id);
 
 /**
  * @route   GET /api/guardian/children
@@ -15,6 +20,14 @@ const { protect, authorize } = require('../middleware/auth');
  */
 router.get('/children', protect, authorize('guardian', 'admin'), async (req, res) => {
   try {
+    if (!isDBConnected() || !isValidObjectId(req.user.id)) {
+      const mockKids = getMockGuardianChildren(req.user.id);
+      return res.json({
+        success: true,
+        children: mockKids
+      });
+    }
+
     let guardian = await Guardian.findOne({ user: req.user.id })
       .populate({
         path: 'children.student',
@@ -182,6 +195,26 @@ router.post('/link-child', protect, authorize('guardian', 'admin'), async (req, 
       return res.status(400).json({ error: 'يرجى تقديم البريد الإلكتروني أو كود الطالب للربط' });
     }
 
+    if (!isDBConnected() || !isValidObjectId(req.user.id)) {
+      const childName = email ? email.split('@')[0] : (studentCode || 'طالب جديد');
+      const childEmail = email || `${studentCode.toLowerCase()}@student.athar.com`;
+      const linked = addMockGuardianChild(req.user.id, {
+        name: childName,
+        email: childEmail,
+        relationship: relationship || 'guardian'
+      });
+      return res.status(201).json({
+        success: true,
+        message: `تم ربط الطالب ${linked.name} بحسابك بنجاح`,
+        child: {
+          id: linked.studentId,
+          name: linked.name,
+          email: linked.email,
+          relationship: linked.relationship
+        }
+      });
+    }
+
     const query = { role: 'student' };
     if (email) {
       query.email = email.toLowerCase().trim();
@@ -253,6 +286,48 @@ router.post('/link-child', protect, authorize('guardian', 'admin'), async (req, 
 router.get('/reports/:studentId', protect, authorize('guardian', 'admin'), async (req, res) => {
   try {
     const { studentId } = req.params;
+
+    if (!isDBConnected() || !isValidObjectId(req.user.id) || !isValidObjectId(studentId)) {
+      return res.json({
+        success: true,
+        student: {
+          id: studentId,
+          name: 'عبد الله أحمد',
+          email: 'abdallah@student.athar.com'
+        },
+        reportsCount: 2,
+        reports: [
+          {
+            sessionId: 'sess-mock-1',
+            scheduledAt: new Date(Date.now() - 86400000),
+            teacherName: 'الشيخ أحمد منصور',
+            memorizationScore: 9.5,
+            tajweedScore: 9,
+            surahRecited: 'سورة الملك',
+            fromAyah: 1,
+            toAyah: 15,
+            nextHomework: 'حفظ من آية 16 إلى 30 مع المراجعة',
+            notes: 'ما شاء الله تبارك الله، تميز واضح في مخارج الحروف وأحكام القلقلة',
+            sentToWhatsApp: true,
+            sentAt: new Date(Date.now() - 86400000 + 3600000)
+          },
+          {
+            sessionId: 'sess-mock-2',
+            scheduledAt: new Date(Date.now() - 86400000 * 3),
+            teacherName: 'الشيخ أحمد منصور',
+            memorizationScore: 9,
+            tajweedScore: 8.5,
+            surahRecited: 'سورة التحريم',
+            fromAyah: 1,
+            toAyah: 12,
+            nextHomework: 'مراجعة سورة التحريم كاملة',
+            notes: 'يرجى التركيز على مد الصلة الكبرى وتثبيت الآيات الأخيرة',
+            sentToWhatsApp: true,
+            sentAt: new Date(Date.now() - 86400000 * 3 + 3600000)
+          }
+        ]
+      });
+    }
 
     // Verify guardian has authority over this child (unless admin)
     if (req.user.role !== 'admin') {
@@ -330,6 +405,40 @@ router.get('/reports/:studentId', protect, authorize('guardian', 'admin'), async
  */
 router.get('/upcoming-sessions', protect, authorize('guardian', 'admin'), async (req, res) => {
   try {
+    if (!isDBConnected() || !isValidObjectId(req.user.id)) {
+      return res.json({
+        success: true,
+        sessions: [
+          {
+            _id: 'sess-up-1',
+            scheduledAt: new Date(Date.now() + 86400000 * 2),
+            duration: 45,
+            type: 'regular',
+            status: 'accepted',
+            meetingUrl: 'http://localhost:3500/live/room-circle-1',
+            teacherName: 'الشيخ أحمد منصور',
+            circleName: 'حلقة الإمام قالون',
+            childName: 'عبد الله أحمد',
+            childId: 'mock-child-1',
+            rsvp: { status: 'confirmed' }
+          },
+          {
+            _id: 'sess-up-2',
+            scheduledAt: new Date(Date.now() + 86400000 * 4),
+            duration: 45,
+            type: 'regular',
+            status: 'accepted',
+            meetingUrl: 'http://localhost:3500/live/room-circle-1',
+            teacherName: 'الشيخ أحمد منصور',
+            circleName: 'حلقة الإمام قالون',
+            childName: 'عبد الله أحمد',
+            childId: 'mock-child-1',
+            rsvp: { status: 'pending' }
+          }
+        ]
+      });
+    }
+
     let guardian = await Guardian.findOne({ user: req.user.id });
     let childIds = [];
     if (guardian && guardian.children && guardian.children.length > 0) {

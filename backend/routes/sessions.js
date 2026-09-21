@@ -395,6 +395,28 @@ router.post('/:id/rsvp', protect, async (req, res) => {
       return res.status(400).json({ error: 'الحالة غير صالحة. يجب أن تكون confirmed أو excused' });
     }
 
+    if (!isDBConnected() || !isValidObjectId(req.params.id)) {
+      const now = new Date();
+      const scheduledTime = new Date(now.getTime() + 48 * 60 * 60 * 1000);
+      const diffHours = (scheduledTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+      const eligibleForCompensation = status === 'excused' && diffHours >= 6;
+
+      return res.json({
+        success: true,
+        message: status === 'confirmed'
+          ? 'تم تأكيد الحضور بنجاح'
+          : (eligibleForCompensation
+              ? 'تم قبول الاعتذار مسبقاً واحتساب حق التعويض (قبل الموعد بأكثر من 6 ساعات)'
+              : 'تم تسجيل الاعتذار المتأخر (أقل من 6 ساعات - لا يشمل التعويض)'),
+        attendance: {
+          student: studentId,
+          status: status === 'confirmed' ? 'confirmed' : 'excused',
+          eligibleForCompensation,
+          excuseReason: excuseReason || (status === 'confirmed' ? 'تأكيد الحضور مسبقاً' : '')
+        }
+      });
+    }
+
     const session = await Session.findById(req.params.id);
     if (!session) {
       return res.status(404).json({ error: 'الحصة غير موجودة' });

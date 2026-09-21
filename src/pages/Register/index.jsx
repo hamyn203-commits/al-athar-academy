@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  User, Lock, Mail, Phone, Eye, EyeOff, ArrowRight, CheckCircle,
+  User, Users, Lock, Mail, Phone, Eye, EyeOff, ArrowRight, CheckCircle,
   Sparkles, CheckCircle2, Globe, ArrowLeft, Star
 } from 'lucide-react';
 import Logo from '../../components/Logo';
@@ -19,6 +19,9 @@ export default function Register() {
   const planFreq = searchParams.get('freq') || '';
   const planLevel = searchParams.get('level') || '';
   const planMode = searchParams.get('mode') || 'private';
+
+  const initialRole = searchParams.get('role') === 'guardian' || (typeof window !== 'undefined' && window.location.pathname.includes('/guardian')) ? 'guardian' : 'student';
+  const [role, setRole] = useState(initialRole);
 
   const { marketSlug } = useMarket();
   const isIndonesian = marketSlug === 'indonesia-malaysia';
@@ -74,7 +77,7 @@ export default function Register() {
           email: formData.email,
           phone: formData.phone,
           password: formData.password,
-          role: 'student',
+          role,
           ...(referralCode ? { referralCode } : {}),
           // Pass pre-selected plan parameters to auth registration if backend supports it
           ...(planPath ? { selectedPlan: { path: planPath, freq: planFreq, level: planLevel } } : {}),
@@ -84,16 +87,21 @@ export default function Register() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'فشل إنشاء الحساب');
+        throw new Error(data.error || (locale === 'ar' ? 'فشل إنشاء الحساب' : 'Registration failed'));
       }
 
       // حفظ الـ token وبيانات المستخدم
+      localStorage.setItem('accessToken', data.accessToken);
       localStorage.setItem('token', data.accessToken);
       localStorage.setItem('refreshToken', data.refreshToken);
       localStorage.setItem('user', JSON.stringify(data.user));
 
-      // التوجيه إلى لوحة الطالب
-      navigate('/student/dashboard');
+      // التوجيه بحسب الدور
+      if (data.user?.role === 'guardian') {
+        navigate('/guardian/dashboard');
+      } else {
+        navigate('/student/dashboard');
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -343,12 +351,44 @@ export default function Register() {
           className="lg:col-span-7 glass-card p-6 md:p-10 flex flex-col justify-between"
         >
           <div>
+            {/* Role Switcher Tabs */}
+            <div className="flex bg-slate-100 p-1 rounded-xl mb-6 border border-slate-200">
+              <button
+                type="button"
+                onClick={() => setRole('student')}
+                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                  role === 'student'
+                    ? 'bg-white text-[var(--athar-navy)] shadow-sm'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <User size={15} />
+                <span>{locale === 'ar' ? 'حساب طالب' : 'Student Account'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setRole('guardian')}
+                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                  role === 'guardian'
+                    ? 'bg-white text-[var(--athar-navy)] shadow-sm'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <Users size={15} />
+                <span>{locale === 'ar' ? 'حساب ولي أمر' : 'Guardian Account'}</span>
+              </button>
+            </div>
+
             <div className="mb-6">
               <h2 className="font-naskh text-2xl md:text-3xl font-bold text-[var(--athar-text)]">
-                {locale === 'ar' ? 'إنشاء حساب طالب' : 'Create Student Account'}
+                {role === 'guardian'
+                  ? (locale === 'ar' ? 'إنشاء حساب ولي أمر' : 'Create Guardian Account')
+                  : (locale === 'ar' ? 'إنشاء حساب طالب' : 'Create Student Account')}
               </h2>
               <p className="text-sm text-[var(--athar-text-muted)] mt-1">
-                {locale === 'ar' ? 'أدخل بياناتك لإنشاء حسابك وبدء التعلم' : 'Fill in your details to create your account'}
+                {role === 'guardian'
+                  ? (locale === 'ar' ? 'تابع مسيرة أبنائك في حفظ القرآن وتقارير حضورهم وتقييماتهم' : 'Monitor your children’s Quran progress, attendance & teacher reports')
+                  : (locale === 'ar' ? 'أدخل بياناتك لإنشاء حسابك وبدء التعلم' : 'Fill in your details to create your account')}
               </p>
             </div>
 

@@ -6,7 +6,7 @@ import { ToastProvider } from './context/ToastProvider';
 import { I18nProvider } from './i18n';
 import { MarketProvider } from './context/MarketProvider';
 import LocaleLayout from './components/LocaleLayout';
-import { StudentLegacyRedirect, TeacherLegacyRedirect } from './components/DashboardRedirect';
+import { StudentLegacyRedirect, TeacherLegacyRedirect, GuardianLegacyRedirect } from './components/DashboardRedirect';
 import Logo from './components/Logo';
 import QuranChatWidget from './components/QuranChatWidget';
 import PwaInstallPrompt from './components/PwaInstallPrompt';
@@ -75,7 +75,9 @@ function pageRoutes() {
       <Route path="login" element={<Login />} />
       <Route path="setup-admin" element={<SetupAdmin />} />
       <Route path="forgot-password" element={<ForgotPassword />} />
+      <Route path="register" element={<Register />} />
       <Route path="register/student" element={<Register />} />
+      <Route path="register/guardian" element={<Register />} />
       <Route path="register/teacher" element={<TeacherRegistration />} />
       <Route path="about" element={<About />} />
       <Route path="faq" element={<FAQPage />} />
@@ -91,6 +93,7 @@ function pageRoutes() {
       <Route path="verify-certificate/:certificateId" element={<CertificateView />} />
       <Route path="student" element={<StudentLegacyRedirect />} />
       <Route path="student/dashboard" element={<StudentDashboard />} />
+      <Route path="guardian" element={<GuardianLegacyRedirect />} />
       <Route path="guardian/dashboard" element={<GuardianDashboard />} />
       <Route path="teacher" element={<TeacherLegacyRedirect />} />
       <Route path="teacher/register" element={<TeacherRegistration />} />

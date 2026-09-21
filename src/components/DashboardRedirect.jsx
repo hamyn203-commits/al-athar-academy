@@ -13,3 +13,10 @@ export function TeacherLegacyRedirect() {
   if (user) return <Navigate to="/teacher/register" replace />;
   return <Navigate to="/login" replace />;
 }
+
+export function GuardianLegacyRedirect() {
+  const { user } = useAuth();
+  if (user?.role === 'guardian' || user?.role === 'admin') return <Navigate to="/guardian/dashboard" replace />;
+  return <Navigate to="/login" replace />;
+}
+
