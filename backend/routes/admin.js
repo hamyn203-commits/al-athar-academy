@@ -46,17 +46,24 @@ router.get('/stats', protect, authorize('admin'), async (req, res) => {
       totalCourses: 12,
       totalEnrollments: 89,
       pendingTeachers: 2,
+      totalCircles: 14,
+      pendingTrials: 5,
+      totalHours: 390,
       totalEarnings: 4250,
     });
   }
   try {
-    const [totalStudents, approvedTeachers, pendingTeachers, totalSessions, totalCourses, totalEnrollments] = await Promise.all([
+    const GroupCircle = require('../models/GroupCircle');
+    const TrialRequest = require('../models/TrialRequest');
+    const [totalStudents, approvedTeachers, pendingTeachers, totalSessions, totalCourses, totalEnrollments, totalCircles, pendingTrials] = await Promise.all([
       User.countDocuments({ role: 'student' }),
       Teacher.countDocuments({ status: 'approved', isVerified: true }),
       Teacher.countDocuments({ status: { $in: ['pending', 'under-review'] } }),
       Session.countDocuments({ status: 'completed' }),
       Course.countDocuments({ status: 'published' }),
       Enrollment.countDocuments({ status: 'active' }),
+      GroupCircle.countDocuments({ status: { $ne: 'completed' } }),
+      TrialRequest.countDocuments({ status: 'pending' }),
     ]);
     const earningsAgg = await Session.aggregate([
       { $match: { status: 'completed', 'earnings.amount': { $gt: 0 } } },
@@ -69,6 +76,9 @@ router.get('/stats', protect, authorize('admin'), async (req, res) => {
       totalCourses,
       totalEnrollments,
       pendingTeachers,
+      totalCircles,
+      pendingTrials,
+      totalHours: Math.round(totalSessions * 0.75),
       totalEarnings: earningsAgg[0]?.total || 0,
     });
   } catch (error) {
@@ -459,6 +469,24 @@ router.delete('/blog/:id', protect, authorize('admin'), async (req, res) => {
 });
 
 router.get('/withdrawals', protect, authorize('admin'), async (req, res) => {
+  if (isMockMode || !isDBConnected()) {
+    return res.json({
+      withdrawals: [
+        {
+          _id: 'mock-w1',
+          teacher: {
+            user: { name: 'الشيخ عبد الله القرشي', email: 'abdullah@alathar.com' },
+            personalInfo: { fullName: 'عبد الله القرشي' }
+          },
+          amount: 850,
+          method: 'vodafone_cash',
+          accountInfo: '01012345678',
+          status: 'pending',
+          createdAt: new Date().toISOString()
+        }
+      ]
+    });
+  }
   try {
     const status = req.query.status || 'pending';
     const filter = status === 'all' ? {} : { status };
@@ -472,6 +500,16 @@ router.get('/withdrawals', protect, authorize('admin'), async (req, res) => {
 });
 
 router.patch('/withdrawals/:id', protect, authorize('admin'), async (req, res) => {
+  if (isMockMode || !isDBConnected()) {
+    return res.json({
+      success: true,
+      withdrawal: {
+        _id: req.params.id,
+        status: req.body.action === 'approve' ? 'approved' : 'rejected',
+        adminNote: req.body.adminNote || ''
+      }
+    });
+  }
   try {
     const { action, adminNote } = req.body;
     const withdrawal = await WithdrawRequest.findById(req.params.id);

@@ -1,4 +1,4 @@
-# أكاديمية الأثر الطيب — Al-Athar Academy
+# أكاديمية وَحْيٌ وَنَمَاء — Wahy Wa Namaa Academy
 
 منصة تعليم إسلامي عالمية: تحفيظ القرآن، التجويد، LMS، AI، وجلسات مباشرة.
 
@@ -141,4 +141,4 @@ npm run dev:api   # :4000
 
 ---
 
-**أثرٌ يساوي حياة** — [al-athar-academy.vercel.app](https://al-athar-academy.vercel.app)
+**نتعلم القرآن، نحفظه، وننمو به** — [wahy-wa-namaa.academy](https://wahy-wa-namaa.academy)

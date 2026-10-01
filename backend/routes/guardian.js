@@ -189,15 +189,16 @@ router.get('/children', protect, authorize('guardian', 'admin'), async (req, res
  */
 router.post('/link-child', protect, authorize('guardian', 'admin'), async (req, res) => {
   try {
-    const { studentCode, email, relationship = 'guardian' } = req.body;
+    const { studentCode, email, studentEmail, relationship = 'guardian' } = req.body;
+    const targetEmail = (email || studentEmail || '').toLowerCase().trim();
 
-    if (!studentCode && !email) {
+    if (!studentCode && !targetEmail) {
       return res.status(400).json({ error: 'يرجى تقديم البريد الإلكتروني أو كود الطالب للربط' });
     }
 
     if (!isDBConnected() || !isValidObjectId(req.user.id)) {
-      const childName = email ? email.split('@')[0] : (studentCode || 'طالب جديد');
-      const childEmail = email || `${studentCode.toLowerCase()}@student.athar.com`;
+      const childName = targetEmail ? targetEmail.split('@')[0] : (studentCode || 'طالب جديد');
+      const childEmail = targetEmail || `${studentCode.toLowerCase()}@student.athar.com`;
       const linked = addMockGuardianChild(req.user.id, {
         name: childName,
         email: childEmail,
@@ -208,6 +209,7 @@ router.post('/link-child', protect, authorize('guardian', 'admin'), async (req, 
         message: `تم ربط الطالب ${linked.name} بحسابك بنجاح`,
         child: {
           id: linked.studentId,
+          _id: linked.studentId,
           name: linked.name,
           email: linked.email,
           relationship: linked.relationship
@@ -216,11 +218,12 @@ router.post('/link-child', protect, authorize('guardian', 'admin'), async (req, 
     }
 
     const query = { role: 'student' };
-    if (email) {
-      query.email = email.toLowerCase().trim();
+    if (targetEmail) {
+      query.email = targetEmail;
     } else if (studentCode) {
       query.$or = [
         { referralCode: studentCode.trim().toUpperCase() },
+        { studentCode: studentCode.trim() },
         { _id: studentCode.match(/^[0-9a-fA-F]{24}$/) ? studentCode : null }
       ];
     }
@@ -412,6 +415,10 @@ router.get('/upcoming-sessions', protect, authorize('guardian', 'admin'), async 
       const diff1 = (sess1Date.getTime() - now.getTime()) / (1000 * 60 * 60);
       const diff2 = (sess2Date.getTime() - now.getTime()) / (1000 * 60 * 60);
 
+      const { getMockSessionRsvp } = require('../mockStore');
+      const sess1Rsvp = getMockSessionRsvp('sess-up-1')?.status || 'confirmed';
+      const sess2Rsvp = getMockSessionRsvp('sess-up-2')?.status || 'pending';
+
       return res.json({
         success: true,
         sessions: [
@@ -428,7 +435,7 @@ router.get('/upcoming-sessions', protect, authorize('guardian', 'admin'), async 
               name: 'الشيخ أحمد منصور',
               phone: '+201012345678'
             },
-            rsvp: 'confirmed',
+            rsvp: sess1Rsvp,
             canExcuseWithCompensation: diff1 >= 6,
             hoursUntilSession: Math.round(diff1 * 10) / 10
           },
@@ -445,7 +452,7 @@ router.get('/upcoming-sessions', protect, authorize('guardian', 'admin'), async 
               name: 'الشيخ أحمد منصور',
               phone: '+201012345678'
             },
-            rsvp: 'pending',
+            rsvp: sess2Rsvp,
             canExcuseWithCompensation: diff2 >= 6,
             hoursUntilSession: Math.round(diff2 * 10) / 10
           }
@@ -535,76 +542,6 @@ router.get('/upcoming-sessions', protect, authorize('guardian', 'admin'), async 
   }
 });
 
-// @route   POST /api/guardian/link-child
-// @desc    Link student to guardian by email or student code
-// @access  Private (Guardian)
-router.post('/link-child', protect, authorize('guardian', 'admin'), async (req, res) => {
-  try {
-    const { email, studentEmail, studentCode, relationship = 'father' } = req.body;
-    const targetEmail = (email || studentEmail || '').toLowerCase().trim();
-
-    if (!targetEmail && !studentCode) {
-      return res.status(400).json({ error: 'البريد الإلكتروني للطالب أو كود الطالب مطلوب' });
-    }
-
-    if (isMockMode || !isDBConnected()) {
-      return res.json({
-        success: true,
-        message: 'تم ربط الابن بنجاح بحساب ولي الأمر',
-        child: {
-          _id: 'mock-child-' + Date.now(),
-          name: 'عبد الرحمن خالد',
-          email: targetEmail || 'student@alathar.test',
-          relationship
-        }
-      });
-    }
-
-    let student = null;
-    if (targetEmail) {
-      student = await User.findOne({ email: targetEmail, role: 'student' });
-    } else if (studentCode) {
-      student = await User.findOne({ studentCode, role: 'student' });
-    }
-
-    if (!student) {
-      return res.status(404).json({ error: 'لم يتم العثور على حساب الطالب بهذا البريد أو الكود' });
-    }
-
-    let guardian = await Guardian.findOne({ user: req.user.id });
-    if (!guardian) {
-      guardian = new Guardian({
-        user: req.user.id,
-        children: []
-      });
-    }
-
-    const alreadyLinked = guardian.children.some(c => c.student && c.student.toString() === student._id.toString());
-    if (alreadyLinked) {
-      return res.status(400).json({ error: 'هذا الطالب مرتبط بالفعل بحسابك' });
-    }
-
-    guardian.children.push({
-      student: student._id,
-      relationship,
-      permissions: { viewReports: true, manageAttendance: true, receiveAlerts: true }
-    });
-    await guardian.save();
-
-    res.json({
-      success: true,
-      message: 'تم ربط الابن بنجاح',
-      child: {
-        _id: student._id,
-        name: student.name,
-        email: student.email,
-        relationship
-      }
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
 module.exports = router;
+
 

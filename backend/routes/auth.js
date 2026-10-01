@@ -15,6 +15,18 @@ const { addMockUser, findMockUserByEmail, findMockUserById, updateMockUser } = r
 const isMockMode = !process.env.MONGODB_URI;
 const isDBConnected = () => mongoose.connection.readyState === 1;
 
+function sanitizeUserResponse(user) {
+  if (!user) return null;
+  const obj = typeof user.toJSON === 'function' ? user.toJSON() : { ...user };
+  delete obj.password;
+  delete obj.passwordResetToken;
+  delete obj.passwordResetExpires;
+  delete obj.emailVerificationToken;
+  delete obj.emailVerificationExpires;
+  delete obj.__v;
+  return obj;
+}
+
 router.post('/register', async (req, res) => {
   try {
     const { name, email, password, phone, role } = req.body;
@@ -63,7 +75,7 @@ router.post('/register', async (req, res) => {
 
       res.status(201).json({
         message: 'Registration successful',
-        user,
+        user: sanitizeUserResponse(user),
         accessToken,
         refreshToken
       });
@@ -96,7 +108,7 @@ router.post('/register', async (req, res) => {
 
     res.status(201).json({
       message: 'Registration successful',
-      user,
+      user: sanitizeUserResponse(user),
       accessToken,
       refreshToken
     });
@@ -164,7 +176,7 @@ router.post('/login', async (req, res) => {
 
     res.json({
       message: 'Login successful',
-      user,
+      user: sanitizeUserResponse(user),
       accessToken,
       refreshToken
     });
@@ -228,7 +240,7 @@ router.get('/me', verifyAccessToken, async (req, res) => {
       });
     }
 
-    res.json({ user });
+    res.json({ user: sanitizeUserResponse(user) });
   } catch (error) {
     console.error('Get profile error:', error);
     res.status(500).json({ 
@@ -268,7 +280,7 @@ router.patch('/me', verifyAccessToken, async (req, res) => {
 
     res.json({ 
       message: 'Profile updated successfully',
-      user 
+      user: sanitizeUserResponse(user) 
     });
   } catch (error) {
     console.error('Update profile error:', error);

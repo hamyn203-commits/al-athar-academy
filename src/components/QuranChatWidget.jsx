@@ -213,7 +213,7 @@ export default function QuranChatWidget() {
                   {m.action === 'whatsapp_cta' && (
                     <div className="mt-3 pt-2.5 border-t border-emerald-100">
                       <a
-                        href="https://wa.me/201000000000?text=السلام%20عليكم%20أود%20الاستفسار%20عن%20حلقات%20أكاديمية%20الأثر%20الطيب"
+                        href="https://wa.me/201000000000?text=السلام%20عليكم%20أود%20الاستفسار%20عن%20حلقات%20أكاديمية%20وحي%20ونماء"
                         target="_blank"
                         rel="noreferrer"
                         className="w-full py-2 px-3 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded-lg transition shadow flex items-center justify-center gap-1.5"

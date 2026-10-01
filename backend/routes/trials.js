@@ -48,6 +48,7 @@ router.post('/', async (req, res) => {
       guardianName,
       whatsappPhone,
       phone,
+      whatsapp,
       email,
       age,
       gender,
@@ -65,11 +66,12 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'اسم الطالب مطلوب' });
     }
 
-    if (!whatsappPhone || !whatsappPhone.trim()) {
+    const rawWhatsApp = whatsappPhone || whatsapp || phone;
+    if (!rawWhatsApp || !String(rawWhatsApp).trim()) {
       return res.status(400).json({ error: 'رقم الواتساب مطلوب للتواصل وإرسال رابط الحصة' });
     }
 
-    const cleanWhatsApp = normalizePhone(whatsappPhone);
+    const cleanWhatsApp = normalizePhone(rawWhatsApp);
     if (cleanWhatsApp.replace(/\D/g, '').length < 8) {
       return res.status(400).json({ error: 'يرجى إدخال رقم واتساب صحيح يبدأ بكود الدولة' });
     }
@@ -83,8 +85,15 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'يجب أن يكون عمر الطالب بين 4 سنوات و 100 سنة' });
     }
 
-    const validTracks = ['memorization', 'tajweed_ijazah', 'kids_foundation'];
-    const track = validTracks.includes(preferredTrack) ? preferredTrack : 'memorization';
+    const incomingTrack = preferredTrack || req.body.track || 'memorization';
+    const trackMap = {
+      'memorization': 'memorization',
+      'ijaza': 'tajweed_ijazah',
+      'tajweed_ijazah': 'tajweed_ijazah',
+      'foundation': 'kids_foundation',
+      'kids_foundation': 'kids_foundation'
+    };
+    const track = trackMap[incomingTrack] || 'memorization';
 
     const validTeacherGenders = ['male', 'female', 'any'];
     const teacherGender = validTeacherGenders.includes(preferredTeacherGender) ? preferredTeacherGender : 'any';
@@ -259,6 +268,33 @@ router.put('/:id/assign', protect, authorize('admin'), async (req, res) => {
       return res.status(400).json({ error: 'يجب تحديد المعلم وموعد الجلسة' });
     }
 
+    if (isMockMode || !isDBConnected()) {
+      const trial = MOCK_TRIALS.find(t => t._id === req.params.id) || MOCK_TRIALS[0];
+      if (trial) {
+        trial.assignedTeacher = teacherId;
+        trial.status = 'scheduled';
+        const session = {
+          _id: 'mock-session-trial-' + Date.now(),
+          teacher: teacherId,
+          type: 'trial',
+          status: 'accepted',
+          scheduledAt: new Date(scheduledAt),
+          duration: 30,
+          meetingLink: 'https://meet.jit.si/al-athar-trial-' + Date.now(),
+          meetingProvider: meetingProvider || 'jitsi'
+        };
+        trial.scheduledSession = session;
+        if (notes) trial.notes = notes;
+        return res.json({
+          success: true,
+          message: 'تم تعيين المعلم وجدولة الحصة التجريبية بنجاح',
+          trial,
+          session
+        });
+      }
+      return res.status(404).json({ error: 'طلب الحصة التجريبية غير موجود' });
+    }
+
     const trial = await TrialRequest.findById(req.params.id);
     if (!trial) {
       return res.status(404).json({ error: 'طلب الحصة التجريبية غير موجود' });
@@ -337,6 +373,28 @@ router.put('/:id/assign', protect, authorize('admin'), async (req, res) => {
 router.put('/:id/assess', protect, authorize('teacher', 'admin'), async (req, res) => {
   try {
     const { level, recommendedTrack, notes, assignedCircleId } = req.body;
+
+    if (isMockMode || !isDBConnected()) {
+      const trial = MOCK_TRIALS.find(t => t._id === req.params.id) || MOCK_TRIALS[0];
+      if (trial) {
+        trial.status = 'completed';
+        trial.assessment = {
+          level: level || 'intermediate',
+          recommendedTrack: recommendedTrack || trial.preferredTrack || 'memorization',
+          notes: notes || '',
+          assignedCircle: assignedCircleId || 'mock-circle-1',
+          evaluatedAt: new Date()
+        };
+        return res.json({
+          success: true,
+          message: 'تم تسجيل تقييم الحصة التجريبية بنجاح وتحديث حالتها إلى مكتملة',
+          trial,
+          enrolledCircle: assignedCircleId ? { circleId: assignedCircleId, name: 'حلقة الإتقان' } : null,
+          enrollmentNote: assignedCircleId ? 'تم إلحاق الطالب بالحلقة الجماعية بنجاح' : ''
+        });
+      }
+      return res.status(404).json({ error: 'طلب الحصة التجريبية غير موجود' });
+    }
 
     const trial = await TrialRequest.findById(req.params.id);
     if (!trial) {

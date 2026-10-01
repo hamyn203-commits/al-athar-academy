@@ -210,6 +210,45 @@ router.post('/', protect, authorize('admin', 'teacher'), async (req, res) => {
       return res.status(400).json({ error: 'اسم الحلقة وجنس الطلاب مطلوبان' });
     }
 
+    if (isMockMode || !isDBConnected()) {
+      const genderPrefix = String(gender).charAt(0).toUpperCase() || 'C';
+      const randomCode = Math.floor(1000 + Math.random() * 9000);
+      const code = 'CIR-' + genderPrefix + '-' + randomCode;
+
+      const mockCircle = {
+        _id: 'mock-circle-' + Date.now(),
+        name,
+        code,
+        track: track || 'memorization',
+        level: level || 'beginner',
+        gender,
+        targetAgeGroup: targetAgeGroup || 'kids_8_12',
+        capacity: 10,
+        currentCount: 0,
+        availableSeats: 10,
+        isFull: false,
+        status: 'forming',
+        teacher: {
+          personalInfo: { fullName: 'الشيخ أحمد محمود' },
+          user: { name: 'الشيخ أحمد محمود', email: 'ahmed@alathar.com' }
+        },
+        schedule: Array.isArray(schedule) ? schedule : [],
+        timezone: timezone || 'Africa/Cairo',
+        pricePerSession: pricePerSession || { egp: 20, usd: 1 },
+        currentSurah: currentSurah || '',
+        notes: notes || '',
+        students: []
+      };
+
+      MOCK_CIRCLES.unshift(mockCircle);
+
+      return res.status(201).json({
+        success: true,
+        message: 'تم إنشاء الحلقة بنجاح',
+        circle: mockCircle
+      });
+    }
+
     let finalTeacherId = teacherId;
 
     if (req.user.role === 'teacher') {
@@ -367,6 +406,24 @@ router.post('/:id/join', protect, async (req, res) => {
 // @access  Protected (admin, teacher)
 router.put('/:id', protect, authorize('admin', 'teacher'), async (req, res) => {
   try {
+    if (isMockMode || !isDBConnected()) {
+      const found = MOCK_CIRCLES.find(c => c._id === req.params.id) || MOCK_CIRCLES[0];
+      if (!found) return res.status(404).json({ error: 'الحلقة غير موجودة' });
+      const { name, track, level, gender, schedule, status, notes } = req.body;
+      if (name !== undefined) found.name = name;
+      if (track !== undefined) found.track = track;
+      if (level !== undefined) found.level = level;
+      if (gender !== undefined) found.gender = gender;
+      if (Array.isArray(schedule)) found.schedule = schedule;
+      if (status !== undefined) found.status = status;
+      if (notes !== undefined) found.notes = notes;
+      return res.json({
+        success: true,
+        message: 'تم تحديث بيانات الحلقة بنجاح',
+        circle: found
+      });
+    }
+
     const circle = await GroupCircle.findById(req.params.id);
     if (!circle) {
       return res.status(404).json({ error: 'الحلقة غير موجودة' });
@@ -438,6 +495,21 @@ router.put('/:id', protect, authorize('admin', 'teacher'), async (req, res) => {
 router.delete('/:id', protect, authorize('admin'), async (req, res) => {
   try {
     const { archive = 'true' } = req.query;
+
+    if (isMockMode || !isDBConnected()) {
+      const idx = MOCK_CIRCLES.findIndex(c => c._id === req.params.id);
+      if (idx !== -1) {
+        if (archive === 'true') {
+          MOCK_CIRCLES[idx].status = 'completed';
+          return res.json({ success: true, message: 'تمت أرشفة الحلقة بنجاح' });
+        } else {
+          MOCK_CIRCLES.splice(idx, 1);
+          return res.json({ success: true, message: 'تم حذف الحلقة نهائياً' });
+        }
+      }
+      return res.status(404).json({ error: 'الحلقة غير موجودة' });
+    }
+
     const circle = await GroupCircle.findById(req.params.id);
 
     if (!circle) {

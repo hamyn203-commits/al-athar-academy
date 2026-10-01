@@ -155,7 +155,7 @@ connectDB();
 
 app.get('/', (req, res) => {
   res.json({
-    service: 'Al-Athar Academy API',
+    service: 'Wahy Wa Namaa Academy API',
     version: '6.2.0',
     status: 'ok',
     message: 'الـ API يعمل — استخدم المسارات تحت /api',
@@ -169,7 +169,7 @@ app.get('/api', (_req, res) => res.redirect(301, '/api/health'));
 app.get('/api/health', (req, res) => {
   res.status(200).json({ 
     status: 'ok', 
-    message: 'Al-Athar Backend API is running!',
+    message: 'Wahy Wa Namaa Backend API is running!',
     timestamp: new Date().toISOString(),
     version: '6.2.0',
     features: {

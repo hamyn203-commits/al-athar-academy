@@ -159,6 +159,16 @@ function addMockGuardianChild(guardianUserId, childData) {
   return newChild;
 }
 
+const sessionRsvps = new Map();
+
+function setMockSessionRsvp(sessionId, rsvpData) {
+  sessionRsvps.set(sessionId, rsvpData);
+}
+
+function getMockSessionRsvp(sessionId) {
+  return sessionRsvps.get(sessionId) || null;
+}
+
 module.exports = {
   addMockUser,
   findMockUserByEmail,
@@ -169,6 +179,8 @@ module.exports = {
   getMockTeachers,
   getMockGuardianChildren,
   addMockGuardianChild,
+  setMockSessionRsvp,
+  getMockSessionRsvp,
   tasks,
   withdrawals,
 };

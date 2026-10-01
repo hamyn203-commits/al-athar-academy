@@ -1,0 +1,53 @@
+{
+  "journey": {
+    "passed": [
+      "تسجيل حساب طالب جديد عبر POST /api/auth/register وحصوله على JWT Token",
+      "تسجيل الدخول كطالب واستلام Access Token جديد بنجاح",
+      "جلب الملف التعريفي للطالب GET /api/students/dashboard/profile بنجاح",
+      "جلب إحصائيات الطالب GET /api/students/dashboard/stats بنجاح",
+      "جلب قائمة المعلمين المرتبطين بالطالب GET /api/students/dashboard/teachers بنجاح",
+      "جلب حصص الطالب GET /api/sessions/my-sessions بنجاح",
+      "استعراض الدورة والدروس التفاعلية GET /api/lms/course/:slug بنجاح",
+      "جلب واجبات الطالب GET /api/homework/student بنجاح",
+      "تسليم الواجب الصوتي بصيغة mp3 بنجاح (200 OK)",
+      "جلب تقييمات المعلم مع معايير التجويد والحفظ الخمسة (200 OK)",
+      "جلب نقاط الطالب ورتبته وسلسلة التزامه GET /api/gamification/stats بنجاح",
+      "جلب أوسمة وشارات الطالب GET /api/gamification/my-badges بنجاح",
+      "لوحة المتصدرين GET /api/gamification/leaderboard/... بنجاح",
+      "جلب شهادات الطالب GET /api/certificates/my-certificates بنجاح"
+    ],
+    "failed": [
+      "فشل حجز الحصة التجريبية عبر بيانات الواجهة: رمز 400 - {\"error\":\"رقم الواتساب مطلوب للتواصل وإرسال رابط الحصة\"}",
+      "فشل تسليم تلاوة webm: 500 - {\"error\":\"Only audio files are allowed\"}",
+      "عرض الشهادة المفردة ATHAR-2026-001: رمز 500 (عدم وجود fallback في mock mode)"
+    ],
+    "warnings": []
+  },
+  "isolation": {
+    "passed": [
+      "منع الطالب من الوصول لإحصائيات الإدارة /api/admin/stats (403 Forbidden)",
+      "منع الطالب من الوصول لملف المعلم الداخلي /api/teachers/dashboard/profile (403 Forbidden)",
+      "منع الطالب من جلب مهام المعلم /api/teachers/dashboard/tasks (403 Forbidden)",
+      "منع الطالب من الوصول لبوابة ولي الأمر /api/guardian/children (403 Forbidden)"
+    ],
+    "failed": [],
+    "warnings": []
+  },
+  "vulnerabilities": [
+    {
+      "severity": "High",
+      "title": "Information Disclosure: GET /api/students is unauthenticated",
+      "detail": "مسار GET /api/students متاح علناً بدون أي حماية ويعيد قائمة الطلاب (رمز 200)"
+    },
+    {
+      "severity": "Critical",
+      "title": "BOLA / IDOR on PATCH /api/students/:id",
+      "detail": "مسار PATCH /api/students/:id لا يتحقق من دور الأدمن أو تطابق معرف الطالب req.user.id (رمز الاستجابة: 400)"
+    },
+    {
+      "severity": "Critical",
+      "title": "Privilege Escalation on User Registration",
+      "detail": "مسار التسجيل POST /api/auth/register يسمح بتعيين role: admin أو teacher لأي مستخدم جديد دون تدقيق."
+    }
+  ]
+}

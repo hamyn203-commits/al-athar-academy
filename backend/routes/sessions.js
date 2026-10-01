@@ -401,6 +401,13 @@ router.post('/:id/rsvp', protect, async (req, res) => {
       const diffHours = (scheduledTime.getTime() - now.getTime()) / (1000 * 60 * 60);
       const eligibleForCompensation = status === 'excused' && diffHours >= 6;
 
+      const { setMockSessionRsvp } = require('../mockStore');
+      setMockSessionRsvp(req.params.id, {
+        status: status === 'confirmed' ? 'confirmed' : 'excused',
+        excuseReason: excuseReason || (status === 'confirmed' ? 'تأكيد الحضور مسبقاً' : ''),
+        eligibleForCompensation
+      });
+
       return res.json({
         success: true,
         message: status === 'confirmed'
@@ -408,10 +415,16 @@ router.post('/:id/rsvp', protect, async (req, res) => {
           : (eligibleForCompensation
               ? 'تم قبول الاعتذار مسبقاً واحتساب حق التعويض (قبل الموعد بأكثر من 6 ساعات)'
               : 'تم تسجيل الاعتذار المتأخر (أقل من 6 ساعات - لا يشمل التعويض)'),
+        status,
+        eligibleForCompensation,
+        compensationEligible: eligibleForCompensation,
+        lateExcuse: status === 'excused' && !eligibleForCompensation,
+        diffHours: Math.round(diffHours * 10) / 10,
         attendance: {
           student: studentId,
           status: status === 'confirmed' ? 'confirmed' : 'excused',
           eligibleForCompensation,
+          compensationEligible: eligibleForCompensation,
           excuseReason: excuseReason || (status === 'confirmed' ? 'تأكيد الحضور مسبقاً' : '')
         }
       });
@@ -495,6 +508,7 @@ router.post('/:id/rsvp', protect, async (req, res) => {
             : 'تم تسجيل الاعتذار، ولكنه اعتذار متأخر (أقل من 6 ساعات قبل موعد الحصة)'),
       status,
       eligibleForCompensation,
+      compensationEligible: eligibleForCompensation,
       lateExcuse,
       diffHours: Math.round(diffHours * 10) / 10
     });

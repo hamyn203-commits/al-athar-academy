@@ -25,7 +25,7 @@ export const translations = {
     },
     header: {
       about: 'عن الأكاديمية',
-      sheikhs: 'شيوخ الأثر',
+      sheikhs: 'شيوخ وحي ونماء',
       honors: 'لوحة الشرف',
       contact: 'اتصل بنا',
       studentPortal: 'بوابة الطالب',
@@ -99,13 +99,13 @@ export const translations = {
       welcome: 'أهلاً بك يا',
       streakDays: 'أيام الحماس',
       days: 'أيام',
-      pointsLabel: 'نقاط الأثر',
+      pointsLabel: 'نقاط النماء',
       points: 'نقطة',
       logout: 'تسجيل الخروج',
       tabs: {
         dashboard: 'لوحة الإنجاز',
         plan: 'متتبع الحفظ',
-        sheikhs: 'شيوخ الأثر',
+        sheikhs: 'مشايخ وحي ونماء',
         record: 'مسجل التلاوات'
       },
       dashboard: {

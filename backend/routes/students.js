@@ -33,7 +33,7 @@ const mockStudents = [
   }
 ];
 
-router.get('/', async (req, res) => {
+router.get('/', protect, authorize('admin', 'teacher', 'supervisor'), async (req, res) => {
   try {
     if (!isDBConnected()) {
       return res.json(mockStudents);
@@ -49,6 +49,11 @@ router.get('/:id', protect, async (req, res) => {
   try {
     const student = await Student.findById(req.params.id);
     if (!student) return res.status(404).json({ message: 'Student not found' });
+    
+    // Ensure student can only view their own profile unless admin/teacher
+    if (req.user.role === 'student' && student.user && student.user.toString() !== req.user.id) {
+      return res.status(403).json({ error: 'غير مصرح بالوصول إلى بيانات هذا الطالب' });
+    }
     res.json(student);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -67,12 +72,28 @@ router.post('/', protect, authorize('admin'), async (req, res) => {
 
 router.patch('/:id', protect, async (req, res) => {
   try {
+    const existingStudent = await Student.findById(req.params.id);
+    if (!existingStudent) return res.status(404).json({ message: 'Student not found' });
+
+    // Only admin or the student themselves can update (and students cannot modify administrative fields)
+    if (req.user.role !== 'admin' && (!existingStudent.user || existingStudent.user.toString() !== req.user.id)) {
+      return res.status(403).json({ error: 'غير مصرح بتعديل بيانات هذا الطالب' });
+    }
+
+    // If student updating themselves, prevent elevating points or changing plan unilaterally
+    const updates = { ...req.body };
+    if (req.user.role === 'student') {
+      delete updates.points;
+      delete updates.plan;
+      delete updates.streak;
+      delete updates.sheikh;
+    }
+
     const student = await Student.findByIdAndUpdate(
       req.params.id,
-      { $set: req.body },
+      { $set: updates },
       { new: true, runValidators: true }
     );
-    if (!student) return res.status(404).json({ message: 'Student not found' });
     res.json(student);
   } catch (err) {
     res.status(400).json({ message: err.message });
