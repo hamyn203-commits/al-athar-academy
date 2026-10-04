@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { useI18n } from '../i18n';
 import { localizedPath, DEFAULT_LOCALE } from '../lib/locale';
-import { Menu, X, ArrowLeft, ArrowRight, Sparkles, Search } from 'lucide-react';
+import { Menu, X, ArrowLeft, ArrowRight, Search } from 'lucide-react';
 import LanguageSwitcher from './LanguageSwitcher';
 import NotificationBell from './NotificationBell';
 import UserMenu from './UserMenu';
@@ -24,60 +24,42 @@ export default function GlobalHeader() {
 
   const navLinks = [
     { path: lp('/'), label: isAr ? 'الرئيسية' : 'Home' },
+    { path: lp('/courses'), label: isAr ? 'البرامج والدورات' : 'Programs' },
+    { path: lp('/teachers'), label: isAr ? 'معلمونا' : 'Teachers' },
     { path: lp('/about'), label: isAr ? 'عن الأكاديمية' : 'About' },
-    { path: lp('/courses'), label: isAr ? 'البرامج' : 'Programs' },
-    { path: lp('/teachers'), label: isAr ? 'المعلمون' : 'Teachers' },
-    { path: lp('/tracks'), label: isAr ? 'المسارات' : 'Tracks' },
-    { path: lp('/blog'), label: isAr ? 'المدونة' : 'Blog' },
-    { path: lp('/contact'), label: isAr ? 'اتصل بنا' : 'Contact' },
+    { path: lp('/blog'), label: isAr ? 'الموارد' : 'Resources' },
+    { path: lp('/contact'), label: isAr ? 'تواصل معنا' : 'Contact' },
   ];
 
   const isActive = (path) => {
-    if (path === lp('/') || path === `/${activeLocale}` || path === `/${activeLocale}/`) {
-      return location.pathname === path || location.pathname === `/${activeLocale}`;
+    if (path === lp('/') || path === '/' + activeLocale || path === '/' + activeLocale + '/') {
+      return location.pathname === path || location.pathname === '/' + activeLocale;
     }
-    return location.pathname === path || location.pathname.startsWith(path);
+    return location.pathname === path || location.pathname.startsWith(path + '/');
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-[#f7f4ed]/95 backdrop-blur-md border-b border-[#e7decb] transition-colors">
+    <header className="wn-approved-header">
       <div className="page-container">
-        <div className="flex h-20 items-center justify-between gap-4">
-          
-          {/* ═══ الشعار الرسمي — وَحْيٌ وَنَمَاء ═══ */}
-          <div className="flex items-center gap-3">
-            <BrandLogo to={lp('/')} size="md" />
-          </div>
+        <div className="wn-approved-header__row">
+          <BrandLogo to={lp('/')} size="md" />
 
-          {/* ═══ شريط التنقل الرئيسي — مينيمال دولي راقٍ ═══ */}
-          <nav className="hidden lg:flex items-center gap-7" aria-label="Main Navigation">
-            {navLinks.map((link) => {
-              const active = isActive(link.path);
-              return (
-                <Link
-                  key={link.path}
-                  to={link.path}
-                  className={`relative py-2 text-sm font-semibold tracking-wide transition-colors ${
-                    active
-                      ? 'text-[#0e382b] font-bold'
-                      : 'text-[#4e5852] hover:text-[#0e382b]'
-                  }`}
-                >
-                  <span>{link.label}</span>
-                  {active && (
-                    <span
-                      className="absolute bottom-0 inset-x-0 h-[2px] bg-[#c5a059] rounded-full"
-                      aria-hidden="true"
-                    />
-                  )}
-                </Link>
-              );
-            })}
+          <nav className="wn-approved-header__nav" aria-label={isAr ? 'التنقل الرئيسي' : 'Main navigation'}>
+            {navLinks.map((link) => (
+              <Link
+                key={link.path}
+                to={link.path}
+                className={'wn-approved-header__link ' + (isActive(link.path) ? 'is-active' : '')}
+              >
+                {link.label}
+              </Link>
+            ))}
           </nav>
 
-          {/* ═══ الإجراءات — اللغة والحساب والدعوة للعمل ═══ */}
-          <div className="hidden md:flex items-center gap-3">
-            <ThemeToggle />
+          <div className="wn-approved-header__actions">
+            <Link to={lp('/courses')} className="wn-approved-header__icon" aria-label={isAr ? 'استكشف البرامج' : 'Explore programs'}>
+              <Search size={19} />
+            </Link>
             <LanguageSwitcher />
 
             {isAuthenticated ? (
@@ -87,84 +69,64 @@ export default function GlobalHeader() {
               </>
             ) : (
               <>
-                <Link
-                  to={lp('/login')}
-                  className="rounded-full px-4 py-2 text-sm font-bold text-[#0e382b] hover:bg-black/5 transition"
-                >
+                <Link to={lp('/login')} className="wn-approved-header__login">
                   {t.common.login}
                 </Link>
-                <Link
-                  to={lp('/free-trial')}
-                  className="inline-flex items-center gap-2 rounded-full px-6 py-2.5 text-sm font-bold text-white bg-[#0e382b] hover:bg-[#14533e] shadow-sm hover:shadow-md transition-all duration-200 group"
-                >
-                  <span>{isAr ? 'ابدأ رحلتك' : 'Join Now'}</span>
-                  <ArrowIcon size={15} className="transition-transform group-hover:translate-x-[-2px] rtl:group-hover:translate-x-[-2px] ltr:group-hover:translate-x-[2px]" />
+                <Link to={lp('/free-trial')} className="wn-approved-header__cta">
+                  <span>{isAr ? 'ابدأ رحلتك الآن' : 'Start Your Journey'}</span>
+                  <ArrowIcon size={15} />
                 </Link>
               </>
             )}
           </div>
 
-          {/* زر قائمة الموبايل */}
           <button
             type="button"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="lg:hidden rounded-xl p-2 text-[#0e382b] hover:bg-black/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#0e382b]"
-            aria-label={isMenuOpen ? 'إغلاق القائمة' : 'فتح القائمة'}
+            onClick={() => setIsMenuOpen((open) => !open)}
+            className="wn-approved-header__menu"
+            aria-label={isMenuOpen ? (isAr ? 'إغلاق القائمة' : 'Close menu') : (isAr ? 'فتح القائمة' : 'Open menu')}
             aria-expanded={isMenuOpen}
           >
             {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
-
         </div>
 
-        {/* ═══ القائمة المنسدلة للهواتف ═══ */}
         {isMenuOpen && (
-          <div className="lg:hidden border-t border-[#e7decb] py-5 px-2 bg-[#f7f4ed]">
-            <nav className="flex flex-col gap-2">
-              <Link
-                to={lp('/free-trial')}
-                onClick={() => setIsMenuOpen(false)}
-                className="w-full mb-3 rounded-full p-3 text-sm font-bold flex items-center justify-between text-white bg-[#0e382b] shadow-md"
-              >
-                <span>{isAr ? 'ابدأ رحلتك (حصة تجريبية مجانية)' : 'Start Your Journey (Free Trial)'}</span>
-                <ArrowIcon size={16} />
-              </Link>
-
+          <div className="wn-approved-mobile-menu">
+            <nav className="grid gap-1">
               {navLinks.map((link) => (
                 <Link
                   key={link.path}
                   to={link.path}
                   onClick={() => setIsMenuOpen(false)}
-                  className={`rounded-xl px-4 py-3 text-sm font-semibold flex items-center justify-between transition ${
-                    isActive(link.path)
-                      ? 'bg-[#0e382b]/10 text-[#0e382b] font-bold'
-                      : 'text-[#4e5852] hover:bg-black/5'
-                  }`}
+                  className={'wn-approved-mobile-menu__link ' + (isActive(link.path) ? 'is-active' : '')}
                 >
-                  <span>{link.label}</span>
-                  {isActive(link.path) && <span className="w-1.5 h-1.5 rounded-full bg-[#c5a059]" />}
+                  {link.label}
                 </Link>
               ))}
-
-              <div className="mt-4 pt-4 border-t border-[#e7decb] flex items-center justify-between px-2">
-                <div className="flex items-center gap-2">
-                  <ThemeToggle />
-                  <LanguageSwitcher />
-                </div>
-                {!isAuthenticated && (
-                  <Link
-                    to={lp('/login')}
-                    onClick={() => setIsMenuOpen(false)}
-                    className="px-4 py-2 text-sm font-bold text-[#0e382b]"
-                  >
-                    {t.common.login}
-                  </Link>
-                )}
-              </div>
             </nav>
+
+            <div className="wn-approved-mobile-menu__tools">
+              <div className="flex items-center gap-2">
+                <ThemeToggle />
+                <LanguageSwitcher />
+              </div>
+              {!isAuthenticated && (
+                <Link to={lp('/login')} onClick={() => setIsMenuOpen(false)} className="wn-btn wn-btn--secondary wn-btn--sm">
+                  {t.common.login}
+                </Link>
+              )}
+            </div>
+
+            <Link
+              to={lp('/free-trial')}
+              onClick={() => setIsMenuOpen(false)}
+              className="wn-btn wn-btn--primary wn-btn--block"
+            >
+              {isAr ? 'ابدأ رحلتك الآن' : 'Start Your Journey'}
+            </Link>
           </div>
         )}
-
       </div>
     </header>
   );

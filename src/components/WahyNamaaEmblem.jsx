@@ -1,89 +1,94 @@
 import React from 'react';
 
 /**
- * WahyNamaaEmblem — الرمز الرسمي المعتمد لأكاديمية «وَحْيٌ وَنَمَاء»
- * مطابق للمرجع البصري الرسمي المعتمد في Brand Identity Prompt 10:
- * - شكل القوس النوراني ونبتة النماء الصاعدة (Ascending Revelation Arch & Sprout)
- * - التداخل الخطي لحرفي الواو والنون بأسلوب عربي هندسي معاصر
- * - الماسة الرباعية الذهبية في القمة (✦)
- * - تدرج أخضر غابي داكن (Deep Forest Green #0e382b) مع لمسة الذهب الأثري (#c5a059)
+ * Approved Wahy Wa Namaa mark:
+ * mihrab/arch + open Quran + growing leaves + light/star.
+ * Pure SVG so it stays sharp at any size.
  */
 export default function WahyNamaaEmblem({
   size = 44,
   className = '',
   glow = false,
-  variant = 'default', // 'default', 'monochrome', 'light', 'watermark'
+  variant = 'default',
 }) {
-  const uniqueId = React.useId().replace(/:/g, '');
-  const greenId = `wn-emblem-green-${uniqueId}`;
-  const goldId = `wn-emblem-gold-${uniqueId}`;
+  const id = React.useId().replace(/:/g, '');
+  const green = 'wnGreen' + id;
+  const teal = 'wnTeal' + id;
+  const gold = 'wnGold' + id;
 
-  const isLight = variant === 'light';
-  const isWatermark = variant === 'watermark';
+  const light = variant === 'light';
+  const mono = variant === 'monochrome' || variant === 'watermark';
 
-  const primaryFill = isLight ? '#ffffff' : isWatermark ? 'currentColor' : `url(#${greenId})`;
-  const diamondFill = isLight ? '#f3e5b8' : isWatermark ? 'currentColor' : `url(#${goldId})`;
+  const archStroke = light ? '#ffffff' : mono ? 'currentColor' : 'url(#' + green + ')';
+  const bookFill = light ? '#ffffff' : mono ? 'currentColor' : 'url(#' + green + ')';
+  const leafFill = light ? '#f8f3e7' : mono ? 'currentColor' : 'url(#' + teal + ')';
+  const starFill = light ? '#e8d5a8' : mono ? 'currentColor' : 'url(#' + gold + ')';
 
   return (
     <svg
       width={size}
-      height={size}
-      viewBox="0 0 100 120"
+      height={Math.round(size * 1.08)}
+      viewBox="0 0 120 130"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className={`shrink-0 select-none ${className}`}
-      style={{
-        filter: glow ? 'drop-shadow(0 4px 12px rgba(14, 56, 43, 0.28))' : undefined,
-      }}
-      aria-label="شعار أكاديمية وحي ونماء"
+      className={'shrink-0 select-none ' + className}
+      style={{ filter: glow ? 'drop-shadow(0 8px 18px rgba(15,107,79,.18))' : undefined }}
       role="img"
+      aria-label="شعار أكاديمية وحي ونماء"
     >
       <defs>
-        {/* تدرج الأخضر الغابي العميق */}
-        <linearGradient id={greenId} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#14533e" />
-          <stop offset="55%" stopColor="#0e382b" />
-          <stop offset="100%" stopColor="#08231b" />
+        <linearGradient id={green} x1="18" y1="12" x2="102" y2="118" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#0F6B4F" />
+          <stop offset="1" stopColor="#073528" />
         </linearGradient>
-
-        {/* تدرج الذهب الأثري الهادئ المعتمد */}
-        <linearGradient id={goldId} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#dfbe75" />
-          <stop offset="50%" stopColor="#c5a059" />
-          <stop offset="100%" stopColor="#967432" />
+        <linearGradient id={teal} x1="40" y1="40" x2="82" y2="96" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#56B3A6" />
+          <stop offset="1" stopColor="#0F6B4F" />
+        </linearGradient>
+        <linearGradient id={gold} x1="49" y1="18" x2="72" y2="42" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#E6C985" />
+          <stop offset="1" stopColor="#B88A39" />
         </linearGradient>
       </defs>
 
-      {/* ═══ 1. الماسة الرباعية النورانية في القمة (✦) ═══ */}
+      {/* mihrab / scholarly arch */}
       <path
-        d="M50 3 L53.5 11 L50 19 L46.5 11 Z"
-        fill={diamondFill}
+        d="M22 74V54C22 38 31 27 43 18L60 5l17 13c12 9 21 20 21 36v20"
+        stroke={archStroke}
+        strokeWidth="8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
-      <circle cx="50" cy="11" r="1.2" fill={isLight ? '#ffffff' : '#fff9e6'} opacity="0.9" />
+      {!light && !mono && (
+        <path
+          d="M28 73V56c0-13 7-22 17-30L60 14l15 12c10 8 17 17 17 30v17"
+          stroke="#D4AF6B"
+          strokeOpacity=".72"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+        />
+      )}
 
-      {/* ═══ 2. الجناح الأيسر المقوس (The Noon Bowl & Left Arc) ═══ */}
-      <path
-        d="M50 25 C45 32 30 46 25 64 C20 81 29 96 46 102 C35 97 29 88 32 75 C34 64 42 50 50 39 Z"
-        fill={primaryFill}
-      />
+      {/* light / revelation */}
+      <path d="M60 20l4.6 9.4L74 34l-9.4 4.6L60 48l-4.6-9.4L46 34l9.4-4.6L60 20Z" fill={starFill} />
 
-      {/* ═══ 3. الجناح الأيمن وحلقة الواو المتصلة (The Ascending Waw & Right Arc) ═══ */}
-      <path
-        d="M50 25 C55 32 70 46 75 64 C80 81 71 96 54 102 C65 97 71 88 68 75 C66 64 58 50 50 39 Z"
-        fill={primaryFill}
-      />
+      {/* growing stem */}
+      <path d="M60 88V51" stroke={light ? '#ffffff' : mono ? 'currentColor' : '#0F6B4F'} strokeWidth="4.5" strokeLinecap="round" />
+      <path d="M58 66c-13-1-21-8-24-20 13 1 21 7 24 20Z" fill={leafFill} />
+      <path d="M62 77c15-2 24-10 28-24-15 1-25 9-28 24Z" fill={leafFill} />
 
-      {/* ═══ 4. القلب الداخلي المتشابك (The Central Interlocking Loop & Sprout) ═══ */}
+      {/* open Quran */}
       <path
-        d="M50 42 C44 48 41 56 42 64 C43 72 49 78 57 76 C65 74 68 67 67 59 C66 52 61 46 54 44 L50 42 Z M51 51 C55 52 58 56 58 61 C58 65 56 68 52 69 C48 70 45 67 45 63 C45 58 48 53 51 51 Z"
-        fill={primaryFill}
+        d="M8 82c18-2 34 3 52 17 18-14 34-19 52-17v16c-18-1-35 5-52 20C43 103 26 97 8 98V82Z"
+        fill={bookFill}
       />
-
-      {/* ═══ 5. نماء الصعود السفلي الممتد (The Upward Growth Stem) ═══ */}
-      <path
-        d="M48.5 76 C48.5 86 45 94 39 99 C44 98 48 94 50 88 C52 94 56 98 61 99 C55 94 51.5 86 51.5 76 Z"
-        fill={primaryFill}
-      />
+      {!light && !mono && (
+        <>
+          <path d="M60 99c-16-11-30-15-45-14" stroke="#D4AF6B" strokeWidth="2.2" strokeLinecap="round" />
+          <path d="M60 99c16-11 30-15 45-14" stroke="#D4AF6B" strokeWidth="2.2" strokeLinecap="round" />
+        </>
+      )}
+      <path d="M60 99v18" stroke={light ? '#F8F3E7' : mono ? 'currentColor' : '#073528'} strokeWidth="3" strokeLinecap="round" />
     </svg>
   );
 }

@@ -1,65 +1,51 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useI18n } from '../i18n';
 import WahyNamaaEmblem from './WahyNamaaEmblem';
 
 export default function BrandLogo({
   size = 'md',
   showText = true,
   to = '/',
-  variant = 'dark', // 'dark', 'light'
-  layout = 'horizontal', // 'horizontal', 'vertical'
+  variant = 'dark',
+  layout = 'horizontal',
 }) {
-  const { locale } = useI18n();
-  const sizes = { sm: 32, md: 42, lg: 52, xl: 64 };
+  const sizes = { sm: 34, md: 46, lg: 58, xl: 72 };
   const px = typeof size === 'number' ? size : (sizes[size] || sizes.md);
-
   const isLight = variant === 'light';
+  const vertical = layout === 'vertical';
 
-  const mark = (
-    <div className="relative shrink-0 flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
-      <WahyNamaaEmblem size={px} variant={isLight ? 'light' : 'default'} glow={!isLight} />
-    </div>
-  );
+  const content = (
+    <span className={'group inline-flex shrink-0 select-none ' + (vertical ? 'flex-col items-center gap-2 text-center' : 'items-center gap-3')}>
+      <span className="flex shrink-0 items-center justify-center transition-transform duration-300 group-hover:scale-[1.03]">
+        <WahyNamaaEmblem size={px} variant={isLight ? 'light' : 'default'} />
+      </span>
 
-  const isVertical = layout === 'vertical';
-
-  const inner = (
-    <div className={`group flex ${isVertical ? 'flex-col items-center text-center gap-2' : 'items-center gap-3'} shrink-0 select-none`}>
-      {mark}
       {showText && (
-        <div className={`leading-tight min-w-0 flex flex-col justify-center ${isVertical ? 'items-center' : 'items-start'}`}>
-          <div className="flex items-center gap-1.5">
-            <span
-              className={`block text-[16px] sm:text-[18px] font-black tracking-tight leading-tight font-serif ${
-                isLight ? 'text-white' : 'text-[#0e382b]'
-              }`}
-            >
-              وَحْيٌ وَنَمَاء
-            </span>
-          </div>
+        <span className={'flex min-w-0 flex-col ' + (vertical ? 'items-center' : 'items-start')}>
           <span
-            className={`block text-[9.5px] sm:text-[10px] font-bold tracking-[0.22em] uppercase leading-none mt-1 ${
-              isLight ? 'text-[#f1e5c5]' : 'text-[#14533e]'
-            }`}
+            className={'font-naskh text-[18px] sm:text-[20px] font-bold leading-none ' + (isLight ? 'text-white' : 'text-[var(--wn-emerald-deep)]')}
           >
-            WAHY WA NAMAA
+            وَحْيٌ وَنَمَاء
           </span>
-        </div>
+          <span
+            className={'mt-1 block text-[9px] sm:text-[10px] font-semibold tracking-[0.08em] leading-none ' + (isLight ? 'text-[var(--wn-sand)]' : 'text-[var(--wn-text-secondary)]')}
+          >
+            Wahy Wa Namaa Academy
+          </span>
+        </span>
       )}
-    </div>
+    </span>
   );
 
-  if (to) {
-    return (
-      <Link
-        to={to}
-        className="flex items-center shrink-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0e382b] rounded-xl transition"
-        aria-label="أكاديمية وحي ونماء — الصفحة الرئيسية"
-      >
-        {inner}
-      </Link>
-    );
-  }
-  return inner;
+  if (!to) return content;
+
+  return (
+    <Link
+      to={to}
+      className="inline-flex shrink-0 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--wn-focus)] focus-visible:ring-offset-2"
+      aria-label="أكاديمية وحي ونماء — الصفحة الرئيسية"
+    >
+      {content}
+    </Link>
+  );
 }

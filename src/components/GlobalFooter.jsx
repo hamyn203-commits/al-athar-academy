@@ -18,11 +18,8 @@ export default function GlobalFooter() {
     { to: lp('/courses'), label: t.footer.courses },
     { to: lp('/teachers'), label: t.footer.teachers },
     { to: lp('/library'), label: activeLocale === 'ar' ? 'المكتبة' : 'Library' },
-    { to: lp('/leaderboard'), label: activeLocale === 'ar' ? 'البطولة' : 'Leaderboard' },
-    { to: lp('/donate'), label: activeLocale === 'ar' ? 'تبرع' : 'Donate' },
     { to: lp('/programs/kids'), label: activeLocale === 'ar' ? 'برنامج الأطفال' : 'Kids' },
-    { to: lp('/women'), label: activeLocale === 'ar' ? 'نساء' : 'Women' },
-    { to: lp('/app'), label: activeLocale === 'ar' ? 'تطبيق الهاتف' : 'Mobile app' },
+    { to: lp('/women'), label: activeLocale === 'ar' ? 'تعليم السيدات' : 'Women' },
     { to: lp('/blog'), label: t.footer.blog },
     { to: lp('/contact'), label: t.footer.contact },
   ];
@@ -36,34 +33,35 @@ export default function GlobalFooter() {
   ];
 
   return (
-    <footer className="geo-pattern-athar text-white relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-t from-[var(--athar-navy)] via-[var(--athar-navy-mid)]/95 to-[var(--athar-navy-mid)]" />
-      <div className="relative page-container py-16">
-        <div className="h-px w-full max-w-xs mx-auto mb-12 bg-gradient-to-r from-transparent via-[var(--athar-gold)] to-transparent opacity-60" aria-hidden="true" />
+    <footer className="wn-approved-footer wn-pattern-geo--gold">
+      <div className="page-container relative z-10 py-16">
+        <div className="mb-12 flex justify-center">
+          <BrandLogo to={lp('/')} size="lg" showText variant="light" layout="vertical" />
+        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+        <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-4">
           <div>
-            <BrandLogo to={lp('/')} showText variant="light" />
-            <p className="text-slate-400 leading-relaxed mt-4 mb-6 text-sm max-w-xs">
-              {t.footer.aboutText}
+            <p className="max-w-xs text-sm leading-7 text-white/70">
+              {activeLocale === 'ar'
+                ? 'نتعلم القرآن، نحفظه، وننمو به. تجربة تعليمية تجمع بين أصالة التلقي ووضوح الأدوات الحديثة.'
+                : 'Learn the Quran, memorize it, and grow through it — authentic learning with a calm modern experience.'}
             </p>
-            <div className="flex gap-3 flex-wrap">
+            <div className="mt-6 flex flex-wrap gap-2">
               {social.map(({ href, icon: Icon, label }) => (
-                <a key={label} href={href} target="_blank" rel="noopener noreferrer" aria-label={label}
-                  className="w-10 h-10 rounded-full border border-white/10 bg-white/5 flex items-center justify-center hover:bg-[var(--athar-gold)] hover:border-[var(--athar-gold)] hover:text-[var(--athar-navy)] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--athar-gold)]">
-                  <Icon size={18} aria-hidden="true" />
+                <a key={label} href={href} target="_blank" rel="noopener noreferrer" aria-label={label} className="wn-approved-footer__social">
+                  <Icon size={17} />
                 </a>
               ))}
             </div>
           </div>
 
           <div>
-            <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--athar-gold-light)] mb-4">{t.footer.quickLinks}</h3>
+            <h3 className="wn-approved-footer__title">{t.footer.quickLinks}</h3>
             <ul className="space-y-2.5">
               {quickLinks.map(({ to, label }) => (
                 <li key={to}>
-                  <Link to={to} className="text-slate-400 hover:text-[var(--athar-gold-light)] transition-colors flex items-center gap-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--athar-gold)] rounded">
-                    <ArrowRight size={14} className="opacity-50" aria-hidden="true" />
+                  <Link to={to} className="wn-approved-footer__link">
+                    <ArrowRight size={13} className="opacity-60" />
                     {label}
                   </Link>
                 </li>
@@ -72,17 +70,16 @@ export default function GlobalFooter() {
           </div>
 
           <div>
-            <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--athar-gold-light)] mb-4">{t.footer.support}</h3>
+            <h3 className="wn-approved-footer__title">{t.footer.support}</h3>
             <ul className="space-y-2.5">
               {[
-                { to: lp('/help'), label: t.footer.helpCenter },
                 { to: lp('/faq'), label: t.footer.faq },
                 { to: lp('/privacy'), label: t.footer.privacy },
                 { to: lp('/terms'), label: t.footer.terms },
               ].map(({ to, label }) => (
                 <li key={to}>
-                  <Link to={to} className="text-slate-400 hover:text-[var(--athar-gold-light)] transition-colors flex items-center gap-2 text-sm">
-                    <ArrowRight size={14} className="opacity-50" aria-hidden="true" />
+                  <Link to={to} className="wn-approved-footer__link">
+                    <ArrowRight size={13} className="opacity-60" />
                     {label}
                   </Link>
                 </li>
@@ -91,49 +88,27 @@ export default function GlobalFooter() {
           </div>
 
           <div>
-            <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--athar-gold-light)] mb-4">{t.footer.contactUs}</h3>
+            <h3 className="wn-approved-footer__title">{t.footer.contactUs}</h3>
             <ul className="space-y-4 text-sm">
-              <li className="flex items-start gap-3">
-                <Mail className="text-[var(--athar-gold)] mt-0.5 shrink-0" size={18} aria-hidden="true" />
-                <div>
-                  <div className="text-slate-500 text-xs">{t.footer.email}</div>
-                  <a href={`mailto:${CONTACT.email}`} className="text-white hover:text-[var(--athar-gold-light)] transition-colors">
-                    {CONTACT.email}
-                  </a>
-                </div>
+              <li className="wn-approved-footer__contact">
+                <Mail size={17} />
+                <a href={'mailto:' + CONTACT.email}>{CONTACT.email}</a>
               </li>
-              <li className="flex items-start gap-3">
-                <Phone className="text-[var(--athar-gold)] mt-0.5 shrink-0" size={18} aria-hidden="true" />
-                <div>
-                  <div className="text-slate-500 text-xs">{t.footer.phone}</div>
-                  <a href={`tel:${CONTACT.phone.replace(/\s/g, '')}`} className="text-white hover:text-[var(--athar-gold-light)] transition-colors">
-                    {CONTACT.phone}
-                  </a>
-                </div>
+              <li className="wn-approved-footer__contact">
+                <Phone size={17} />
+                <a href={'tel:' + CONTACT.phone.replace(/\s/g, '')}>{CONTACT.phone}</a>
               </li>
-              <li className="flex items-start gap-3">
-                <MapPin className="text-[var(--athar-gold)] mt-0.5 shrink-0" size={18} aria-hidden="true" />
-                <div>
-                  <div className="text-slate-500 text-xs">{t.footer.address}</div>
-                  <span className="text-slate-200">{CONTACT.address}</span>
-                </div>
+              <li className="wn-approved-footer__contact">
+                <MapPin size={17} />
+                <span>{CONTACT.address}</span>
               </li>
             </ul>
           </div>
         </div>
 
-        <div className="border-t border-white/10 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-sm">
-          <p className="text-slate-400">
-            © {new Date().getFullYear()} {activeLocale === 'ar' ? 'أكاديمية وَحْيٌ وَنَمَاء' : 'Wahy Wa Namaa Academy'}. {t.footer.rights}
-          </p>
-          <div className="flex gap-6">
-            <Link to={lp('/privacy')} className="text-slate-400 hover:text-[var(--wn-gold-light)] transition-colors">
-              {t.footer.privacy}
-            </Link>
-            <Link to={lp('/terms')} className="text-slate-400 hover:text-[var(--wn-gold-light)] transition-colors">
-              {t.footer.terms}
-            </Link>
-          </div>
+        <div className="wn-approved-footer__bottom">
+          <p>© {new Date().getFullYear()} {activeLocale === 'ar' ? 'أكاديمية وَحْيٌ وَنَمَاء' : 'Wahy Wa Namaa Academy'}. {t.footer.rights}</p>
+          <p>{activeLocale === 'ar' ? 'الوحي أصل الرحلة، والنماء أثرها.' : 'Revelation at the root. Growth as the outcome.'}</p>
         </div>
       </div>
     </footer>
