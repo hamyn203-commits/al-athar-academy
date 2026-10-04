@@ -147,8 +147,8 @@ export default function Teachers() {
       next: 'Berikutnya'
     },
     ar: {
-      title: 'المعلمون المعتمدون',
-      subtitle: 'اختر المعلم المناسب لك من نخبة من أفضل المعلمين المجازين',
+      title: 'المعلمون المتاحون',
+      subtitle: 'استعرض ملفات المعلمين المنشورة واختر الأنسب لهدفك ومستواك',
       searchPlaceholder: 'ابحث عن معلم بالاسم أو التخصص...',
       advancedFilters: 'الفلاتر المتقدمة',
       sortBy: 'ترتيب حسب',

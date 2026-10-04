@@ -282,10 +282,10 @@ export default function Register() {
               // Perks summary if no custom plan is passed
               <div className="space-y-4 mt-8">
                 {[
-                  { title: locale === 'ar' ? 'معلمون مجازون من الأزهر الشريف' : 'Al-Azhar Certified Native Tutors' },
-                  { title: locale === 'ar' ? 'فصول حية تفاعلية 1-on-1 بالكامل' : '100% Live 1-on-1 Interactive Classes' },
+                  { title: locale === 'ar' ? 'معلمون متخصصون في القرآن والتجويد' : 'Qualified Quran & Tajweed Tutors' },
+                  { title: locale === 'ar' ? 'جلسات فردية مباشرة وتفاعلية' : 'Live 1-on-1 Interactive Classes' },
                   { title: locale === 'ar' ? 'خطط حفظ ودراسة ذكية ومرنة' : 'Adaptive and Smart Memorization Plans' },
-                  { title: locale === 'ar' ? 'شهادات تخرج إلكترونية معتمدة' : 'Verified Digital Graduation Certificates' }
+                  { title: locale === 'ar' ? 'شهادات إتمام إلكترونية قابلة للتحقق' : 'Verifiable Digital Completion Certificates' }
                 ].map((perk, i) => (
                   <div key={i} className="flex items-start gap-3">
                     <CheckCircle2 size={18} className="text-[var(--athar-gold)] mt-0.5 shrink-0" />
