@@ -1,32 +1,44 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { User, Lock, Mail, Eye, EyeOff, ArrowRight, Star, ArrowLeft } from 'lucide-react';
-import Logo from '../../components/Logo';
+import {
+  User,
+  Lock,
+  Mail,
+  Eye,
+  EyeOff,
+  ArrowLeft,
+  ArrowRight,
+  AudioLines,
+  BookOpenCheck,
+  Route,
+  Sparkles,
+} from 'lucide-react';
+import BrandLogo from '../../components/BrandLogo';
 import { useI18n } from '../../i18n';
+import { localizedPath } from '../../lib/locale';
 import api from '../../lib/api';
+import '../../styles/public-experience.css';
 
 export default function Login() {
   const navigate = useNavigate();
   const { locale } = useI18n();
+  const isAr = locale === 'ar';
+  const ArrowIcon = isAr ? ArrowLeft : ArrowRight;
+  const lp = (path) => localizedPath(path, locale);
+
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  });
+  const [formData, setFormData] = useState({ email: '', password: '' });
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+  const handleChange = (event) => {
+    setFormData((current) => ({ ...current, [event.target.name]: event.target.value }));
     setError('');
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setLoading(true);
     setError('');
 
@@ -41,156 +53,177 @@ export default function Login() {
         admin: '/admin',
         teacher: '/teacher/dashboard',
         guardian: '/guardian/dashboard',
-        student: '/student/dashboard'
+        student: '/student/dashboard',
       };
+
       navigate(roleRoutes[data.user.role] || '/student/dashboard');
     } catch (err) {
-      setError(err.message);
+      setError(err.message || (isAr ? 'تعذر تسجيل الدخول' : 'Unable to sign in'));
     } finally {
       setLoading(false);
     }
   };
 
+  const benefits = [
+    {
+      icon: BookOpenCheck,
+      title: isAr ? 'كل رحلتك في مكان واحد' : 'Your journey in one place',
+      text: isAr ? 'الحصص، الحفظ، المراجعة، والتقارير.' : 'Lessons, memorization, review, and reports.',
+    },
+    {
+      icon: AudioLines,
+      title: isAr ? 'أدوات للتلاوة والمتابعة' : 'Recitation and follow-up tools',
+      text: isAr ? 'راجع أداءك وارجع للجلسة بهدف أوضح.' : 'Review your performance and return with a clearer goal.',
+    },
+    {
+      icon: Route,
+      title: isAr ? 'مسار واضح للتقدم' : 'A clear progress path',
+      text: isAr ? 'اعرف ما أنجزت وما هي الخطوة التالية.' : 'Know what you completed and what comes next.',
+    },
+  ];
+
   return (
-    <div className="geo-pattern-light min-h-screen flex items-center justify-center p-5 relative">
-      <div className="absolute inset-0 bg-gradient-to-br from-[var(--azhar-green-deep)]/5 via-transparent to-[var(--azhar-gold-leaf)]/5 pointer-events-none" />
+    <main className="wn-public-shell">
+      <div className="wn-auth-layout">
+        <section className="wn-auth-visual">
+          <div className="wn-auth-visual__content">
+            <div>
+              <BrandLogo size={60} variant="light" to={lp('/')} />
+              <span className="wn-auth-visual__eyebrow" style={{ marginTop: '2.6rem' }}>
+                <Sparkles size={14} />
+                {isAr ? 'مرحبًا بعودتك إلى وحي ونماء' : 'WELCOME BACK TO WAHY WA NAMAA'}
+              </span>
+              <h1>
+                {isAr ? <>أكمل رحلتك مع القرآن.<strong>من حيث توقفت.</strong></> : <>Continue your Quran journey.<strong>Right where you left off.</strong></>}
+              </h1>
+              <p className="wn-auth-visual__lead">
+                {isAr
+                  ? 'دخول واحد يوصلك إلى جلساتك، مسارك التعليمي، أدوات التلاوة، وتقارير التقدم.'
+                  : 'One sign-in gives you access to lessons, your learning path, recitation tools, and progress reports.'}
+              </p>
 
-      <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        className="azhar-card w-full max-w-md p-8 sm:p-10 relative overflow-hidden"
-      >
-        <div className="flex items-center justify-center gap-2 mb-6" aria-hidden="true">
-          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[var(--azhar-gold-leaf)] to-transparent opacity-40" />
-          <Star size={14} className="text-[var(--azhar-gold-leaf)]" fill="currentColor" />
-          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[var(--azhar-gold-leaf)] to-transparent opacity-40" />
-        </div>
+              <div className="wn-auth-benefits">
+                {benefits.map(({ icon: Icon, title, text }) => (
+                  <div key={title} className="wn-auth-benefit">
+                    <span><Icon size={17} /></span>
+                    <div>
+                      <strong>{title}</strong>
+                      <small>{text}</small>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
 
-        <div className="text-center mb-8">
-          <div className="flex justify-center">
-            <Logo size={80} showText={false} />
-          </div>
-          <h2 className="font-amiri text-3xl font-bold text-[var(--azhar-green-deep)] mt-5 mb-2">
-            {locale === 'ar' ? 'تسجيل الدخول' : 'Login'}
-          </h2>
-          <p className="text-sm text-[var(--athar-text-muted)]">
-            {locale === 'ar'
-              ? 'ادخل إلى حسابك للمتابعة'
-              : 'Sign in to your account to continue'}
-          </p>
-        </div>
-
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-5 text-sm text-red-600"
-          >
-            {error}
-          </motion.div>
-        )}
-
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-          <div>
-            <label className="block mb-2 text-sm font-semibold text-[var(--azhar-green-deep)]">
-              {locale === 'ar' ? 'البريد الإلكتروني' : 'Email'}
-            </label>
-            <div className="relative">
-              <Mail size={20} className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--azhar-gold-leaf)] pointer-events-none" />
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                required
-                placeholder="example@email.com"
-                className="input-field !pl-4 !pr-12 !py-3.5 text-base"
-                dir="auto"
-              />
+            <div className="wn-auth-verse">
+              <p>وَقُل رَّبِّ زِدْنِي عِلْمًا</p>
+              <span>{isAr ? 'طه: ١١٤' : 'Taha 20:114'}</span>
             </div>
           </div>
+        </section>
 
-          <div>
-            <label className="block mb-2 text-sm font-semibold text-[var(--azhar-green-deep)]">
-              {locale === 'ar' ? 'كلمة المرور' : 'Password'}
-            </label>
-            <div className="relative">
-              <Lock size={20} className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--azhar-gold-leaf)] pointer-events-none" />
-              <input
-                type={showPassword ? 'text' : 'password'}
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                placeholder="••••••••"
-                className="input-field !pl-12 !pr-12 !py-3.5 text-base"
-                dir="auto"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--athar-text-muted)] hover:text-[var(--azhar-green)] transition p-0.5"
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-              >
-                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+        <section className="wn-auth-form-side">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: .45 }}
+            className="wn-public-form-card"
+          >
+            <div className="wn-public-form-card__header">
+              <div className="lg:hidden flex justify-center">
+                <BrandLogo size={54} to={lp('/')} />
+              </div>
+              <span className="wn-public-eyebrow">{isAr ? 'حسابك في الأكاديمية' : 'YOUR ACADEMY ACCOUNT'}</span>
+              <h2>{isAr ? 'تسجيل الدخول' : 'Sign in'}</h2>
+              <p>{isAr ? 'أدخل بياناتك للعودة إلى مساحة التعلم.' : 'Enter your details to return to your learning space.'}</p>
+            </div>
+
+            {error && <div className="wn-public-error" role="alert">{error}</div>}
+
+            <form onSubmit={handleSubmit} className="grid gap-4">
+              <div className="wn-field">
+                <label htmlFor="login-email">{isAr ? 'البريد الإلكتروني' : 'Email'}</label>
+                <div className="wn-field__control">
+                  <Mail size={18} />
+                  <input
+                    id="login-email"
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    required
+                    autoComplete="email"
+                    placeholder="example@email.com"
+                    dir="auto"
+                  />
+                </div>
+              </div>
+
+              <div className="wn-field">
+                <div className="flex items-center justify-between gap-3">
+                  <label htmlFor="login-password">{isAr ? 'كلمة المرور' : 'Password'}</label>
+                  <Link to={lp('/forgot-password')} className="text-[11px] font-semibold text-[var(--wn-gold-dark)] hover:underline">
+                    {isAr ? 'نسيت كلمة المرور؟' : 'Forgot password?'}
+                  </Link>
+                </div>
+                <div className="wn-field__control">
+                  <Lock size={18} />
+                  <input
+                    id="login-password"
+                    type={showPassword ? 'text' : 'password'}
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    required
+                    autoComplete="current-password"
+                    placeholder="••••••••"
+                    dir="auto"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((visible) => !visible)}
+                    className="wn-field__eye"
+                    aria-label={showPassword ? (isAr ? 'إخفاء كلمة المرور' : 'Hide password') : (isAr ? 'إظهار كلمة المرور' : 'Show password')}
+                  >
+                    {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                  </button>
+                </div>
+              </div>
+
+              <button type="submit" disabled={loading} className="wn-btn wn-btn--primary wn-btn--block wn-btn--lg disabled:opacity-60">
+                {loading ? (
+                  <span className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                ) : (
+                  <>
+                    <span>{isAr ? 'دخول إلى حسابي' : 'Sign in to my account'}</span>
+                    <ArrowIcon size={17} />
+                  </>
+                )}
+              </button>
+            </form>
+
+            <div className="wn-auth-divider">{isAr ? 'حساب جديد' : 'New account'}</div>
+
+            <div className="wn-auth-role-grid">
+              <button type="button" onClick={() => navigate(lp('/register/student'))} className="wn-auth-role">
+                <User size={16} />
+                {isAr ? 'إنشاء حساب طالب' : 'Student account'}
+              </button>
+              <button type="button" onClick={() => navigate(lp('/teacher/register'))} className="wn-auth-role">
+                <User size={16} />
+                {isAr ? 'الانضمام كمعلم' : 'Join as a teacher'}
               </button>
             </div>
-          </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="btn-azhar w-full !py-3.5 text-base disabled:opacity-70 disabled:cursor-not-allowed"
-          >
-            {loading ? (
-              <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : (
-              <>
-                {locale === 'ar' ? 'تسجيل الدخول' : 'Login'}
-                <ArrowRight size={20} />
-              </>
-            )}
-          </button>
-        </form>
-
-        <div className="mt-8 pt-5 border-t border-[var(--athar-cream-dark)] text-center">
-          <p className="text-sm text-[var(--athar-text-muted)] mb-3">
-            {locale === 'ar' ? 'ليس لديك حساب؟' : "Don't have an account?"}
-          </p>
-          <div className="flex gap-3 justify-center">
-            <button
-              onClick={() => navigate('/register/student')}
-              className="btn-secondary text-sm !py-2.5"
-            >
-              <User size={16} />
-              {locale === 'ar' ? 'طالب' : 'Student'}
-            </button>
-            <button
-              onClick={() => navigate('/teacher/register')}
-              className="btn-gold text-sm !py-2.5"
-            >
-              <User size={16} />
-              {locale === 'ar' ? 'معلم' : 'Teacher'}
-            </button>
-          </div>
-        </div>
-
-        <div className="mt-5 text-center space-y-2">
-          <button
-            onClick={() => navigate('/setup-admin')}
-            className="block w-full text-xs text-[var(--athar-text-muted)] hover:text-[var(--azhar-green)] transition cursor-pointer bg-transparent border-none"
-          >
-            {locale === 'ar' ? 'إعداد أدمن لأول مرة؟' : 'First-time admin setup?'}
-          </button>
-          <button
-            onClick={() => navigate('/')}
-            className="inline-flex items-center gap-1.5 text-sm text-[var(--azhar-green)] hover:text-[var(--azhar-green-deep)] underline underline-offset-2 transition cursor-pointer bg-transparent border-none"
-          >
-            <ArrowLeft size={14} />
-            {locale === 'ar' ? 'العودة للصفحة الرئيسية' : 'Back to Home'}
-          </button>
-        </div>
-      </motion.div>
-    </div>
+            <div className="wn-auth-back">
+              <Link to={lp('/')}>
+                <ArrowIcon size={14} />
+                {isAr ? 'العودة للرئيسية' : 'Back to home'}
+              </Link>
+            </div>
+          </motion.div>
+        </section>
+      </div>
+    </main>
   );
 }

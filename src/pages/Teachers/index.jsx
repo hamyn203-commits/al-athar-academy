@@ -1,9 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Search, Filter, Star, MapPin, Clock, Award, BookOpen, Users, ChevronDown } from 'lucide-react';
+import { Search, Filter, Star, MapPin, Clock, Award, BookOpen, Users, ChevronDown, Sparkles, GraduationCap, ArrowLeft, ArrowRight } from 'lucide-react';
 import { v4Markets } from '../../data/v4Data';
 import { useMarket } from '../../context/MarketProvider';
 import { useI18n } from '../../i18n';
+import { localizedPath } from '../../lib/locale';
+import GlobalHeader from '../../components/GlobalHeader';
+import GlobalFooter from '../../components/GlobalFooter';
+import SEOHead from '../../components/SEOHead';
+import '../../styles/public-experience.css';
 
 export default function Teachers() {
   const [searchParams] = useSearchParams();
@@ -247,296 +252,262 @@ export default function Teachers() {
 
   const active = labels[locale] || labels.en;
 
+  const isAr = locale === 'ar';
+  const ArrowIcon = isAr ? ArrowLeft : ArrowRight;
+  const lp = (path) => localizedPath(path, locale);
+
+  const specLabel = (spec) => {
+    const map = {
+      children: active.children,
+      adults: active.adults,
+      women: active.women,
+      tajweed: active.tajweed,
+      ijaza: active.ijaza,
+      'arabic-language': active.arabicLang,
+    };
+    return map[spec] || spec;
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-white py-12 px-4">
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-4">{active.title}</h1>
-          <p className="text-gray-600 text-lg">{active.subtitle}</p>
-        </div>
+    <>
+      <SEOHead page={{
+        title: active.title,
+        description: active.subtitle,
+        url: '/teachers',
+        type: 'website',
+      }} />
+      <GlobalHeader />
 
-        <form onSubmit={handleSearch} className="mb-6">
-          <div className="relative max-w-2xl mx-auto">
-            <input
-              type="text"
-              placeholder={active.searchPlaceholder}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-6 py-4 pr-12 rounded-full border-2 border-emerald-200 focus:border-emerald-500 focus:outline-none text-lg"
-            />
-            <button
-              type="submit"
-              className="absolute left-2 top-1/2 -translate-y-1/2 bg-emerald-600 text-white p-3 rounded-full hover:bg-emerald-700 transition"
-            >
-              <Search size={20} />
-            </button>
-          </div>
-        </form>
-
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 text-emerald-600 font-semibold hover:text-emerald-700"
-            >
-              <Filter size={20} />
-              {active.advancedFilters}
-              <ChevronDown size={20} className={`transition ${showFilters ? 'rotate-180' : ''}`} />
-            </button>
-            <div className="flex items-center gap-4">
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="px-4 py-2 border rounded-lg focus:outline-none focus:border-emerald-500"
-              >
-                <option value="rating">{active.ratingHigh}</option>
-                <option value="experience">{active.expHigh}</option>
-                <option value="students">{active.studentsHigh}</option>
-                <option value="newest">{active.newest}</option>
-              </select>
-              <button
-                onClick={clearFilters}
-                className="text-sm text-gray-600 hover:text-gray-800"
-              >
-                {active.clearFilters}
-              </button>
+      <main className="wn-public-shell">
+        <section className="wn-public-hero">
+          <div className="page-container wn-public-hero__inner">
+            <div>
+              <span className="wn-auth-visual__eyebrow">
+                <Sparkles size={14} />
+                {isAr ? 'اختر معلمك' : locale === 'id' ? 'PILIH GURU ANDA' : 'CHOOSE YOUR TEACHER'}
+              </span>
+              <h1>{active.title}</h1>
+              <p>{active.subtitle}</p>
+            </div>
+            <div className="wn-public-hero__art" aria-hidden="true">
+              <div className="wn-public-orbit" />
+              <div className="wn-public-orbit__core"><GraduationCap size={46} strokeWidth={1.25} /></div>
             </div>
           </div>
+        </section>
 
-          {showFilters && (
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-7 gap-4 pt-4 border-t">
-              <select
-                value={filters.market}
-                onChange={(e) => handleFilterChange('market', e.target.value)}
-                className="input-field"
-              >
-                <option value="">{active.allMarkets}</option>
-                {v4Markets.map((m) => (
-                  <option key={m.slug} value={m.slug}>{m.region}</option>
-                ))}
-              </select>
+        <div className="page-container">
+          <section className="wn-public-filter-panel">
+            <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-3">
+              <div className="wn-public-search">
+                <Search size={18} />
+                <input
+                  type="search"
+                  placeholder={active.searchPlaceholder}
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                />
+              </div>
 
-              <select
-                value={filters.country}
-                onChange={(e) => handleFilterChange('country', e.target.value)}
-                className="input-field"
-              >
-                <option value="">{active.allCountries}</option>
-                <option value="مصر">{locale === 'id' ? 'Mesir' : locale === 'ar' ? 'مصر' : 'Egypt'}</option>
-                <option value="السعودية">{locale === 'id' ? 'Arab Saudi' : locale === 'ar' ? 'السعودية' : 'Saudi Arabia'}</option>
-                <option value="الأردن">{locale === 'id' ? 'Yordania' : locale === 'ar' ? 'الأردن' : 'Jordan'}</option>
-                <option value="الإمارات">{locale === 'id' ? 'UEA' : locale === 'ar' ? 'الإمارات' : 'UAE'}</option>
-                <option value="الكويت">{locale === 'id' ? 'Kuwait' : locale === 'ar' ? 'الكويت' : 'Kuwait'}</option>
-                <option value="قطر">{locale === 'id' ? 'Qatar' : locale === 'ar' ? 'قطر' : 'Qatar'}</option>
-              </select>
-
-              <select
-                value={filters.gender}
-                onChange={(e) => handleFilterChange('gender', e.target.value)}
-                className="input-field"
-              >
-                <option value="">{active.gender}</option>
-                <option value="male">{active.male}</option>
-                <option value="female">{active.female}</option>
-              </select>
-
-              <select
-                value={filters.specialization}
-                onChange={(e) => handleFilterChange('specialization', e.target.value)}
-                className="input-field"
-              >
-                <option value="">{active.specialization}</option>
-                <option value="children">{active.children}</option>
-                <option value="adults">{active.adults}</option>
-                <option value="women">{active.women}</option>
-                <option value="tajweed">{active.tajweed}</option>
-                <option value="ijaza">{active.ijaza}</option>
-                <option value="arabic-language">{active.arabicLang}</option>
-              </select>
-
-              <select
-                value={filters.language}
-                onChange={(e) => handleFilterChange('language', e.target.value)}
-                className="input-field"
-              >
-                <option value="">{active.language}</option>
-                <option value="arabic">{active.arabic}</option>
-                <option value="english">{active.english}</option>
-                <option value="french">{active.french}</option>
-                <option value="turkish">{active.turkish}</option>
-              </select>
-
-              <select
-                value={filters.minRating}
-                onChange={(e) => handleFilterChange('minRating', e.target.value)}
-                className="input-field"
-              >
-                <option value="">{active.rating}</option>
-                <option value="4">4+ {locale === 'id' ? 'Bintang' : locale === 'ar' ? 'نجوم' : 'Stars'}</option>
-                <option value="4.5">4.5+ {locale === 'id' ? 'Bintang' : locale === 'ar' ? 'نجوم' : 'Stars'}</option>
-                <option value="4.8">4.8+ {locale === 'id' ? 'Bintang' : locale === 'ar' ? 'نجوم' : 'Stars'}</option>
-              </select>
-
-              <select
-                value={filters.minExperience}
-                onChange={(e) => handleFilterChange('minExperience', e.target.value)}
-                className="input-field"
-              >
-                <option value="">{active.experience}</option>
-                <option value="2">{active.exp2}</option>
-                <option value="5">{active.exp5}</option>
-                <option value="10">{active.exp10}</option>
-              </select>
-            </div>
-          )}
-        </div>
-
-        {loading ? (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto"></div>
-            <p className="text-gray-600 mt-4">{active.loading}</p>
-          </div>
-        ) : teachers.length === 0 ? (
-          <div className="text-center py-12">
-            <Users className="mx-auto text-gray-400 mb-4" size={64} />
-            {pagination.total === 0 && !searchQuery && !filters.country && !filters.specialization && !filters.market ? (
-              <>
-                <p className="text-xl text-gray-600 mb-2">{active.noTutors}</p>
-                <p className="text-gray-500 mb-4">{locale === 'id' ? 'Daftar sebagai guru atau kembali lagi nanti setelah mengaktifkan data demo.' : locale === 'ar' ? 'سجّل كمعلم أو عد لاحقاً بعد تفعيل البيانات التجريبية' : 'Register as a tutor or return later after demo data is activated.'}</p>
-                <Link to="/register/teacher" className="inline-block bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700">{active.registerTeacher}</Link>
-              </>
-            ) : (
-              <>
-                <p className="text-xl text-gray-600 mb-2">{active.noTutorsMatched}</p>
-                <p className="text-gray-500">{active.tryChanging}</p>
-              </>
-            )}
-          </div>
-        ) : (
-          <>
-            <div className="mb-4 text-gray-600">
-              <p>{active.showing.replace('{count}', teachers.length).replace('{total}', pagination.total)}</p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {teachers.map((teacher) => (
-                <Link
-                  key={teacher._id}
-                  to={`/teachers/${teacher._id}`}
-                  className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"
-                >
-                  <div className="relative">
-                    <img
-                      src={teacher.media.profilePhoto || '/default-teacher.png'}
-                      alt={teacher.user.name}
-                      className="w-full h-64 object-cover"
-                    />
-                    {teacher.isFeatured && (
-                      <div className="absolute top-4 right-4 bg-gradient-to-r from-yellow-400 to-orange-400 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg">
-                        {active.featured}
-                      </div>
-                    )}
-                    <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-semibold">
-                      {displayPrice(teacher.hourlyRate || 50, 'EGP')}/{locale === 'id' ? 'jam' : locale === 'ar' ? 'ساعة' : 'hr'}
-                    </div>
-                  </div>
-                  
-                  <div className="p-6">
-                    <h3 className="text-xl font-bold mb-2">{teacher.user.name}</h3>
-                    
-                    <div className="flex items-center gap-2 mb-3">
-                      <Star className="text-yellow-400 fill-yellow-400" size={20} />
-                      <span className="font-bold text-lg">{teacher.rating.average.toFixed(1)}</span>
-                      <span className="text-gray-500">({teacher.rating.count} {active.ratingCount})</span>
-                    </div>
-
-                    <div className="space-y-2 text-sm text-gray-600 mb-4">
-                      <div className="flex items-center gap-2">
-                        <MapPin size={16} className="text-emerald-600" />
-                        <span>{locale === 'id' && teacher.personalInfo.country === 'مصر' ? 'Mesir' : locale === 'id' && teacher.personalInfo.country === 'السعودية' ? 'Arab Saudi' : teacher.personalInfo.country}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Clock size={16} className="text-blue-600" />
-                        <span>{teacher.quranInfo.teachingExperience} {active.yearsExp}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Award size={16} className="text-purple-600" />
-                        <span>{teacher.quranInfo.numberOfIjazat} {active.ijazat}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <BookOpen size={16} className="text-orange-600" />
-                        <span>{active.memorized} {teacher.quranInfo.memorizedParts} {active.parts}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Users size={16} className="text-green-600" />
-                        <span>{teacher.stats.totalStudents} {active.students}</span>
-                      </div>
-                    </div>
-
-                    <div className="mb-4">
-                      <p className="text-xs text-gray-500 mb-2">{locale === 'id' ? 'Spesialisasi:' : locale === 'ar' ? 'التخصصات:' : 'Specializations:'}</p>
-                      <div className="flex flex-wrap gap-2">
-                        {teacher.quranInfo.specializations.slice(0, 4).map((spec) => (
-                          <span
-                            key={spec}
-                            className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-medium"
-                          >
-                            {spec === 'children' ? (locale === 'id' ? '👶 Anak-anak' : '👶 أطفال') : 
-                             spec === 'adults' ? (locale === 'id' ? '👨 Dewasa' : '👨 كبار') : 
-                             spec === 'women' ? (locale === 'id' ? '👩 Wanita' : '👩 نساء') :
-                             spec === 'tajweed' ? (locale === 'id' ? '📖 Tajwid' : '📖 تجويد') :
-                             spec === 'ijaza' ? (locale === 'id' ? '🎓 Ijazah' : '🎓 إجازة') :
-                             spec === 'arabic-language' ? (locale === 'id' ? '🗣️ B. Arab' : '🗣️ لغة عربية') : spec}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-
-                    <button className="w-full bg-gradient-to-r from-emerald-600 to-green-600 text-white py-3 rounded-lg hover:from-emerald-700 hover:to-green-700 transition font-semibold shadow-md">
-                      {active.viewProfile}
-                    </button>
-                  </div>
-                </Link>
-              ))}
-            </div>
-
-            {pagination.pages > 1 && (
-              <div className="flex justify-center gap-2 mt-8">
-                <button
-                  onClick={() => setPagination(prev => ({ ...prev, page: Math.max(1, prev.page - 1) }))}
-                  disabled={pagination.page === 1}
-                  className="px-4 py-2 rounded-lg bg-white text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {active.previous}
+              <div className="wn-public-filter-actions">
+                <button type="button" onClick={() => setShowFilters((open) => !open)} className="wn-public-filter-button">
+                  <Filter size={17} />
+                  {active.advancedFilters}
+                  <ChevronDown size={15} className={showFilters ? 'rotate-180 transition' : 'transition'} />
                 </button>
-                {Array.from({ length: Math.min(pagination.pages, 5) }, (_, i) => {
-                  const pageNum = i + 1;
-                  return (
-                    <button
-                      key={pageNum}
-                      onClick={() => setPagination(prev => ({ ...prev, page: pageNum }))}
-                      className={`px-4 py-2 rounded-lg ${
-                        pagination.page === pageNum
-                          ? 'bg-emerald-600 text-white'
-                          : 'bg-white text-gray-700 hover:bg-gray-100'
-                      }`}
-                    >
-                      {pageNum}
-                    </button>
-                  );
-                })}
-                <button
-                  onClick={() => setPagination(prev => ({ ...prev, page: Math.min(prev.pages, prev.page + 1) }))}
-                  disabled={pagination.page === pagination.pages}
-                  className="px-4 py-2 rounded-lg bg-white text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {active.next}
+
+                <select value={sortBy} onChange={(event) => setSortBy(event.target.value)} className="wn-public-select">
+                  <option value="rating">{active.ratingHigh}</option>
+                  <option value="experience">{active.expHigh}</option>
+                  <option value="students">{active.studentsHigh}</option>
+                  <option value="newest">{active.newest}</option>
+                </select>
+
+                <button type="button" onClick={clearFilters} className="text-xs font-semibold text-[var(--wn-text-secondary)] hover:text-[var(--wn-emerald-dark)]">
+                  {active.clearFilters}
                 </button>
               </div>
+            </form>
+
+            {showFilters && (
+              <div className="wn-public-expanded-filters">
+                <select value={filters.market} onChange={(event) => handleFilterChange('market', event.target.value)} className="wn-public-select">
+                  <option value="">{active.allMarkets}</option>
+                  {v4Markets.map((market) => <option key={market.slug} value={market.slug}>{market.region}</option>)}
+                </select>
+
+                <select value={filters.country} onChange={(event) => handleFilterChange('country', event.target.value)} className="wn-public-select">
+                  <option value="">{active.allCountries}</option>
+                  <option value="مصر">{locale === 'id' ? 'Mesir' : isAr ? 'مصر' : 'Egypt'}</option>
+                  <option value="السعودية">{locale === 'id' ? 'Arab Saudi' : isAr ? 'السعودية' : 'Saudi Arabia'}</option>
+                  <option value="الأردن">{locale === 'id' ? 'Yordania' : isAr ? 'الأردن' : 'Jordan'}</option>
+                  <option value="الإمارات">{locale === 'id' ? 'UEA' : isAr ? 'الإمارات' : 'UAE'}</option>
+                </select>
+
+                <select value={filters.gender} onChange={(event) => handleFilterChange('gender', event.target.value)} className="wn-public-select">
+                  <option value="">{active.gender}</option>
+                  <option value="male">{active.male}</option>
+                  <option value="female">{active.female}</option>
+                </select>
+
+                <select value={filters.specialization} onChange={(event) => handleFilterChange('specialization', event.target.value)} className="wn-public-select">
+                  <option value="">{active.specialization}</option>
+                  <option value="children">{active.children}</option>
+                  <option value="adults">{active.adults}</option>
+                  <option value="women">{active.women}</option>
+                  <option value="tajweed">{active.tajweed}</option>
+                  <option value="ijaza">{active.ijaza}</option>
+                  <option value="arabic-language">{active.arabicLang}</option>
+                </select>
+
+                <select value={filters.language} onChange={(event) => handleFilterChange('language', event.target.value)} className="wn-public-select">
+                  <option value="">{active.language}</option>
+                  <option value="arabic">{active.arabic}</option>
+                  <option value="english">{active.english}</option>
+                  <option value="french">{active.french}</option>
+                  <option value="turkish">{active.turkish}</option>
+                </select>
+
+                <select value={filters.minRating} onChange={(event) => handleFilterChange('minRating', event.target.value)} className="wn-public-select">
+                  <option value="">{isAr ? 'كل التقييمات' : locale === 'id' ? 'Semua Penilaian' : 'All ratings'}</option>
+                  <option value="4">4+</option>
+                  <option value="4.5">4.5+</option>
+                  <option value="4.8">4.8+</option>
+                </select>
+
+                <select value={filters.minExperience} onChange={(event) => handleFilterChange('minExperience', event.target.value)} className="wn-public-select">
+                  <option value="">{active.experience}</option>
+                  <option value="2">{active.exp2}</option>
+                  <option value="5">{active.exp5}</option>
+                  <option value="10">{active.exp10}</option>
+                </select>
+              </div>
             )}
-          </>
-        )}
-      </div>
-    </div>
+          </section>
+
+          <section className="wn-public-section">
+            {loading ? (
+              <div className="wn-public-empty">
+                <span className="inline-block w-8 h-8 rounded-full border-2 border-[var(--wn-emerald)]/20 border-t-[var(--wn-emerald)] animate-spin" />
+                <p>{active.loading}</p>
+              </div>
+            ) : teachers.length === 0 ? (
+              <div className="wn-public-empty">
+                <Users size={48} />
+                <h3>{pagination.total === 0 ? active.noTutors : active.noTutorsMatched}</h3>
+                <p>{pagination.total === 0 ? (isAr ? 'لم تُنشر ملفات معلمين متاحة حاليًا. يمكنك العودة لاحقًا أو التقديم كمعلم.' : 'No teacher profiles are currently published. You can return later or apply as a teacher.') : active.tryChanging}</p>
+                {pagination.total === 0 ? (
+                  <Link to={lp('/teacher/register')} className="wn-btn wn-btn--primary mt-4">
+                    {active.registerTeacher}
+                  </Link>
+                ) : null}
+              </div>
+            ) : (
+              <>
+                <div className="mb-5 flex items-center justify-between gap-3">
+                  <span className="wn-public-eyebrow">{isAr ? 'المعلمون المتاحون' : locale === 'id' ? 'GURU TERSEDIA' : 'AVAILABLE TEACHERS'}</span>
+                  <span className="text-xs text-[var(--wn-text-secondary)]">
+                    {active.showing.replace('{count}', teachers.length).replace('{total}', pagination.total)}
+                  </span>
+                </div>
+
+                <div className="wn-public-grid">
+                  {teachers.map((teacher) => {
+                    const ratingCount = Number(teacher.rating?.count || 0);
+                    const ratingAverage = Number(teacher.rating?.average || 0);
+                    const specializations = Array.isArray(teacher.quranInfo?.specializations) ? teacher.quranInfo.specializations.slice(0, 4) : [];
+                    const price = teacher.hourlyRate;
+                    const country = teacher.personalInfo?.country;
+                    const experience = teacher.quranInfo?.teachingExperience;
+                    const ijazat = teacher.quranInfo?.numberOfIjazat;
+                    const parts = teacher.quranInfo?.memorizedParts;
+                    const totalStudents = teacher.stats?.totalStudents;
+
+                    return (
+                      <Link key={teacher._id} to={lp('/teachers/' + teacher._id)} className="wn-teacher-card">
+                        <div className="wn-teacher-card__media">
+                          <img src={teacher.media?.profilePhoto || '/default-teacher.png'} alt={teacher.user?.name || active.title} loading="lazy" />
+                          {teacher.isFeatured ? <span className="wn-teacher-featured">{active.featured}</span> : null}
+                          {price != null ? <span className="wn-teacher-price">{displayPrice(price, 'EGP')}/{active.hour}</span> : null}
+                        </div>
+
+                        <div className="wn-teacher-card__body">
+                          <h3>{teacher.user?.name || (isAr ? 'معلم قرآن' : 'Quran teacher')}</h3>
+
+                          {ratingCount > 0 && ratingAverage > 0 ? (
+                            <div className="wn-teacher-rating">
+                              <Star size={14} fill="currentColor" />
+                              <strong>{ratingAverage.toFixed(1)}</strong>
+                              <span>({ratingCount} {active.ratingCount})</span>
+                            </div>
+                          ) : null}
+
+                          <div className="wn-teacher-details">
+                            {country ? <span className="wn-teacher-detail"><MapPin size={14} /> {country}</span> : null}
+                            {experience ? <span className="wn-teacher-detail"><Clock size={14} /> {experience} {active.yearsExp}</span> : null}
+                            {ijazat ? <span className="wn-teacher-detail"><Award size={14} /> {ijazat} {active.ijazat}</span> : null}
+                            {parts ? <span className="wn-teacher-detail"><BookOpen size={14} /> {active.memorized} {parts} {active.parts}</span> : null}
+                            {totalStudents ? <span className="wn-teacher-detail"><Users size={14} /> {totalStudents} {active.students}</span> : null}
+                          </div>
+
+                          {specializations.length > 0 ? (
+                            <div className="wn-teacher-tags">
+                              {specializations.map((spec) => <span key={spec}>{specLabel(spec)}</span>)}
+                            </div>
+                          ) : null}
+
+                          <span className="wn-teacher-card__cta">
+                            {active.viewProfile}
+                            <ArrowIcon size={14} />
+                          </span>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+
+                {pagination.pages > 1 ? (
+                  <div className="flex justify-center flex-wrap gap-2 mt-8">
+                    <button
+                      type="button"
+                      onClick={() => setPagination((current) => ({ ...current, page: Math.max(1, current.page - 1) }))}
+                      disabled={pagination.page === 1}
+                      className="wn-btn wn-btn--secondary wn-btn--sm disabled:opacity-40"
+                    >
+                      {active.previous}
+                    </button>
+
+                    {Array.from({ length: Math.min(pagination.pages, 5) }, (_, index) => {
+                      const pageNum = index + 1;
+                      return (
+                        <button
+                          type="button"
+                          key={pageNum}
+                          onClick={() => setPagination((current) => ({ ...current, page: pageNum }))}
+                          className={pagination.page === pageNum ? 'wn-btn wn-btn--primary wn-btn--sm' : 'wn-btn wn-btn--secondary wn-btn--sm'}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+
+                    <button
+                      type="button"
+                      onClick={() => setPagination((current) => ({ ...current, page: Math.min(current.pages, current.page + 1) }))}
+                      disabled={pagination.page === pagination.pages}
+                      className="wn-btn wn-btn--secondary wn-btn--sm disabled:opacity-40"
+                    >
+                      {active.next}
+                    </button>
+                  </div>
+                ) : null}
+              </>
+            )}
+          </section>
+        </div>
+      </main>
+
+      <GlobalFooter />
+    </>
   );
 }

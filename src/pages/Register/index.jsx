@@ -5,9 +5,10 @@ import {
   User, Users, Lock, Mail, Phone, Eye, EyeOff, ArrowRight, CheckCircle,
   Sparkles, CheckCircle2, Globe, ArrowLeft, Star
 } from 'lucide-react';
-import Logo from '../../components/Logo';
+import BrandLogo from '../../components/BrandLogo';
 import { useI18n } from '../../i18n';
 import { useMarket } from '../../context/MarketProvider';
+import '../../styles/public-experience.css';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -171,7 +172,7 @@ export default function Register() {
   const inputPadding = isRtl ? '14px 50px 14px 16px' : '14px 16px 14px 50px';
 
   return (
-    <div className="geo-pattern-light min-h-screen flex items-center justify-center p-4 md:p-8" dir={isRtl ? 'rtl' : 'ltr'}>
+    <div className="wn-register-shell flex items-center justify-center" dir={isRtl ? 'rtl' : 'ltr'}>
       <div className="w-full max-w-6xl grid lg:grid-cols-12 gap-8 items-stretch">
         
         {/* Left Column: Brand Intro & Plan Details */}
@@ -179,19 +180,15 @@ export default function Register() {
           initial={{ opacity: 0, x: isRtl ? 40 : -40 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5 }}
-          className="lg:col-span-5 flex flex-col justify-between p-6 md:p-8 rounded-3xl bg-[var(--athar-navy)] text-white shadow-xl relative overflow-hidden"
+          className="wn-register-brand-panel lg:col-span-5 flex flex-col justify-between p-6 md:p-8 rounded-3xl text-white relative overflow-hidden"
         >
           {/* Subtle Arabesque Watermark */}
           <div className="absolute inset-0 opacity-15 pointer-events-none geo-pattern-athar" aria-hidden="true" />
           
           <div className="relative">
             {/* Header Brand */}
-            <div className="flex items-center gap-3 mb-8">
-              <Logo size={42} showText={false} />
-              <div>
-                <h1 className="font-naskh text-lg font-bold tracking-wide">أكاديمية وَحْيٌ وَنَمَاء</h1>
-                <p className="text-[10px] text-[var(--wn-gold)]">نتعلم القرآن، نحفظه، وننمو به.</p>
-              </div>
+            <div className="mb-8">
+              <BrandLogo size={54} variant="light" to={null} />
             </div>
 
             <h2 className="font-naskh text-3xl md:text-4xl font-bold leading-snug mb-4">
@@ -327,19 +324,13 @@ export default function Register() {
             )}
           </div>
 
-          {/* Social Proof rating */}
-          <div className="pt-8 mt-8 border-t border-white/10 relative">
-            <div className="flex items-center gap-2">
-              <div className="flex text-amber-400">
-                {[1, 2, 3, 4, 5].map((s) => (
-                  <Star key={s} size={14} className="fill-amber-400" />
-                ))}
-              </div>
-              <span className="text-xs font-bold text-white">4.9 {locale === 'ar' ? 'على Trustpilot' : 'on Trustpilot'}</span>
-            </div>
-            <p className="text-[11px] text-slate-400 mt-1">
-              {locale === 'ar' ? 'انضم إلى +5000 طالب وطالبة حول العالم' : 'Trusted by +5,000 students globally'}
-            </p>
+          <div className="wn-register-trust">
+            <CheckCircle2 size={16} />
+            <span>
+              {locale === 'ar'
+                ? 'ابدأ بالمعلومات الأساسية فقط، ويمكنك استكمال تفاصيل المسار والمعلم لاحقًا.'
+                : 'Start with the basics now. You can complete your learning path and teacher preferences later.'}
+            </span>
           </div>
         </motion.div>
 
@@ -348,7 +339,7 @@ export default function Register() {
           initial={{ opacity: 0, x: isRtl ? -40 : 40 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="lg:col-span-7 glass-card p-6 md:p-10 flex flex-col justify-between"
+          className="wn-register-form-card lg:col-span-7 p-6 md:p-10 flex flex-col justify-between"
         >
           <div>
             {/* Role Switcher Tabs */}

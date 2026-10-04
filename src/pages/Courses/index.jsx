@@ -1,19 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useI18n } from '../../i18n';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
-  Search, 
-  Filter, 
-  Clock, 
-  Users, 
-  Star, 
+import {
+  Search,
+  Filter,
+  Clock,
+  Users,
+  Star,
   BookOpen,
-  DollarSign,
   ChevronDown,
   Award,
   Sparkles,
-  ArrowRight
+  ArrowLeft,
+  ArrowRight,
+  Route,
 } from 'lucide-react';
 import { localizedPath } from '../../lib/locale';
 import GlobalHeader from '../../components/GlobalHeader';
@@ -21,86 +22,71 @@ import GlobalFooter from '../../components/GlobalFooter';
 import SEOHead from '../../components/SEOHead';
 import { useMarket } from '../../context/MarketProvider';
 import api from '../../lib/api';
+import '../../styles/public-experience.css';
 
-// بيانات وهمية للدورات
+function localizedValue(value, locale) {
+  if (typeof value === 'string') return value;
+  return value?.[locale] || value?.ar || value?.en || '';
+}
 
 function CourseCard({ course, locale }) {
   const { t } = useI18n();
   const { displayPrice } = useMarket();
-  
-  const levelColors = {
-    beginner: 'bg-green-100 text-green-700',
-    intermediate: 'bg-yellow-100 text-yellow-700',
-    advanced: 'bg-red-100 text-red-700'
-  };
+  const isAr = locale === 'ar';
+  const ArrowIcon = isAr ? ArrowLeft : ArrowRight;
 
   const levelLabels = {
     beginner: t.courses.beginner,
     intermediate: t.courses.intermediate,
-    advanced: t.courses.advanced
+    advanced: t.courses.advanced,
   };
 
+  const hasRating = Number(course.reviews) > 0 && Number(course.rating) > 0;
+  const isFree = Number(course.price) === 0;
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
+    <motion.article
+      initial={{ opacity: 0, y: 14 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2"
+      viewport={{ once: true, margin: '-40px' }}
+      className="wn-course-card"
     >
-      <div className="relative h-48 bg-gradient-to-br from-emerald-400 to-green-500 flex items-center justify-center">
-        <BookOpen size={64} className="text-white/30" />
-        <div className={`absolute top-4 right-4 px-3 py-1 rounded-full text-sm font-semibold ${levelColors[course.level]}`}>
-          {levelLabels[course.level]}
+      <div className="wn-course-card__visual">
+        <BookOpen size={44} strokeWidth={1.35} />
+        <span className="wn-course-level">{levelLabels[course.level] || course.level}</span>
+      </div>
+
+      <div className="wn-course-card__body">
+        <h3>{localizedValue(course.title, locale)}</h3>
+        <p>{localizedValue(course.description, locale)}</p>
+
+        <div className="wn-course-meta">
+          {course.duration ? <span><Clock size={14} /> {course.duration}</span> : null}
+          {Number(course.students) > 0 ? <span><Users size={14} /> {course.students}</span> : null}
+          {hasRating ? <span><Star size={14} /> {Number(course.rating).toFixed(1)} ({course.reviews})</span> : null}
+        </div>
+
+        <div className="wn-course-card__footer">
+          <span className="wn-course-price">
+            {isFree ? (isAr ? 'مجاني' : 'Free') : displayPrice(course.price, course.currency || 'USD')}
+          </span>
+          <Link
+            to={localizedPath('/courses/' + (course.slug || course.id), locale)}
+            className="wn-course-card__link"
+            aria-label={(isAr ? 'عرض دورة ' : 'View course ') + localizedValue(course.title, locale)}
+          >
+            <ArrowIcon size={15} />
+          </Link>
         </div>
       </div>
-      
-      <div className="p-6">
-        <h3 className="text-xl font-bold mb-2 line-clamp-2">
-          {course.title[locale] || course.title.ar}
-        </h3>
-        
-        <p className="text-gray-600 mb-4 line-clamp-2">
-          {course.description[locale] || course.description.ar}
-        </p>
-
-        <div className="flex items-center gap-4 mb-4 text-sm text-gray-500">
-          <div className="flex items-center gap-1">
-            <Clock size={16} />
-            <span>{course.duration}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Users size={16} />
-            <span>{course.students}</span>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 mb-4">
-          <Star className="text-yellow-400 fill-yellow-400" size={20} />
-          <span className="font-bold">{course.rating}</span>
-          <span className="text-gray-500 text-sm">({course.reviews} {t.teachers.reviews})</span>
-        </div>
-
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <DollarSign size={20} className="text-emerald-600" />
-            <span className="text-2xl font-bold text-emerald-600">{displayPrice(course.price, course.currency || 'USD')}</span>
-            <span className="text-gray-500 text-sm">/ {t.courses.duration}</span>
-          </div>
-        </div>
-
-        <Link
-          to={`/courses/${course.slug || course.id}`}
-          className="btn-primary w-full flex items-center justify-center gap-2"
-        >
-          {t.courses.learnMore}
-        </Link>
-      </div>
-    </motion.div>
+    </motion.article>
   );
 }
 
 export default function Courses() {
   const { t, locale } = useI18n();
+  const isAr = locale === 'ar';
+  const ArrowIcon = isAr ? ArrowLeft : ArrowRight;
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -113,230 +99,175 @@ export default function Courses() {
     setLoading(true);
     api.get('/api/courses')
       .then((data) => {
-        if (data.courses?.length) {
-          setCourses(data.courses.map((c) => ({
-            id: c.slug,
-            slug: c.slug,
-            title: c.title,
-            description: c.description,
-            level: c.level || 'beginner',
-            category: c.category || 'quran',
-            price: c.price || 0,
-            currency: c.currency || 'USD',
-            duration: c.duration || `${c.durationInHours || 0}h`,
-            students: c.stats?.enrolled || 0,
-            rating: c.stats?.rating?.average || 5,
-            reviews: c.stats?.rating?.count || 0,
-          })));
-        } else {
-          setCourses([]);
-        }
+        const source = Array.isArray(data?.courses) ? data.courses : [];
+        setCourses(source.map((course) => ({
+          id: course._id || course.slug,
+          slug: course.slug,
+          title: course.title,
+          description: course.description,
+          level: course.level || 'beginner',
+          category: course.category || 'quran',
+          price: course.price ?? 0,
+          currency: course.currency || 'USD',
+          duration: course.duration || (course.durationInHours ? course.durationInHours + 'h' : ''),
+          students: course.stats?.enrolled || 0,
+          rating: course.stats?.rating?.average || 0,
+          reviews: course.stats?.rating?.count || 0,
+        })));
       })
       .catch(() => setCourses([]))
       .finally(() => setLoading(false));
   }, []);
 
-  const filteredCourses = courses.filter(course => {
-    const matchesSearch = course.title[locale]?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         course.description[locale]?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesLevel = selectedLevel === 'all' || course.level === selectedLevel;
-    const matchesCategory = selectedCategory === 'all' || course.category === selectedCategory;
-    
-    return matchesSearch && matchesLevel && matchesCategory;
-  });
+  const sortedCourses = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
 
-  const sortedCourses = [...filteredCourses].sort((a, b) => {
-    if (sortBy === 'popular') return b.students - a.students;
-    if (sortBy === 'rating') return b.rating - a.rating;
-    if (sortBy === 'price-low') return a.price - b.price;
-    if (sortBy === 'price-high') return b.price - a.price;
-    return 0;
-  });
+    const filtered = courses.filter((course) => {
+      const title = localizedValue(course.title, locale).toLowerCase();
+      const description = localizedValue(course.description, locale).toLowerCase();
+      const matchesSearch = !query || title.includes(query) || description.includes(query);
+      const matchesLevel = selectedLevel === 'all' || course.level === selectedLevel;
+      const matchesCategory = selectedCategory === 'all' || course.category === selectedCategory;
+      return matchesSearch && matchesLevel && matchesCategory;
+    });
+
+    return [...filtered].sort((a, b) => {
+      if (sortBy === 'popular') return b.students - a.students;
+      if (sortBy === 'rating') return b.rating - a.rating;
+      if (sortBy === 'price-low') return a.price - b.price;
+      if (sortBy === 'price-high') return b.price - a.price;
+      return 0;
+    });
+  }, [courses, locale, searchQuery, selectedCategory, selectedLevel, sortBy]);
 
   return (
     <>
-      <SEOHead 
-        page={{
-          title: t.courses.title,
-          description: t.courses.subtitle,
-          url: '/courses',
-          keywords: 'quran courses, arabic courses, tajweed, islamic studies, online learning',
-          type: 'website'
-        }}
-      />
-      
+      <SEOHead page={{
+        title: t.courses.title,
+        description: t.courses.subtitle,
+        url: '/courses',
+        keywords: 'quran courses, arabic courses, tajweed, islamic studies, online learning',
+        type: 'website',
+      }} />
+
       <GlobalHeader />
-      
-      <div className="min-h-screen bg-gray-50">
-        {/* Hero Section */}
-        <section className="bg-gradient-to-br from-emerald-900 via-emerald-800 to-green-900 py-20">
-          <div className="container mx-auto px-4 text-center">
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-5xl font-bold text-white mb-4"
-            >
-              {t.courses.title}
-            </motion.h1>
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="text-xl text-emerald-100 max-w-2xl mx-auto"
-            >
-              {t.courses.subtitle}
-            </motion.p>
-          </div>
-        </section>
 
-        {/* ═══ المسارات التعليمية الثلاثة البارزة ═══ */}
-        <section className="container mx-auto px-4 -mt-10 mb-8 relative z-20">
-          <div className="bg-gradient-to-r from-emerald-950 via-[var(--azhar-green-deep)] to-slate-900 rounded-2xl p-6 md:p-8 text-white shadow-xl border border-emerald-500/30">
-            <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
-              <div className="space-y-2 text-center lg:text-right">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-400/20 text-amber-300 text-xs font-bold">
-                  <Sparkles size={14} />
-                  <span>{locale === 'ar' ? 'المسارات التخصصية المعتمدة' : 'Accredited Structured Tracks'}</span>
-                </div>
-                <h2 className="text-2xl md:text-3xl font-bold">
-                  {locale === 'ar' ? 'هل تبحث عن مسار منهجي متكامل؟' : 'Looking for a Structured Track?'}
-                </h2>
-                <p className="text-emerald-100 text-sm max-w-2xl">
-                  {locale === 'ar'
-                    ? 'مسار التحفيظ والمراجعة المتقنة • مسار الإجازة وشرح المتون التجويدية • مسار تأسيس الأطفال بالقاعدة النورانية ونور البيان.'
-                    : 'Memorization & Revision • Ijazah & Tajweed Matn • Kids Foundation (Noorania & Noor Al-Bayan).'}
-                </p>
-              </div>
+      <main className="wn-public-shell">
+        <section className="wn-public-hero">
+          <div className="page-container wn-public-hero__inner">
+            <div>
+              <span className="wn-auth-visual__eyebrow">
+                <Sparkles size={14} />
+                {isAr ? 'برامج ومسارات وحي ونماء' : 'WAHY WA NAMAA PROGRAMS'}
+              </span>
+              <h1>{isAr ? 'اختر المسار الذي يخدم هدفك مع القرآن' : 'Choose the path that serves your Quran goal'}</h1>
+              <p>
+                {isAr
+                  ? 'من التأسيس والحفظ إلى التجويد والإجازة، استكشف البرامج المتاحة واختر ما يناسب مستواك ووقتك.'
+                  : 'From foundations and memorization to Tajweed and Ijazah, explore available programs and choose what fits your level and schedule.'}
+              </p>
+            </div>
 
-              <Link
-                to={localizedPath('/tracks', locale)}
-                className="shrink-0 px-6 py-3 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-bold text-sm shadow-md hover:shadow-lg hover:scale-105 transition-all flex items-center gap-2"
-              >
-                <Award size={18} />
-                <span>{locale === 'ar' ? 'استكشف المسارات بالتفصيل' : 'Explore Tracks Details'}</span>
-                <ArrowRight size={16} />
-              </Link>
+            <div className="wn-public-hero__art" aria-hidden="true">
+              <div className="wn-public-orbit" />
+              <div className="wn-public-orbit__core"><Route size={46} strokeWidth={1.25} /></div>
             </div>
           </div>
         </section>
 
-        {/* Search and Filters */}
-        <section className="container mx-auto px-4">
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <div className="flex flex-col md:flex-row gap-4">
-              {/* Search */}
-              <div className="flex-1 relative">
-                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+        <div className="page-container">
+          <section className="wn-public-track-banner">
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+              <div>
+                <span className="wn-auth-visual__eyebrow"><Award size={14} /> {isAr ? 'المسارات المتدرجة' : 'STRUCTURED TRACKS'}</span>
+                <h2>{isAr ? 'تفضّل رحلة طويلة المدى بخطة واضحة؟' : 'Prefer a long-term structured journey?'}</h2>
+                <p>
+                  {isAr
+                    ? 'استكشف مسارات الحفظ والمراجعة، الإجازة، وتأسيس الأطفال في صفحة واحدة منظمة.'
+                    : 'Explore memorization and review, Ijazah, and children’s foundation tracks in one structured view.'}
+                </p>
+              </div>
+              <Link to={localizedPath('/tracks', locale)} className="wn-btn wn-btn--accent">
+                <span>{isAr ? 'استكشف المسارات' : 'Explore tracks'}</span>
+                <ArrowIcon size={15} />
+              </Link>
+            </div>
+          </section>
+
+          <section className="wn-public-filter-panel">
+            <div className="flex flex-col md:flex-row gap-3">
+              <div className="wn-public-search">
+                <Search size={18} />
                 <input
-                  type="text"
-                  placeholder={locale === 'ar' ? 'ابحث عن دورة...' : 'Search for a course...'}
+                  type="search"
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pr-10 pl-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder={isAr ? 'ابحث باسم الدورة أو محتواها...' : 'Search by course name or content...'}
                 />
               </div>
 
-              {/* Filter Button */}
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
-              >
-                <Filter size={20} />
-                {locale === 'ar' ? 'فلاتر' : 'Filters'}
-                <ChevronDown size={16} className={`transition-transform ${showFilters ? 'rotate-180' : ''}`} />
-              </button>
+              <div className="wn-public-filter-actions">
+                <button type="button" onClick={() => setShowFilters((open) => !open)} className="wn-public-filter-button">
+                  <Filter size={17} />
+                  {isAr ? 'الفلاتر' : 'Filters'}
+                  <ChevronDown size={15} className={showFilters ? 'rotate-180 transition' : 'transition'} />
+                </button>
+              </div>
             </div>
 
-            {/* Expanded Filters */}
             {showFilters && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 pt-6 border-t"
-              >
-                {/* Level Filter */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {t.courses.level}
-                  </label>
-                  <select
-                    value={selectedLevel}
-                    onChange={(e) => setSelectedLevel(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  >
-                    <option value="all">{locale === 'ar' ? 'الكل' : 'All'}</option>
-                    <option value="beginner">{t.courses.beginner}</option>
-                    <option value="intermediate">{t.courses.intermediate}</option>
-                    <option value="advanced">{t.courses.advanced}</option>
-                  </select>
-                </div>
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="wn-public-expanded-filters">
+                <select value={selectedLevel} onChange={(event) => setSelectedLevel(event.target.value)} className="wn-public-select">
+                  <option value="all">{isAr ? 'كل المستويات' : 'All levels'}</option>
+                  <option value="beginner">{t.courses.beginner}</option>
+                  <option value="intermediate">{t.courses.intermediate}</option>
+                  <option value="advanced">{t.courses.advanced}</option>
+                </select>
 
-                {/* Category Filter */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {locale === 'ar' ? 'الفئة' : 'Category'}
-                  </label>
-                  <select
-                    value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  >
-                    <option value="all">{locale === 'ar' ? 'الكل' : 'All'}</option>
-                    <option value="quran">{locale === 'ar' ? 'القرآن' : 'Quran'}</option>
-                    <option value="tajweed">{locale === 'ar' ? 'التجويد' : 'Tajweed'}</option>
-                    <option value="arabic">{locale === 'ar' ? 'اللغة العربية' : 'Arabic'}</option>
-                    <option value="ijazah">{locale === 'ar' ? 'الإجازة' : 'Ijazah'}</option>
-                  </select>
-                </div>
+                <select value={selectedCategory} onChange={(event) => setSelectedCategory(event.target.value)} className="wn-public-select">
+                  <option value="all">{isAr ? 'كل الفئات' : 'All categories'}</option>
+                  <option value="quran">{isAr ? 'القرآن' : 'Quran'}</option>
+                  <option value="tajweed">{isAr ? 'التجويد' : 'Tajweed'}</option>
+                  <option value="arabic">{isAr ? 'اللغة العربية' : 'Arabic'}</option>
+                  <option value="ijazah">{isAr ? 'الإجازة' : 'Ijazah'}</option>
+                </select>
 
-                {/* Sort By */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {locale === 'ar' ? 'ترتيب حسب' : 'Sort by'}
-                  </label>
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  >
-                    <option value="popular">{locale === 'ar' ? 'الأكثر شعبية' : 'Most Popular'}</option>
-                    <option value="rating">{locale === 'ar' ? 'الأعلى تقييماً' : 'Highest Rated'}</option>
-                    <option value="price-low">{locale === 'ar' ? 'السعر: من الأقل للأعلى' : 'Price: Low to High'}</option>
-                    <option value="price-high">{locale === 'ar' ? 'السعر: من الأعلى للأقل' : 'Price: High to Low'}</option>
-                  </select>
-                </div>
+                <select value={sortBy} onChange={(event) => setSortBy(event.target.value)} className="wn-public-select">
+                  <option value="popular">{isAr ? 'الأكثر التحاقًا' : 'Most enrolled'}</option>
+                  <option value="rating">{isAr ? 'الأعلى تقييمًا' : 'Highest rated'}</option>
+                  <option value="price-low">{isAr ? 'السعر: الأقل أولًا' : 'Price: low to high'}</option>
+                  <option value="price-high">{isAr ? 'السعر: الأعلى أولًا' : 'Price: high to low'}</option>
+                </select>
               </motion.div>
             )}
-          </div>
-        </section>
+          </section>
 
-        {/* Courses Grid */}
-        <section className="container mx-auto px-4 py-12">
-          <div className="mb-6 text-gray-600">
-            {locale === 'ar' 
-              ? `عرض ${sortedCourses.length} دورة`
-              : `Showing ${sortedCourses.length} courses`
-            }
-          </div>
+          <section className="wn-public-section">
+            <div className="mb-5 flex items-center justify-between gap-3">
+              <div>
+                <span className="wn-public-eyebrow">{isAr ? 'الدورات المتاحة' : 'AVAILABLE COURSES'}</span>
+                <p className="mt-1 text-sm text-[var(--wn-text-secondary)]">
+                  {isAr ? 'النتائج المتاحة حاليًا: ' : 'Currently available: '}{sortedCourses.length}
+                </p>
+              </div>
+            </div>
 
-          {loading ? (
-            <div className="flex justify-center py-20"><div className="spinner spinner-lg" /></div>
-          ) : sortedCourses.length === 0 ? (
-            <div className="text-center py-20">
-              <BookOpen size={64} className="mx-auto text-gray-400 mb-4" />
-              <p className="text-xl text-gray-600">
-                {locale === 'ar' ? 'لم يتم العثور على دورات' : 'No courses found'}
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {sortedCourses.map((course) => (
-                <CourseCard key={course.id} course={course} locale={locale} />
-              ))}
-            </div>
-          )}
-        </section>
-      </div>
+            {loading ? (
+              <div className="wn-public-empty"><span className="inline-block w-8 h-8 rounded-full border-2 border-[var(--wn-emerald)]/20 border-t-[var(--wn-emerald)] animate-spin" /></div>
+            ) : sortedCourses.length === 0 ? (
+              <div className="wn-public-empty">
+                <BookOpen size={48} />
+                <h3>{isAr ? 'لا توجد دورات مطابقة الآن' : 'No matching courses right now'}</h3>
+                <p>{isAr ? 'غيّر الفلاتر أو ارجع لاحقًا عند نشر برامج جديدة.' : 'Adjust the filters or return when new programs are published.'}</p>
+              </div>
+            ) : (
+              <div className="wn-public-grid">
+                {sortedCourses.map((course) => <CourseCard key={course.id} course={course} locale={locale} />)}
+              </div>
+            )}
+          </section>
+        </div>
+      </main>
 
       <GlobalFooter />
     </>

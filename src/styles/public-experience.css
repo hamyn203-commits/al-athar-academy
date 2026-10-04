@@ -1,0 +1,933 @@
+
+/* ==========================================================================
+   Wahy Wa Namaa — public product pages
+   Shared visual language for auth, courses, teachers and registration.
+   ========================================================================== */
+
+.wn-public-shell {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 8% 4%, rgba(212,175,107,.12), transparent 24rem),
+    radial-gradient(circle at 92% 16%, rgba(86,179,166,.10), transparent 28rem),
+    linear-gradient(180deg, #fffdf8 0%, #f7f3e9 58%, #eef6f2 100%);
+  color: var(--wn-text-primary);
+}
+
+.wn-public-shell::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: .62;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='108' height='108' viewBox='0 0 108 108'%3E%3Cg fill='none' stroke='%230f6b4f' stroke-opacity='.035' stroke-width='.8'%3E%3Cpath d='M54 10 98 54 54 98 10 54Z'/%3E%3Cpath d='M22 22h64v64H22Z'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.wn-auth-layout {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: grid;
+  align-items: stretch;
+}
+
+.wn-auth-visual {
+  display: none;
+  position: relative;
+  overflow: hidden;
+  padding: clamp(2rem, 4vw, 4.5rem);
+  color: white;
+  background:
+    linear-gradient(145deg, rgba(5,38,29,.90), rgba(7,53,40,.84)),
+    url('/images/hero-wahy-namaa.jpg') center 42% / cover;
+}
+
+.wn-auth-visual::before {
+  content: '';
+  position: absolute;
+  inset: .9rem;
+  border: 1px solid rgba(212,175,107,.22);
+  border-radius: 28px;
+  pointer-events: none;
+}
+
+.wn-auth-visual::after {
+  content: '';
+  position: absolute;
+  width: 24rem;
+  height: 31rem;
+  bottom: -15rem;
+  inset-inline-end: -8rem;
+  border: 1px solid rgba(212,175,107,.22);
+  border-radius: 13rem 13rem 0 0;
+  box-shadow: 0 0 0 18px rgba(255,255,255,.025);
+}
+
+.wn-auth-visual__content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.wn-auth-visual__eyebrow,
+.wn-public-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  color: var(--wn-gold-dark);
+  font-size: .78rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+
+.wn-auth-visual__eyebrow {
+  color: #efd28e;
+}
+
+.wn-auth-visual h1 {
+  max-width: 34rem;
+  margin-top: 1.5rem;
+  font-family: var(--wn-font-display);
+  font-size: clamp(2.6rem, 5vw, 4.8rem);
+  line-height: 1.18;
+  color: #fffdf7;
+  text-wrap: balance;
+}
+
+.wn-auth-visual h1 strong {
+  display: block;
+  color: #e3bd68;
+}
+
+.wn-auth-visual__lead {
+  max-width: 34rem;
+  margin-top: 1rem;
+  color: rgba(255,255,255,.68);
+  line-height: 1.9;
+}
+
+.wn-auth-benefits {
+  display: grid;
+  gap: .7rem;
+  margin-top: 2rem;
+  max-width: 34rem;
+}
+
+.wn-auth-benefit {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .8rem .9rem;
+  border-radius: 15px;
+  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.045);
+  backdrop-filter: blur(10px);
+}
+
+.wn-auth-benefit > span {
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: rgba(212,175,107,.12);
+  color: #efd28e;
+}
+
+.wn-auth-benefit strong,
+.wn-auth-benefit small {
+  display: block;
+}
+
+.wn-auth-benefit strong {
+  font-size: .82rem;
+}
+
+.wn-auth-benefit small {
+  margin-top: .08rem;
+  color: rgba(255,255,255,.5);
+  font-size: .68rem;
+}
+
+.wn-auth-verse {
+  max-width: 29rem;
+  padding-top: 2rem;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+
+.wn-auth-verse p {
+  font-family: var(--wn-font-quran, var(--wn-font-display));
+  color: #f4dda5;
+  font-size: 1.15rem;
+  line-height: 1.9;
+}
+
+.wn-auth-verse span {
+  color: rgba(255,255,255,.46);
+  font-size: .68rem;
+}
+
+.wn-auth-form-side {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  padding: clamp(1rem, 4vw, 4rem);
+}
+
+.wn-public-form-card {
+  width: min(100%, 32rem);
+  padding: clamp(1.35rem, 3vw, 2.5rem);
+  border: 1px solid rgba(212,175,107,.22);
+  border-radius: 28px;
+  background: rgba(255,255,255,.88);
+  box-shadow:
+    0 34px 90px -58px rgba(7,53,40,.48),
+    inset 0 1px 0 rgba(255,255,255,.92);
+  backdrop-filter: blur(18px);
+}
+
+.wn-public-form-card__header {
+  margin-bottom: 1.6rem;
+  text-align: center;
+}
+
+.wn-public-form-card__header h2 {
+  margin-top: .8rem;
+  color: var(--wn-emerald-deep);
+  font-family: var(--wn-font-display);
+  font-size: clamp(1.9rem, 4vw, 2.6rem);
+}
+
+.wn-public-form-card__header p {
+  margin-top: .35rem;
+  color: var(--wn-text-secondary);
+  font-size: .85rem;
+  line-height: 1.65;
+}
+
+.wn-field {
+  display: grid;
+  gap: .45rem;
+}
+
+.wn-field label {
+  color: var(--wn-emerald-deep);
+  font-size: .78rem;
+  font-weight: 750;
+}
+
+.wn-field__control {
+  position: relative;
+}
+
+.wn-field__control > svg {
+  position: absolute;
+  top: 50%;
+  inset-inline-start: .9rem;
+  transform: translateY(-50%);
+  color: var(--wn-gold-dark);
+  pointer-events: none;
+}
+
+.wn-field__control input,
+.wn-public-select {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid rgba(15,107,79,.14);
+  border-radius: 13px;
+  background: rgba(255,255,255,.92);
+  color: var(--wn-text-primary);
+  outline: none;
+  transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+}
+
+.wn-field__control input {
+  padding-inline: 2.8rem 2.8rem;
+}
+
+.wn-field__control input:focus,
+.wn-public-select:focus {
+  border-color: rgba(184,138,57,.62);
+  box-shadow: 0 0 0 4px rgba(212,175,107,.10);
+  background: white;
+}
+
+.wn-field__eye {
+  position: absolute;
+  top: 50%;
+  inset-inline-end: .75rem;
+  transform: translateY(-50%);
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  color: var(--wn-text-tertiary);
+}
+
+.wn-field__eye:hover {
+  background: var(--wn-emerald-soft);
+  color: var(--wn-emerald-dark);
+}
+
+.wn-public-error {
+  margin-bottom: 1rem;
+  padding: .8rem .9rem;
+  border: 1px solid #fecaca;
+  border-radius: 13px;
+  background: #fff1f2;
+  color: #b91c1c;
+  font-size: .78rem;
+}
+
+.wn-auth-divider {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  margin-block: 1.35rem;
+  color: var(--wn-text-tertiary);
+  font-size: .68rem;
+}
+
+.wn-auth-divider::before,
+.wn-auth-divider::after {
+  content: '';
+  height: 1px;
+  flex: 1;
+  background: var(--wn-border);
+}
+
+.wn-auth-role-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap: .65rem;
+}
+
+.wn-auth-role {
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .45rem;
+  border: 1px solid var(--wn-border);
+  border-radius: 12px;
+  background: rgba(255,255,255,.72);
+  color: var(--wn-emerald-dark);
+  font-size: .76rem;
+  font-weight: 750;
+  transition: transform .2s ease, border-color .2s ease, background .2s ease;
+}
+
+.wn-auth-role:hover {
+  transform: translateY(-2px);
+  border-color: rgba(212,175,107,.48);
+  background: var(--wn-gold-soft);
+}
+
+.wn-auth-back {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: center;
+}
+
+.wn-auth-back a,
+.wn-auth-back button {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  color: var(--wn-text-secondary);
+  font-size: .75rem;
+  font-weight: 650;
+}
+
+.wn-auth-back a:hover,
+.wn-auth-back button:hover {
+  color: var(--wn-emerald-dark);
+}
+
+.wn-public-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding-block: clamp(4rem, 8vw, 7rem);
+  color: white;
+  background:
+    radial-gradient(circle at 12% 18%, rgba(212,175,107,.16), transparent 25rem),
+    radial-gradient(circle at 88% 70%, rgba(86,179,166,.16), transparent 28rem),
+    linear-gradient(135deg, #05281f, #083b2e 48%, #0d6049);
+}
+
+.wn-public-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='108' height='108' viewBox='0 0 108 108'%3E%3Cg fill='none' stroke='%23d4af6b' stroke-opacity='.055' stroke-width='.8'%3E%3Cpath d='M54 10 98 54 54 98 10 54Z'/%3E%3Cpath d='M22 22h64v64H22Z'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.wn-public-hero__inner {
+  display: grid;
+  gap: 2rem;
+  align-items: center;
+}
+
+.wn-public-hero h1 {
+  max-width: 50rem;
+  margin-top: .8rem;
+  font-family: var(--wn-font-display);
+  font-size: clamp(2.6rem, 6vw, 5rem);
+  line-height: 1.18;
+  color: #fffdf7;
+  text-wrap: balance;
+}
+
+.wn-public-hero p {
+  max-width: 43rem;
+  margin-top: .8rem;
+  color: rgba(255,255,255,.64);
+  line-height: 1.85;
+}
+
+.wn-public-hero__art {
+  position: relative;
+  min-height: 260px;
+  display: grid;
+  place-items: center;
+}
+
+.wn-public-orbit {
+  position: absolute;
+  width: 15rem;
+  height: 15rem;
+  border-radius: 50%;
+  border: 1px solid rgba(212,175,107,.28);
+  box-shadow:
+    0 0 0 18px rgba(255,255,255,.02),
+    0 0 0 42px rgba(212,175,107,.025);
+}
+
+.wn-public-orbit__core {
+  width: 8rem;
+  height: 8rem;
+  display: grid;
+  place-items: center;
+  border-radius: 2rem;
+  transform: rotate(10deg);
+  border: 1px solid rgba(212,175,107,.28);
+  background: rgba(255,255,255,.06);
+  color: #efd28e;
+  box-shadow: 0 26px 70px -42px rgba(0,0,0,.65);
+  backdrop-filter: blur(10px);
+}
+
+.wn-public-orbit__core svg {
+  transform: rotate(-10deg);
+}
+
+.wn-public-section {
+  position: relative;
+  z-index: 1;
+  padding-block: clamp(3.5rem, 7vw, 6rem);
+}
+
+.wn-public-filter-panel {
+  margin-top: -2.1rem;
+  position: relative;
+  z-index: 4;
+  padding: 1rem;
+  border: 1px solid rgba(212,175,107,.2);
+  border-radius: 20px;
+  background: rgba(255,255,255,.90);
+  box-shadow: 0 24px 58px -46px rgba(7,53,40,.55);
+  backdrop-filter: blur(16px);
+}
+
+.wn-public-search {
+  position: relative;
+  flex: 1;
+}
+
+.wn-public-search svg {
+  position: absolute;
+  top: 50%;
+  inset-inline-start: 1rem;
+  transform: translateY(-50%);
+  color: var(--wn-gold-dark);
+}
+
+.wn-public-search input {
+  width: 100%;
+  min-height: 50px;
+  padding-inline: 3rem 1rem;
+  border: 1px solid var(--wn-border);
+  border-radius: 14px;
+  background: white;
+  outline: none;
+}
+
+.wn-public-search input:focus {
+  border-color: rgba(184,138,57,.54);
+  box-shadow: 0 0 0 4px rgba(212,175,107,.09);
+}
+
+.wn-public-filter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .65rem;
+  align-items: center;
+}
+
+.wn-public-filter-button {
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  padding: .65rem .9rem;
+  border-radius: 12px;
+  background: var(--wn-emerald);
+  color: white;
+  font-size: .78rem;
+  font-weight: 750;
+}
+
+.wn-public-filter-button:hover {
+  background: var(--wn-emerald-dark);
+}
+
+.wn-public-select {
+  min-height: 44px;
+  padding-inline: .8rem;
+  font-size: .75rem;
+}
+
+.wn-public-expanded-filters {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: .65rem;
+  margin-top: .9rem;
+  padding-top: .9rem;
+  border-top: 1px solid var(--wn-border);
+}
+
+.wn-public-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+.wn-course-card,
+.wn-teacher-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(212,175,107,.18);
+  border-radius: 22px;
+  background: rgba(255,255,255,.93);
+  box-shadow: 0 24px 56px -46px rgba(7,53,40,.48);
+  transition: transform .28s ease, box-shadow .28s ease, border-color .28s ease;
+}
+
+.wn-course-card:hover,
+.wn-teacher-card:hover {
+  transform: translateY(-6px);
+  border-color: rgba(212,175,107,.46);
+  box-shadow: 0 32px 70px -48px rgba(7,53,40,.58);
+}
+
+.wn-course-card__visual {
+  min-height: 156px;
+  position: relative;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 25% 20%, rgba(255,255,255,.78), transparent 27%),
+    linear-gradient(140deg, #dcefe7, #f4e5c8);
+  color: var(--wn-emerald-dark);
+}
+
+.wn-course-card:nth-child(3n+2) .wn-course-card__visual {
+  background:
+    radial-gradient(circle at 75% 18%, rgba(255,255,255,.78), transparent 27%),
+    linear-gradient(140deg, #f1e5cf, #d5ece5);
+}
+
+.wn-course-card:nth-child(3n) .wn-course-card__visual {
+  background:
+    radial-gradient(circle at 30% 18%, rgba(212,175,107,.18), transparent 32%),
+    linear-gradient(145deg, #0b4b3a, #073126);
+  color: #efd28e;
+}
+
+.wn-course-card__visual::after {
+  content: '';
+  position: absolute;
+  width: 8rem;
+  height: 9rem;
+  bottom: -5.5rem;
+  inset-inline-end: -1rem;
+  border: 1px solid rgba(212,175,107,.25);
+  border-radius: 6rem 6rem 0 0;
+}
+
+.wn-course-level {
+  position: absolute;
+  top: .85rem;
+  inset-inline-end: .85rem;
+  padding: .32rem .55rem;
+  border-radius: 999px;
+  background: rgba(255,255,255,.76);
+  color: var(--wn-emerald-dark);
+  border: 1px solid rgba(15,107,79,.1);
+  font-size: .65rem;
+  font-weight: 750;
+  backdrop-filter: blur(8px);
+}
+
+.wn-course-card__body,
+.wn-teacher-card__body {
+  padding: 1.15rem;
+}
+
+.wn-course-card h3,
+.wn-teacher-card h3 {
+  color: var(--wn-emerald-deep);
+  font-family: var(--wn-font-display);
+  font-size: 1.18rem;
+  line-height: 1.45;
+}
+
+.wn-course-card p {
+  margin-top: .45rem;
+  color: var(--wn-text-secondary);
+  font-size: .8rem;
+  line-height: 1.7;
+}
+
+.wn-course-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem .75rem;
+  margin-top: .85rem;
+  color: var(--wn-text-tertiary);
+  font-size: .7rem;
+}
+
+.wn-course-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+}
+
+.wn-course-card__footer {
+  margin-top: 1rem;
+  padding-top: .9rem;
+  border-top: 1px solid var(--wn-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+}
+
+.wn-course-price {
+  color: var(--wn-emerald-dark);
+  font-size: .9rem;
+  font-weight: 800;
+}
+
+.wn-course-card__link {
+  width: 2.35rem;
+  height: 2.35rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid rgba(212,175,107,.4);
+  color: var(--wn-gold-dark);
+}
+
+.wn-course-card__link:hover {
+  background: var(--wn-emerald-dark);
+  border-color: var(--wn-emerald-dark);
+  color: white;
+}
+
+.wn-public-track-banner {
+  margin-top: -1.5rem;
+  position: relative;
+  z-index: 4;
+  overflow: hidden;
+  padding: 1.1rem 1.2rem;
+  border-radius: 20px;
+  border: 1px solid rgba(212,175,107,.28);
+  background:
+    linear-gradient(95deg, rgba(5,38,29,.95), rgba(10,78,60,.91)),
+    url('/images/hero-wahy-namaa.jpg') center 48% / cover;
+  color: white;
+  box-shadow: 0 28px 60px -44px rgba(7,53,40,.7);
+}
+
+.wn-public-track-banner h2 {
+  color: white;
+  font-family: var(--wn-font-display);
+  font-size: 1.35rem;
+}
+
+.wn-public-track-banner p {
+  margin-top: .25rem;
+  color: rgba(255,255,255,.57);
+  font-size: .74rem;
+  line-height: 1.65;
+}
+
+.wn-teacher-card__media {
+  position: relative;
+  height: 238px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 35% 20%, rgba(255,255,255,.8), transparent 26%),
+    linear-gradient(140deg, #d7ece5, #efdfbd);
+}
+
+.wn-teacher-card__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.wn-teacher-price {
+  position: absolute;
+  bottom: .8rem;
+  inset-inline-end: .8rem;
+  padding: .32rem .55rem;
+  border-radius: 999px;
+  background: rgba(255,255,255,.84);
+  color: var(--wn-emerald-deep);
+  font-size: .66rem;
+  font-weight: 800;
+  backdrop-filter: blur(8px);
+}
+
+.wn-teacher-featured {
+  position: absolute;
+  top: .8rem;
+  inset-inline-start: .8rem;
+  padding: .32rem .55rem;
+  border-radius: 999px;
+  border: 1px solid rgba(212,175,107,.32);
+  background: rgba(7,53,40,.72);
+  color: #efd28e;
+  font-size: .64rem;
+  font-weight: 750;
+  backdrop-filter: blur(10px);
+}
+
+.wn-teacher-rating,
+.wn-teacher-detail {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+}
+
+.wn-teacher-rating {
+  margin-top: .45rem;
+  color: var(--wn-text-secondary);
+  font-size: .72rem;
+}
+
+.wn-teacher-rating svg {
+  color: var(--wn-gold-dark);
+}
+
+.wn-teacher-details {
+  display: grid;
+  gap: .42rem;
+  margin-top: .75rem;
+}
+
+.wn-teacher-detail {
+  color: var(--wn-text-secondary);
+  font-size: .72rem;
+}
+
+.wn-teacher-detail svg {
+  color: var(--wn-emerald);
+  flex: 0 0 auto;
+}
+
+.wn-teacher-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem;
+  margin-top: .8rem;
+}
+
+.wn-teacher-tags span {
+  padding: .28rem .5rem;
+  border-radius: 999px;
+  background: var(--wn-emerald-soft);
+  border: 1px solid var(--wn-border-mint);
+  color: var(--wn-emerald-dark);
+  font-size: .64rem;
+  font-weight: 700;
+}
+
+.wn-teacher-card__cta {
+  margin-top: 1rem;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: var(--wn-emerald);
+  color: white;
+  font-size: .76rem;
+  font-weight: 750;
+}
+
+.wn-teacher-card__cta:hover {
+  background: var(--wn-emerald-dark);
+}
+
+.wn-public-empty {
+  padding: 4rem 1rem;
+  text-align: center;
+  border: 1px dashed rgba(15,107,79,.16);
+  border-radius: 22px;
+  background: rgba(255,255,255,.65);
+}
+
+.wn-public-empty svg {
+  margin-inline: auto;
+  color: rgba(15,107,79,.38);
+}
+
+.wn-public-empty h3 {
+  margin-top: .8rem;
+  color: var(--wn-emerald-deep);
+  font-family: var(--wn-font-display);
+  font-size: 1.3rem;
+}
+
+.wn-public-empty p {
+  margin: .35rem auto 0;
+  max-width: 34rem;
+  color: var(--wn-text-secondary);
+  font-size: .8rem;
+}
+
+.wn-register-shell {
+  --athar-navy: var(--wn-emerald-deep);
+  --athar-gold: var(--wn-gold);
+  --athar-gold-light: #efd28e;
+  --athar-gold-muted: var(--wn-gold-dark);
+  --athar-gold-50: var(--wn-gold-soft);
+  --athar-text: var(--wn-text-primary);
+  --athar-text-muted: var(--wn-text-secondary);
+  min-height: 100vh;
+  position: relative;
+  padding: clamp(1rem, 3vw, 2.5rem);
+  background:
+    radial-gradient(circle at 8% 6%, rgba(212,175,107,.12), transparent 24rem),
+    radial-gradient(circle at 92% 14%, rgba(86,179,166,.11), transparent 27rem),
+    linear-gradient(180deg, #fffdf8, #f4f1e8 60%, #eef6f2);
+}
+
+.wn-register-brand-panel {
+  background:
+    linear-gradient(145deg, rgba(5,38,29,.92), rgba(8,72,55,.88)),
+    url('/images/hero-wahy-namaa.jpg') center 46% / cover !important;
+  border: 1px solid rgba(212,175,107,.25);
+  box-shadow: 0 34px 80px -48px rgba(7,53,40,.72);
+}
+
+.wn-register-form-card {
+  border: 1px solid rgba(212,175,107,.20);
+  border-radius: 24px;
+  background: rgba(255,255,255,.90);
+  box-shadow: 0 30px 70px -52px rgba(7,53,40,.46);
+  backdrop-filter: blur(16px);
+}
+
+.wn-register-trust {
+  margin-top: 1.4rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255,255,255,.10);
+  display: flex;
+  align-items: flex-start;
+  gap: .55rem;
+  color: rgba(255,255,255,.58);
+  font-size: .7rem;
+  line-height: 1.6;
+}
+
+.wn-register-trust svg {
+  color: #efd28e;
+  flex: 0 0 auto;
+  margin-top: .1rem;
+}
+
+@media (min-width: 768px) {
+  .wn-public-expanded-filters {
+    grid-template-columns: repeat(3, minmax(0,1fr));
+  }
+
+  .wn-public-grid {
+    grid-template-columns: repeat(2, minmax(0,1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .wn-auth-layout {
+    grid-template-columns: minmax(0, 1.08fr) minmax(430px, .92fr);
+  }
+
+  .wn-auth-visual {
+    display: block;
+  }
+
+  .wn-public-hero__inner {
+    grid-template-columns: minmax(0, 1.2fr) minmax(260px, .8fr);
+  }
+
+  .wn-public-expanded-filters {
+    grid-template-columns: repeat(4, minmax(0,1fr));
+  }
+
+  .wn-public-grid {
+    grid-template-columns: repeat(3, minmax(0,1fr));
+  }
+}
+
+@media (max-width: 767px) {
+  .wn-public-hero {
+    padding-block: 3.4rem 4.6rem;
+  }
+
+  .wn-public-hero__art {
+    min-height: 190px;
+  }
+
+  .wn-public-filter-panel,
+  .wn-public-track-banner {
+    margin-inline: .3rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wn-course-card,
+  .wn-teacher-card,
+  .wn-auth-role {
+    transition: none;
+  }
+
+  .wn-course-card:hover,
+  .wn-teacher-card:hover,
+  .wn-auth-role:hover {
+    transform: none;
+  }
+}
