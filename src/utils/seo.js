@@ -7,7 +7,7 @@ export const generateMetaTags = ({
   type = 'website'
 }) => {
   const defaultImage = '/images/hero-reference-prompt10.png';
-  const defaultUrl = 'https://wahy-wa-namaa.academy';
+  const defaultUrl = 'https://wahy-wa-namaa-academy.vercel.app';
   
   return {
     title: `${title} | أكاديمية وَحْيٌ وَنَمَاء`,
@@ -48,9 +48,9 @@ export const generateStructuredData = ({
       '@context': 'https://schema.org',
       '@type': 'EducationalOrganization',
       name: 'أكاديمية وَحْيٌ وَنَمَاء',
-      url: 'https://wahy-wa-namaa.academy',
-      logo: 'https://wahy-wa-namaa.academy/favicon.svg',
-      description: 'أكاديمية عالمية لتعليم القرآن الكريم والتجويد والقراءات بالسند المتصل — نتعلم القرآن، نحفظه، وننمو به.',
+      url: 'https://wahy-wa-namaa-academy.vercel.app',
+      logo: 'https://wahy-wa-namaa-academy.vercel.app/favicon.svg',
+      description: 'أكاديمية رقمية لتعلّم القرآن الكريم والحفظ والتجويد عبر برامج ومسارات تعليمية.',
       address: {
         '@type': 'PostalAddress',
         addressCountry: 'EG'
@@ -61,13 +61,13 @@ export const generateStructuredData = ({
       '@type': 'Person',
       name: data.name,
       image: data.image,
-      jobTitle: 'معلم قرآن كريم ومجاز بالسند',
+      jobTitle: 'معلم قرآن كريم',
       worksFor: {
         '@type': 'EducationalOrganization',
         name: 'أكاديمية وَحْيٌ وَنَمَاء'
       },
       description: data.bio,
-      knowsAbout: ['القرآن الكريم', 'التجويد', 'الحفظ', 'الإجازة بالسند المتصل'],
+      knowsAbout: ['القرآن الكريم', 'التجويد', 'الحفظ'],
       hasCredential: data.certificates,
       aggregateRating: data.rating ? {
         '@type': 'AggregateRating',
@@ -83,7 +83,7 @@ export const generateStructuredData = ({
       provider: {
         '@type': 'EducationalOrganization',
         name: 'أكاديمية وَحْيٌ وَنَمَاء',
-        url: 'https://wahy-wa-namaa.academy'
+        url: 'https://wahy-wa-namaa-academy.vercel.app'
       },
       educationalLevel: data.level,
       inLanguage: 'ar',
@@ -114,17 +114,17 @@ export const generateStructuredData = ({
 export const pageMeta = {
   home: {
     title: 'الرئيسية',
-    description: 'أكاديمية وَحْيٌ وَنَمَاء — نتعلم القرآن، نحفظه، وننمو به. منصة تعليم وتحفيظ القرآن الكريم مع نخبة المعلمين المجازين',
+    description: 'أكاديمية وَحْيٌ وَنَمَاء — نتعلم القرآن، نحفظه، وننمو به. منصة رقمية للتعلم والحفظ والتجويد.',
     keywords: 'وحي ونماء, تعليم القرآن, تحفيظ القرآن, تجويد, إجازة, لغة عربية, تعليم عن بعد, معلم قرآن'
   },
   teachers: {
     title: 'المعلمون',
-    description: 'اختر معلمك من نخبة من كبار المقرئين المجازين بالسند المتصل في أكاديمية وَحْيٌ وَنَمَاء',
+    description: 'استعرض ملفات المعلمين المنشورة واختر المعلم الأنسب لهدفك ومستواك في أكاديمية وَحْيٌ وَنَمَاء',
     keywords: 'معلم قرآن, معلم تجويد, معلم مجاز, سند متصل, اختيار معلم'
   },
   teacherProfile: (name) => ({
     title: `الملف الشخصي - ${name}`,
-    description: `تعرف على ${name} - معلم قرآن كريم مجاز في أكاديمية وَحْيٌ وَنَمَاء`,
+    description: `تعرف على ${name} وملفه التعليمي في أكاديمية وَحْيٌ وَنَمَاء`,
     keywords: `${name}, معلم قرآن, ملف شخصي, سيرة ذاتية`
   }),
   register: {

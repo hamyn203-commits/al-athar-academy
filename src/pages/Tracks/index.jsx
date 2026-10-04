@@ -141,7 +141,7 @@ export default function TracksPage() {
           url: '/tracks',
           title: isAr ? 'المسارات التعليمية التخصصية | أكاديمية وَحْيٌ وَنَمَاء' : 'Educational Tracks | Wahy Wa Namaa Academy',
           description: isAr
-            ? 'اكتشف المسارات التعليمية الثلاثة: مسار التحفيظ والمراجعة، مسار الإجازة وشرح المتون التجويدية بالسند المتصل، ومسار تأسيس الأطفال بالقاعدة النورانية ونور البيان.'
+            ? 'اكتشف مسارات التحفيظ والمراجعة، والتجويد المتقدم والإجازة عند الأهلية، وتأسيس الأطفال بخطوات تعليمية متدرجة.'
             : 'Explore the 3 educational tracks: Memorization & Revision, Ijazah & Tajweed Matn, and Kids Quranic Foundation.'
         }}
       />
@@ -221,7 +221,7 @@ export default function TracksPage() {
                       </h2>
                       <p className="text-slate-600 max-w-2xl text-base leading-relaxed">
                         {isAr
-                          ? 'نظام حفظ فريد يجمع بين التلقين الفردي المباشر ومنهجية الماضي والحاضر الأكيدة لضمان بقاء القرآن راسخاً في الصدر، تحت إشراف نخبة من مشايخ الأزهر الشريف.'
+                          ? 'خطة حفظ تجمع التلقين المباشر بالحفظ الجديد والمراجعة المنظمة تحت إشراف معلمين متخصصين.'
                           : 'A proven memorization paradigm combining 1-on-1 recitation with the dual Past & Present retention method.'}
                       </p>
                     </div>
@@ -378,7 +378,7 @@ export default function TracksPage() {
                         {isAr ? 'المسار الثاني — تاج الإسناد' : 'Track 2 — Sanad & Ijazah'}
                       </span>
                       <h2 className="text-3xl font-black text-slate-900">
-                        {isAr ? 'مسار الإجازة وشرح المتون التجويدية بالسند المتصل' : 'Ijazah & Tajweed Matn with Continuous Sanad'}
+                        {isAr ? 'مسار التجويد المتقدم والإجازة' : 'Advanced Tajweed & Ijazah'}
                       </h2>
                       <p className="text-slate-600 max-w-2xl text-base leading-relaxed">
                         {isAr
@@ -467,7 +467,7 @@ export default function TracksPage() {
                         <ul className="text-xs text-slate-700 space-y-2">
                           <li className="flex items-center gap-2">
                             <CheckCircle size={14} className="text-amber-600" />
-                            <span>{isAr ? 'شرح تحليلي معتمد بيت بيتاً' : 'Detailed verse-by-verse explanation'}</span>
+                            <span>{isAr ? 'شرح تحليلي متدرج بيتًا بيتًا' : 'Detailed verse-by-verse explanation'}</span>
                           </li>
                           <li className="flex items-center gap-2">
                             <CheckCircle size={14} className="text-amber-600" />
@@ -500,7 +500,7 @@ export default function TracksPage() {
                   <div className="relative z-10 space-y-8">
                     <div className="text-center max-w-2xl mx-auto space-y-2">
                       <span className="text-xs font-bold text-amber-400 uppercase tracking-widest">{isAr ? 'ضوابط الأمانة العلمية' : 'Academic & Spiritual Requirements'}</span>
-                      <h3 className="text-2xl md:text-3xl font-black">{isAr ? 'شروط نيل الإجازة بالسند المتصل' : 'Requirements for Continuous Sanad Ijazah'}</h3>
+                      <h3 className="text-2xl md:text-3xl font-black">{isAr ? 'شروط التقدّم لمسار الإجازة' : 'Requirements for the Ijazah path'}</h3>
                       <p className="text-slate-400 text-sm">
                         {isAr
                           ? 'السند أمانة دينية عظيمة، لا يُمنح إلا لمن استوفى الضوابط الموروثة عن أئمة القراءة جيلاً بعد جيل:'
@@ -523,8 +523,8 @@ export default function TracksPage() {
                           desc: isAr ? 'قراءة ختمة كاملة من الفاتحة إلى الناس على الشيخ المجاز جلسة بجلسة.' : 'Reciting the entire Quran orally to the Sheikh session by session.'
                         },
                         {
-                          title: isAr ? 'السند المتصل' : 'Continuous Chain',
-                          desc: isAr ? 'تسليم شهادة السند المتصل موثقة برقم قيد معتمد من شيوخ الأزهر.' : 'Issuing an authentic Sanad document certified by Azhar scholars.'
+                          title: isAr ? 'الإجازة عند الأهلية' : 'Ijazah when eligible',
+                          desc: isAr ? 'إصدار الإجازة أو السند يعتمد على أهلية الطالب، وتوفر معلم مجاز، واستيفاء شروط البرنامج.' : 'Issuing an Ijazah or Sanad depends on learner eligibility, an appropriately qualified teacher, and program requirements.'
                         }
                       ].map((cond, i) => (
                         <div key={i} className="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-2">
@@ -736,8 +736,8 @@ export default function TracksPage() {
             </h2>
             <p className="text-emerald-100 text-base max-w-2xl mx-auto">
               {isAr
-                ? 'جلسة تجريبية مجانية 100% لتحديد المستوى مع أحد شيوخ الأكاديمية المجازين، ووضع الخطة المخصصة لك أو لطفلك.'
-                : '100% free trial assessment session with certified Azhari teachers to tailor your exact learning roadmap.'}
+                ? 'جلسة تعريفية مجانية لتحديد المستوى وفهم الهدف واقتراح المسار المناسب لك أو لطفلك.'
+                : 'A free introductory assessment to understand your level and recommend a suitable learning path.'}
             </p>
             <div className="flex flex-wrap justify-center gap-4 pt-4">
               <Link

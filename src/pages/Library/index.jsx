@@ -42,7 +42,7 @@ const BOOK_CATS = [
   { id: 'tafseer', ar: 'شروح وتفاسير', en: 'Explanations & Tafseer' },
 ];
 
-// قاعدة بيانات الكتب والمتون والمصاحف المعتمدة بالأكاديمية
+// مواد تعليمية ثابتة متاحة داخل مكتبة الأكاديمية
 const DIGITAL_BOOKS = [
   {
     id: 'tuhfat-al-atfal',
@@ -53,7 +53,7 @@ const DIGITAL_BOOKS = [
     categoryName: 'متون التجويد',
     pages: 24,
     size: '2.4 MB',
-    downloads: 14250,
+    downloads: 0,
     featured: true,
     coverBg: 'from-amber-700 via-amber-800 to-amber-950',
     description: 'المنظومة الأشهر في أحكام التجويد للمبتدئين، محققة ومضبوطة بالشكل التام وفق رواية حفص عن عاصم مع شروحات ميسرة لأبيات المنظومة الـ 61.',
@@ -73,7 +73,7 @@ const DIGITAL_BOOKS = [
     categoryName: 'متون التجويد',
     pages: 36,
     size: '3.1 MB',
-    downloads: 18900,
+    downloads: 0,
     featured: true,
     coverBg: 'from-emerald-800 via-emerald-900 to-slate-950',
     description: 'العمدة الكبرى في علم التجويد ومخارج الحروف وصفاتها لطلاب الإجازة والسند المتصل، مشتملة على 107 أبيات محققة ومخرجة الألفاظ بدقة متناهية.',
@@ -92,10 +92,10 @@ const DIGITAL_BOOKS = [
     categoryName: 'متون التجويد',
     pages: 112,
     size: '6.8 MB',
-    downloads: 9800,
+    downloads: 0,
     featured: false,
     coverBg: 'from-blue-900 via-indigo-950 to-slate-950',
-    description: 'المنظومة اللامية الخالدة في القراءات السبع المتواترة (1173 بيتاً)، النسخة المعتمدة والمحققة لشيوخ الإقراء بالأزهر الشريف.',
+    description: 'منظومة الشاطبية في القراءات السبع، مقدمة هنا كمادة تعليمية للمراجعة والدراسة.',
     chapters: [
       { title: 'مطلع القصيدة', content: 'بَدَأْتُ بِبِسْمِ اللَّهِ فِي النَّظْمِ أَوَّلاَ * تَبَارَكَ رَحْمَانًا رَحِيمًا وَمَوْئِلاَ\nوَثَنَّيْتُ صَلَّى اللَّهُ رَبِّي عَلَى الرِّضَا * مُحَمَّدٍ الْمُهْدَى إِلَى النَّاسِ رَسُلاَ\nوَثَلَّثْتُ أَنَّ الحَمْدَ لِلَّهِ دَائِمًا * وَمَا لَيْسَ مَبْدُوءًا بِهِ كَانَ أَبْتَلاَ\nوَبَعْدُ فَحَبْلُ اللَّهِ فِينَا كِتَابُهُ * فَجَاهِدْ بِهِ حَبْلَ الْعِدَا مُتَحَبِّلاَ' },
       { title: 'رموز القراء السبعة', content: 'جَعَلْتُ أَبَا جَادٍ عَلَى كُلِّ قَارِئٍ * دَلِيلاً عَلَى الْمَنْظُومِ أَوَّلَ أَوَّلاَ\nفَنَافِعٌ الطِّيبُ حَوَتْهُ نَفَائِسٌ * وَكُنْ لِعَلِيِّ الْقَوْلِ فِي الصِّدْقِ مَوْئِلاَ\nوَدُونَكَ مَكِيًّا وَفِي الْبَصْرِ نَازِلاً * وَشَامِيُّهُمْ يَهْدِي وَفِي الكُوفِ أَنْجَلاَ' }
@@ -105,12 +105,12 @@ const DIGITAL_BOOKS = [
     id: 'mushaf-tajweed-hafs',
     title: 'مصحف التجويد الملون برواية حفص عن عاصم',
     titleEn: 'Colored Tajweed Mushaf (Hafs an Asim)',
-    author: 'مجمع التجويد وإشراف مشيخة المقارئ المصرية والأزهر',
+    author: 'نسخة تعليمية لأحكام التجويد',
     category: 'mushaf',
     categoryName: 'مصاحف التجويد',
     pages: 604,
     size: '85 MB',
-    downloads: 38400,
+    downloads: 0,
     featured: true,
     coverBg: 'from-teal-800 via-emerald-900 to-slate-900',
     description: 'المصحف الشريف كاملاً بالرسم العثماني مع الترميز الزمني اللوني لأحكام التجويد (المدود باللون الأحمر، الغنن بالأخضر، القلقلة بالأزرق، وعدم اللفظ بالرمادي).',
@@ -123,12 +123,12 @@ const DIGITAL_BOOKS = [
     id: 'mushaf-tajweed-warsh',
     title: 'مصحف التجويد الملون برواية ورش عن نافع (طريق الأزرق)',
     titleEn: 'Colored Tajweed Mushaf (Warsh an Nafi)',
-    author: 'بالضبط المغربي الأصيل المعتمد بالأزهر والمغرب العربي',
+    author: 'نسخة تعليمية برواية ورش عن نافع',
     category: 'mushaf',
     categoryName: 'مصاحف التجويد',
     pages: 604,
     size: '92 MB',
-    downloads: 16700,
+    downloads: 0,
     featured: false,
     coverBg: 'from-cyan-900 via-teal-950 to-slate-950',
     description: 'المصحف الشريف برواية ورش عن نافع المدني من طريق أبي يعقوب الأزرق، مبين فيه أحكام الإمالات، ترقيق الراءات، تغليظ اللامات، وتثليث البدل بالترميز اللوني.',
@@ -145,10 +145,10 @@ const DIGITAL_BOOKS = [
     categoryName: 'تأسيس الأطفال',
     pages: 80,
     size: '8.4 MB',
-    downloads: 42100,
+    downloads: 0,
     featured: true,
     coverBg: 'from-amber-600 via-orange-700 to-amber-900',
-    description: 'المنهج الأكثر فاعلية لتعليم الأطفال والبراعم والأعاجم القراءة العربية من خلال كلمات وآيات القرآن الكريم، متدرجاً من نطق الحروف المفردة إلى إتقان الترتيل.',
+    description: 'منهج تعليمي متدرج لتدريب الأطفال والمبتدئين على القراءة العربية من خلال كلمات وآيات القرآن الكريم، متدرجاً من نطق الحروف المفردة إلى إتقان الترتيل.',
     chapters: [
       { title: 'المرحلة الأولى: الحروف الهجائية بالفتح', content: 'أَ بَ تَ ثَ جَ حَ خَ دَ ذَ رَ زَ سَ شَ صَ ضَ طَ ظَ عَ غَ فَ قَ كَ لَ مَ نَ هـَ وَ يَ\nقاعدة القراءة: فتح الفم بالحرف مع عدم المبالغة أو التمطيط في الصوت.\nأمثلة قرآنية: أَمَرَ، بَرَزَ، تَرَكَ، ثَقَبَ، جَعَلَ، حَسَدَ، خَلَقَ، دَخَلَ، ذَكَرَ، رَزَقَ، سَجَدَ.' },
       { title: 'المرحلة الثانية: الحركات الثلاث والمدود', content: '1. حركة الكسر: إِ بِ تِ ثِ جِ حِ خِ... أمثلة: إِبِلِ، يَئِسَ، حَبِطَ، رَكِبَ.\n2. حركة الضم: أُ بُ تُ ثُ جُ حُ خُ... أمثلة: أُذِنَ، بُهِتَ، جُمِعَ، ذُكِرَ.\n3. حروف المد الطبيعي (الألف الساكنة المفتوح ما قبلها، الياء الساكنة المكسور ما قبلها، الواو الساكنة المضموم ما قبلها).' },
@@ -164,10 +164,10 @@ const DIGITAL_BOOKS = [
     categoryName: 'تأسيس الأطفال',
     pages: 48,
     size: '5.2 MB',
-    downloads: 31500,
+    downloads: 0,
     featured: false,
     coverBg: 'from-yellow-700 via-amber-800 to-yellow-950',
-    description: 'الطريقة المثلى لإكساب الطفل النطق الصوتي الفصيح لمخارج الحروف، وتدريب حباله الصوتية على مخارج الاستعلاء والاستفال برسم المصحف الشريف.',
+    description: 'طريقة تعليمية لتدريب الطفل على نطق الحروف ومخارجها، وتدريب حباله الصوتية على مخارج الاستعلاء والاستفال برسم المصحف الشريف.',
     chapters: [
       { title: 'الدرس الأول: حروف الهجاء المفردة', content: 'أَلِفْ، بَاءْ، تَاءْ، ثَاءْ، جِيمْ، حَاءْ، خَاءْ، دَالْ، ذَالْ، رَاءْ، زَايْ، سِينْ، شِينْ، صَادْ، ضَادْ، طَاءْ، ظَاءْ، عَيْنْ، غَيْنْ، فَاءْ، قَافْ، كَافْ، لاَمْ، مِيمْ، نُونْ، وَاوْ، هَاءْ، هَمْزَةْ، يَاءْ.' },
       { title: 'الدرس الثاني: حروف الهجاء المركبة', content: 'لاَ، أَلِفْ، لاَمْ أَلِفْ، بَا أَلِفْ، لاَمْ أَلِفْ، تَا أَلِفْ، ثَا أَلِفْ، نُونْ أَلِفْ، يَا أَلِفْ، بَا سِينْ، كَافْ بَا، كَافْ تَا.' }
@@ -182,7 +182,7 @@ const DIGITAL_BOOKS = [
     categoryName: 'تأسيس الأطفال',
     pages: 42,
     size: '12 MB',
-    downloads: 21300,
+    downloads: 0,
     featured: false,
     coverBg: 'from-rose-800 via-purple-900 to-slate-950',
     description: 'لوحات ورسوم كرتونية ملونة تشرح لأطفالنا أين تخرج الحروف العربية (الجوف، الحلق، اللسان، الشفتان، الخيشوم) مع تدريبات تفاعلية ممتعة.',
@@ -295,7 +295,7 @@ export default function LibraryPage() {
       <SEOHead
         page={{
           url: '/library',
-          title: isAr ? 'المكتبة الرقمية القرآنية والمتون المعتمدة | وَحْيٌ وَنَمَاء' : 'Digital Quranic Library & Texts | Wahy Wa Namaa',
+          title: isAr ? 'المكتبة التعليمية القرآنية | وَحْيٌ وَنَمَاء' : 'Digital Quranic Library & Texts | Wahy Wa Namaa',
           description: isAr
             ? 'مكتبة وَحْيٌ وَنَمَاء الرقمية: متون التجويد (تحفة الأطفال، الجزرية، الشاطبية)، مصاحف التجويد الملونة برواية حفص وورش، وكتب تأسيس الأطفال (نور البيان والقاعدة النورانية) مع إمكانية التحميل المباشر والقراءة.'
             : 'Download approved Tajweed texts (Tuhfa, Jazariyyah, Shatibiyyah), colored Tajweed Mushafs, and kids foundation books with free PDF download and preview.'
@@ -415,7 +415,7 @@ export default function LibraryPage() {
                         </span>
                         {book.featured && (
                           <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[var(--azhar-gold-bright)] text-slate-900 shadow-sm flex items-center gap-1">
-                            <Sparkles size={12} /> {isAr ? 'معتمد' : 'Verified'}
+                            <Sparkles size={12} /> {isAr ? 'مادة تعليمية' : 'Learning resource'}
                           </span>
                         )}
                       </div>
@@ -443,7 +443,7 @@ export default function LibraryPage() {
                           <FileText size={13} /> {book.pages} {isAr ? 'صفحة' : 'pages'}
                         </span>
                         <span className="flex items-center gap-1">
-                          <Download size={13} /> {book.downloads.toLocaleString()} {isAr ? 'تحميل' : 'downloads'}
+                          <Download size={13} /> {isAr ? 'تنزيل المادة' : 'Download material'}
                         </span>
                         <span className="font-mono bg-slate-100 px-2 py-0.5 rounded text-[10px]">
                           {book.size}
