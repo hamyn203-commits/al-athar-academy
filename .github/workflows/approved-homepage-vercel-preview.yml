@@ -1,9 +1,6 @@
 name: Approved Homepage Vercel Preview
 
 on:
-  push:
-    branches:
-      - design/approved-wahy-namaa-homepage
   workflow_dispatch:
 
 permissions:
