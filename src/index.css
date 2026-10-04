@@ -1,228 +1,115 @@
 /* ═══════════════════════════════════════════════════════════════════
-   Wahy Wa Namaa Academy — Base Styles (Prompt 10)
+   Wahy Wa Namaa Academy — base styles
+   Fonts are loaded once in index.html (font-display: swap).
+   Tokens: ./styles/brand.css · Components: ./styles/components.css
    ═══════════════════════════════════════════════════════════════════ */
 
-@import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Scheherazade+New:wght@400;700&family=Noto+Naskh+Arabic:wght@400;500;600;700&family=Cairo:wght@400;500;600;700;800&display=swap');
 @import "./styles/brand.css";
 @import "tailwindcss";
+@import "./styles/components.css";
 @config "../tailwind.config.js";
 
-/* ═══════════════════════════════════════════════════════════════════
-   الخطوط
-   ═══════════════════════════════════════════════════════════════════ */
-
+/* ── Base ─────────────────────────────────────────────────────────── */
 html {
   overflow-x: hidden;
   width: 100%;
   max-width: 100vw;
   scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  font-family: 'Cairo', system-ui, sans-serif;
-  line-height: 1.6;
-  color: var(--athar-text);
-  background: var(--athar-warm-white);
+  font-family: var(--wn-font-ui);
+  line-height: 1.7;
+  color: var(--wn-text-primary);
+  background: var(--wn-bg);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
   width: 100%;
   max-width: 100vw;
+  text-rendering: optimizeLegibility;
 }
 
-
-.font-naskh {
-  font-family: 'Noto Naskh Arabic', serif;
+::selection {
+  background: var(--wn-mint);
+  color: var(--wn-emerald-dark);
 }
 
-.font-amiri {
-  font-family: 'Amiri', serif;
-}
-
-.font-scheherazade {
-  font-family: 'Scheherazade New', serif;
-}
-
-/* ═══════════════════════════════════════════════════════════════════
-   تخطيط الصفحة — التعريف في brand.css
-   ═══════════════════════════════════════════════════════════════════ */
-
-/* ═══════════════════════════════════════════════════════════════════
-   عناوين الأقسام — أزهرية
-   ═══════════════════════════════════════════════════════════════════ */
-
-.section-label {
-  @apply inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold;
-  border-color: rgba(212, 168, 67, 0.4);
-  background: rgba(212, 168, 67, 0.08);
-  color: var(--azhar-gold-dark);
-}
-
-.section-label-dark {
-  border-color: rgba(212, 168, 67, 0.5);
-  background: rgba(212, 168, 67, 0.12);
-  color: var(--azhar-gold-bright);
-}
-
-.section-heading {
-  font-family: 'Amiri', serif;
-  @apply text-3xl md:text-4xl font-bold;
-  color: var(--azhar-green-deep);
-  line-height: 1.3;
-  letter-spacing: -0.01em;
-}
-
-.section-desc {
-  @apply mt-3 text-base md:text-lg max-w-2xl;
-  color: var(--athar-text-muted);
-}
-
-/* ═══════════════════════════════════════════════════════════════════
-   الأزرار — أزهرية
-   ═══════════════════════════════════════════════════════════════════ */
-
-.btn-primary {
-  @apply inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold text-white shadow-sm transition;
-  background: linear-gradient(135deg, var(--azhar-green) 0%, var(--azhar-green-deep) 100%);
-}
-.btn-primary:hover {
-  filter: brightness(1.08);
-  box-shadow: 0 8px 24px rgba(20, 83, 45, 0.35);
-}
-
-.btn-secondary {
-  @apply inline-flex items-center justify-center gap-2 rounded-xl border bg-white px-6 py-3 text-sm font-semibold shadow-sm transition;
-  border-color: var(--athar-cream-dark);
-  color: var(--azhar-green-deep);
-}
-.btn-secondary:hover {
-  border-color: rgba(212, 168, 67, 0.5);
-  background: rgba(212, 168, 67, 0.06);
-}
-
-.btn-ghost-light {
-  @apply inline-flex items-center justify-center gap-2 rounded-xl border border-white/25 bg-white/10 px-6 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20;
-}
-
-.btn-primary:focus-visible,
-.btn-secondary:focus-visible,
-.btn-ghost-light:focus-visible,
-.btn-gold:focus-visible {
-  outline: 2px solid var(--azhar-gold-leaf);
+:focus-visible {
+  outline: 2px solid var(--wn-focus);
   outline-offset: 2px;
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   البطاقات
-   ═══════════════════════════════════════════════════════════════════ */
-
-.card-modern {
-  @apply rounded-2xl border bg-white p-6 transition;
-  border-color: var(--athar-cream-dark);
-  box-shadow: var(--shadow-brand);
-}
-.card-modern:hover {
-  border-color: rgba(212, 168, 67, 0.35);
-  box-shadow: var(--shadow-brand-lg);
+img, svg, video {
+  max-width: 100%;
 }
 
-.card-dark {
-  @apply rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm;
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   حالات التحميل
-   ═══════════════════════════════════════════════════════════════════ */
+/* ── Font helpers ─────────────────────────────────────────────────── */
+.font-display { font-family: var(--wn-font-display); }
+.font-naskh { font-family: var(--wn-font-display-ar); }
+.font-amiri,
+.font-quran { font-family: var(--wn-font-quran); }
 
+/* ── Layout ───────────────────────────────────────────────────────── */
+.page-container {
+  width: 100%;
+  max-width: var(--wn-container);
+  margin-inline: auto;
+  padding-inline: var(--wn-gutter);
+}
+
+/* ── Legacy section helpers (mapped to the brand system) ──────────── */
+.section-label {
+  @apply inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold;
+  border-color: var(--wn-border-mint);
+  background: var(--wn-mint-soft);
+  color: var(--wn-emerald-dark);
+}
+
+/* ── Loading ──────────────────────────────────────────────────────── */
 .loading-overlay {
-  @apply fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-white/90;
+  @apply fixed inset-0 flex flex-col items-center justify-center gap-4;
+  z-index: var(--wn-z-overlay);
+  background: color-mix(in srgb, var(--wn-bg) 94%, transparent);
 }
 
 .spinner {
   @apply w-8 h-8 border-4 rounded-full animate-spin;
-  border-color: rgba(20, 83, 45, 0.2);
-  border-top-color: var(--azhar-green);
+  border-color: var(--wn-mint);
+  border-top-color: var(--wn-emerald);
 }
 
-.spinner-lg {
-  @apply w-12 h-12;
-}
+.spinner-lg { @apply w-12 h-12; }
 
-/* ═══════════════════════════════════════════════════════════════════
-   الحقول
-   ═══════════════════════════════════════════════════════════════════ */
-
+/* ── Inputs (legacy class → brand field) ──────────────────────────── */
 .input-field {
-  @apply w-full rounded-xl border bg-white px-4 py-2.5 text-sm outline-none transition;
-  border-color: var(--athar-cream-dark);
-  color: var(--athar-text);
+  @apply w-full px-4 py-2.5 text-sm outline-none;
+  min-height: var(--wn-control-md);
+  border: 1px solid var(--wn-border-strong);
+  border-radius: var(--wn-radius-sm);
+  background: var(--wn-surface);
+  color: var(--wn-text-primary);
+  transition: border-color var(--wn-dur-fast) var(--wn-ease), box-shadow var(--wn-dur-fast) var(--wn-ease);
 }
+.input-field::placeholder { color: var(--wn-text-tertiary); }
 .input-field:focus {
-  border-color: var(--azhar-green);
-  box-shadow: 0 0 0 3px rgba(22, 101, 52, 0.2);
+  border-color: var(--wn-emerald);
+  box-shadow: var(--wn-focus-ring);
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   أنماط مساعدة
-   ═══════════════════════════════════════════════════════════════════ */
-
-.section-title {
-  @apply text-3xl md:text-4xl font-bold tracking-tight text-center;
-  font-family: 'Amiri', serif;
-  color: var(--azhar-green-deep);
-}
-
-.section-subtitle {
-  @apply mt-3 text-base md:text-lg max-w-2xl text-center mx-auto mb-12;
-  color: var(--athar-text-muted);
-}
-
-.text-gradient {
-  @apply bg-clip-text text-transparent;
-  background-image: linear-gradient(135deg, var(--azhar-green-deep), var(--azhar-green), var(--azhar-gold-leaf));
-}
-
-.geo-pattern {
-  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23d4a843' fill-opacity='0.06'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-}
-
+/* ── Misc ─────────────────────────────────────────────────────────── */
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-
-/* ═══════════════════════════════════════════════════════════════════
-   عناصر الأقسام الأزهرية
-   ═══════════════════════════════════════════════════════════════════ */
-
-/* قسم أزهري — Azhari Section */
-.azhar-section {
-  position: relative;
-  overflow: hidden;
-}
-
-/* خلفية قسم أزهري */
-.azhar-section-bg {
-  background: linear-gradient(135deg, var(--azhar-green-deep) 0%, var(--athar-navy) 100%);
-}
-
-/* عنوان قسم أزهري */
-.azhar-section-title {
-  font-family: 'Amiri', serif;
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--azhar-gold-leaf);
-  text-align: center;
-  margin-bottom: 1rem;
-}
-
-/* وصف قسم أزهري */
-.azhar-section-desc {
-  text-align: center;
-  color: rgba(255, 255, 255, 0.8);
-  max-width: 640px;
-  margin: 0 auto 3rem;
-}
+.scrollbar-hide::-webkit-scrollbar { display: none; }

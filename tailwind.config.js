@@ -1,4 +1,17 @@
 /** @type {import('tailwindcss').Config} */
+/*
+ * Wahy Wa Namaa — Tailwind bridge.
+ * Brand colours live in src/styles/brand.css (single source of truth).
+ *  • `wn-*` colours map straight to CSS variables (theme-aware, opacity
+ *    modifiers like bg-wn-emerald/10 work via color-mix).
+ *  • `emerald` / `primary` / `teal` / `gold` scales are derived from the
+ *    approved palette so existing dashboard classes inherit the identity.
+ */
+const emerald = {
+  50: '#eef7f3', 100: '#d8ede6', 200: '#b1dbcb', 300: '#7fc0a9', 400: '#3f9a7b',
+  500: '#148060', 600: '#0f6b4f', 700: '#0c5a42', 800: '#0a4a37', 900: '#073528', 950: '#04241b',
+};
+
 export default {
   content: [
     "./index.html",
@@ -7,50 +20,85 @@ export default {
   theme: {
     extend: {
       colors: {
-        /* ── الألوان الأساسية ── */
-        primary: {
-          50: '#f0f7f2', 100: '#dcebe0', 200: '#bad8c3', 300: '#8ebd9c', 400: '#5c9a70',
-          500: '#166534', 600: '#14532d', 700: '#113f23', 800: '#0d2f1b', 900: '#0a2114',
+        wn: {
+          emerald: 'var(--wn-emerald)',
+          'emerald-dark': 'var(--wn-emerald-dark)',
+          'emerald-deep': 'var(--wn-emerald-deep)',
+          'emerald-hover': 'var(--wn-emerald-hover)',
+          'emerald-soft': 'var(--wn-emerald-soft)',
+          teal: 'var(--wn-teal)',
+          'teal-dark': 'var(--wn-teal-dark)',
+          mint: 'var(--wn-mint)',
+          'mint-soft': 'var(--wn-mint-soft)',
+          ivory: 'var(--wn-ivory)',
+          'ivory-deep': 'var(--wn-ivory-deep)',
+          gold: 'var(--wn-gold)',
+          'gold-dark': 'var(--wn-gold-dark)',
+          'gold-soft': 'var(--wn-gold-soft)',
+          sand: 'var(--wn-sand)',
+          text: 'var(--wn-text-primary)',
+          muted: 'var(--wn-text-secondary)',
+          subtle: 'var(--wn-text-tertiary)',
+          heading: 'var(--wn-heading)',
+          inverse: 'var(--wn-text-inverse)',
+          bg: 'var(--wn-bg)',
+          surface: 'var(--wn-surface)',
+          'surface-soft': 'var(--wn-surface-soft)',
+          'surface-mint': 'var(--wn-surface-mint)',
+          'surface-sunken': 'var(--wn-surface-sunken)',
+          border: 'var(--wn-border)',
+          'border-strong': 'var(--wn-border-strong)',
+          'border-mint': 'var(--wn-border-mint)',
+          danger: 'var(--wn-danger)',
         },
-        emerald: {
-          50: '#f0f7f2', 100: '#dcebe0', 200: '#bad8c3', 300: '#8ebd9c', 400: '#5c9a70',
-          500: '#166534', 600: '#14532d', 700: '#113f23', 800: '#0d2f1b', 900: '#0a2114',
+        primary: emerald,
+        emerald,
+        teal: {
+          50: '#effaf8', 100: '#d6f0eb', 200: '#b0e1d8', 300: '#82cdc1', 400: '#56b3a6',
+          500: '#3c998c', 600: '#2f8a7d', 700: '#276f65', 800: '#225a53', 900: '#1e4b45',
         },
         gold: {
-          50: '#fdfaf0', 100: '#faf2d9', 200: '#f2e3ad', 300: '#f0c75e', 400: '#d4a843',
-          500: '#c9a227', 600: '#a8861f', 700: '#856a18', 800: '#63500f', 900: '#42350a',
+          50: '#fbf7ee', 100: '#f6eedb', 200: '#ecdcb6', 300: '#e2c88f', 400: '#d4af6b',
+          500: '#c3964a', 600: '#a87c37', 700: '#8f6b2a', 800: '#6f5222', 900: '#57411d',
         },
-
-        /* ── ملاحظة معمارية: ممنوع تكرار الألوان الأزهرية هنا ──────────────
-           الألوان الأزهرية (azhar-green, gold-leaf, teal, cream-parchment …)
-           معرّفة كمتغيّرات CSS في src/styles/brand.css، ولكل واحدة منها نسخة
-           خاصة بالوضع الليلي تحت [data-theme="dark"].
-
-           قيم Tailwind ثابتة وقت البناء ولا تعرف شيئاً عن الوضع الليلي، فلو
-           عرّفناها هنا فكلاس مثل bg-azhar-green سيبقى بنفس اللون في الليل.
-
-           الاستخدام الصحيح:
-             bg-[var(--azhar-green)]     أو    كلاس جاهز من brand.css
-           ──────────────────────────────────────────────────────────────── */
       },
 
       fontFamily: {
-        arabic: ['Cairo', 'Tajawal', 'sans-serif'],
-        english: ['Inter', 'sans-serif'],
-        amiri: ['Amiri', 'serif'],
+        sans: ['var(--wn-font-ui)'],
+        display: ['var(--wn-font-display)'],
+        arabic: ['IBM Plex Sans Arabic', 'system-ui', 'sans-serif'],
+        english: ['Manrope', 'system-ui', 'sans-serif'],
         naskh: ['Noto Naskh Arabic', 'serif'],
-        scheherazade: ['Scheherazade New', 'serif'],
+        amiri: ['Amiri', 'serif'],
+        quran: ['Amiri', 'Noto Naskh Arabic', 'serif'],
+        playfair: ['Playfair Display', 'Georgia', 'serif'],
+      },
+
+      borderRadius: {
+        'wn-sm': 'var(--wn-radius-sm)',
+        'wn-md': 'var(--wn-radius-md)',
+        'wn-lg': 'var(--wn-radius-lg)',
+        'wn-xl': 'var(--wn-radius-xl)',
+      },
+
+      boxShadow: {
+        'wn-xs': 'var(--wn-shadow-xs)',
+        'wn-sm': 'var(--wn-shadow-sm)',
+        'wn-md': 'var(--wn-shadow-md)',
+        'wn-lg': 'var(--wn-shadow-lg)',
+        'wn-gold': 'var(--wn-shadow-gold)',
+      },
+
+      maxWidth: {
+        'wn-container': 'var(--wn-container)',
+        'wn-narrow': 'var(--wn-container-narrow)',
       },
 
       animation: {
-        'fade-in': 'fadeIn 0.5s ease-in-out',
-        'slide-up': 'slideUp 0.5s ease-out',
-        'slide-down': 'slideDown 0.5s ease-out',
-        'scale-in': 'scaleIn 0.3s ease-out',
-        'bounce-slow': 'bounce 2s infinite',
-        /* الحركات الأزهرية (goldShimmer / starRotate / goldPulse) معرّفة في
-           brand.css، وبلوك prefers-reduced-motion هناك يوقفها احتراماً
-           لإعدادات المستخدم. تكرارها هنا يتجاوز ذلك الحماية — لا تضفها. */
+        'fade-in': 'fadeIn 0.3s ease-out',
+        'slide-up': 'slideUp 0.35s ease-out',
+        'slide-down': 'slideDown 0.35s ease-out',
+        'scale-in': 'scaleIn 0.25s ease-out',
       },
 
       keyframes: {
@@ -59,22 +107,18 @@ export default {
           '100%': { opacity: '1' },
         },
         slideUp: {
-          '0%': { transform: 'translateY(20px)', opacity: '0' },
+          '0%': { transform: 'translateY(12px)', opacity: '0' },
           '100%': { transform: 'translateY(0)', opacity: '1' },
         },
         slideDown: {
-          '0%': { transform: 'translateY(-20px)', opacity: '0' },
+          '0%': { transform: 'translateY(-12px)', opacity: '0' },
           '100%': { transform: 'translateY(0)', opacity: '1' },
         },
         scaleIn: {
-          '0%': { transform: 'scale(0.9)', opacity: '0' },
+          '0%': { transform: 'scale(0.96)', opacity: '0' },
           '100%': { transform: 'scale(1)', opacity: '1' },
         },
       },
-
-      /* الظلال الأزهرية متغيّرات في brand.css:
-         var(--shadow-azhar) / var(--shadow-azhar-lg) / var(--shadow-azhar-gold)
-         لا تُكرّر هنا كـ shadow-azhar وأخواتها. */
     },
   },
   plugins: [],
