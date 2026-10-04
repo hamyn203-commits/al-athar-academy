@@ -5,6 +5,7 @@ on:
     branches:
       - design/approved-wahy-namaa-homepage
       - design/wahy-namaa-v2-immersive
+      - design/wahy-namaa-v3-final
   workflow_dispatch:
 
 permissions:
@@ -39,6 +40,7 @@ jobs:
           src/pages/NewLandingPage/sections/ProgramsSection.jsx
           src/pages/NewLandingPage/sections/WhyWahyNamaaSection.jsx
           src/pages/NewLandingPage/sections/ImmersiveLearningSection.jsx
+          src/pages/NewLandingPage/sections/ProductShowcaseSection.jsx
           src/pages/NewLandingPage/sections/LearningExperienceSection.jsx
           src/pages/NewLandingPage/sections/StudentJourneySection.jsx
           src/pages/NewLandingPage/sections/TeachersSection.jsx

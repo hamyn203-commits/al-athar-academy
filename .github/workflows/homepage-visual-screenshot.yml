@@ -6,6 +6,7 @@ on:
     branches:
       - design/approved-wahy-namaa-homepage
       - design/wahy-namaa-v2-immersive
+      - design/wahy-namaa-v3-final
 
 permissions:
   contents: read
