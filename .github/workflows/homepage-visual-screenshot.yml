@@ -1,4 +1,5 @@
 name: Homepage Visual Screenshot
+# Visual review helper for the approved design branch.
 
 on:
   push:
