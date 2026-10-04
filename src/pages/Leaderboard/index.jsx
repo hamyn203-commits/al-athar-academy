@@ -1,124 +1,54 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Trophy, Medal, Gift, Flame, Award } from 'lucide-react';
+import { Trophy, Medal, Gift, Sparkles } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import { localizedPath } from '../../lib/locale';
 import GlobalHeader from '../../components/GlobalHeader';
 import GlobalFooter from '../../components/GlobalFooter';
 import SEOHead from '../../components/SEOHead';
 import api from '../../lib/api';
+import '../../styles/public-experience.css';
 
 function RankRow({ rank, name, score, label, highlight }) {
-  const colors = ['text-yellow-500', 'text-gray-400', 'text-amber-700'];
-  return (
-    <div className={`flex items-center gap-4 p-4 rounded-xl border ${highlight ? 'border-emerald-400 bg-emerald-50' : 'border-gray-100 bg-white'}`}>
-      <span className="w-8 text-center font-bold">
-        {rank <= 3 ? <Medal className={colors[rank - 1]} size={22} /> : `#${rank}`}
-      </span>
-      <div className="flex-1 font-semibold">{name}</div>
-      <div className="text-right">
-        <span className="font-bold text-emerald-700">{score}</span>
-        <span className="text-xs text-gray-500 mr-1">{label}</span>
-      </div>
-    </div>
-  );
+  return <div className={'wn-rank-row '+(highlight?'is-highlight':'')}>
+    <span className="wn-rank-medal">{rank<=3?<Medal size={19}/>:('#'+rank)}</span>
+    <span className="wn-rank-name">{name}</span>
+    <span className="wn-rank-score">{score} <small>{label}</small></span>
+  </div>;
 }
 
-export default function LeaderboardPage() {
-  const { locale } = useI18n();
-  const isAr = locale === 'ar';
-  const [timeframe, setTimeframe] = useState('all-time');
-  const [points, setPoints] = useState([]);
-  const [referrals, setReferrals] = useState([]);
-  const [loading, setLoading] = useState(true);
+export default function LeaderboardPage(){
+  const { locale }=useI18n();
+  const isAr=locale==='ar';
+  const [timeframe,setTimeframe]=useState('all-time');
+  const [points,setPoints]=useState([]);
+  const [referrals,setReferrals]=useState([]);
+  const [loading,setLoading]=useState(true);
 
-  useEffect(() => {
+  useEffect(()=>{
     setLoading(true);
     Promise.all([
-      api.get(`/api/gamification/leaderboard/points/${timeframe}`),
-      api.get(`/api/referrals/leaderboard?limit=10${timeframe !== 'all-time' ? `&timeframe=${timeframe}` : ''}`),
-    ]).then(([p, r]) => {
-      setPoints((p.entries || []).map((e) => ({
-        rank: e.rank,
-        name: e.user?.name || (isAr ? 'طالب' : 'Student'),
-        score: e.score || 0,
-      })));
-      setReferrals(r.leaderboard || []);
-    }).catch(() => {}).finally(() => setLoading(false));
-  }, [timeframe, isAr]);
+      api.get('/api/gamification/leaderboard/points/'+timeframe),
+      api.get('/api/referrals/leaderboard?limit=10'+(timeframe!=='all-time'?'&timeframe='+timeframe:''))
+    ]).then(([p,r])=>{
+      setPoints((p.entries||[]).map((entry)=>({rank:entry.rank,name:entry.user?.name||(isAr?'طالب':'Student'),score:entry.score||0,highlight:entry.isCurrentUser})));
+      setReferrals(r.leaderboard||[]);
+    }).catch(()=>{setPoints([]);setReferrals([]);}).finally(()=>setLoading(false));
+  },[timeframe,isAr]);
 
-  return (
-    <>
-      <SEOHead page={{ url: '/leaderboard', title: isAr ? 'لوحة المتصدرين' : 'Leaderboard', description: isAr ? 'بطولات النقاط والسفراء' : 'Points and referral championships' }} />
-      <GlobalHeader />
-      <main className="min-h-screen bg-gradient-to-b from-amber-50 to-white py-16 px-4">
-        <div className="max-w-3xl mx-auto">
-          <div className="text-center mb-10">
-            <Trophy className="mx-auto text-amber-500 mb-4" size={52} />
-            <h1 className="text-4xl font-bold mb-2">{isAr ? 'بطولات الأكاديمية' : 'Academy Championships'}</h1>
-            <p className="text-gray-600">{isAr ? 'تنافس بالنقاط وادعُ أصدقاءك' : 'Compete with points and invite friends'}</p>
-          </div>
-
-          <div className="flex justify-center gap-2 mb-8">
-            {['monthly', 'weekly', 'all-time'].map((tf) => (
-              <button key={tf} type="button" onClick={() => setTimeframe(tf)}
-                className={`px-4 py-2 rounded-full text-sm font-medium ${timeframe === tf ? 'bg-amber-500 text-white' : 'bg-white border text-gray-600'}`}>
-                {tf === 'monthly' ? (isAr ? 'شهري' : 'Monthly') : tf === 'weekly' ? (isAr ? 'أسبوعي' : 'Weekly') : (isAr ? 'كل الأوقات' : 'All time')}
-              </button>
-            ))}
-          </div>
-
-          {timeframe === 'monthly' && !loading && (
-            <div className="mb-8 flex flex-wrap justify-center gap-3">
-              {[
-                { label: isAr ? '🥇 بطل الشهر' : '🥇 Champion', sub: isAr ? 'أعلى نقاط' : 'Top points' },
-                { label: isAr ? '🌟 سفير الشهر' : '🌟 Ambassador', sub: isAr ? 'أكثر دعوات' : 'Most invites' },
-                { label: isAr ? '📖 متعلم نشط' : '📖 Active learner', sub: isAr ? '5+ حصص' : '5+ sessions' },
-              ].map((b) => (
-                <div key={b.label} className="bg-white border border-amber-200 rounded-xl px-4 py-3 text-center min-w-[120px] shadow-sm">
-                  <Award className="mx-auto text-amber-500 mb-1" size={22} />
-                  <p className="font-bold text-sm">{b.label}</p>
-                  <p className="text-xs text-gray-500">{b.sub}</p>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {loading ? (
-            <div className="flex justify-center py-16"><div className="spinner spinner-lg" /></div>
-          ) : (
-            <div className="space-y-10">
-              <section>
-                <h2 className="font-bold text-xl mb-4 flex items-center gap-2"><Flame className="text-orange-500" size={22} /> {isAr ? 'نقاط التعلم' : 'Learning Points'}</h2>
-                <div className="space-y-2">
-                  {points.length === 0 ? (
-                    <p className="text-center text-gray-500 py-8">{isAr ? 'لا بيانات بعد — ابدأ بحصة أو دورة' : 'No data yet'}</p>
-                  ) : points.map((p) => (
-                    <RankRow key={p.rank} {...p} label={isAr ? 'نقطة' : 'pts'} />
-                  ))}
-                </div>
-              </section>
-
-              <section>
-                <h2 className="font-bold text-xl mb-4 flex items-center gap-2"><Gift className="text-emerald-600" size={22} /> {isAr ? 'سفراء الأكاديمية' : 'Academy Ambassadors'}</h2>
-                <div className="space-y-2">
-                  {referrals.length === 0 ? (
-                    <p className="text-center text-gray-500 py-8">{isAr ? 'لا دعوات بعد' : 'No invites yet'}</p>
-                  ) : referrals.map((r) => (
-                    <RankRow key={r.rank} rank={r.rank} name={r.name} score={r.invites} label={isAr ? 'دعوة' : 'invites'} />
-                  ))}
-                </div>
-                <p className="text-center mt-6">
-                  <Link to={localizedPath('/student/dashboard', locale)} className="text-emerald-600 font-medium hover:underline">
-                    {isAr ? 'احصل على رابطك من لوحة الطالب ←' : 'Get your link from student dashboard →'}
-                  </Link>
-                </p>
-              </section>
-            </div>
-          )}
-        </div>
-      </main>
-      <GlobalFooter />
-    </>
-  );
+  return <>
+    <SEOHead page={{url:'/leaderboard',title:isAr?'لوحة المتصدرين':'Leaderboard',description:isAr?'ترتيب النقاط والدعوات حسب البيانات المسجلة في النظام.':'Points and referral ranking based on system data.'}}/>
+    <GlobalHeader/>
+    <main className="wn-public-shell">
+      <section className="wn-public-hero"><div className="page-container wn-public-hero__inner"><div><span className="wn-auth-visual__eyebrow"><Sparkles size={14}/>{isAr?'التقدم والمشاركة':'PROGRESS & PARTICIPATION'}</span><h1>{isAr?'لوحة المتصدرين':'Leaderboard'}</h1><p>{isAr?'تعرض الصفحة بيانات النقاط والدعوات المسجلة فعليًا عند توفرها.':'The page shows recorded points and referral data when available.'}</p></div><div className="wn-public-hero__art" aria-hidden="true"><div className="wn-public-orbit"/><div className="wn-public-orbit__core"><Trophy size={46} strokeWidth={1.25}/></div></div></div></section>
+      <section className="wn-utility-wrap">
+        <div className="flex flex-wrap gap-2 mb-4">{[['all-time',isAr?'الكل':'All time'],['monthly',isAr?'هذا الشهر':'Monthly'],['weekly',isAr?'هذا الأسبوع':'Weekly']].map(([id,label])=><button key={id} type="button" onClick={()=>setTimeframe(id)} className={timeframe===id?'wn-btn wn-btn--primary wn-btn--sm':'wn-btn wn-btn--secondary wn-btn--sm'}>{label}</button>)}</div>
+        {loading?<div className="wn-public-empty">{isAr?'جاري التحميل...':'Loading...'}</div>:<div className="grid lg:grid-cols-2 gap-4">
+          <section className="wn-utility-card"><h2 className="font-[var(--wn-font-display)] text-xl text-[var(--wn-emerald-deep)] flex items-center gap-2"><Trophy size={20}/>{isAr?'النقاط':'Points'}</h2><div className="wn-rank-list mt-4">{points.length?points.map((row)=><RankRow key={row.rank} {...row} label={isAr?'نقطة':'pts'}/>):<p className="text-center py-8 text-sm text-[var(--wn-text-secondary)]">{isAr?'لا توجد بيانات نقاط بعد':'No points data yet'}</p>}</div></section>
+          <section className="wn-utility-card"><h2 className="font-[var(--wn-font-display)] text-xl text-[var(--wn-emerald-deep)] flex items-center gap-2"><Gift size={20}/>{isAr?'الدعوات':'Referrals'}</h2><div className="wn-rank-list mt-4">{referrals.length?referrals.map((r)=><RankRow key={r.rank} rank={r.rank} name={r.name} score={r.invites} label={isAr?'دعوة':'invites'}/>):<p className="text-center py-8 text-sm text-[var(--wn-text-secondary)]">{isAr?'لا توجد دعوات بعد':'No referral data yet'}</p>}</div><Link to={localizedPath('/student/dashboard',locale)} className="block mt-4 text-center text-xs font-bold text-[var(--wn-emerald-dark)]">{isAr?'افتح لوحة الطالب':'Open student dashboard'}</Link></section>
+        </div>}
+      </section>
+    </main>
+    <GlobalFooter/>
+  </>;
 }

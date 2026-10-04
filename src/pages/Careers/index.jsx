@@ -1,84 +1,21 @@
-import { useState, useEffect } from 'react';
-import { BriefcaseBusiness, MapPin, CheckCircle } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { BriefcaseBusiness, MapPin, CheckCircle, Sparkles } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import GlobalHeader from '../../components/GlobalHeader';
 import GlobalFooter from '../../components/GlobalFooter';
 import SEOHead from '../../components/SEOHead';
 import api from '../../lib/api';
+import '../../styles/public-experience.css';
 
-export default function Careers() {
-  const { locale } = useI18n();
-  const isAr = locale === 'ar';
-  const [jobs, setJobs] = useState([]);
-  const [selected, setSelected] = useState('');
-  const [form, setForm] = useState({ name: '', email: '', phone: '', coverLetter: '', experience: 0 });
-  const [loading, setLoading] = useState(false);
-  const [done, setDone] = useState(false);
-
-  useEffect(() => {
-    api.get('/api/careers/jobs').then((d) => setJobs(d.jobs || [])).catch(() => {});
-  }, []);
-
-  const submit = async (e) => {
-    e.preventDefault();
-    if (!selected) return;
-    setLoading(true);
-    try {
-      await api.post('/api/careers/apply', { ...form, position: selected, experience: Number(form.experience) });
-      setDone(true);
-    } catch (err) {
-      alert(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <>
-      <SEOHead page={{ url: '/careers', title: isAr ? 'التوظيف | وَحْيٌ وَنَمَاء' : 'Careers | Wahy Wa Namaa', description: isAr ? 'انضم لفريق أكاديمية وَحْيٌ وَنَمَاء' : 'Join Wahy Wa Namaa Academy team' }} />
-      <GlobalHeader />
-      <main className="min-h-screen bg-gradient-to-b from-blue-50 to-white py-16 px-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-10">
-            <BriefcaseBusiness className="mx-auto text-blue-600 mb-4" size={48} />
-            <h1 className="text-4xl font-bold mb-3">{isAr ? 'انضم إلينا' : 'Join Our Team'}</h1>
-            <p className="text-gray-600">{isAr ? 'فرص عمل عن بُعد — معلمين ومترجمين ومشرفين' : 'Remote opportunities — teachers, translators, supervisors'}</p>
-          </div>
-
-          <div className="space-y-4 mb-10">
-            {jobs.map((j) => (
-              <button key={j.id} type="button" onClick={() => { setSelected(j.id); setDone(false); }}
-                className={`w-full text-right p-6 rounded-2xl border-2 transition ${selected === j.id ? 'border-blue-500 bg-blue-50' : 'border-gray-100 bg-white hover:border-blue-200'}`}>
-                <h3 className="font-bold text-lg">{isAr ? j.title.ar : j.title.en}</h3>
-                <p className="text-sm text-gray-500 flex items-center gap-1 mt-1"><MapPin size={14} /> {j.type === 'remote' ? (isAr ? 'عن بُعد' : 'Remote') : j.type}</p>
-                <ul className="mt-3 text-sm text-gray-600 space-y-1">
-                  {(isAr ? j.requirements.ar : j.requirements.en).map((r) => <li key={r}>• {r}</li>)}
-                </ul>
-              </button>
-            ))}
-          </div>
-
-          {selected && !done && (
-            <form onSubmit={submit} className="bg-white rounded-2xl shadow-lg p-8 space-y-4">
-              <h2 className="font-bold text-xl mb-2">{isAr ? 'قدّم طلبك' : 'Apply Now'}</h2>
-              <input required placeholder={isAr ? 'الاسم' : 'Name'} className="input-field" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-              <input required type="email" placeholder={isAr ? 'البريد' : 'Email'} className="input-field" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-              <input required placeholder={isAr ? 'الهاتف' : 'Phone'} className="input-field" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-              <input type="number" min={0} placeholder={isAr ? 'سنوات الخبرة' : 'Years of experience'} className="input-field" value={form.experience} onChange={(e) => setForm({ ...form, experience: e.target.value })} />
-              <textarea required placeholder={isAr ? 'رسالة التقديم' : 'Cover letter'} className="input-field min-h-[120px]" value={form.coverLetter} onChange={(e) => setForm({ ...form, coverLetter: e.target.value })} />
-              <button type="submit" disabled={loading} className="btn-primary w-full !py-3">{loading ? '...' : isAr ? 'إرسال الطلب' : 'Submit Application'}</button>
-            </form>
-          )}
-
-          {done && (
-            <div className="bg-white rounded-2xl shadow-lg p-10 text-center">
-              <CheckCircle className="mx-auto text-emerald-600 mb-4" size={56} />
-              <h2 className="text-2xl font-bold">{isAr ? 'تم استلام طلبك!' : 'Application received!'}</h2>
-            </div>
-          )}
-        </div>
-      </main>
-      <GlobalFooter />
-    </>
-  );
+export default function Careers(){
+  const {locale}=useI18n();const isAr=locale==='ar';
+  const [jobs,setJobs]=useState([]);const [selected,setSelected]=useState('');const [form,setForm]=useState({name:'',email:'',phone:'',coverLetter:'',experience:0});const [loading,setLoading]=useState(false);const [done,setDone]=useState(false);
+  useEffect(()=>{api.get('/api/careers/jobs').then((d)=>setJobs(d.jobs||[])).catch(()=>setJobs([]));},[]);
+  const submit=async(e)=>{e.preventDefault();if(!selected)return;setLoading(true);try{await api.post('/api/careers/apply',{...form,position:selected,experience:Number(form.experience)});setDone(true);}catch(err){alert(err.message||(isAr?'تعذر إرسال الطلب':'Unable to submit application'));}finally{setLoading(false);}};
+  return <><SEOHead page={{url:'/careers',title:isAr?'الفرص المتاحة | وحي ونماء':'Careers | Wahy Wa Namaa',description:isAr?'الفرص المنشورة حاليًا في أكاديمية وحي ونماء.':'Currently published opportunities at Wahy Wa Namaa.'}}/><GlobalHeader/><main className="wn-public-shell">
+    <section className="wn-public-hero"><div className="page-container wn-public-hero__inner"><div><span className="wn-auth-visual__eyebrow"><Sparkles size={14}/>{isAr?'العمل معنا':'WORK WITH US'}</span><h1>{isAr?'الفرص المنشورة حاليًا':'Current opportunities'}</h1><p>{isAr?'نعرض هنا الوظائف التي ينشرها فريق الأكاديمية فعليًا، ويمكن التقديم عليها مباشرة من النموذج.':'We list roles published by the academy team and accept applications through the form.'}</p></div><div className="wn-public-hero__art" aria-hidden="true"><div className="wn-public-orbit"/><div className="wn-public-orbit__core"><BriefcaseBusiness size={46} strokeWidth={1.25}/></div></div></div></section>
+    <section className="wn-utility-wrap">{jobs.length===0?<div className="wn-public-empty"><BriefcaseBusiness size={44}/><h3>{isAr?'لا توجد فرص منشورة الآن':'No roles are currently published'}</h3></div>:<div className="grid gap-3">{jobs.map((job)=><button key={job.id} type="button" onClick={()=>{setSelected(job.id);setDone(false);}} className={'wn-career-card '+(selected===job.id?'is-active':'')}><h3>{isAr?job.title.ar:job.title.en}</h3><p className="flex items-center gap-1 mt-1"><MapPin size={13}/>{job.type==='remote'?(isAr?'عن بُعد':'Remote'):job.type}</p><ul className="mt-2">{(isAr?job.requirements.ar:job.requirements.en).map((req)=><li key={req}>• {req}</li>)}</ul></button>)}</div>}
+    {selected&&!done?<form onSubmit={submit} className="wn-utility-card mt-5 grid gap-3"><h2 className="font-[var(--wn-font-display)] text-xl text-[var(--wn-emerald-deep)]">{isAr?'إرسال طلب التقديم':'Submit application'}</h2><input required placeholder={isAr?'الاسم':'Name'} className="input-field" value={form.name} onChange={(e)=>setForm({...form,name:e.target.value})}/><input required type="email" placeholder={isAr?'البريد':'Email'} className="input-field" value={form.email} onChange={(e)=>setForm({...form,email:e.target.value})}/><input placeholder={isAr?'الهاتف':'Phone'} className="input-field" value={form.phone} onChange={(e)=>setForm({...form,phone:e.target.value})}/><input type="number" min="0" placeholder={isAr?'سنوات الخبرة':'Years of experience'} className="input-field" value={form.experience} onChange={(e)=>setForm({...form,experience:e.target.value})}/><textarea required placeholder={isAr?'رسالة التقديم':'Cover letter'} className="input-field min-h-[120px]" value={form.coverLetter} onChange={(e)=>setForm({...form,coverLetter:e.target.value})}/><button disabled={loading} className="wn-btn wn-btn--primary wn-btn--block">{loading?'...':(isAr?'إرسال الطلب':'Submit application')}</button></form>:null}
+    {done?<div className="wn-utility-card mt-5 text-center"><CheckCircle size={48} className="mx-auto text-[var(--wn-emerald)]"/><h2 className="mt-3 font-[var(--wn-font-display)] text-xl text-[var(--wn-emerald-deep)]">{isAr?'تم استلام طلبك':'Application received'}</h2></div>:null}</section>
+  </main><GlobalFooter/></>;
 }
