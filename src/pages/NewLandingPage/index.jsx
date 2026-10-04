@@ -7,7 +7,6 @@ import MobileStickyBar from '../../components/MobileStickyBar';
 import HeroSection from './sections/HeroSection';
 import ProgramsSection from './sections/ProgramsSection';
 import WhyWahyNamaaSection from './sections/WhyWahyNamaaSection';
-import LearningExperienceSection from './sections/LearningExperienceSection';
 import ImmersiveLearningSection from './sections/ImmersiveLearningSection';
 import ProductShowcaseSection from './sections/ProductShowcaseSection';
 import StudentJourneySection from './sections/StudentJourneySection';
@@ -44,7 +43,6 @@ export default function NewLandingPage() {
         <WhyWahyNamaaSection />
         <ImmersiveLearningSection />
         <ProductShowcaseSection />
-        <LearningExperienceSection />
         <StudentJourneySection />
         <TeachersSection />
         <TargetAudiencesSection />

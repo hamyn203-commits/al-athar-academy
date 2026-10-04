@@ -57,6 +57,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: wahy-namaa-homepage-screenshot
-          path: wahy-namaa-homepage.png
+          path: |
+            wahy-namaa-homepage.png
+            wahy-namaa-homepage-mobile.png
           if-no-files-found: error
           retention-days: 1
