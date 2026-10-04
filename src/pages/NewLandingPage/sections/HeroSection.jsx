@@ -83,18 +83,6 @@ export default function HeroSection() {
               <span>{isAr ? 'شاهد تجربة المنصة' : 'See the platform experience'}</span>
             </a>
           </div>
-
-          <div className="wn-approved-hero__trust">
-            {trustItems.map(({ icon: Icon, title, text }) => (
-              <div key={title} className="wn-approved-trust-item">
-                <span className="wn-approved-trust-item__icon"><Icon size={19} strokeWidth={1.8} /></span>
-                <span>
-                  <strong>{title}</strong>
-                  <small>{text}</small>
-                </span>
-              </div>
-            ))}
-          </div>
         </div>
 
         <div className="wn-approved-hero__visual">
@@ -131,6 +119,18 @@ export default function HeroSection() {
               <small>{isAr ? 'تعلم • مراجعة • إتقان' : 'Learn • review • master'}</small>
             </div>
           </div>
+        </div>
+
+        <div className="wn-approved-hero__trust wn-approved-hero__trust--wide">
+          {trustItems.map(({ icon: Icon, title, text }) => (
+            <div key={title} className="wn-approved-trust-item">
+              <span className="wn-approved-trust-item__icon"><Icon size={19} strokeWidth={1.8} /></span>
+              <span>
+                <strong>{title}</strong>
+                <small>{text}</small>
+              </span>
+            </div>
+          ))}
         </div>
       </div>
     </section>
