@@ -7,6 +7,9 @@ import {
   ArrowLeft,
   ArrowRight,
   CirclePlay,
+  AudioLines,
+  Route,
+  Sparkles,
 } from 'lucide-react';
 import LocalizedLink from '../../../components/LocalizedLink';
 
@@ -44,8 +47,9 @@ export default function HeroSection() {
 
       <div className="page-container wn-approved-hero__layout">
         <div className="wn-approved-hero__copy">
-          <span className="wn-approved-eyebrow">
-            {isAr ? 'تعليم قرآني أصيل' : 'AUTHENTIC QURAN LEARNING'}
+          <span className="wn-approved-eyebrow wn-approved-eyebrow--hero">
+            <Sparkles size={14} />
+            {isAr ? 'تعليم قرآني أصيل • تجربة رقمية حديثة' : 'AUTHENTIC QURAN LEARNING • MODERN EXPERIENCE'}
           </span>
 
           <h1 className="wn-approved-hero__title">
@@ -74,10 +78,10 @@ export default function HeroSection() {
               <ArrowIcon size={18} className="wn-btn__arrow" />
             </LocalizedLink>
 
-            <LocalizedLink to="/about" locale={locale} className="wn-btn wn-btn--secondary wn-btn--lg">
+            <a href="#platform-experience" className="wn-btn wn-btn--secondary wn-btn--lg">
               <CirclePlay size={19} />
-              <span>{isAr ? 'تعرّف على الأكاديمية' : 'Discover the Academy'}</span>
-            </LocalizedLink>
+              <span>{isAr ? 'شاهد تجربة المنصة' : 'See the platform experience'}</span>
+            </a>
           </div>
 
           <div className="wn-approved-hero__trust">
@@ -101,12 +105,32 @@ export default function HeroSection() {
             fetchPriority="high"
           />
           <div className="wn-approved-hero__shade" aria-hidden="true" />
+          <div className="wn-hero-orbit wn-hero-orbit--one" aria-hidden="true" />
+          <div className="wn-hero-orbit wn-hero-orbit--two" aria-hidden="true" />
 
           <aside className="wn-approved-verse-card">
             <span className="wn-approved-verse-card__ornament">✦</span>
             <p className="font-quran">وَرَتِّلِ الْقُرْآنَ تَرْتِيلًا</p>
             <span>{isAr ? 'المزمل: ٤' : 'Al-Muzzammil 73:4'}</span>
           </aside>
+
+          <div className="wn-hero-live-card wn-hero-live-card--recitation">
+            <span className="wn-hero-live-card__icon"><AudioLines size={16} /></span>
+            <div>
+              <strong>{isAr ? 'استوديو التلاوة' : 'Recitation Studio'}</strong>
+              <div className="wn-mini-wave" aria-hidden="true">
+                <i /><i /><i /><i /><i /><i /><i />
+              </div>
+            </div>
+          </div>
+
+          <div className="wn-hero-live-card wn-hero-live-card--path">
+            <span className="wn-hero-live-card__icon"><Route size={16} /></span>
+            <div>
+              <strong>{isAr ? 'مسار تعلم واضح' : 'Clear learning path'}</strong>
+              <small>{isAr ? 'تعلم • مراجعة • إتقان' : 'Learn • review • master'}</small>
+            </div>
+          </div>
         </div>
       </div>
     </section>

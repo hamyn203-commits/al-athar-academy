@@ -124,10 +124,10 @@ export default function ImmersiveLearningSection() {
           </div>
 
           <div className="wn-float-card wn-float-card--progress">
-            <div className="wn-progress-ring"><span>72%</span></div>
+            <div className="wn-progress-ring"><span>✦</span></div>
             <div>
               <strong>{isAr ? 'رحلة الحفظ' : 'Hifz journey'}</strong>
-              <small>{isAr ? 'تقدم مرئي ومستمر' : 'Visible ongoing progress'}</small>
+              <small>{isAr ? 'حفظ • مراجعة • تثبيت' : 'Memorize • review • retain'}</small>
             </div>
           </div>
 
