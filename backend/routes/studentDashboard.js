@@ -7,7 +7,6 @@ const User = require('../models/User');
 const { protect, authorize } = require('../middleware/auth');
 const { findMockUserById } = require('../mockStore');
 
-const isMockMode = !process.env.MONGODB_URI;
 const isDBConnected = () => mongoose.connection.readyState === 1;
 const isValidObjectId = (id) => id && mongoose.Types.ObjectId.isValid(id);
 
@@ -18,17 +17,17 @@ router.get('/profile', protect, authorize('student'), async (req, res) => {
       return res.json({
         user: {
           _id: req.user.id,
-          name: mockUser?.name || 'طالب الأثر',
+          name: mockUser?.name || 'طالب',
           email: mockUser?.email || req.user.email,
-          phone: mockUser?.phone || '+20100000000',
+          phone: mockUser?.phone || null,
           avatar: mockUser?.avatar || null,
           role: 'student',
-          createdAt: mockUser?.createdAt || new Date(),
+          createdAt: mockUser?.createdAt || null,
         },
         summary: {
-          totalSessions: 8,
-          completedSessions: 6,
-          pendingHomework: 1,
+          totalSessions: 0,
+          completedSessions: 0,
+          pendingHomework: 0,
         },
       });
     }
@@ -60,10 +59,10 @@ router.get('/stats', protect, authorize('student'), async (req, res) => {
     if (!isDBConnected() || !isValidObjectId(req.user.id)) {
       return res.json({
         pendingTrials: 0,
-        upcomingSessions: 2,
-        completedSessions: 6,
-        homeworkPending: 1,
-        homeworkSubmitted: 3,
+        upcomingSessions: 0,
+        completedSessions: 0,
+        homeworkPending: 0,
+        homeworkSubmitted: 0,
       });
     }
 
@@ -90,30 +89,7 @@ router.get('/stats', protect, authorize('student'), async (req, res) => {
 router.get('/teachers', protect, authorize('student'), async (req, res) => {
   try {
     if (!isDBConnected() || !isValidObjectId(req.user.id)) {
-      return res.json({
-        teachers: [
-          {
-            _id: 'mock-teacher-1',
-            name: 'الشيخ أحمد منصور',
-            avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
-            country: 'مصر',
-            rating: 4.9,
-            sessionCount: 8,
-            lastSession: new Date(),
-            canBookRegular: true,
-          },
-          {
-            _id: 'mock-teacher-2',
-            name: 'الشيخة فاطمة الزهراء',
-            avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150',
-            country: 'المغرب',
-            rating: 5.0,
-            sessionCount: 4,
-            lastSession: new Date(Date.now() - 86400000 * 3),
-            canBookRegular: true,
-          }
-        ]
-      });
+      return res.json({ teachers: [] });
     }
 
     const sessions = await Session.find({
@@ -158,30 +134,7 @@ router.get('/teachers', protect, authorize('student'), async (req, res) => {
 router.get('/evaluations', protect, authorize('student'), async (req, res) => {
   try {
     if (!isDBConnected() || !isValidObjectId(req.user.id)) {
-      return res.json({
-        evaluations: [
-          {
-            _id: 'mock-eval-1',
-            scheduledAt: new Date(Date.now() - 86400000 * 2),
-            teacher: {
-              _id: 'mock-teacher-1',
-              user: { name: 'الشيخ أحمد منصور', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150' }
-            },
-            teacherEvaluation: {
-              attendance: 5,
-              memorization: 5,
-              tajweed: 5,
-              behavior: 5,
-              commitment: 5,
-              overallNotes: 'ما شاء الله تبارك الله، تلاوة خاشعة وإتقان تام لأحكام النون الساكنة والميم والتنوين.',
-              notes: 'ما شاء الله تبارك الله، تلاوة خاشعة وإتقان تام لأحكام النون الساكنة والميم والتنوين.',
-              assignedHomework: [
-                { title: 'حفظ سورة مريم من آية 1 إلى 15', description: 'حفظ سورة مريم من آية 1 إلى 15 مع الترتيل', type: 'audio' }
-              ]
-            }
-          }
-        ]
-      });
+      return res.json({ evaluations: [] });
     }
 
     const sessions = await Session.find({
@@ -204,17 +157,7 @@ router.get('/evaluations', protect, authorize('student'), async (req, res) => {
 router.get('/recordings', protect, authorize('student'), async (req, res) => {
   try {
     if (!isDBConnected() || !isValidObjectId(req.user.id)) {
-      return res.json({
-        sessions: [
-          {
-            _id: 'mock-rec-1',
-            scheduledAt: new Date(Date.now() - 86400000 * 2),
-            teacher: { name: 'الشيخ أحمد منصور', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150' },
-            recordingUrl: 'https://example.com/recording.mp4',
-            duration: 45,
-          }
-        ]
-      });
+      return res.json({ sessions: [] });
     }
 
     const sessions = await Session.find({
