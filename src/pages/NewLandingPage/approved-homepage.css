@@ -3357,3 +3357,179 @@ html {
     order: 1;
   }
 }
+
+
+/* ==========================================================================
+   Motion final pass — restrained reveal, parallax and pointer tilt
+   ========================================================================== */
+
+.wn-motion-ready {
+  opacity: 0;
+  transform: translateY(26px);
+  transition:
+    opacity .72s cubic-bezier(.22,1,.36,1),
+    transform .72s cubic-bezier(.22,1,.36,1);
+  will-change: opacity, transform;
+}
+
+.wn-motion-ready.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.wn-approved-hero.wn-motion-ready {
+  transform: none;
+}
+
+.wn-approved-hero__visual {
+  --wn-tilt-x: 0deg;
+  --wn-tilt-y: 0deg;
+  --wn-parallax-y: 0px;
+  --wn-glow-x: 50%;
+  --wn-glow-y: 38%;
+  transform:
+    perspective(1100px)
+    translateY(var(--wn-parallax-y))
+    rotateX(var(--wn-tilt-x))
+    rotateY(var(--wn-tilt-y));
+  transition: transform .18s ease-out;
+}
+
+.wn-approved-hero__visual::marker {
+  content: '';
+}
+
+.wn-approved-hero__visual > img {
+  transition: transform .55s cubic-bezier(.22,1,.36,1), filter .55s ease;
+}
+
+.wn-approved-hero__visual:hover > img {
+  transform: scale(1.018);
+  filter: saturate(1.03) contrast(1.015);
+}
+
+.wn-approved-hero__shade {
+  background:
+    radial-gradient(circle at var(--wn-glow-x) var(--wn-glow-y), rgba(255,245,218,.16), transparent 24%),
+    linear-gradient(180deg, rgba(255,244,220,.02) 20%, rgba(7,53,40,.26) 100%),
+    linear-gradient(90deg, rgba(7,53,40,.03), transparent 42%, rgba(184,138,57,.12));
+  transition: background .16s linear;
+}
+
+.wn-motion-ready .wn-approved-program-card,
+.wn-motion-ready .wn-approved-why-card,
+.wn-motion-ready .wn-product-tile,
+.wn-motion-ready .wn-journey-card,
+.wn-motion-ready .wn-faculty-card,
+.wn-motion-ready .wn-faculty-principle,
+.wn-motion-ready .wn-audience-card {
+  opacity: 0;
+  transform: translateY(18px) scale(.985);
+  transition:
+    opacity .55s ease,
+    transform .62s cubic-bezier(.22,1,.36,1),
+    box-shadow .28s ease,
+    border-color .28s ease;
+}
+
+.wn-motion-ready.is-visible .wn-approved-program-card,
+.wn-motion-ready.is-visible .wn-approved-why-card,
+.wn-motion-ready.is-visible .wn-product-tile,
+.wn-motion-ready.is-visible .wn-journey-card,
+.wn-motion-ready.is-visible .wn-faculty-card,
+.wn-motion-ready.is-visible .wn-faculty-principle,
+.wn-motion-ready.is-visible .wn-audience-card {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.wn-motion-ready.is-visible .wn-approved-program-card:nth-child(2),
+.wn-motion-ready.is-visible .wn-approved-why-card:nth-child(2),
+.wn-motion-ready.is-visible .wn-product-tile:nth-child(2),
+.wn-motion-ready.is-visible .wn-journey-card:nth-child(2),
+.wn-motion-ready.is-visible .wn-audience-card:nth-child(2) {
+  transition-delay: 70ms;
+}
+
+.wn-motion-ready.is-visible .wn-approved-program-card:nth-child(3),
+.wn-motion-ready.is-visible .wn-approved-why-card:nth-child(3),
+.wn-motion-ready.is-visible .wn-product-tile:nth-child(3),
+.wn-motion-ready.is-visible .wn-journey-card:nth-child(3),
+.wn-motion-ready.is-visible .wn-audience-card:nth-child(3) {
+  transition-delay: 125ms;
+}
+
+.wn-motion-ready.is-visible .wn-approved-program-card:nth-child(4),
+.wn-motion-ready.is-visible .wn-product-tile:nth-child(4),
+.wn-motion-ready.is-visible .wn-journey-card:nth-child(4),
+.wn-motion-ready.is-visible .wn-audience-card:nth-child(4) {
+  transition-delay: 180ms;
+}
+
+.wn-motion-ready.is-visible .wn-approved-program-card:nth-child(5) {
+  transition-delay: 230ms;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .wn-btn {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .wn-btn::after {
+    content: '';
+    position: absolute;
+    top: -110%;
+    left: -45%;
+    width: 36%;
+    height: 320%;
+    transform: rotate(24deg);
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.24), transparent);
+    transition: left .5s ease;
+    pointer-events: none;
+  }
+
+  .wn-btn:hover::after {
+    left: 118%;
+  }
+}
+
+@media (max-width: 767px) {
+  .wn-motion-ready {
+    transform: translateY(16px);
+    transition-duration: .52s;
+  }
+
+  .wn-approved-hero__visual {
+    transform: none !important;
+  }
+
+  .wn-approved-hero__visual:hover > img {
+    transform: none;
+    filter: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wn-motion-ready,
+  .wn-motion-ready .wn-approved-program-card,
+  .wn-motion-ready .wn-approved-why-card,
+  .wn-motion-ready .wn-product-tile,
+  .wn-motion-ready .wn-journey-card,
+  .wn-motion-ready .wn-faculty-card,
+  .wn-motion-ready .wn-faculty-principle,
+  .wn-motion-ready .wn-audience-card {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+
+  .wn-approved-hero__visual,
+  .wn-approved-hero__visual > img,
+  .wn-approved-hero__shade,
+  .wn-btn::after {
+    transform: none !important;
+    transition: none !important;
+    animation: none !important;
+  }
+}

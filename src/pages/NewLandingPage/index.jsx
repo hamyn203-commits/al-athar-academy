@@ -3,6 +3,7 @@ import GlobalHeader from '../../components/GlobalHeader';
 import GlobalFooter from '../../components/GlobalFooter';
 import SEOHead from '../../components/SEOHead';
 import MobileStickyBar from '../../components/MobileStickyBar';
+import HomepageMotionController from './HomepageMotionController';
 
 import HeroSection from './sections/HeroSection';
 import ProgramsSection from './sections/ProgramsSection';
@@ -37,6 +38,7 @@ export default function NewLandingPage() {
         }}
       />
       <GlobalHeader />
+      <HomepageMotionController />
       <main className="wn-approved-home">
         <HeroSection />
         <ProgramsSection />
