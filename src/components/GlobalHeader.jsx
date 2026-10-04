@@ -42,7 +42,7 @@ export default function GlobalHeader() {
     <header className="wn-approved-header">
       <div className="page-container">
         <div className="wn-approved-header__row">
-          <BrandLogo to={lp('/')} size="md" />
+          <BrandLogo to={lp('/')} size={52} />
 
           <nav className="wn-approved-header__nav" aria-label={isAr ? 'التنقل الرئيسي' : 'Main navigation'}>
             {navLinks.map((link) => (

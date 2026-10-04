@@ -7,9 +7,9 @@ import MobileStickyBar from '../../components/MobileStickyBar';
 import HeroSection from './sections/HeroSection';
 import ProgramsSection from './sections/ProgramsSection';
 import WhyWahyNamaaSection from './sections/WhyWahyNamaaSection';
-import TeachersSection from './sections/TeachersSection';
 import LearningExperienceSection from './sections/LearningExperienceSection';
 import StudentJourneySection from './sections/StudentJourneySection';
+import TeachersSection from './sections/TeachersSection';
 import TargetAudiencesSection from './sections/TargetAudiencesSection';
 import CTASection from './sections/CTASection';
 
@@ -40,9 +40,9 @@ export default function NewLandingPage() {
         <HeroSection />
         <ProgramsSection />
         <WhyWahyNamaaSection />
-        <TeachersSection />
         <LearningExperienceSection />
         <StudentJourneySection />
+        <TeachersSection />
         <TargetAudiencesSection />
         <CTASection />
       </main>
