@@ -1,0 +1,59 @@
+name: Homepage Visual Screenshot
+
+on:
+  push:
+    branches:
+      - design/approved-wahy-namaa-homepage
+
+permissions:
+  contents: read
+
+jobs:
+  screenshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npx vite build
+
+      - name: Install Playwright Chromium
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Start preview server
+        run: |
+          npx vite preview --host 127.0.0.1 --port 4173 > /tmp/vite-preview.log 2>&1 &
+          echo $! > /tmp/vite-preview.pid
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173/ar >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/vite-preview.log
+          exit 1
+
+      - name: Capture full-page Arabic homepage
+        run: |
+          npx playwright screenshot             --browser chromium             --full-page             --viewport-size "1600,1000"             --wait-for-timeout 5000             http://127.0.0.1:4173/ar             wahy-namaa-homepage.png
+
+      - name: Upload screenshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: wahy-namaa-homepage-screenshot
+          path: wahy-namaa-homepage.png
+          if-no-files-found: error
+          retention-days: 1
