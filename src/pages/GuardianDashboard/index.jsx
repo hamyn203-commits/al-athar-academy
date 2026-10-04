@@ -161,14 +161,14 @@ export default function GuardianDashboard() {
         <div className="space-y-6">
 
           {/* Children Selector Top Bar */}
-          <div className="bg-gradient-to-r from-emerald-900 via-teal-900 to-emerald-800 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+          <div className="wn-dashboard-hero-card rounded-2xl p-6 text-white relative overflow-hidden">
             <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
             
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <ShieldCheck className="text-emerald-400" size={20} />
-                  <span className="text-emerald-200 text-sm font-arabic">بوابة أولياء الأمور المعتمدة</span>
+                  <span className="text-emerald-200 text-sm font-arabic">بوابة أولياء الأمور</span>
                 </div>
                 <h2 className="text-2xl font-bold font-arabic">
                   مرحباً بك، {user?.name || 'ولي الأمر الكريم'}
@@ -224,20 +224,20 @@ export default function GuardianDashboard() {
           {/* Quick Metrics of the Selected Child */}
           {currentChild ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm flex items-center gap-3">
+              <div className="wn-dashboard-mini-card rounded-xl p-4 border flex items-center gap-3">
                 <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
                   <TrendingUp size={24} />
                 </div>
                 <div>
                   <p className="text-xs text-gray-500 font-arabic">نسبة الحضور</p>
-                  <p className="text-xl font-bold text-gray-800">{currentChild.attendance?.rate ?? 100}%</p>
+                  <p className="text-xl font-bold text-gray-800">{currentChild.attendance?.rate != null ? `${currentChild.attendance.rate}%` : '—'}</p>
                   <span className="text-[11px] text-emerald-600 font-medium">
                     {currentChild.attendance?.attended || 0} من {currentChild.attendance?.total || 0} حصة
                   </span>
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm flex items-center gap-3">
+              <div className="wn-dashboard-mini-card rounded-xl p-4 border flex items-center gap-3">
                 <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
                   <Award size={24} />
                 </div>
@@ -248,32 +248,32 @@ export default function GuardianDashboard() {
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm flex items-center gap-3">
+              <div className="wn-dashboard-mini-card rounded-xl p-4 border flex items-center gap-3">
                 <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
                   <BookOpen size={24} />
                 </div>
                 <div>
                   <p className="text-xs text-gray-500 font-arabic">المسار التعليمي</p>
                   <p className="text-sm font-bold text-gray-800 truncate">
-                    {currentChild.studentProfile?.plan || 'مسار التحفيظ والمراجعة'}
+                    {currentChild.studentProfile?.plan || 'غير محدد'}
                   </p>
                   <span className="text-[11px] text-blue-600 font-medium">
-                    المستوى: {currentChild.studentProfile?.level || 'مبتدئ'}
+                    المستوى: {currentChild.studentProfile?.level || 'غير محدد'}
                   </span>
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm flex items-center gap-3">
+              <div className="wn-dashboard-mini-card rounded-xl p-4 border flex items-center gap-3">
                 <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
                   <Sparkles size={24} />
                 </div>
                 <div>
                   <p className="text-xs text-gray-500 font-arabic">السورة الحالية</p>
                   <p className="text-sm font-bold text-gray-800 truncate">
-                    {currentChild.studentProfile?.currentSurah || 'سورة الفاتحة'}
+                    {currentChild.studentProfile?.currentSurah || 'غير محددة'}
                   </p>
                   <span className="text-[11px] text-purple-600 font-medium">
-                    {currentChild.circle ? currentChild.circle.name : 'حلقة خاصة'}
+                    {currentChild.circle ? currentChild.circle.name : 'لم تُحدد حلقة بعد'}
                   </span>
                 </div>
               </div>
@@ -295,7 +295,7 @@ export default function GuardianDashboard() {
           )}
 
           {/* Tab Navigation */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+          <div className="wn-dashboard-surface">
             <TabBar
               tabs={[
                 { id: 'overview', label: 'نظرة عامة والحصص القادمة' },

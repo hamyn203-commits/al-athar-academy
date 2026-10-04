@@ -222,12 +222,12 @@ export default function TeacherDashboard() {
             <StatCard label="التقييم" value={stats.averageRating?.toFixed?.(1) || '0'} icon={Star} color="orange" />
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div className="wn-dashboard-surface">
             <TabBar tabs={tabs} active={tab} onChange={setTab} />
 
             {tab === 'account' && teacher && (
               <div className="space-y-6">
-                <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-5">
+                <div className="wn-dashboard-gold-card rounded-2xl p-5">
                 <div className="flex justify-between items-center mb-2">
                   <div className="flex items-center gap-2"><Wallet className="text-emerald-600" /><h3 className="font-bold">محفظتي</h3></div>
                   <button type="button" onClick={() => setAiModal(true)} className="text-sm flex items-center gap-1 text-purple-600 hover:underline">

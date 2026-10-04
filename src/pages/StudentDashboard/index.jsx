@@ -361,7 +361,7 @@ export default function StudentDashboard() {
           </div>
 
           {referral?.code && (
-            <div className="mb-6 bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-xl p-5 flex flex-wrap items-center justify-between gap-4">
+            <div className="wn-dashboard-gold-card mb-6 rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4">
               <div>
                 <p className="font-bold flex items-center gap-2 text-orange-900"><Gift size={20} /> {locale === 'id' ? 'Program Afiliasi' : locale === 'ar' ? 'برنامج السفراء' : 'Referral Program'}</p>
                 <p className="text-sm text-orange-800 mt-1">
@@ -381,7 +381,7 @@ export default function StudentDashboard() {
 
           {/* Live Session Launchpad Card */}
           {nextActiveSession && (
-            <div className="mb-6 bg-gradient-to-r from-emerald-950 via-teal-900 to-emerald-900 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden border border-emerald-700/40">
+            <div className="wn-dashboard-hero-card mb-6 rounded-2xl p-6 text-white relative overflow-hidden">
               <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 relative z-10">
                 <div className="space-y-2">
@@ -390,7 +390,7 @@ export default function StudentDashboard() {
                     <span>{locale === 'id' ? 'Sesi Langsung Berikutnya' : locale === 'ar' ? 'حلقتك القرآنية القادمة المباشرة' : 'Your Next Live Session'}</span>
                   </div>
                   <h3 className="text-xl font-bold font-arabic">
-                    {locale === 'id' ? `Sesi bersama ${nextActiveSession.teacher?.user?.name || nextActiveSession.teacher?.name || 'Guru Al-Quran'}` : locale === 'ar' ? `جلسة التسميع مع ${nextActiveSession.teacher?.user?.name || nextActiveSession.teacher?.name || 'الشيخ المقرئ'}` : `Session with ${nextActiveSession.teacher?.user?.name || nextActiveSession.teacher?.name || 'Quran Tutor'}`}
+                    {locale === 'id' ? `Sesi bersama ${nextActiveSession.teacher?.user?.name || nextActiveSession.teacher?.name || 'Guru Al-Quran'}` : locale === 'ar' ? `جلسة التسميع مع ${nextActiveSession.teacher?.user?.name || nextActiveSession.teacher?.name || 'المعلم'}` : `Session with ${nextActiveSession.teacher?.user?.name || nextActiveSession.teacher?.name || 'Quran Tutor'}`}
                   </h3>
                   <div className="text-emerald-100/80 text-sm flex items-center gap-3 font-arabic">
                     <span className="flex items-center gap-1.5"><Calendar size={15} /> {new Date(nextActiveSession.scheduledAt).toLocaleDateString(locale === 'id' ? 'id-ID' : 'ar-EG', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
@@ -404,14 +404,14 @@ export default function StudentDashboard() {
                     className="px-6 py-3.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-stone-950 font-black rounded-xl text-sm transition-all shadow-lg shadow-amber-950/40 flex items-center gap-2 active:scale-95"
                   >
                     <Video size={18} />
-                    <span>{locale === 'id' ? 'Masuk Kelas Sekarang 🚀' : locale === 'ar' ? 'ادخل حلقتك الآن مع الشيخ 🚀' : 'Join Live Class Now 🚀'}</span>
+                    <span>{locale === 'id' ? 'Masuk Kelas Sekarang 🚀' : locale === 'ar' ? 'ادخل حلقتك الآن' : 'Join Live Class Now 🚀'}</span>
                   </a>
                 </div>
               </div>
             </div>
           )}
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div className="wn-dashboard-surface">
             <TabBar tabs={tabs} active={tab} onChange={setTab} />
 
             {tab === 'account' && (
