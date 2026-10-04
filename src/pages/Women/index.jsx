@@ -7,6 +7,7 @@ import GlobalHeader from '../../components/GlobalHeader';
 import GlobalFooter from '../../components/GlobalFooter';
 import SEOHead from '../../components/SEOHead';
 import api from '../../lib/api';
+import '../../styles/public-experience.css';
 
 export default function WomenPortal() {
   const { locale } = useI18n();
@@ -32,9 +33,9 @@ export default function WomenPortal() {
     <>
       <SEOHead page={{ url: '/women', title: isAr ? 'أكاديمية النساء | وَحْيٌ وَنَمَاء' : 'Women Academy | Wahy Wa Namaa', description: isAr ? 'قسم مستقل — معلمات وطالبات فقط' : 'Dedicated section — female teachers and students only' }} />
       <GlobalHeader />
-      <main className="min-h-screen bg-gradient-to-b from-purple-50 to-white">
-        <section className="py-16 px-4 text-center">
-          <ShieldCheck className="mx-auto text-purple-600 mb-4" size={52} />
+      <main className="wn-program-shell">
+        <section className="wn-program-hero page-container">
+          <div className="wn-program-hero__icon"><ShieldCheck size={40} /></div>
           <h1 className="text-4xl font-bold mb-3">{isAr ? 'أكاديمية النساء' : 'Women Academy'}</h1>
           <p className="text-gray-600 max-w-xl mx-auto mb-6">{isAr ? 'بيئة آمنة ومستقلة — معلمات متخصصات في تعليم القرآن للنساء والبنات' : 'Safe dedicated environment — female teachers specialized in Quran for women and girls'}</p>
           <div className="flex justify-center gap-8 text-sm">
@@ -50,7 +51,7 @@ export default function WomenPortal() {
           ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {courses.map((c) => (
-                <Link key={c._id} to={localizedPath(`/courses/${c.slug}`, locale)} className="bg-white rounded-2xl shadow-md p-5 hover:shadow-lg transition">
+                <Link key={c._id} to={localizedPath(`/courses/${c.slug}`, locale)} className="wn-program-card p-5">
                   <BookOpen className="text-purple-600 mb-3" size={28} />
                   <h3 className="font-bold mb-1">{isAr ? c.title?.ar : (c.title?.en || c.title?.ar)}</h3>
                   <p className="text-sm text-gray-600 line-clamp-2">{isAr ? c.description?.ar : (c.description?.en || c.description?.ar)}</p>
@@ -70,14 +71,14 @@ export default function WomenPortal() {
           ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {teachers.map((t) => (
-                <Link key={t._id} to={localizedPath(`/teachers/${t._id}`, locale)} className="bg-white rounded-2xl shadow-md p-6 hover:shadow-lg transition">
+                <Link key={t._id} to={localizedPath(`/teachers/${t._id}`, locale)} className="wn-program-card p-6">
                   <div className="flex items-center gap-4 mb-4">
                     <div className="w-14 h-14 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-bold text-xl">
                       {(t.user?.name || t.personalInfo?.fullName || '?')[0]}
                     </div>
                     <div>
                       <h3 className="font-bold">{t.user?.name || t.personalInfo?.fullName}</h3>
-                      <p className="text-sm text-gray-500 flex items-center gap-1"><Star size={14} className="text-yellow-500 fill-yellow-500" /> {t.rating?.average?.toFixed(1) || '5.0'}</p>
+                      <p className="text-sm text-gray-500 flex items-center gap-1"><Star size={14} className="text-yellow-500 fill-yellow-500" /> {Number(t.rating?.count || 0) > 0 ? t.rating?.average?.toFixed(1) : (isAr ? 'بدون تقييم بعد' : 'No ratings yet')}</p>
                     </div>
                   </div>
                   <p className="text-sm text-gray-600">{t.personalInfo?.country} · {t.quranInfo?.teachingExperience || 0} {isAr ? 'سنوات' : 'yrs'}</p>

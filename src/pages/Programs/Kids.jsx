@@ -7,6 +7,7 @@ import GlobalHeader from '../../components/GlobalHeader';
 import GlobalFooter from '../../components/GlobalFooter';
 import SEOHead from '../../components/SEOHead';
 import api from '../../lib/api';
+import '../../styles/public-experience.css';
 import KidsQuizGame from '../../components/games/KidsQuizGame';
 import KidsLettersGame from '../../components/games/KidsLettersGame';
 import KidsCompetitionsAndAwards from '../../components/kids/KidsCompetitionsAndAwards';
@@ -33,9 +34,9 @@ export default function KidsProgram() {
     <>
       <SEOHead page={{ url: '/programs/kids', title: isAr ? 'برنامج الأطفال' : 'Kids Program', description: isAr ? 'تعليم القرآن للأطفال بطريقة ممتعة' : 'Fun Quran learning for children' }} />
       <GlobalHeader />
-      <main className="min-h-screen bg-gradient-to-b from-amber-50 to-white">
-        <section className="py-20 px-4 text-center max-w-3xl mx-auto">
-          <Gamepad2 className="mx-auto text-amber-500 mb-6" size={56} />
+      <main className="wn-program-shell">
+        <section className="wn-program-hero page-container max-w-3xl">
+          <div className="wn-program-hero__icon"><Gamepad2 size={42} /></div>
           <h1 className="text-4xl font-bold mb-4">{isAr ? 'برنامج الأطفال' : 'Kids Program'}</h1>
           <p className="text-gray-600 text-lg mb-8">{isAr ? 'حفظ القرآن والتجويد للأطفال — ألعاب ومكافآت ومسابقات' : 'Quran memorization for kids — games, rewards, and competitions'}</p>
           <Link to={localizedPath('/register/student', locale)} className="btn-primary inline-flex items-center gap-2">
@@ -46,7 +47,7 @@ export default function KidsProgram() {
           {FEATURES.map((f) => {
             const Icon = f.icon;
             return (
-              <div key={f.ar} className="bg-white rounded-2xl p-6 shadow-md">
+              <div key={f.ar} className="wn-program-card p-6">
                 <Icon className="text-amber-500 mb-3" size={32} />
                 <h3 className="font-bold text-lg">{isAr ? f.ar : f.en}</h3>
               </div>
@@ -96,7 +97,7 @@ export default function KidsProgram() {
             <h2 className="font-bold text-xl mb-4 flex items-center gap-2"><BookOpen size={22} /> {isAr ? 'دورات الأطفال' : 'Kids Courses'}</h2>
             <div className="grid md:grid-cols-2 gap-4">
               {courses.map((c) => (
-                <Link key={c._id} to={localizedPath(`/courses/${c.slug}`, locale)} className="bg-white rounded-xl p-4 shadow-md hover:shadow-lg transition">
+                <Link key={c._id} to={localizedPath(`/courses/${c.slug}`, locale)} className="wn-program-card p-4">
                   <p className="font-bold">{c.title?.ar || c.title?.en}</p>
                   <p className="text-sm text-emerald-700 mt-1">{c.price} {c.currency}</p>
                 </Link>

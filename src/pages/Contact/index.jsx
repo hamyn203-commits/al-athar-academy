@@ -1,368 +1,150 @@
 import { useState } from 'react';
 import { useI18n } from '../../i18n';
 import { motion } from 'framer-motion';
-import { 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Clock, 
-  Send,
-  CheckCircle,
-  MessageCircle,
-  Globe
-} from 'lucide-react';
+import { Send, CheckCircle, MessageCircle, BookOpenCheck, Handshake, Sparkles } from 'lucide-react';
 import GlobalHeader from '../../components/GlobalHeader';
 import GlobalFooter from '../../components/GlobalFooter';
 import SEOHead from '../../components/SEOHead';
 import api from '../../lib/api';
+import '../../styles/public-experience.css';
 
 export default function Contact() {
   const { locale } = useI18n();
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    subject: '',
-    message: ''
-  });
+  const isAr = locale === 'ar';
+  const [formData, setFormData] = useState({ name: '', email: '', phone: '', subject: '', message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+  const handleChange = (event) => {
+    setFormData((current) => ({ ...current, [event.target.name]: event.target.value }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setIsSubmitting(true);
+
     try {
       await api.post('/api/contact', formData);
       setIsSubmitted(true);
       setFormData({ name: '', email: '', phone: '', subject: '', message: '' });
       setTimeout(() => setIsSubmitted(false), 5000);
     } catch {
-      alert(locale === 'ar' ? 'تعذر إرسال الرسالة، حاول لاحقاً' : 'Failed to send message');
+      alert(isAr ? 'تعذر إرسال الرسالة، حاول لاحقًا' : 'Failed to send message. Please try again later.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const contactInfo = [
-    {
-      icon: Mail,
-      title: locale === 'ar' ? 'البريد الإلكتروني' : 'Email',
-      value: 'info@alathar-academy.com',
-      link: 'mailto:info@alathar-academy.com',
-      color: 'text-blue-600'
-    },
-    {
-      icon: Phone,
-      title: locale === 'ar' ? 'الهاتف' : 'Phone',
-      value: '+20 123 456 7890',
-      link: 'tel:+201234567890',
-      color: 'text-green-600'
-    },
-    {
-      icon: MessageCircle,
-      title: 'WhatsApp',
-      value: '+20 123 456 7890',
-      link: 'https://wa.me/201234567890',
-      color: 'text-green-500'
-    },
-    {
-      icon: MapPin,
-      title: locale === 'ar' ? 'العنوان' : 'Address',
-      value: locale === 'ar' ? 'القاهرة، مصر' : 'Cairo, Egypt',
-      link: '#',
-      color: 'text-red-600'
-    },
-    {
-      icon: Clock,
-      title: locale === 'ar' ? 'ساعات العمل' : 'Working Hours',
-      value: locale === 'ar' ? '24/7 - متاح دائماً' : '24/7 - Always Available',
-      link: '#',
-      color: 'text-purple-600'
-    },
-    {
-      icon: Globe,
-      title: locale === 'ar' ? 'الموقع' : 'Website',
-      value: 'alathar-academy.vercel.app',
-      link: 'https://alathar-academy.vercel.app',
-      color: 'text-emerald-600'
-    }
+  const helpCards = [
+    { icon: BookOpenCheck, title: isAr ? 'البرامج والمسارات' : 'Programs and paths', text: isAr ? 'اسأل عن المسار الأنسب للمستوى والهدف.' : 'Ask which path best fits your level and goal.' },
+    { icon: MessageCircle, title: isAr ? 'الدعم والمساعدة' : 'Support and help', text: isAr ? 'لو واجهتك مشكلة في الحساب أو تجربة المنصة، اشرحها لنا هنا.' : 'If you have an account or platform issue, describe it here.' },
+    { icon: Handshake, title: isAr ? 'الشراكات والتعاون' : 'Partnerships', text: isAr ? 'للمبادرات التعليمية والمؤسسات الراغبة في التعاون.' : 'For educational initiatives and organizations interested in collaboration.' },
   ];
 
   return (
     <>
-      <SEOHead 
-        page={{
-          title: locale === 'ar' ? 'اتصل بنا' : 'Contact Us',
-          description: locale === 'ar' 
-            ? 'تواصل مع أكاديمية وَحْيٌ وَنَمَاء - نحن هنا لمساعدتك' 
-            : 'Get in touch with Wahy Wa Namaa Academy - We are here to help you',
-          url: '/contact',
-          keywords: 'contact, support, help, wahy wa namaa academy',
-          type: 'website'
-        }}
-      />
-      
+      <SEOHead page={{
+        title: isAr ? 'تواصل معنا' : 'Contact Us',
+        description: isAr ? 'تواصل مع فريق أكاديمية وحي ونماء.' : 'Contact the Wahy Wa Namaa Academy team.',
+        url: '/contact',
+        type: 'website',
+      }} />
       <GlobalHeader />
-      
-      <div className="min-h-screen bg-gray-50">
-        {/* Hero Section */}
-        <section className="bg-gradient-to-br from-emerald-900 via-emerald-800 to-green-900 py-20">
-          <div className="container mx-auto px-4 text-center">
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-5xl font-bold text-white mb-4"
-            >
-              {locale === 'ar' ? 'اتصل بنا' : 'Contact Us'}
-            </motion.h1>
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="text-xl text-emerald-100 max-w-2xl mx-auto"
-            >
-              {locale === 'ar' 
-                ? 'نحن هنا لمساعدتك. تواصل معنا في أي وقت' 
-                : 'We are here to help you. Get in touch with us anytime'
-              }
-            </motion.p>
+
+      <main className="wn-public-shell">
+        <section className="wn-public-hero">
+          <div className="page-container wn-public-hero__inner">
+            <div>
+              <span className="wn-auth-visual__eyebrow"><Sparkles size={14} /> {isAr ? 'تواصل مع الأكاديمية' : 'CONTACT THE ACADEMY'}</span>
+              <h1>{isAr ? 'كيف نقدر نساعدك؟' : 'How can we help?'}</h1>
+              <p>{isAr ? 'أرسل رسالتك من النموذج، وسنستخدم بيانات التواصل التي تكتبها أنت للرد عليك.' : 'Send your message through the form. We will use the contact details you provide to respond.'}</p>
+            </div>
+            <div className="wn-public-hero__art" aria-hidden="true">
+              <div className="wn-public-orbit" />
+              <div className="wn-public-orbit__core"><MessageCircle size={46} strokeWidth={1.25} /></div>
+            </div>
           </div>
         </section>
 
-        {/* Contact Info Cards */}
-        <section className="container mx-auto px-4 -mt-12">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {contactInfo.map((info, index) => (
-              <motion.a
-                key={index}
-                href={info.link}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="bg-white rounded-xl shadow-lg p-6 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2"
-              >
-                <div className="flex items-start gap-4">
-                  <div className={`p-3 rounded-lg bg-gray-50 ${info.color}`}>
-                    <info.icon size={24} />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-lg mb-1">{info.title}</h3>
-                    <p className="text-gray-600">{info.value}</p>
-                  </div>
-                </div>
-              </motion.a>
+        <section className="page-container wn-public-copy-section">
+          <div className="wn-public-feature-grid mb-6">
+            {helpCards.map(({ icon: Icon, title, text }) => (
+              <article key={title} className="wn-public-feature-card">
+                <span><Icon size={21} /></span>
+                <h3>{title}</h3>
+                <p>{text}</p>
+              </article>
             ))}
           </div>
-        </section>
 
-        {/* Contact Form Section */}
-        <section className="container mx-auto px-4 py-16">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            {/* Form */}
+          <div className="wn-public-form-layout">
             <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
+              initial={{ opacity: 0, y: 14 }}
+              whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="bg-white rounded-xl shadow-lg p-8"
+              className="wn-public-message-card"
             >
-              <h2 className="text-3xl font-bold mb-6">
-                {locale === 'ar' ? 'أرسل لنا رسالة' : 'Send us a message'}
-              </h2>
+              <h2>{isAr ? 'أرسل لنا رسالة' : 'Send us a message'}</h2>
+              <p className="mt-1 text-sm text-[var(--wn-text-secondary)]">
+                {isAr ? 'اكتب التفاصيل بوضوح حتى نقدر نساعدك بشكل أدق.' : 'Add enough detail so we can help you accurately.'}
+              </p>
 
-              {isSubmitted && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3"
-                >
-                  <CheckCircle className="text-green-600" size={24} />
+              {isSubmitted ? (
+                <div className="mt-5 p-4 rounded-xl border border-emerald-200 bg-emerald-50 flex items-start gap-3">
+                  <CheckCircle className="text-emerald-700 shrink-0" size={20} />
                   <div>
-                    <p className="font-semibold text-green-800">
-                      {locale === 'ar' ? 'تم إرسال رسالتك بنجاح!' : 'Your message has been sent successfully!'}
-                    </p>
-                    <p className="text-sm text-green-600">
-                      {locale === 'ar' ? 'سنتواصل معك قريباً' : 'We will get back to you soon'}
-                    </p>
+                    <strong className="text-emerald-900">{isAr ? 'تم إرسال رسالتك' : 'Message sent'}</strong>
+                    <p className="text-xs text-emerald-700 mt-1">{isAr ? 'تم استلام طلبك بنجاح.' : 'Your request was received successfully.'}</p>
                   </div>
-                </motion.div>
-              )}
+                </div>
+              ) : null}
 
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {locale === 'ar' ? 'الاسم الكامل' : 'Full Name'} *
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    placeholder={locale === 'ar' ? 'أدخل اسمك الكامل' : 'Enter your full name'}
-                  />
+              <form onSubmit={handleSubmit} className="grid gap-4 mt-5">
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-[var(--wn-emerald-deep)] mb-2">{isAr ? 'الاسم الكامل' : 'Full name'} *</label>
+                    <input name="name" value={formData.name} onChange={handleChange} required placeholder={isAr ? 'اسمك الكامل' : 'Your full name'} />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-[var(--wn-emerald-deep)] mb-2">{isAr ? 'البريد الإلكتروني' : 'Email'} *</label>
+                    <input type="email" name="email" value={formData.email} onChange={handleChange} required placeholder="example@email.com" dir="auto" />
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {locale === 'ar' ? 'البريد الإلكتروني' : 'Email'} *
-                    </label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                      placeholder={locale === 'ar' ? 'example@email.com' : 'example@email.com'}
-                    />
+                    <label className="block text-xs font-bold text-[var(--wn-emerald-deep)] mb-2">{isAr ? 'رقم الهاتف (اختياري)' : 'Phone (optional)'}</label>
+                    <input type="tel" name="phone" value={formData.phone} onChange={handleChange} placeholder="+20..." dir="ltr" />
                   </div>
-
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {locale === 'ar' ? 'رقم الهاتف' : 'Phone Number'}
-                    </label>
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                      placeholder={locale === 'ar' ? '+20 123 456 7890' : '+20 123 456 7890'}
-                    />
+                    <label className="block text-xs font-bold text-[var(--wn-emerald-deep)] mb-2">{isAr ? 'الموضوع' : 'Subject'} *</label>
+                    <input name="subject" value={formData.subject} onChange={handleChange} required placeholder={isAr ? 'موضوع الرسالة' : 'Message subject'} />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {locale === 'ar' ? 'الموضوع' : 'Subject'} *
-                  </label>
-                  <input
-                    type="text"
-                    name="subject"
-                    value={formData.subject}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    placeholder={locale === 'ar' ? 'موضوع الرسالة' : 'Message subject'}
-                  />
+                  <label className="block text-xs font-bold text-[var(--wn-emerald-deep)] mb-2">{isAr ? 'الرسالة' : 'Message'} *</label>
+                  <textarea name="message" value={formData.message} onChange={handleChange} required rows={6} placeholder={isAr ? 'اكتب تفاصيل استفسارك...' : 'Tell us how we can help...'} />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {locale === 'ar' ? 'الرسالة' : 'Message'} *
-                  </label>
-                  <textarea
-                    name="message"
-                    value={formData.message}
-                    onChange={handleChange}
-                    required
-                    rows={6}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    placeholder={locale === 'ar' ? 'اكتب رسالتك هنا...' : 'Write your message here...'}
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full btn-primary flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                      {locale === 'ar' ? 'جاري الإرسال...' : 'Sending...'}
-                    </>
-                  ) : (
-                    <>
-                      <Send size={20} />
-                      {locale === 'ar' ? 'إرسال الرسالة' : 'Send Message'}
-                    </>
-                  )}
+                <button type="submit" disabled={isSubmitting} className="wn-btn wn-btn--primary wn-btn--lg wn-btn--block disabled:opacity-50">
+                  {isSubmitting ? <span className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin" /> : <><Send size={17} /> {isAr ? 'إرسال الرسالة' : 'Send message'}</>}
                 </button>
               </form>
             </motion.div>
 
-            {/* Info Side */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              className="space-y-8"
-            >
-              {/* Why Contact Us */}
-              <div className="bg-white rounded-xl shadow-lg p-8">
-                <h3 className="text-2xl font-bold mb-4">
-                  {locale === 'ar' ? 'لماذا تتواصل معنا؟' : 'Why Contact Us?'}
-                </h3>
-                <ul className="space-y-3">
-                  <li className="flex items-start gap-3">
-                    <CheckCircle className="text-emerald-600 mt-1 flex-shrink-0" size={20} />
-                    <span>{locale === 'ar' ? 'استفسارات عن الدورات والبرامج' : 'Inquiries about courses and programs'}</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <CheckCircle className="text-emerald-600 mt-1 flex-shrink-0" size={20} />
-                    <span>{locale === 'ar' ? 'الدعم الفني والمساعدة' : 'Technical support and assistance'}</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <CheckCircle className="text-emerald-600 mt-1 flex-shrink-0" size={20} />
-                    <span>{locale === 'ar' ? 'الشراكات والتعاون' : 'Partnerships and collaborations'}</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <CheckCircle className="text-emerald-600 mt-1 flex-shrink-0" size={20} />
-                    <span>{locale === 'ar' ? 'الاقتراحات والملاحظات' : 'Suggestions and feedback'}</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <CheckCircle className="text-emerald-600 mt-1 flex-shrink-0" size={20} />
-                    <span>{locale === 'ar' ? 'أي استفسارات أخرى' : 'Any other inquiries'}</span>
-                  </li>
-                </ul>
-              </div>
-
-              {/* Response Time */}
-              <div className="bg-gradient-to-br from-emerald-600 to-green-600 rounded-xl shadow-lg p-8 text-white">
-                <h3 className="text-2xl font-bold mb-4">
-                  {locale === 'ar' ? 'وقت الاستجابة' : 'Response Time'}
-                </h3>
-                <p className="text-emerald-100 mb-4">
-                  {locale === 'ar' 
-                    ? 'نحن نلتزم بالرد على جميع الرسائل في أسرع وقت ممكن' 
-                    : 'We are committed to responding to all messages as quickly as possible'
-                  }
-                </p>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Clock size={20} />
-                    <span className="font-semibold">
-                      {locale === 'ar' ? 'البريد الإلكتروني: خلال 24 ساعة' : 'Email: Within 24 hours'}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <MessageCircle size={20} />
-                    <span className="font-semibold">
-                      {locale === 'ar' ? 'واتساب: خلال ساعة' : 'WhatsApp: Within 1 hour'}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Phone size={20} />
-                    <span className="font-semibold">
-                      {locale === 'ar' ? 'الهاتف: فوري' : 'Phone: Immediate'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
+            <aside className="wn-public-track-banner !mt-0">
+              <span className="wn-auth-visual__eyebrow">{isAr ? 'قبل الإرسال' : 'BEFORE YOU SEND'}</span>
+              <h2>{isAr ? 'معلومة تساعدنا نرد بشكل أفضل' : 'One detail helps us respond better'}</h2>
+              <p>
+                {isAr
+                  ? 'لو سؤالك عن طالب أو حجز أو دورة، اذكر البريد المستخدم في الحساب واسم المسار إن وجد. لا ترسل كلمات مرور أو بيانات دفع.'
+                  : 'For a learner, booking, or course question, include the account email and path name if relevant. Never send passwords or payment credentials.'}
+              </p>
+            </aside>
           </div>
         </section>
-      </div>
+      </main>
 
       <GlobalFooter />
     </>

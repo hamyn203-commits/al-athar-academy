@@ -30,6 +30,7 @@ import { useI18n } from '../../i18n';
 import { localizedPath, DEFAULT_LOCALE } from '../../lib/locale';
 import { SOCIAL_LINKS } from '../../config/social';
 import api from '../../lib/api';
+import '../../styles/public-experience.css';
 
 // قائمة الدول ومفاتيح الاتصال العالمية
 const COUNTRY_CODES = [
@@ -104,7 +105,7 @@ export default function FreeTrial() {
     ar: {
       badge: 'هدية الأكاديمية — حصة تجريبية مجانية 100%',
       title: 'احجز حصتك التجريبية المجانية في رحاب القرآن',
-      subtitle: 'جلسة فردية مباشرة ومخصصة (30 دقيقة) مع نخبة من خيرة معلمي ومعلمات الأزهر الشريف المجازين بالسند المتصل — مجانية بالكامل وبدون أي التزام.',
+      subtitle: 'جلسة تعريفية مباشرة تساعدنا على فهم مستوى الطالب وهدفه واقتراح المسار المناسب — مجانية وبدون التزام.',
       guarantee: 'مجانية 100% • بدون بطاقة دفع • خصوصية تامة للطالبات والأطفال',
       steps: [
         { num: 1, title: 'المسار التعليمي', desc: 'اختر التخصص' },
@@ -229,7 +230,7 @@ export default function FreeTrial() {
     en: {
       badge: 'Academy Gift — 100% Free Trial Class',
       title: 'Book Your 100% Free Trial Quran Class',
-      subtitle: 'A private 1-on-1 personalized live session (30 mins) with elite certified Al-Azhar teachers connected with continuous Isnad — completely free with zero commitments.',
+      subtitle: 'A live introductory session to understand the learner’s level and goals and recommend a suitable learning path — free with no commitment.',
       guarantee: '100% Free • No Credit Card Required • Complete Privacy for Sisters & Children',
       steps: [
         { num: 1, title: 'Learning Track', desc: 'Select track' },
@@ -474,7 +475,7 @@ export default function FreeTrial() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[var(--athar-warm-white)]" dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className="wn-trial-surface min-h-screen flex flex-col" dir={isRTL ? 'rtl' : 'ltr'}>
       <GlobalHeader />
 
       {/* ═══ الخلفية الأزهرية الفاخرة مع النمط الإسلامي ═══ */}

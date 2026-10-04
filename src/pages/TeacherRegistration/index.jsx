@@ -12,6 +12,7 @@ import { useTeacherForm } from './useTeacherForm';
 import StepProgress from './StepProgress';
 import FileBox from './FileBox';
 import { STEPS, COUNTRIES, VIDEO_GUIDE } from './constants';
+import '../../styles/public-experience.css';
 
 const inputCls = 'input-field w-full';
 
@@ -23,13 +24,12 @@ export default function TeacherRegistration() {
     return (
       <>
         <GlobalHeader />
-        <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-white flex items-center justify-center p-4" dir="rtl">
-          <div className="card-modern max-w-lg w-full text-center p-10">
+        <div className="wn-teacher-register-shell min-h-screen flex items-center justify-center p-4" dir="rtl">
+          <div className="wn-teacher-register-card max-w-lg w-full text-center p-10">
             <CheckCircle2 className="mx-auto text-emerald-600 mb-4" size={64} />
             <h1 className="text-2xl font-bold text-slate-900 mb-2">تم إرسال طلبك! 🎉</h1>
             <p className="text-slate-600 mb-6">
-              سيقوم فريق الأكاديمية بمراجعة بياناتك خلال <strong>24–48 ساعة</strong>.
-              ستصلك رسالة على <strong>{f.credentials.email}</strong> عند الموافقة.
+              سيقوم فريق الأكاديمية بمراجعة البيانات، وستصلك رسالة على <strong>{f.credentials.email}</strong> عند تحديث حالة الطلب.
             </p>
             <div className="flex flex-col gap-3">
               <Link to="/login" className="btn-primary">تسجيل الدخول</Link>
@@ -49,12 +49,12 @@ export default function TeacherRegistration() {
       <SEOHead page={{ title: 'تسجيل معلم', description: 'انضم كمعلم قرآن في أكاديمية وَحْيٌ وَنَمَاء', url: '/teacher/register' }} />
       <GlobalHeader />
 
-      <div className="min-h-screen bg-gradient-to-b from-slate-50 via-emerald-50/30 to-white py-10" dir="rtl">
+      <div className="wn-teacher-register-shell min-h-screen py-10" dir="rtl">
         <div className="page-container max-w-3xl">
           <div className="text-center mb-8">
             <span className="section-label mb-4">انضم لفريق المعلمين</span>
             <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mt-3">سجّل كمعلم قرآن</h1>
-            <p className="text-slate-600 mt-2">5 خطوات — بياناتك محفوظة تلقائياً</p>
+            <p className="text-slate-600 mt-2">5 خطوات واضحة لإكمال ملف التقديم</p>
           </div>
 
           <StepProgress current={f.step} />
@@ -65,7 +65,7 @@ export default function TeacherRegistration() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -12 }}
-              className="card-modern p-6 md:p-8"
+              className="wn-teacher-register-card p-6 md:p-8"
             >
               <h2 className="text-xl font-bold text-slate-900 mb-1">{stepTitle}</h2>
               {f.fieldError && (
@@ -278,7 +278,7 @@ export default function TeacherRegistration() {
 
           <div className="flex items-center justify-center gap-6 mt-6 text-xs text-slate-500">
             <span className="flex items-center gap-1"><Clock size={14} /> ~8 دقائق</span>
-            <span className="flex items-center gap-1"><Shield size={14} /> بياناتك مشفرة</span>
+            <span className="flex items-center gap-1"><Shield size={14} /> بياناتك مخصصة للمراجعة</span>
           </div>
         </div>
       </div>
