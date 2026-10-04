@@ -12,29 +12,12 @@ export function useSEO() {
     name: c.appName,
     alternateName: ALTERNATE_NAMES,
     url: baseUrl,
-    logo: `${baseUrl}/assets/logo.png`,
-    image: `${baseUrl}/assets/og-image.png`,
+    logo: `${baseUrl}/favicon.svg`,
+    image: `${baseUrl}/images/hero-wahy-namaa.jpg`,
     description: c.seoDescription || t.hero.subtitle,
-    foundingDate: '2024',
     slogan: c.slogan,
     keywords: c.seoKeywords,
     inLanguage: SEO_LOCALES,
-    address: {
-      '@type': 'PostalAddress',
-      addressCountry: 'EG',
-      addressLocality: 'Cairo',
-    },
-    contactPoint: {
-      '@type': 'ContactPoint',
-      contactType: 'customer service',
-      availableLanguage: ['Arabic', 'English', 'French', 'German', 'Turkish', 'Urdu', 'Indonesian', 'Malay', 'Kurdish'],
-    },
-    sameAs: [
-      'https://www.facebook.com/alatharacademy',
-      'https://www.twitter.com/alatharacademy',
-      'https://www.instagram.com/alatharacademy',
-      'https://www.youtube.com/@alatharacademy',
-    ],
   };
 
   const websiteSchema = {
@@ -112,7 +95,7 @@ export function useSEO() {
     publisher: {
       '@type': 'Organization',
       name: c.appName,
-      logo: { '@type': 'ImageObject', url: `${baseUrl}/assets/logo.png` },
+      logo: { '@type': 'ImageObject', url: `${baseUrl}/favicon.svg` },
     },
     datePublished: article.datePublished,
     dateModified: article.dateModified || article.datePublished,
@@ -124,7 +107,7 @@ export function useSEO() {
     const description = page.description || c.seoDescription || t.hero.subtitle;
     const pagePath = page.url || '/';
     const url = localePath(locale, pagePath);
-    const image = page.image || `${baseUrl}/assets/og-image.png`;
+    const image = page.image || `${baseUrl}/images/hero-wahy-namaa.jpg`;
     const keywords = page.keywords || c.seoKeywords;
 
     const meta = [
@@ -142,7 +125,6 @@ export function useSEO() {
       { name: 'twitter:title', content: title },
       { name: 'twitter:description', content: description },
       { name: 'twitter:image', content: image },
-      { name: 'twitter:site', content: '@alatharacademy' },
       { name: 'robots', content: 'index, follow, max-image-preview:large' },
       { name: 'language', content: locale },
       { name: 'author', content: c.appNameFull || c.appName },

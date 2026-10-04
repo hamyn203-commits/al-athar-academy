@@ -1,5 +1,5 @@
 /** هوية الأكاديمية الرسمية + بيانات SEO العالمية — وَحْيٌ وَنَمَاء */
-export const SITE_URL = 'https://wahy-wa-namaa.academy';
+export const SITE_URL = 'https://wahy-wa-namaa-academy.vercel.app';
 
 export const SEO_LOCALES = ['ar', 'en', 'fr', 'de', 'tr', 'ur', 'id', 'ms', 'ku'];
 
