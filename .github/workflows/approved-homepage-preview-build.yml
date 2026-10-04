@@ -6,6 +6,7 @@ on:
       - design/approved-wahy-namaa-homepage
       - design/wahy-namaa-v2-immersive
       - design/wahy-namaa-v3-final
+      - design/wahy-namaa-v3-motion-final
   workflow_dispatch:
 
 permissions:
@@ -36,6 +37,7 @@ jobs:
           src/components/GlobalHeader.jsx
           src/components/GlobalFooter.jsx
           src/pages/NewLandingPage/index.jsx
+          src/pages/NewLandingPage/HomepageMotionController.jsx
           src/pages/NewLandingPage/sections/HeroSection.jsx
           src/pages/NewLandingPage/sections/ProgramsSection.jsx
           src/pages/NewLandingPage/sections/WhyWahyNamaaSection.jsx

@@ -3424,10 +3424,12 @@ html {
 .wn-motion-ready .wn-faculty-principle,
 .wn-motion-ready .wn-audience-card {
   opacity: 0;
-  transform: translateY(18px) scale(.985);
+  translate: 0 18px;
+  scale: .985;
   transition:
     opacity .55s ease,
-    transform .62s cubic-bezier(.22,1,.36,1),
+    translate .62s cubic-bezier(.22,1,.36,1),
+    scale .62s cubic-bezier(.22,1,.36,1),
     box-shadow .28s ease,
     border-color .28s ease;
 }
@@ -3440,7 +3442,8 @@ html {
 .wn-motion-ready.is-visible .wn-faculty-principle,
 .wn-motion-ready.is-visible .wn-audience-card {
   opacity: 1;
-  transform: translateY(0) scale(1);
+  translate: 0 0;
+  scale: 1;
 }
 
 .wn-motion-ready.is-visible .wn-approved-program-card:nth-child(2),
@@ -3520,7 +3523,8 @@ html {
   .wn-motion-ready .wn-faculty-principle,
   .wn-motion-ready .wn-audience-card {
     opacity: 1 !important;
-    transform: none !important;
+    translate: none !important;
+    scale: 1 !important;
     transition: none !important;
   }
 
