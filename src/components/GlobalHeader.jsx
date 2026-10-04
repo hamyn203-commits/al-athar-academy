@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { useI18n } from '../i18n';
 import { localizedPath, DEFAULT_LOCALE } from '../lib/locale';

@@ -1,4 +1,3 @@
-import React from 'react';
 import { useI18n } from '../../i18n';
 import GlobalHeader from '../../components/GlobalHeader';
 import GlobalFooter from '../../components/GlobalFooter';
