@@ -2186,3 +2186,484 @@
     transform: none;
   }
 }
+
+
+/* ==========================================================================
+   Immersive learning showcase — CSS 3D, no heavy WebGL dependency
+   ========================================================================== */
+
+.wn-immersive {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding-block: clamp(5.5rem, 9vw, 8.5rem);
+  background:
+    radial-gradient(circle at 16% 18%, rgba(212,175,107,.14), transparent 24rem),
+    radial-gradient(circle at 88% 78%, rgba(86,179,166,.16), transparent 28rem),
+    linear-gradient(135deg, #05281f 0%, #083b2e 44%, #0e5a45 100%);
+  color: white;
+}
+
+.wn-immersive::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background:
+    linear-gradient(90deg, transparent 49.94%, rgba(212,175,107,.08) 50%, transparent 50.06%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke='%23d4af6b' stroke-opacity='.06' stroke-width='.8'%3E%3Cpath d='M48 8 88 48 48 88 8 48Z'/%3E%3Cpath d='M20 20h56v56H20Z'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.wn-immersive::after {
+  content: '';
+  position: absolute;
+  width: 32rem;
+  height: 44rem;
+  top: 50%;
+  inset-inline-end: -9rem;
+  transform: translateY(-50%);
+  border-radius: 18rem 18rem 1.75rem 1.75rem;
+  border: 1px solid rgba(212,175,107,.16);
+  box-shadow:
+    0 0 0 18px rgba(255,255,255,.025),
+    0 0 0 44px rgba(212,175,107,.025);
+  z-index: -1;
+}
+
+.wn-immersive__grid-glow {
+  position: absolute;
+  width: 28rem;
+  height: 28rem;
+  top: -14rem;
+  left: 50%;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: rgba(212,175,107,.12);
+  filter: blur(70px);
+  pointer-events: none;
+}
+
+.wn-immersive__layout {
+  display: grid;
+  gap: clamp(3rem, 7vw, 6rem);
+  align-items: center;
+}
+
+.wn-immersive__content {
+  position: relative;
+  z-index: 2;
+}
+
+.wn-immersive__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  color: #e5c576;
+  font-size: .78rem;
+  font-weight: 800;
+  letter-spacing: .13em;
+}
+
+[dir='rtl'] .wn-immersive__eyebrow {
+  letter-spacing: .02em;
+}
+
+.wn-immersive h2 {
+  max-width: 46rem;
+  margin-top: 1rem;
+  font-family: var(--wn-font-display);
+  font-size: clamp(2.45rem, 5vw, 4.7rem);
+  line-height: 1.18;
+  color: #fffdf7;
+  text-wrap: balance;
+}
+
+.wn-immersive h2 strong {
+  display: inline-block;
+  margin-top: .15em;
+  color: #e2bd66;
+  font-weight: 700;
+}
+
+.wn-immersive__lead {
+  max-width: 42rem;
+  margin-top: 1.15rem;
+  color: rgba(255,255,255,.68);
+  font-size: 1rem;
+  line-height: 1.9;
+}
+
+.wn-immersive__features {
+  display: grid;
+  gap: .75rem;
+  margin-block: 1.8rem;
+}
+
+.wn-immersive-feature {
+  display: flex;
+  align-items: flex-start;
+  gap: .8rem;
+  padding: .9rem 1rem;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.045);
+  backdrop-filter: blur(10px);
+  transition: transform .25s ease, background .25s ease, border-color .25s ease;
+}
+
+.wn-immersive-feature:hover {
+  transform: translateX(-4px);
+  background: rgba(255,255,255,.07);
+  border-color: rgba(212,175,107,.24);
+}
+
+[dir='ltr'] .wn-immersive-feature:hover {
+  transform: translateX(4px);
+}
+
+.wn-immersive-feature > span {
+  width: 2.35rem;
+  height: 2.35rem;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  color: #f2d995;
+  background: rgba(212,175,107,.10);
+  border: 1px solid rgba(212,175,107,.18);
+}
+
+.wn-immersive-feature h3 {
+  color: #fff;
+  font-size: .92rem;
+  font-weight: 750;
+}
+
+.wn-immersive-feature p {
+  margin-top: .2rem;
+  color: rgba(255,255,255,.57);
+  font-size: .78rem;
+  line-height: 1.65;
+}
+
+.wn-quran-3d-stage {
+  position: relative;
+  min-height: 620px;
+  display: grid;
+  place-items: center;
+  perspective: 1200px;
+  transform-style: preserve-3d;
+}
+
+.wn-quran-3d-stage__halo {
+  position: absolute;
+  width: min(34rem, 82%);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, rgba(212,175,107,.18) 0%, rgba(86,179,166,.09) 44%, transparent 70%);
+  filter: blur(2px);
+  animation: wn-halo-breathe 6s ease-in-out infinite;
+}
+
+.wn-quran-3d-stage__arch {
+  position: absolute;
+  width: min(31rem, 75%);
+  height: 33rem;
+  bottom: 3rem;
+  border-radius: 16rem 16rem 2rem 2rem;
+  border: 1px solid rgba(212,175,107,.28);
+  box-shadow:
+    inset 0 0 70px rgba(255,255,255,.025),
+    0 0 0 12px rgba(255,255,255,.018);
+  transform: translateZ(-40px);
+}
+
+.wn-quran-book3d {
+  position: relative;
+  width: min(28rem, 76vw);
+  height: 19rem;
+  transform-style: preserve-3d;
+  transform: rotateX(59deg) rotateZ(-4deg) translateY(-1.2rem);
+  animation: wn-book-float 7s ease-in-out infinite;
+}
+
+.wn-quran-book3d__left,
+.wn-quran-book3d__right {
+  position: absolute;
+  top: 50%;
+  width: 50%;
+  height: 70%;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.98), rgba(238,226,198,.98));
+  border: 1px solid rgba(212,175,107,.54);
+  box-shadow:
+    inset 0 0 28px rgba(184,138,57,.12),
+    0 18px 50px rgba(0,0,0,.18);
+  transform-style: preserve-3d;
+}
+
+.wn-quran-book3d__left {
+  right: 50%;
+  border-radius: 18px 5px 8px 22px;
+  transform-origin: right center;
+  transform: rotateY(-18deg);
+}
+
+.wn-quran-book3d__right {
+  left: 50%;
+  border-radius: 5px 18px 22px 8px;
+  transform-origin: left center;
+  transform: rotateY(18deg);
+}
+
+.wn-quran-book3d__left::before,
+.wn-quran-book3d__right::before {
+  content: '';
+  position: absolute;
+  inset: .7rem;
+  border: 1px solid rgba(184,138,57,.18);
+  border-radius: 10px;
+}
+
+.wn-quran-book3d__page-lines {
+  position: absolute;
+  inset: 2.1rem 1.6rem;
+  display: grid;
+  gap: .48rem;
+}
+
+.wn-quran-book3d__page-lines i {
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, rgba(7,53,40,.38) 12%, rgba(7,53,40,.38) 88%, transparent);
+}
+
+.wn-quran-book3d__page-lines i:nth-child(2),
+.wn-quran-book3d__page-lines i:nth-child(5) {
+  width: 82%;
+  justify-self: center;
+}
+
+.wn-quran-book3d__spine {
+  position: absolute;
+  left: calc(50% - .28rem);
+  top: 45%;
+  width: .56rem;
+  height: 54%;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #c49c50, #6b4c1d);
+  box-shadow: 0 0 18px rgba(212,175,107,.25);
+  transform: translateZ(2px);
+}
+
+.wn-quran-book3d__light {
+  position: absolute;
+  left: 50%;
+  top: 23%;
+  transform: translateX(-50%) translateZ(60px);
+  color: #f6d879;
+  font-size: 2.3rem;
+  text-shadow:
+    0 0 16px rgba(246,216,121,.65),
+    0 0 52px rgba(246,216,121,.32);
+  animation: wn-star-pulse 3.5s ease-in-out infinite;
+}
+
+.wn-quran-book3d__shadow {
+  position: absolute;
+  left: 50%;
+  bottom: -1rem;
+  width: 70%;
+  height: 3rem;
+  transform: translateX(-50%) translateZ(-45px);
+  border-radius: 50%;
+  background: rgba(0,0,0,.35);
+  filter: blur(22px);
+}
+
+.wn-float-card {
+  position: absolute;
+  min-width: 12.5rem;
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  padding: .78rem .9rem;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,.11);
+  background: rgba(7,53,40,.58);
+  color: white;
+  backdrop-filter: blur(16px);
+  box-shadow: 0 18px 45px -24px rgba(0,0,0,.52);
+  transform-style: preserve-3d;
+}
+
+.wn-float-card strong,
+.wn-float-card small {
+  display: block;
+}
+
+.wn-float-card strong {
+  font-size: .78rem;
+}
+
+.wn-float-card small {
+  margin-top: .12rem;
+  color: rgba(255,255,255,.53);
+  font-size: .66rem;
+}
+
+.wn-float-card__icon {
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: rgba(212,175,107,.12);
+  color: #f0cf82;
+  flex: 0 0 auto;
+}
+
+.wn-float-card--recite {
+  top: 16%;
+  inset-inline-start: 2%;
+  transform: rotateY(-8deg) rotateZ(-2deg) translateZ(65px);
+  animation: wn-card-float-a 5.5s ease-in-out infinite;
+}
+
+.wn-float-card--progress {
+  top: 25%;
+  inset-inline-end: 0;
+  transform: rotateY(8deg) rotateZ(2deg) translateZ(90px);
+  animation: wn-card-float-b 6.3s ease-in-out infinite;
+}
+
+.wn-float-card--family {
+  bottom: 12%;
+  inset-inline-end: 12%;
+  transform: rotateY(6deg) translateZ(75px);
+  animation: wn-card-float-a 6s ease-in-out infinite reverse;
+}
+
+.wn-progress-ring {
+  width: 2.5rem;
+  height: 2.5rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: conic-gradient(#d4af6b 0 72%, rgba(255,255,255,.11) 72%);
+  position: relative;
+}
+
+.wn-progress-ring::after {
+  content: '';
+  position: absolute;
+  inset: .28rem;
+  border-radius: 50%;
+  background: #0a4435;
+}
+
+.wn-progress-ring span {
+  position: relative;
+  z-index: 1;
+  color: #f4da9a;
+  font-size: .58rem;
+  font-weight: 800;
+}
+
+.wn-quran-3d-stage__caption {
+  position: absolute;
+  bottom: 3%;
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  color: rgba(255,255,255,.38);
+  font: 700 .62rem/1 var(--wn-font-ui-en);
+  letter-spacing: .22em;
+}
+
+.wn-quran-3d-stage__caption i {
+  width: 2.2rem;
+  height: 1px;
+  background: rgba(212,175,107,.38);
+}
+
+@keyframes wn-book-float {
+  0%, 100% { transform: rotateX(59deg) rotateZ(-4deg) translateY(-1.2rem); }
+  50% { transform: rotateX(57deg) rotateZ(-2deg) translateY(-2rem); }
+}
+
+@keyframes wn-card-float-a {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -10px; }
+}
+
+@keyframes wn-card-float-b {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 9px; }
+}
+
+@keyframes wn-star-pulse {
+  0%, 100% { opacity: .8; scale: .95; }
+  50% { opacity: 1; scale: 1.08; }
+}
+
+@keyframes wn-halo-breathe {
+  0%, 100% { opacity: .68; scale: .96; }
+  50% { opacity: 1; scale: 1.04; }
+}
+
+@media (min-width: 1024px) {
+  .wn-immersive__layout {
+    grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr);
+  }
+
+  .wn-immersive__features {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .wn-immersive-feature:last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 767px) {
+  .wn-quran-3d-stage {
+    min-height: 470px;
+  }
+
+  .wn-quran-book3d {
+    width: min(21rem, 82vw);
+    height: 14rem;
+  }
+
+  .wn-float-card {
+    min-width: 10.5rem;
+    padding: .62rem .72rem;
+  }
+
+  .wn-float-card--recite {
+    top: 12%;
+    inset-inline-start: 0;
+  }
+
+  .wn-float-card--progress {
+    top: 22%;
+    inset-inline-end: -1.5rem;
+  }
+
+  .wn-float-card--family {
+    bottom: 8%;
+    inset-inline-end: 4%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wn-quran-book3d,
+  .wn-float-card,
+  .wn-quran-book3d__light,
+  .wn-quran-3d-stage__halo {
+    animation: none;
+  }
+}

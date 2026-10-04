@@ -8,6 +8,7 @@ import HeroSection from './sections/HeroSection';
 import ProgramsSection from './sections/ProgramsSection';
 import WhyWahyNamaaSection from './sections/WhyWahyNamaaSection';
 import LearningExperienceSection from './sections/LearningExperienceSection';
+import ImmersiveLearningSection from './sections/ImmersiveLearningSection';
 import StudentJourneySection from './sections/StudentJourneySection';
 import TeachersSection from './sections/TeachersSection';
 import TargetAudiencesSection from './sections/TargetAudiencesSection';
@@ -40,6 +41,7 @@ export default function NewLandingPage() {
         <HeroSection />
         <ProgramsSection />
         <WhyWahyNamaaSection />
+        <ImmersiveLearningSection />
         <LearningExperienceSection />
         <StudentJourneySection />
         <TeachersSection />
