@@ -75,7 +75,7 @@ router.get('/my', protect, async (req, res) => {
 
     res.json({
       code,
-      link: `${process.env.SITE_URL || process.env.VITE_SITE_URL || 'https://al-athar-academy.vercel.app'}/register/student?ref=${code}`,
+      link: `${process.env.SITE_URL || process.env.VITE_SITE_URL || 'https://wahy-wa-namaa-academy.vercel.app'}/register/student?ref=${code}`,
       stats: {
         totalInvites: referrals.length,
         active: referrals.filter((r) => r.status === 'active' || r.status === 'rewarded').length,

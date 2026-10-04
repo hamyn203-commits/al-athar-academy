@@ -120,7 +120,7 @@ async function process30MinuteReminders() {
           continue;
         }
 
-        const roomUrl = session.meetingLink || `${(process.env.FRONTEND_URL || 'https://al-athar-academy.vercel.app').replace(/\/$/, '')}/live/${session._id}`;
+        const roomUrl = session.meetingLink || `${(process.env.FRONTEND_URL || 'https://wahy-wa-namaa-academy.vercel.app').replace(/\/$/, '')}/live/${session._id}`;
 
         await send30MinuteReminder(session, session.student, recipientPhone, roomUrl);
 
