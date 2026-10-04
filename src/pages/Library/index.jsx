@@ -21,6 +21,7 @@ import GlobalHeader from '../../components/GlobalHeader';
 import GlobalFooter from '../../components/GlobalFooter';
 import SEOHead from '../../components/SEOHead';
 import api from '../../lib/api';
+import '../../styles/public-experience.css';
 
 // تصنيفات الفيديوهات
 const VIDEO_CATS = [
@@ -255,7 +256,7 @@ export default function LibraryPage() {
 <body>
   <div class="header">
     <div class="logo">أكاديمية وَحْيٌ وَنَمَاء لتعليم القرآن الكريم والنمو الإنساني</div>
-    <div class="meta">المكتبة الرقمية المعتمدة • متاح للاستخدام التعليمي والخيري</div>
+    <div class="meta">مادة تعليمية من مكتبة وحي ونماء</div>
     <div class="title">${book.title}</div>
     <div class="meta">الناظم / المحقق: ${book.author} | عدد الصفحات: ${book.pages} صفحة</div>
   </div>
@@ -268,7 +269,7 @@ export default function LibraryPage() {
   `).join('')}
 
   <div class="footer">
-    تم استخراج هذه النسخة الإلكترونية رسمياً من منصة أكاديمية وَحْيٌ وَنَمَاء (wahy-namaa.com). جميع الحقوق محفوظة لطلبة العلم وأهل القرآن.
+    نسخة تعليمية تم إنشاؤها من مكتبة أكاديمية وَحْيٌ وَنَمَاء.
   </div>
 </body>
 </html>`;
@@ -296,19 +297,19 @@ export default function LibraryPage() {
           url: '/library',
           title: isAr ? 'المكتبة الرقمية القرآنية والمتون المعتمدة | وَحْيٌ وَنَمَاء' : 'Digital Quranic Library & Texts | Wahy Wa Namaa',
           description: isAr
-            ? 'مكتبة وَحْيٌ وَنَمَاء الرقمية: متون التجويد المعتمدة (تحفة الأطفال، الجزرية، الشاطبية)، مصاحف التجويد الملونة برواية حفص وورش، وكتب تأسيس الأطفال (نور البيان والقاعدة النورانية) مع إمكانية التحميل المباشر والقراءة.'
+            ? 'مكتبة وَحْيٌ وَنَمَاء الرقمية: متون التجويد (تحفة الأطفال، الجزرية، الشاطبية)، مصاحف التجويد الملونة برواية حفص وورش، وكتب تأسيس الأطفال (نور البيان والقاعدة النورانية) مع إمكانية التحميل المباشر والقراءة.'
             : 'Download approved Tajweed texts (Tuhfa, Jazariyyah, Shatibiyyah), colored Tajweed Mushafs, and kids foundation books with free PDF download and preview.'
         }}
       />
       <GlobalHeader />
 
-      <main className="min-h-screen bg-[var(--athar-cream)]/20 pb-20">
+      <main className="wn-library-shell">
         {/* ═══ Header Section ═══ */}
-        <section className="bg-gradient-to-b from-[var(--azhar-green-deep)] via-emerald-900 to-slate-950 text-white py-16 px-4">
-          <div className="max-w-6xl mx-auto text-center space-y-4">
+        <section className="wn-library-hero">
+          <div className="page-container wn-library-hero__inner">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[var(--azhar-gold-bright)]/20 border border-[var(--azhar-gold-bright)]/40 text-[var(--azhar-gold-bright)] text-xs md:text-sm font-bold">
               <Sparkles size={16} />
-              <span>{isAr ? 'المكتبة الرقمية المفتوحة لجميع المسلمين' : 'Open Islamic Digital Knowledge Repository'}</span>
+              <span>{isAr ? 'المكتبة التعليمية' : 'LEARNING LIBRARY'}</span>
             </div>
 
             <h1 className="text-3xl md:text-5xl font-black">
@@ -316,20 +317,19 @@ export default function LibraryPage() {
             </h1>
             <p className="text-emerald-100 text-sm md:text-base max-w-2xl mx-auto leading-relaxed">
               {isAr
-                ? 'تحميل مباشر ومجاني لأهم متون التجويد المعتمدة، مصاحف التجويد الملونة بروايتي حفص وورش، وكتب تأسيس الأطفال المعتمدة بالأزهر الشريف.'
-                : 'Direct free download for accredited Tajweed texts, colored Mushafs (Hafs & Warsh), and proven children foundations.'}
+                ? 'مواد تعليمية وكتب وفيديوهات تساعد الطالب على القراءة والمراجعة والتجويد من داخل المنصة.'
+                : 'Learning materials, books, and recorded lessons to support reading, review, and Tajweed.'}
             </p>
 
             {/* Mode Switcher Tabs */}
             <div className="flex justify-center pt-6">
-              <div className="bg-white/10 p-1.5 rounded-2xl flex items-center gap-1 border border-white/20">
+              <div className="wn-library-switch">
                 <button
                   type="button"
                   onClick={() => setMode('books')}
                   className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm transition ${
                     mode === 'books'
-                      ? 'bg-[var(--azhar-gold-bright)] text-[var(--athar-navy)] shadow-md'
-                      : 'text-white hover:bg-white/10'
+                      ? 'is-active' : ''
                   }`}
                 >
                   <BookOpen size={18} />
@@ -340,8 +340,7 @@ export default function LibraryPage() {
                   onClick={() => setMode('videos')}
                   className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm transition ${
                     mode === 'videos'
-                      ? 'bg-[var(--azhar-gold-bright)] text-[var(--athar-navy)] shadow-md'
-                      : 'text-white hover:bg-white/10'
+                      ? 'is-active' : ''
                   }`}
                 >
                   <MonitorPlay size={18} />

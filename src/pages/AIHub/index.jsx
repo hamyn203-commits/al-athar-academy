@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bot, Mic, BookOpen, GraduationCap, Loader2, Sparkles, Upload, Square, Radio } from 'lucide-react';
 import GlobalHeader from '../../components/GlobalHeader';
+import GlobalFooter from '../../components/GlobalFooter';
+import '../../styles/public-experience.css';
 import { api } from '../../lib/api';
 import { useAuth } from '../../hooks/useAuth';
 import { useAudioRecorder } from '../../hooks/useAudioRecorder';
@@ -125,11 +127,11 @@ export default function AIHub() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="wn-ai-shell">
       <GlobalHeader />
-      <main className="container mx-auto px-4 py-8 max-w-4xl">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-3 bg-emerald-100 rounded-xl">
+      <main className="wn-ai-wrap">
+        <div className="wn-ai-heading">
+          <div className="wn-ai-heading__icon">
             <Sparkles className="text-emerald-600" size={28} />
           </div>
           <div>
@@ -137,7 +139,7 @@ export default function AIHub() {
             <p className="text-gray-600 text-sm">
               {aiStatus?.mode === 'cloud'
                 ? `✓ متصل — ${aiStatus.activeProvider}`
-                : 'وضع محلي ذكي — Bedrock → OpenAI → Gemini → FAQ'}
+                : 'المساعد متاح داخل المنصة'}
             </p>
             {aiStatus?.chain && (
               <div className="flex flex-wrap gap-1 mt-1">
@@ -151,21 +153,19 @@ export default function AIHub() {
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2 mb-6">
+        <div className="wn-ai-tabs">
           {TABS.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               onClick={() => setTab(id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${
-                tab === id ? 'bg-emerald-600 text-white' : 'bg-white border text-gray-700 hover:border-emerald-300'
-              }`}
+              className={'wn-ai-tab ' + (tab === id ? 'is-active' : '')}
             >
               <Icon size={16} /> {label}
             </button>
           ))}
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border p-6">
+        <div className="wn-ai-panel">
           {tab === 'quran' && (
             <form onSubmit={askQuran} className="space-y-4">
               <label className="block font-semibold">اسأل عن القرآن أو التجويد</label>
@@ -181,7 +181,7 @@ export default function AIHub() {
                 اسأل
               </button>
               {answer && (
-                <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-4 text-gray-800 whitespace-pre-wrap">
+                <div className="wn-ai-result whitespace-pre-wrap">
                   {answer}
                 </div>
               )}
@@ -190,7 +190,7 @@ export default function AIHub() {
 
           {tab === 'recitation' && (
             <div className="space-y-4">
-              <p className="text-gray-600">ارفع ملفاً أو سجّل مباشرة — تحليل التجويد يعمل حتى بدون مفاتيح AI (وضع محلي)</p>
+              <p className="text-gray-600">ارفع ملفاً أو سجّل مباشرة — يمكنك رفع ملف أو تسجيل التلاوة ثم مراجعة التقرير داخل حسابك</p>
               <input value={surah} onChange={(e) => setSurah(e.target.value)} className="w-full border rounded-lg p-3"
                 placeholder="السورة (اختياري) — مثلاً: الفاتحة" />
 
@@ -228,7 +228,7 @@ export default function AIHub() {
                     <span className="text-2xl text-emerald-600 font-bold">{displayReport.overallScore}%</span>
                   </div>
                   {displayReport.offline && (
-                    <p className="text-xs bg-amber-50 text-amber-800 rounded p-2">تحليل محلي — أضف مفاتيح AI على Azure لدقة أعلى</p>
+                    <p className="text-xs bg-amber-50 text-amber-800 rounded p-2">تم إنشاء التقرير باستخدام الوضع المتاح حاليًا</p>
                   )}
                   {Object.keys(REC_LABELS).map((key) => (
                     <div key={key}>
@@ -317,6 +317,7 @@ export default function AIHub() {
           )}
         </div>
       </main>
+      <GlobalFooter />
     </div>
   );
 }
