@@ -4,7 +4,6 @@ import {
   Repeat2,
   BadgeCheck,
   Sprout,
-  CheckCircle2,
   Sparkles,
 } from 'lucide-react';
 import LocalizedLink from '../../../components/LocalizedLink';
