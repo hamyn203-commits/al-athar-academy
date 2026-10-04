@@ -49,25 +49,38 @@ jobs:
           cat /tmp/vite-preview.log
           exit 1
 
-      - name: Capture desktop homepage
-        run: >
-          npx playwright screenshot
-          --browser chromium
-          --full-page
-          --viewport-size "1600,1000"
-          --wait-for-timeout 5000
-          http://127.0.0.1:4173/ar
-          wahy-namaa-homepage.png
+      - name: Capture desktop and mobile after reveal
+        run: |
+          cat > /tmp/capture-homepage.mjs <<'NODE'
+          import { chromium } from 'playwright';
 
-      - name: Capture mobile homepage
-        run: >
-          npx playwright screenshot
-          --browser chromium
-          --full-page
-          --viewport-size "390,844"
-          --wait-for-timeout 5000
-          http://127.0.0.1:4173/ar
-          wahy-namaa-homepage-mobile.png
+          async function revealAndCapture(page, url, path) {
+            await page.goto(url, { waitUntil: 'networkidle' });
+            await page.evaluate(async () => {
+              const step = Math.max(420, window.innerHeight * 0.72);
+              for (let y = 0; y < document.documentElement.scrollHeight; y += step) {
+                window.scrollTo(0, y);
+                await new Promise((resolve) => setTimeout(resolve, 140));
+              }
+              window.scrollTo(0, document.documentElement.scrollHeight);
+              await new Promise((resolve) => setTimeout(resolve, 500));
+              window.scrollTo(0, 0);
+            });
+            await page.waitForTimeout(350);
+            await page.screenshot({ path, fullPage: true });
+          }
+
+          const browser = await chromium.launch();
+
+          const desktop = await browser.newPage({ viewport: { width: 1600, height: 1000 } });
+          await revealAndCapture(desktop, 'http://127.0.0.1:4173/ar', 'wahy-namaa-homepage.png');
+
+          const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+          await revealAndCapture(mobile, 'http://127.0.0.1:4173/ar', 'wahy-namaa-homepage-mobile.png');
+
+          await browser.close();
+          NODE
+          node /tmp/capture-homepage.mjs
 
       - name: Upload screenshots
         uses: actions/upload-artifact@v4
