@@ -39,7 +39,6 @@ jobs:
       - name: Start preview server
         run: |
           npx vite preview --host 127.0.0.1 --port 4173 > /tmp/vite-preview.log 2>&1 &
-          echo $! > /tmp/vite-preview.pid
           for i in {1..30}; do
             if curl -fsS http://127.0.0.1:4173/ar >/dev/null; then
               exit 0
@@ -49,11 +48,27 @@ jobs:
           cat /tmp/vite-preview.log
           exit 1
 
-      - name: Capture full-page Arabic homepage
-        run: |
-          npx playwright screenshot             --browser chromium             --full-page             --viewport-size "1600,1000"             --wait-for-timeout 5000             http://127.0.0.1:4173/ar             wahy-namaa-homepage.png
+      - name: Capture desktop homepage
+        run: >
+          npx playwright screenshot
+          --browser chromium
+          --full-page
+          --viewport-size "1600,1000"
+          --wait-for-timeout 5000
+          http://127.0.0.1:4173/ar
+          wahy-namaa-homepage.png
 
-      - name: Upload screenshot
+      - name: Capture mobile homepage
+        run: >
+          npx playwright screenshot
+          --browser chromium
+          --full-page
+          --viewport-size "390,844"
+          --wait-for-timeout 5000
+          http://127.0.0.1:4173/ar
+          wahy-namaa-homepage-mobile.png
+
+      - name: Upload screenshots
         uses: actions/upload-artifact@v4
         with:
           name: wahy-namaa-homepage-screenshot
