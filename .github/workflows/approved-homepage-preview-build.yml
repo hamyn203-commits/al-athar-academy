@@ -40,3 +40,11 @@ jobs:
 
       - name: Build frontend
         run: npx vite build
+
+      - name: Upload built preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: approved-homepage-dist
+          path: dist
+          if-no-files-found: error
+          retention-days: 1
