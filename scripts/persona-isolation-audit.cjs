@@ -42,7 +42,7 @@ async function runAudit() {
 
   // A. Register
   const sReg = await request({
-    hostname: '127.0.0.1', port: 4000, path: '/api/auth/register', method: 'POST',
+    hostname: 'localhost', port: 4000, path: '/api/auth/register', method: 'POST',
     headers: { 'Content-Type': 'application/json' }
   }, { name: 'طالب جديد تجريبي', email: studentEmail, password: studentPass, role: 'student' });
 
@@ -55,7 +55,7 @@ async function runAudit() {
 
   // B. Student Profile
   const sProfile = await request({
-    hostname: '127.0.0.1', port: 4000, path: '/api/students/dashboard/profile', method: 'GET',
+    hostname: 'localhost', port: 4000, path: '/api/students/dashboard/profile', method: 'GET',
     headers: { 'Authorization': `Bearer ${studentToken}` }
   });
   if (sProfile.status === 200 && (sProfile.data.user || sProfile.data.profile)) {
@@ -67,7 +67,7 @@ async function runAudit() {
 
   // C. Evaluations (Tajweed criteria)
   const sEval = await request({
-    hostname: '127.0.0.1', port: 4000, path: '/api/students/dashboard/evaluations', method: 'GET',
+    hostname: 'localhost', port: 4000, path: '/api/students/dashboard/evaluations', method: 'GET',
     headers: { 'Authorization': `Bearer ${studentToken}` }
   });
   if (sEval.status === 200) {
@@ -78,7 +78,7 @@ async function runAudit() {
 
   // D. LMS Curriculum access
   const sLms = await request({
-    hostname: '127.0.0.1', port: 4000, path: '/api/lms/course/quran-recitation-rules', method: 'GET',
+    hostname: 'localhost', port: 4000, path: '/api/lms/course/quran-recitation-rules', method: 'GET',
     headers: { 'Authorization': `Bearer ${studentToken}` }
   });
   if (sLms.status === 200) {
@@ -89,7 +89,7 @@ async function runAudit() {
 
   // E. Voice Homework Submit
   const sHw = await request({
-    hostname: '127.0.0.1', port: 4000, path: '/api/homework/mock-hw-1/submit', method: 'POST',
+    hostname: 'localhost', port: 4000, path: '/api/homework/mock-hw-1/submit', method: 'POST',
     headers: { 'Authorization': `Bearer ${studentToken}`, 'Content-Type': 'application/json' }
   }, { audioUrl: 'https://cdn.wahynamaa.academy/homework/sample.mp3', notes: 'تمت قراءة سورة النبأ مع مراعاة الغنن' });
   if (sHw.status === 200 || sHw.status === 201) {
@@ -100,7 +100,7 @@ async function runAudit() {
 
   // F. Student Certificates
   const sCert = await request({
-    hostname: '127.0.0.1', port: 4000, path: '/api/certificates/my-certificates', method: 'GET',
+    hostname: 'localhost', port: 4000, path: '/api/certificates/my-certificates', method: 'GET',
     headers: { 'Authorization': `Bearer ${studentToken}` }
   });
   if (sCert.status === 200) {
@@ -111,7 +111,7 @@ async function runAudit() {
 
   // Isolation check for Student: Attempt to access Admin or Teacher endpoints
   const sTryAdmin = await request({
-    hostname: '127.0.0.1', port: 4000, path: '/api/admin/stats', method: 'GET',
+    hostname: 'localhost', port: 4000, path: '/api/admin/stats', method: 'GET',
     headers: { 'Authorization': `Bearer ${studentToken}` }
   });
   if (sTryAdmin.status === 403 || sTryAdmin.status === 401) {
@@ -121,7 +121,7 @@ async function runAudit() {
   }
 
   const sTryTeacher = await request({
-    hostname: '127.0.0.1', port: 4000, path: '/api/teachers/dashboard/stats', method: 'GET',
+    hostname: 'localhost', port: 4000, path: '/api/teachers/dashboard/stats', method: 'GET',
     headers: { 'Authorization': `Bearer ${studentToken}` }
   });
   if (sTryTeacher.status === 403 || sTryTeacher.status === 401) {
@@ -140,7 +140,7 @@ async function runAudit() {
 
   // A. Register
   const gReg = await request({
-    hostname: '127.0.0.1', port: 4000, path: '/api/auth/register', method: 'POST',
+    hostname: 'localhost', port: 4000, path: '/api/auth/register', method: 'POST',
     headers: { 'Content-Type': 'application/json' }
   }, { name: 'ولي أمر تجريبي', email: guardianEmail, password: guardianPass, role: 'guardian' });
 
@@ -153,7 +153,7 @@ async function runAudit() {
 
   // B. Link Child
   const gLink = await request({
-    hostname: '127.0.0.1', port: 4000, path: '/api/guardian/link-child', method: 'POST',
+    hostname: 'localhost', port: 4000, path: '/api/guardian/link-child', method: 'POST',
     headers: { 'Authorization': `Bearer ${guardianToken}`, 'Content-Type': 'application/json' }
   }, { email: studentEmail, relationship: 'guardian' });
   if (gLink.status === 200 || gLink.status === 201) {
@@ -164,7 +164,7 @@ async function runAudit() {
 
   // C. Fetch Children
   const gChildren = await request({
-    hostname: '127.0.0.1', port: 4000, path: '/api/guardian/children', method: 'GET',
+    hostname: 'localhost', port: 4000, path: '/api/guardian/children', method: 'GET',
     headers: { 'Authorization': `Bearer ${guardianToken}` }
   });
   if (gChildren.status === 200 && Array.isArray(gChildren.data.children)) {
@@ -175,7 +175,7 @@ async function runAudit() {
 
   // D. RSVP Session (Confirm attendance)
   const gRsvpConfirm = await request({
-    hostname: '127.0.0.1', port: 4000, path: '/api/sessions/mock-session-1/rsvp', method: 'POST',
+    hostname: 'localhost', port: 4000, path: '/api/sessions/mock-session-1/rsvp', method: 'POST',
     headers: { 'Authorization': `Bearer ${guardianToken}`, 'Content-Type': 'application/json' }
   }, { status: 'confirmed', notes: 'سوف يحضر الطالب في الموعد بإذن الله' });
   if (gRsvpConfirm.status === 200) {
@@ -186,7 +186,7 @@ async function runAudit() {
 
   // E. RSVP Session (Excuse with 6h compensation rule)
   const gRsvpExcuse = await request({
-    hostname: '127.0.0.1', port: 4000, path: '/api/sessions/mock-session-1/rsvp', method: 'POST',
+    hostname: 'localhost', port: 4000, path: '/api/sessions/mock-session-1/rsvp', method: 'POST',
     headers: { 'Authorization': `Bearer ${guardianToken}`, 'Content-Type': 'application/json' }
   }, { status: 'excused', reason: 'ظرف سفر طارئ' });
   if (gRsvpExcuse.status === 200) {
@@ -197,7 +197,7 @@ async function runAudit() {
 
   // Isolation check for Guardian: Attempt to access Admin or Teacher endpoints
   const gTryAdmin = await request({
-    hostname: '127.0.0.1', port: 4000, path: '/api/admin/stats', method: 'GET',
+    hostname: 'localhost', port: 4000, path: '/api/admin/stats', method: 'GET',
     headers: { 'Authorization': `Bearer ${guardianToken}` }
   });
   if (gTryAdmin.status === 403 || gTryAdmin.status === 401) {
@@ -207,7 +207,7 @@ async function runAudit() {
   }
 
   const gTryTeacher = await request({
-    hostname: '127.0.0.1', port: 4000, path: '/api/teachers/dashboard/stats', method: 'GET',
+    hostname: 'localhost', port: 4000, path: '/api/teachers/dashboard/stats', method: 'GET',
     headers: { 'Authorization': `Bearer ${guardianToken}` }
   });
   if (gTryTeacher.status === 403 || gTryTeacher.status === 401) {
@@ -226,7 +226,7 @@ async function runAudit() {
 
   // A. Register / Login
   const tReg = await request({
-    hostname: '127.0.0.1', port: 4000, path: '/api/auth/register', method: 'POST',
+    hostname: 'localhost', port: 4000, path: '/api/auth/register', method: 'POST',
     headers: { 'Content-Type': 'application/json' }
   }, { name: 'الشيخ عبد الرحمن المقرئ', email: teacherEmail, password: teacherPass, role: 'teacher' });
 
@@ -239,7 +239,7 @@ async function runAudit() {
 
   // B. Teacher Profile
   const tProfile = await request({
-    hostname: '127.0.0.1', port: 4000, path: '/api/teachers/dashboard/profile', method: 'GET',
+    hostname: 'localhost', port: 4000, path: '/api/teachers/dashboard/profile', method: 'GET',
     headers: { 'Authorization': `Bearer ${teacherToken}` }
   });
   if (tProfile.status === 200 && (tProfile.data.teacher || tProfile.data.user)) {
@@ -250,7 +250,7 @@ async function runAudit() {
 
   // C. Teacher Stats
   const tStats = await request({
-    hostname: '127.0.0.1', port: 4000, path: '/api/teachers/dashboard/stats', method: 'GET',
+    hostname: 'localhost', port: 4000, path: '/api/teachers/dashboard/stats', method: 'GET',
     headers: { 'Authorization': `Bearer ${teacherToken}` }
   });
   if (tStats.status === 200) {
@@ -261,7 +261,7 @@ async function runAudit() {
 
   // D. Teacher Assigned Circles
   const tCircles = await request({
-    hostname: '127.0.0.1', port: 4000, path: '/api/circles', method: 'GET',
+    hostname: 'localhost', port: 4000, path: '/api/circles', method: 'GET',
     headers: { 'Authorization': `Bearer ${teacherToken}` }
   });
   if (tCircles.status === 200 && (Array.isArray(tCircles.data.circles) || Array.isArray(tCircles.data))) {
@@ -272,7 +272,7 @@ async function runAudit() {
 
   // Isolation check for Teacher: Attempt to access Admin financial / management endpoints
   const tTryAdmin = await request({
-    hostname: '127.0.0.1', port: 4000, path: '/api/admin/stats', method: 'GET',
+    hostname: 'localhost', port: 4000, path: '/api/admin/stats', method: 'GET',
     headers: { 'Authorization': `Bearer ${teacherToken}` }
   });
   if (tTryAdmin.status === 403 || tTryAdmin.status === 401) {
@@ -282,7 +282,7 @@ async function runAudit() {
   }
 
   const tTryGuardian = await request({
-    hostname: '127.0.0.1', port: 4000, path: '/api/guardian/children', method: 'GET',
+    hostname: 'localhost', port: 4000, path: '/api/guardian/children', method: 'GET',
     headers: { 'Authorization': `Bearer ${teacherToken}` }
   });
   if (tTryGuardian.status === 403 || tTryGuardian.status === 401) {
@@ -301,13 +301,13 @@ async function runAudit() {
 
   // A. Setup Admin
   const aSetup = await request({
-    hostname: '127.0.0.1', port: 4000, path: '/api/setup/admin', method: 'POST',
+    hostname: 'localhost', port: 4000, path: '/api/setup/admin', method: 'POST',
     headers: { 'Content-Type': 'application/json' }
   }, { name: 'مدير عام الأكاديمية', email: adminEmail, password: adminPass });
 
   // Login as Admin
   const aLogin = await request({
-    hostname: '127.0.0.1', port: 4000, path: '/api/auth/login', method: 'POST',
+    hostname: 'localhost', port: 4000, path: '/api/auth/login', method: 'POST',
     headers: { 'Content-Type': 'application/json' }
   }, { email: adminEmail, password: adminPass });
 
@@ -320,7 +320,7 @@ async function runAudit() {
 
   // B. Admin Stats & KPIs
   const aStats = await request({
-    hostname: '127.0.0.1', port: 4000, path: '/api/admin/stats', method: 'GET',
+    hostname: 'localhost', port: 4000, path: '/api/admin/stats', method: 'GET',
     headers: { 'Authorization': `Bearer ${adminToken}` }
   });
   if (aStats.status === 200 && aStats.data.totalStudents !== undefined) {
@@ -331,7 +331,7 @@ async function runAudit() {
 
   // C. Review Pending Teachers
   const aPending = await request({
-    hostname: '127.0.0.1', port: 4000, path: '/api/teachers/admin/pending', method: 'GET',
+    hostname: 'localhost', port: 4000, path: '/api/teachers/admin/pending', method: 'GET',
     headers: { 'Authorization': `Bearer ${adminToken}` }
   });
   if (aPending.status === 200 && Array.isArray(aPending.data)) {
@@ -342,7 +342,7 @@ async function runAudit() {
 
   // D. Approve / Review Teacher
   const aReview = await request({
-    hostname: '127.0.0.1', port: 4000, path: '/api/teachers/admin/mock-teacher-1/review', method: 'PUT',
+    hostname: 'localhost', port: 4000, path: '/api/teachers/admin/mock-teacher-1/review', method: 'PUT',
     headers: { 'Authorization': `Bearer ${adminToken}`, 'Content-Type': 'application/json' }
   }, { status: 'approved', notes: 'تمت إجازته بالسند والتأكد من مخارج الحروف' });
   if (aReview.status === 200) {

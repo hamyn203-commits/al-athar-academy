@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { 
   Users, TrendingUp, BookOpen, Award, Bell, FileText, CalendarCheck, 
   Calendar, Clock, CheckCircle, XCircle, AlertCircle, MessageCircle, 
-  Phone, ShieldCheck, Star, UserPlus, Sparkles, Check, ChevronLeft, ArrowRight
+  Phone, ShieldCheck, Star, UserPlus, Sparkles, Check, ChevronLeft, ArrowRight, Share2
 } from 'lucide-react';
 import DashboardLayout, { StatCard, TabBar } from '../../components/dashboard/DashboardLayout';
 import { useRequireAuth } from '../../hooks/useRequireAuth';
@@ -19,6 +19,22 @@ export default function GuardianDashboard() {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('overview');
+
+  const shareReportViaWhatsApp = (rep, childName) => {
+    const text = `🌸 *تقرير إنجاز الطالب في حلقة القرآن الكريم* 🌸\n` +
+      `🏛️ *أكاديمية وَحْيٌ وَنَمَاء للقرآن الكريم*\n` +
+      `━━━━━━━━━━━━━━━━━━\n` +
+      `👤 *الطالب:* ${childName || 'المجتهد'}\n` +
+      (rep.surahRecited ? `📖 *السورة والمقدار:* سورة ${rep.surahRecited} (الآيات ${rep.fromAyah || 1} - ${rep.toAyah || 'آخر السورة'})\n` : '') +
+      `⭐ *درجة الحفظ:* ${rep.memorizationScore ?? 10}/10\n` +
+      `✨ *درجة التجويد:* ${rep.tajweedScore ?? 10}/10\n` +
+      (rep.nextHomework ? `📝 *الواجب القادم:* ${rep.nextHomework}\n` : '') +
+      (rep.notes ? `💬 *ملاحظات المعلم:* ${rep.notes}\n` : '') +
+      `━━━━━━━━━━━━━━━━━━\n` +
+      `🌱 *نتعلم القرآن، نحفظه، وننمو به.*`;
+    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
 
   // Link Child Modal State
   const [showLinkModal, setShowLinkModal] = useState(false);
@@ -434,10 +450,29 @@ export default function GuardianDashboard() {
                         </div>
                       </div>
 
-                      <span className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-bold">
-                        <MessageCircle size={14} />
-                        تم الإرسال على واتساب ولي الأمر
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => shareReportViaWhatsApp({
+                            surahRecited: currentChild.latestEvaluation.surahRecited,
+                            fromAyah: currentChild.latestEvaluation.fromAyah,
+                            toAyah: currentChild.latestEvaluation.toAyah,
+                            memorizationScore: currentChild.latestEvaluation.memorizationScore,
+                            tajweedScore: currentChild.latestEvaluation.tajweedScore,
+                            nextHomework: currentChild.latestEvaluation.nextHomework,
+                            notes: currentChild.latestEvaluation.notes
+                          }, currentChild.name)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-bold transition shadow-sm active:scale-95"
+                          title="مشاركة التقرير عبر واتساب"
+                        >
+                          <Share2 size={13} className="text-amber-300" />
+                          <span>مشاركة عبر واتساب 📲</span>
+                        </button>
+                        <span className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-bold">
+                          <MessageCircle size={14} />
+                          تم الإرسال على واتساب
+                        </span>
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
@@ -531,6 +566,14 @@ export default function GuardianDashboard() {
                             <span className="block text-[11px] text-gray-400">التجويد</span>
                             <span className="font-black text-teal-600 text-base">{rep.tajweedScore}/10</span>
                           </div>
+                          <button
+                            type="button"
+                            onClick={() => shareReportViaWhatsApp(rep, currentChild?.name)}
+                            className="p-2 text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50 rounded-lg border border-emerald-200 transition"
+                            title="مشاركة في واتساب"
+                          >
+                            <Share2 size={16} />
+                          </button>
                         </div>
                       </div>
 

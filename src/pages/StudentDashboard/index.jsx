@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Calendar, CheckCircle, FileText, Star, Trophy, BookOpen,
   Upload, Clock, Users, X, Award, Video, Gift, Copy,
+  Mic, Square, RotateCcw, Send, Sparkles
 } from 'lucide-react';
 import { Link as RouterLink } from 'react-router-dom';
 import DashboardLayout, { StatCard, TabBar } from '../../components/dashboard/DashboardLayout';
@@ -94,6 +95,17 @@ export default function StudentDashboard() {
   const [bookForm, setBookForm] = useState(emptyBook);
   const [booking, setBooking] = useState(false);
 
+  // In-Browser Voice Recording Studio
+  const [recordModalHw, setRecordModalHw] = useState(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordSeconds, setRecordSeconds] = useState(0);
+  const [audioBlob, setAudioBlob] = useState(null);
+  const [audioUrl, setAudioUrl] = useState(null);
+  const [submittingVoice, setSubmittingVoice] = useState(false);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const timerIntervalRef = useRef(null);
+
   const load = useCallback(async () => {
     try {
       const [prof, st, tr, sess, hw, tch, ev, rev, enrollments, ref] = await Promise.all([
@@ -174,6 +186,8 @@ export default function StudentDashboard() {
   const upcomingSessions = sessions.filter((s) => s.status === 'accepted' && new Date(s.scheduledAt) >= new Date());
   const pendingSessions = sessions.filter((s) => s.status === 'pending');
 
+  const nextActiveSession = upcomingSessions[0] || upcomingTrials[0] || null;
+
   const submitHomework = async (homeworkId, file, sessionId) => {
     if (!file) return;
     const fd = new FormData();
@@ -181,12 +195,90 @@ export default function StudentDashboard() {
     if (sessionId) fd.append('sessionId', sessionId);
     try {
       await api.post(`/api/homework/${homeworkId}/submit`, fd, { auth: true, json: false });
-      toast.success(locale === 'id' ? 'Tugas berhasil diunggah' : locale === 'ar' ? 'تم رفع الواجب بنجاح' : 'Homework uploaded successfully');
+      toast.success(locale === 'id' ? 'Tugas berhasil diunggah' : locale === 'ar' ? 'تم تسليم التلاوة للشيخ بنجاح' : 'Homework uploaded successfully');
       load();
     } catch (e) {
       toast.error(e.message || (locale === 'id' ? 'Gagal mengunggah tugas' : locale === 'ar' ? 'فشل رفع الواجب' : 'Failed to upload homework'));
     }
   };
+
+  const startVoiceRecording = async () => {
+    try {
+      audioChunksRef.current = [];
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mime = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '';
+      const recorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+      mediaRecorderRef.current = recorder;
+
+      recorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) {
+          audioChunksRef.current.push(e.data);
+        }
+      };
+
+      recorder.onstop = () => {
+        const actualMime = recorder.mimeType || 'audio/webm';
+        const blob = new Blob(audioChunksRef.current, { type: actualMime });
+        setAudioBlob(blob);
+        const url = URL.createObjectURL(blob);
+        setAudioUrl(url);
+        stream.getTracks().forEach((track) => track.stop());
+      };
+
+      recorder.start(250);
+      setIsRecording(true);
+      setRecordSeconds(0);
+      setAudioBlob(null);
+      setAudioUrl(null);
+
+      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = setInterval(() => {
+        setRecordSeconds((s) => s + 1);
+      }, 1000);
+    } catch {
+      toast.error('يرجى السماح بالوصول إلى الميكروفون لتسجيل تلاوتك');
+    }
+  };
+
+  const stopVoiceRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+    }
+  };
+
+  const resetVoiceRecording = () => {
+    if (isRecording) {
+      stopVoiceRecording();
+    }
+    setAudioBlob(null);
+    if (audioUrl) URL.revokeObjectURL(audioUrl);
+    setAudioUrl(null);
+    setRecordSeconds(0);
+  };
+
+  const sendVoiceRecording = async () => {
+    if (!audioBlob || !recordModalHw) return;
+    setSubmittingVoice(true);
+    const mime = audioBlob.type || 'audio/webm';
+    const ext = mime.includes('mp4') ? 'm4a' : mime.includes('ogg') ? 'ogg' : 'webm';
+    const file = new File([audioBlob], `recitation-${Date.now()}.${ext}`, { type: mime });
+    try {
+      await submitHomework(recordModalHw._id, file, recordModalHw.sessionId);
+      setRecordModalHw(null);
+      resetVoiceRecording();
+    } finally {
+      setSubmittingVoice(false);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+      if (audioUrl) URL.revokeObjectURL(audioUrl);
+    };
+  }, [audioUrl]);
 
   const openReview = (session) => {
     setReviewModal(session);
@@ -283,6 +375,38 @@ export default function StudentDashboard() {
                   <Copy size={16} /> {locale === 'id' ? 'Salin' : locale === 'ar' ? 'نسخ' : 'Copy'}
                 </button>
                 <button type="button" onClick={() => setTab('referral')} className="text-sm text-orange-700 underline">{locale === 'id' ? 'Detail' : locale === 'ar' ? 'التفاصيل' : 'Details'}</button>
+              </div>
+            </div>
+          )}
+
+          {/* Live Session Launchpad Card */}
+          {nextActiveSession && (
+            <div className="mb-6 bg-gradient-to-r from-emerald-950 via-teal-900 to-emerald-900 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden border border-emerald-700/40">
+              <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 relative z-10">
+                <div className="space-y-2">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-500/20 text-emerald-300 rounded-full text-xs font-bold border border-emerald-400/30">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                    <span>{locale === 'id' ? 'Sesi Langsung Berikutnya' : locale === 'ar' ? 'حلقتك القرآنية القادمة المباشرة' : 'Your Next Live Session'}</span>
+                  </div>
+                  <h3 className="text-xl font-bold font-arabic">
+                    {locale === 'id' ? `Sesi bersama ${nextActiveSession.teacher?.user?.name || nextActiveSession.teacher?.name || 'Guru Al-Quran'}` : locale === 'ar' ? `جلسة التسميع مع ${nextActiveSession.teacher?.user?.name || nextActiveSession.teacher?.name || 'الشيخ المقرئ'}` : `Session with ${nextActiveSession.teacher?.user?.name || nextActiveSession.teacher?.name || 'Quran Tutor'}`}
+                  </h3>
+                  <div className="text-emerald-100/80 text-sm flex items-center gap-3 font-arabic">
+                    <span className="flex items-center gap-1.5"><Calendar size={15} /> {new Date(nextActiveSession.scheduledAt).toLocaleDateString(locale === 'id' ? 'id-ID' : 'ar-EG', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
+                    <span>•</span>
+                    <span className="flex items-center gap-1.5"><Clock size={15} /> {new Date(nextActiveSession.scheduledAt).toLocaleTimeString(locale === 'id' ? 'id-ID' : 'ar-EG', { hour: '2-digit', minute: '2-digit' })}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <a
+                    href={nextActiveSession.roomUrl || `/live/session-${nextActiveSession._id}?role=student`}
+                    className="px-6 py-3.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-stone-950 font-black rounded-xl text-sm transition-all shadow-lg shadow-amber-950/40 flex items-center gap-2 active:scale-95"
+                  >
+                    <Video size={18} />
+                    <span>{locale === 'id' ? 'Masuk Kelas Sekarang 🚀' : locale === 'ar' ? 'ادخل حلقتك الآن مع الشيخ 🚀' : 'Join Live Class Now 🚀'}</span>
+                  </a>
+                </div>
               </div>
             </div>
           )}
@@ -408,13 +532,24 @@ export default function StudentDashboard() {
                       <div className="flex items-center gap-2">
                         <span className={`text-xs px-2 py-1 rounded ${st.cls}`}>{st.label}</span>
                         {hw.status === 'pending' && (
-                          <>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                resetVoiceRecording();
+                                setRecordModalHw(hw);
+                              }}
+                              className="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition shadow-sm active:scale-95"
+                            >
+                              <Mic size={14} className="text-amber-300" />
+                              <span>{locale === 'id' ? 'Rekam Suara 🎙️' : locale === 'ar' ? 'سجّل تلاوتك الآن 🎙️' : 'Record Audio 🎙️'}</span>
+                            </button>
                             <input type="file" accept="audio/*" className="hidden" id={`hw-${hw._id}`}
                               onChange={(e) => submitHomework(hw._id, e.target.files?.[0], hw.sessionId)} />
-                            <label htmlFor={`hw-${hw._id}`} className="btn-primary cursor-pointer flex items-center gap-1 text-xs px-3 py-1.5">
-                              <Upload size={14} /> {locale === 'id' ? 'Unggah Audio' : locale === 'ar' ? 'رفع صوت' : 'Upload Audio'}
+                            <label htmlFor={`hw-${hw._id}`} className="cursor-pointer flex items-center gap-1 text-xs px-2.5 py-1.5 border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg">
+                              <Upload size={13} /> {locale === 'id' ? 'Unggah File' : locale === 'ar' ? 'رفع ملف' : 'Upload File'}
                             </label>
-                          </>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -685,6 +820,104 @@ export default function StudentDashboard() {
               {booking ? (locale === 'id' ? 'Mengirim...' : 'جاري الإرسال...') : (locale === 'id' ? 'Kirim Permintaan Sesi' : locale === 'ar' ? 'إرسال طلب الحصة' : 'Send Session Request')}
             </button>
           </form>
+        </Modal>
+      )}
+
+      {/* IN-BROWSER AUDIO RECORDER MODAL */}
+      {recordModalHw && (
+        <Modal 
+          title={locale === 'id' ? 'Studio Rekaman Suara Al-Quran 🎙️' : locale === 'ar' ? 'استوديو التسميع الصوتي المباشر 🎙️' : 'Live Quran Recitation Studio 🎙️'} 
+          onClose={() => { resetVoiceRecording(); setRecordModalHw(null); }}
+        >
+          <div className="space-y-4 font-arabic">
+            <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3.5 text-sm text-emerald-900">
+              <p className="font-bold">{recordModalHw.title}</p>
+              {recordModalHw.description && <p className="text-xs text-emerald-700 mt-1">{recordModalHw.description}</p>}
+            </div>
+
+            <div className="bg-stone-50 border border-stone-200 rounded-2xl p-6 text-center space-y-4">
+              <div className="flex justify-center items-center">
+                <div className={`w-20 h-20 rounded-full flex items-center justify-center transition-all ${
+                  isRecording 
+                    ? 'bg-red-500 text-white animate-pulse shadow-lg shadow-red-500/30' 
+                    : audioBlob 
+                    ? 'bg-emerald-600 text-white' 
+                    : 'bg-emerald-100 text-emerald-700'
+                }`}>
+                  <Mic size={36} />
+                </div>
+              </div>
+
+              {/* Timer & Status */}
+              <div>
+                <p className="text-3xl font-black font-mono text-stone-800">
+                  {Math.floor(recordSeconds / 60).toString().padStart(2, '0')}:{(recordSeconds % 60).toString().padStart(2, '0')}
+                </p>
+                <p className="text-xs text-stone-500 mt-1">
+                  {isRecording 
+                    ? (locale === 'id' ? 'Sedang merekam bacaan Anda...' : locale === 'ar' ? 'جاري تسجيل تلاوتك بصوت نقي... رتّل بهدوء ومراعاة للأحكام' : 'Recording your recitation clearly...') 
+                    : audioBlob 
+                    ? (locale === 'id' ? 'Rekaman selesai — Dengarkan sebelum mengirim' : locale === 'ar' ? 'تم إنهاء التسجيل — استمع لتلاوتك قبل إرسالها للشيخ' : 'Recording finished — listen before sending') 
+                    : (locale === 'id' ? 'Klik tombol di bawah untuk mulai merekam' : locale === 'ar' ? 'انقر على زر البدء لتسجيل تلاوتك مباشرة من جهازك' : 'Click start to record directly from your mic')}
+                </p>
+              </div>
+
+              {/* Audio Playback Preview */}
+              {audioUrl && (
+                <div className="pt-2">
+                  <audio src={audioUrl} controls className="w-full rounded-lg" />
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-center gap-3 pt-2">
+                {!isRecording && !audioBlob && (
+                  <button
+                    type="button"
+                    onClick={startVoiceRecording}
+                    className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-sm transition flex items-center gap-2 shadow-sm active:scale-95"
+                  >
+                    <Mic size={16} />
+                    <span>{locale === 'id' ? 'Mulai Rekam' : locale === 'ar' ? 'ابدأ تسجيل التلاوة' : 'Start Recording'}</span>
+                  </button>
+                )}
+
+                {isRecording && (
+                  <button
+                    type="button"
+                    onClick={stopVoiceRecording}
+                    className="px-6 py-2.5 bg-stone-900 hover:bg-black text-white font-bold rounded-xl text-sm transition flex items-center gap-2 shadow-sm active:scale-95"
+                  >
+                    <Square size={16} />
+                    <span>{locale === 'id' ? 'Hentikan & Simpan' : locale === 'ar' ? 'إيقاف التسجيل وتثبيته' : 'Stop & Preview'}</span>
+                  </button>
+                )}
+
+                {audioBlob && !isRecording && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={resetVoiceRecording}
+                      className="px-4 py-2.5 border border-stone-300 text-stone-700 hover:bg-stone-100 font-bold rounded-xl text-sm transition flex items-center gap-1.5"
+                    >
+                      <RotateCcw size={16} />
+                      <span>{locale === 'id' ? 'Ulangi' : locale === 'ar' ? 'إعادة التسجيل' : 'Re-record'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={submittingVoice}
+                      onClick={sendVoiceRecording}
+                      className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm transition flex items-center gap-2 shadow-md shadow-emerald-700/20 disabled:opacity-50 active:scale-95"
+                    >
+                      <Send size={16} />
+                      <span>{submittingVoice ? (locale === 'id' ? 'Mengirim...' : 'جاري الإرسال...') : (locale === 'id' ? 'Kirim ke Guru 🚀' : locale === 'ar' ? 'إرسال التلاوة للشيخ 🚀' : 'Send to Tutor 🚀')}</span>
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
         </Modal>
       )}
     </DashboardLayout>
