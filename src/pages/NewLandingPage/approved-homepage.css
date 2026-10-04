@@ -1544,3 +1544,645 @@
     animation: none;
   }
 }
+
+
+/* ==========================================================================
+   Visual depth pass — approved reference direction
+   More atmosphere, image depth, layered light, and editorial contrast.
+   ========================================================================== */
+
+.wn-approved-home {
+  background:
+    radial-gradient(circle at 8% 4%, rgba(212,175,107,.08), transparent 23rem),
+    radial-gradient(circle at 96% 20%, rgba(86,179,166,.07), transparent 28rem),
+    var(--wn-ivory);
+}
+
+.wn-approved-header {
+  background:
+    linear-gradient(90deg,
+      color-mix(in srgb, var(--wn-ivory) 97%, var(--wn-gold) 3%),
+      color-mix(in srgb, var(--wn-ivory) 96%, var(--wn-mint) 4%));
+  box-shadow: 0 10px 35px -30px rgba(7,53,40,.45);
+}
+
+.wn-approved-hero {
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 12% 20%, rgba(212,175,107,.20), transparent 24rem),
+    radial-gradient(circle at 87% 18%, rgba(86,179,166,.14), transparent 30rem),
+    linear-gradient(115deg, #fffdf6 0%, #f8f3e9 46%, #edf6f1 100%);
+}
+
+.wn-approved-hero::before {
+  content: '';
+  position: absolute;
+  width: 34rem;
+  height: 34rem;
+  top: -19rem;
+  inset-inline-start: -12rem;
+  border-radius: 50%;
+  background: rgba(212,175,107,.12);
+  filter: blur(8px);
+  z-index: -1;
+  pointer-events: none;
+}
+
+.wn-approved-hero::after {
+  content: '';
+  position: absolute;
+  width: 30rem;
+  height: 36rem;
+  bottom: -22rem;
+  inset-inline-end: -10rem;
+  border-radius: 48% 48% 0 0;
+  border: 1px solid rgba(15,107,79,.12);
+  box-shadow:
+    0 0 0 16px rgba(216,237,230,.20),
+    0 0 0 34px rgba(212,175,107,.05);
+  z-index: -1;
+  pointer-events: none;
+}
+
+.wn-approved-hero__pattern {
+  opacity: .9;
+  background-image:
+    linear-gradient(90deg, transparent 0 61%, rgba(212,175,107,.10) 61% 61.08%, transparent 61.08%),
+    radial-gradient(circle at 18% 72%, rgba(212,175,107,.08), transparent 22rem),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='108' height='108' viewBox='0 0 108 108'%3E%3Cg fill='none' stroke='%230f6b4f' stroke-opacity='.055' stroke-width='.8'%3E%3Cpath d='M54 10 98 54 54 98 10 54Z'/%3E%3Cpath d='M22 22h64v64H22Z'/%3E%3Ccircle cx='54' cy='54' r='8'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.wn-approved-hero__copy {
+  position: relative;
+}
+
+.wn-approved-hero__copy::before {
+  content: '';
+  position: absolute;
+  top: 5%;
+  inset-inline-start: -2rem;
+  width: 5.5rem;
+  height: 5.5rem;
+  border: 1px solid rgba(212,175,107,.22);
+  transform: rotate(45deg);
+  opacity: .7;
+  pointer-events: none;
+}
+
+.wn-approved-hero__title strong {
+  text-shadow: 0 9px 28px rgba(184,138,57,.10);
+}
+
+.wn-approved-hero__visual {
+  overflow: visible;
+  border: 0;
+  border-radius: 38px 38px 26px 26px;
+  background: transparent;
+  box-shadow: none;
+}
+
+.wn-approved-hero__visual::before {
+  content: '';
+  position: absolute;
+  inset: -11px;
+  border-radius: 46px 46px 32px 32px;
+  border: 1px solid rgba(212,175,107,.46);
+  background: rgba(255,255,255,.42);
+  box-shadow:
+    0 34px 90px -44px rgba(7,53,40,.50),
+    0 14px 28px -24px rgba(184,138,57,.38);
+  z-index: -2;
+}
+
+.wn-approved-hero__visual::after {
+  content: '';
+  position: absolute;
+  width: 13rem;
+  height: 16rem;
+  bottom: -2.25rem;
+  inset-inline-start: -2.8rem;
+  border-radius: 7rem 7rem 1.4rem 1.4rem;
+  border: 1px solid rgba(212,175,107,.46);
+  background:
+    linear-gradient(180deg, rgba(15,107,79,.08), rgba(250,249,244,.55));
+  backdrop-filter: blur(5px);
+  z-index: -1;
+}
+
+.wn-approved-hero__visual img,
+.wn-approved-hero__shade {
+  border-radius: 34px 34px 24px 24px;
+}
+
+.wn-approved-hero__shade {
+  background:
+    linear-gradient(180deg, rgba(255,244,220,.02) 20%, rgba(7,53,40,.26) 100%),
+    linear-gradient(90deg, rgba(7,53,40,.03), transparent 42%, rgba(184,138,57,.12));
+}
+
+.wn-approved-verse-card {
+  box-shadow:
+    0 24px 50px -28px rgba(7,53,40,.75),
+    inset 0 1px 0 rgba(255,255,255,.08);
+}
+
+.wn-approved-verse-card::after {
+  content: '✦';
+  position: absolute;
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  top: -1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: var(--wn-gold);
+  color: var(--wn-emerald-deep);
+  font-size: .7rem;
+  box-shadow: 0 8px 20px rgba(184,138,57,.3);
+}
+
+.wn-approved-trust-item {
+  padding: .55rem .6rem;
+  border-radius: 14px;
+  transition: background .25s ease, transform .25s ease;
+}
+
+.wn-approved-trust-item:hover {
+  background: rgba(255,255,255,.64);
+  transform: translateY(-2px);
+}
+
+.wn-approved-programs {
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 9% 10%, rgba(212,175,107,.17), transparent 25rem),
+    radial-gradient(circle at 88% 64%, rgba(86,179,166,.13), transparent 28rem),
+    linear-gradient(180deg, #fbf8ef 0%, #f7f2e8 50%, #faf9f4 100%);
+}
+
+.wn-approved-programs::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: -9rem;
+  bottom: -6rem;
+  width: 28rem;
+  height: 31rem;
+  border-radius: 14rem 14rem 0 0;
+  border: 1px solid rgba(212,175,107,.20);
+  box-shadow: 0 0 0 22px rgba(255,255,255,.18);
+  transform: rotate(8deg);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.wn-approved-programs::after {
+  content: '';
+  position: absolute;
+  top: 8%;
+  inset-inline-end: -12rem;
+  width: 25rem;
+  height: 25rem;
+  border-radius: 50%;
+  background: rgba(15,107,79,.07);
+  filter: blur(20px);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.wn-approved-programs__pattern {
+  opacity: .78;
+}
+
+.wn-approved-program-card {
+  position: relative;
+  border-color: rgba(212,175,107,.22);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.98), rgba(255,253,247,.94));
+  box-shadow:
+    0 18px 38px -34px rgba(7,53,40,.34),
+    inset 0 1px 0 rgba(255,255,255,.8);
+}
+
+.wn-approved-program-card::after {
+  content: '';
+  position: absolute;
+  width: 5.2rem;
+  height: 5.2rem;
+  top: -2.6rem;
+  inset-inline-end: -2.6rem;
+  border-radius: 50%;
+  background: rgba(212,175,107,.08);
+  pointer-events: none;
+}
+
+.wn-approved-program-card:hover {
+  transform: translateY(-7px);
+  box-shadow:
+    0 24px 54px -34px rgba(7,53,40,.45),
+    0 14px 24px -22px rgba(184,138,57,.3);
+}
+
+.wn-approved-program-card__visual {
+  position: relative;
+  min-height: 128px;
+  overflow: hidden;
+  color: var(--wn-emerald-deep);
+  background:
+    radial-gradient(circle at 24% 18%, rgba(255,255,255,.85), transparent 30%),
+    linear-gradient(135deg, #f0e6d2, #dcefe8);
+}
+
+.wn-approved-program-card__visual::before {
+  content: '';
+  position: absolute;
+  width: 8.4rem;
+  height: 10rem;
+  bottom: -6.3rem;
+  right: -1.5rem;
+  border: 1px solid rgba(15,107,79,.16);
+  border-radius: 6rem 6rem 0 0;
+  transform: rotate(-7deg);
+}
+
+.wn-approved-program-card__visual::after {
+  content: '✦';
+  position: absolute;
+  top: .8rem;
+  inset-inline-end: .85rem;
+  color: rgba(184,138,57,.58);
+  font-size: .72rem;
+}
+
+.wn-approved-program-card:nth-child(1) .wn-approved-program-card__visual {
+  background:
+    radial-gradient(circle at 25% 18%, rgba(255,255,255,.9), transparent 26%),
+    linear-gradient(135deg, #f7e9c8, #e3efe7);
+}
+
+.wn-approved-program-card:nth-child(2) .wn-approved-program-card__visual {
+  background:
+    radial-gradient(circle at 72% 25%, rgba(255,255,255,.8), transparent 28%),
+    linear-gradient(135deg, #d8ede6, #f4ead7);
+}
+
+.wn-approved-program-card:nth-child(3) .wn-approved-program-card__visual {
+  background:
+    radial-gradient(circle at 30% 20%, rgba(212,175,107,.25), transparent 34%),
+    linear-gradient(145deg, #0f6b4f, #18483a);
+  color: #f1dca9;
+}
+
+.wn-approved-program-card:nth-child(4) .wn-approved-program-card__visual {
+  background:
+    radial-gradient(circle at 72% 30%, rgba(255,255,255,.82), transparent 28%),
+    linear-gradient(140deg, #e5dcc6, #cce7df);
+}
+
+.wn-approved-program-card:nth-child(5) .wn-approved-program-card__visual {
+  background:
+    radial-gradient(circle at 30% 20%, rgba(212,175,107,.23), transparent 32%),
+    linear-gradient(140deg, #174c3b, #0a3227);
+  color: #efd79e;
+}
+
+.wn-approved-programs__manifesto {
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(rgba(7,53,40,.88), rgba(7,53,40,.92)),
+    url('/images/hero-wahy-namaa.jpg') center 48% / cover;
+  box-shadow:
+    0 28px 70px -42px rgba(7,53,40,.7),
+    inset 0 0 0 1px rgba(212,175,107,.18);
+}
+
+.wn-approved-programs__manifesto::before {
+  content: '';
+  position: absolute;
+  inset: .55rem;
+  border-radius: 14px;
+  border: 1px solid rgba(212,175,107,.28);
+  pointer-events: none;
+}
+
+.wn-approved-programs__manifesto::after {
+  content: '';
+  position: absolute;
+  width: 9rem;
+  height: 11rem;
+  bottom: -5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  border-radius: 8rem 8rem 0 0;
+  border: 1px solid rgba(212,175,107,.26);
+  pointer-events: none;
+}
+
+.wn-approved-programs__manifesto > * {
+  position: relative;
+  z-index: 1;
+}
+
+.wn-approved-trust-bar {
+  background:
+    linear-gradient(90deg, rgba(255,255,255,.88), rgba(250,246,235,.96), rgba(255,255,255,.88));
+  box-shadow: 0 18px 40px -36px rgba(7,53,40,.45);
+  border-color: rgba(212,175,107,.22);
+}
+
+.wn-approved-why {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 12% 32%, rgba(212,175,107,.12), transparent 24rem),
+    linear-gradient(180deg, #fffdf8 0%, #f8f4e9 100%);
+}
+
+.wn-approved-why::before {
+  content: '';
+  position: absolute;
+  width: 27rem;
+  height: 38rem;
+  top: 50%;
+  inset-inline-end: -10rem;
+  transform: translateY(-50%);
+  border-radius: 15rem 15rem 2rem 2rem;
+  background:
+    linear-gradient(180deg, rgba(15,107,79,.98), rgba(7,53,40,.98)),
+    url('/images/hero-wahy-namaa.jpg') center / cover;
+  box-shadow:
+    -28px 32px 80px -54px rgba(7,53,40,.72),
+    inset 0 0 0 1px rgba(212,175,107,.16);
+  z-index: -1;
+}
+
+.wn-approved-why::after {
+  content: '';
+  position: absolute;
+  width: 16rem;
+  height: 16rem;
+  top: 12%;
+  inset-inline-start: -8rem;
+  border: 1px solid rgba(212,175,107,.20);
+  transform: rotate(45deg);
+  z-index: -1;
+}
+
+.wn-approved-why-card {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(212,175,107,.24);
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.98), rgba(250,247,239,.94));
+  box-shadow: 0 20px 42px -36px rgba(7,53,40,.40);
+  transition: transform .28s ease, box-shadow .28s ease, border-color .28s ease;
+}
+
+.wn-approved-why-card::after {
+  content: '';
+  position: absolute;
+  width: 6rem;
+  height: 6rem;
+  top: -4rem;
+  inset-inline-end: -3rem;
+  border-radius: 50%;
+  background: rgba(86,179,166,.10);
+}
+
+.wn-approved-why-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 25px 55px -38px rgba(7,53,40,.48);
+  border-color: rgba(212,175,107,.48);
+}
+
+.wn-home-section--mint {
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    linear-gradient(120deg, rgba(248,243,233,.96) 0%, rgba(232,245,239,.94) 55%, rgba(247,240,224,.96) 100%);
+}
+
+.wn-home-section--mint::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 90% 0%, rgba(15,107,79,.13), transparent 22rem),
+    radial-gradient(circle at 0% 100%, rgba(212,175,107,.14), transparent 26rem),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='150' viewBox='0 0 120 150'%3E%3Cg fill='none' stroke='%230f6b4f' stroke-opacity='.035' stroke-width='1'%3E%3Cpath d='M22 150V78c0-30 18-48 38-62 20 14 38 32 38 62v72'/%3E%3C/g%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: -1;
+}
+
+.wn-experience-card {
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.92), rgba(250,247,238,.90));
+  border-color: rgba(212,175,107,.20);
+  box-shadow:
+    0 18px 40px -34px rgba(7,53,40,.34),
+    inset 0 1px 0 rgba(255,255,255,.82);
+  transition: transform .26s ease, box-shadow .26s ease;
+}
+
+.wn-experience-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 24px 48px -34px rgba(7,53,40,.42);
+}
+
+.wn-learning-panel {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background:
+    linear-gradient(180deg, rgba(6,39,30,.80), rgba(7,53,40,.92)),
+    url('/images/hero-wahy-namaa.jpg') center 50% / cover;
+  box-shadow:
+    0 32px 70px -44px rgba(7,53,40,.75),
+    inset 0 0 0 1px rgba(212,175,107,.16);
+}
+
+.wn-learning-panel::before {
+  content: '';
+  position: absolute;
+  inset: .55rem;
+  border: 1px solid rgba(212,175,107,.22);
+  border-radius: 18px;
+  pointer-events: none;
+}
+
+.wn-learning-panel > * {
+  position: relative;
+  z-index: 1;
+}
+
+.wn-home-section--white {
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 8% 45%, rgba(212,175,107,.09), transparent 22rem),
+    radial-gradient(circle at 92% 20%, rgba(86,179,166,.08), transparent 24rem),
+    linear-gradient(180deg, #fffefb 0%, #fbf8ef 100%);
+}
+
+.wn-audience-card {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(212,175,107,.20);
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.97), rgba(250,247,239,.94));
+  box-shadow: 0 18px 40px -34px rgba(7,53,40,.35);
+  transition: transform .27s ease, box-shadow .27s ease, border-color .27s ease;
+}
+
+.wn-audience-card::before {
+  content: '';
+  position: absolute;
+  width: 8rem;
+  height: 8rem;
+  top: -5rem;
+  inset-inline-end: -4rem;
+  border-radius: 50%;
+  background: rgba(212,175,107,.09);
+  pointer-events: none;
+}
+
+.wn-audience-card:nth-child(2)::before {
+  background: rgba(86,179,166,.13);
+}
+
+.wn-audience-card:nth-child(3)::before {
+  background: rgba(15,107,79,.10);
+}
+
+.wn-audience-card:nth-child(4)::before {
+  background: rgba(232,220,195,.45);
+}
+
+.wn-audience-card:hover {
+  transform: translateY(-6px);
+  border-color: rgba(212,175,107,.48);
+  box-shadow: 0 28px 58px -40px rgba(7,53,40,.48);
+}
+
+.wn-faculty-card,
+.wn-faculty-principle {
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.98), rgba(249,246,237,.94));
+  border-color: rgba(212,175,107,.20);
+}
+
+.wn-faculty-card__media {
+  background:
+    radial-gradient(circle at 30% 18%, rgba(255,255,255,.9), transparent 30%),
+    linear-gradient(140deg, #d8ede6, #f1e2c3);
+}
+
+.wn-faculty-principles .wn-faculty-principle:nth-child(2) {
+  background:
+    linear-gradient(145deg, #f8efe0, #e2f0eb);
+}
+
+.wn-faculty-principles .wn-faculty-principle:nth-child(3) {
+  background:
+    linear-gradient(145deg, #e9f2ed, #f8f0df);
+}
+
+.wn-journey-card {
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.98), rgba(249,246,238,.96));
+  border-color: rgba(212,175,107,.20);
+  box-shadow: 0 18px 40px -34px rgba(7,53,40,.34);
+}
+
+.wn-journey-card:nth-child(2),
+.wn-journey-card:nth-child(4) {
+  background:
+    linear-gradient(145deg, rgba(235,245,240,.98), rgba(250,247,239,.95));
+}
+
+.wn-journey-card:hover {
+  transform: translateY(-5px);
+  border-color: rgba(212,175,107,.45);
+}
+
+.wn-final-cta {
+  background:
+    linear-gradient(90deg, rgba(5,38,29,.90), rgba(7,53,40,.84)),
+    url('/images/hero-wahy-namaa.jpg') center 58% / cover;
+  box-shadow:
+    0 42px 100px -52px rgba(7,53,40,.85),
+    inset 0 0 0 1px rgba(212,175,107,.15);
+}
+
+.wn-final-cta::before {
+  content: '';
+  position: absolute;
+  inset: .65rem;
+  border-radius: 24px;
+  border: 1px solid rgba(212,175,107,.22);
+  pointer-events: none;
+}
+
+.wn-final-cta::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(212,175,107,.17), transparent 32%),
+    linear-gradient(180deg, transparent 50%, rgba(4,25,19,.18));
+  pointer-events: none;
+}
+
+.wn-final-cta > * {
+  position: relative;
+  z-index: 1;
+}
+
+@media (min-width: 1024px) {
+  .wn-approved-program-card:nth-child(3) {
+    transform: translateY(-8px);
+  }
+
+  .wn-approved-program-card:nth-child(3):hover {
+    transform: translateY(-13px);
+  }
+
+  .wn-approved-why__grid article:nth-child(3n) {
+    transform: translateY(12px);
+  }
+
+  .wn-approved-why__grid article:nth-child(3n):hover {
+    transform: translateY(7px);
+  }
+}
+
+@media (max-width: 767px) {
+  .wn-approved-hero::after,
+  .wn-approved-why::before {
+    opacity: .35;
+  }
+
+  .wn-approved-hero__visual::after {
+    width: 9rem;
+    height: 11rem;
+    bottom: -1.5rem;
+    inset-inline-start: -1.2rem;
+  }
+
+  .wn-approved-program-card:nth-child(3) {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wn-approved-program-card:hover,
+  .wn-approved-why-card:hover,
+  .wn-experience-card:hover,
+  .wn-audience-card:hover,
+  .wn-journey-card:hover {
+    transform: none;
+  }
+}
