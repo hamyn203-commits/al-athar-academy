@@ -1,5 +1,5 @@
-const CACHE_NAME = 'al-athar-academy-v6.1';
-const RUNTIME_CACHE = 'al-athar-runtime-v6.1';
+const CACHE_NAME = 'wahy-wa-namaa-v1';
+const RUNTIME_CACHE = 'wahy-wa-namaa-runtime-v1';
 
 const PRECACHE_URLS = [
   '/',
@@ -107,7 +107,7 @@ self.addEventListener('message', (event) => {
   if (event.data?.type === 'SHOW_NOTIFICATION') {
     const { title, body, url } = event.data.payload || {};
     event.waitUntil(
-      self.registration.showNotification(title || 'أكاديمية الأثر', {
+      self.registration.showNotification(title || 'أكاديمية وَحْيٌ وَنَمَاء', {
         body: body || '',
         icon: '/icons/icon-192x192.png',
         badge: '/icons/badge-72x72.png',

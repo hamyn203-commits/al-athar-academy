@@ -1,81 +1,19 @@
-# robots.txt for Al-Athar Academy
-# https://al-athar-academy.vercel.app
-
+# robots.txt for Wahy Wa Namaa Academy
+# https://wahy-wa-namaa-academy.vercel.app
 User-agent: *
 Allow: /
-Allow: /teachers
-Allow: /courses
-Allow: /blog
-Allow: /contact
-Allow: /about
-Allow: /faq
-Allow: /teacher/register
-Allow: /teacher
-Allow: /login
-Allow: /register
-
-# السماح لمحركات البحث بالزحف
-Allow: /*.js$
-Allow: /*.css$
-Allow: /*.png$
-Allow: /*.jpg$
-Allow: /*.jpeg$
-Allow: /*.gif$
-Allow: /*.svg$
-Allow: /*.webp$
-
-# منع الزحف في المسارات الحساسة
 Disallow: /admin
 Disallow: /api
-Disallow: /dashboard
 Disallow: /student/dashboard
 Disallow: /teacher/dashboard
-Disallow: /_next
+Disallow: /guardian/dashboard
+Disallow: /settings
 Disallow: /.git
 Disallow: /node_modules
-
-# منع الزحف في معاملات البحث
-Disallow: /*?*sort=
-Disallow: /*?*filter=
-Disallow: /*?*page=
-
-# Sitemap
-Sitemap: https://al-athar-academy.vercel.app/sitemap.xml
-
-# Crawl-delay
-Crawl-delay: 1
-
-# محركات البحث الخاصة
-User-agent: Googlebot
-Allow: /
-Crawl-delay: 0
-
-User-agent: Bingbot
-Allow: /
-Crawl-delay: 1
-
-User-agent: Slurp
-Allow: /
-Crawl-delay: 2
-
-User-agent: DuckDuckBot
-Allow: /
-Crawl-delay: 1
-
-# منع AI bots من الزحف (اختياري)
+Sitemap: https://wahy-wa-namaa-academy.vercel.app/sitemap.xml
 User-agent: GPTBot
 Disallow: /
-
-User-agent: ChatGPT-User
-Disallow: /
-
 User-agent: CCBot
 Disallow: /
-
 User-agent: anthropic-ai
 Disallow: /
-
-User-agent: Claude-Web
-Disallow: /
-
-# IndexNow key: https://al-athar-academy.vercel.app/alathartayyib2026seokey01.txt

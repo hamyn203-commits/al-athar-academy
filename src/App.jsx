@@ -7,7 +7,7 @@ import { I18nProvider } from './i18n';
 import { MarketProvider } from './context/MarketProvider';
 import LocaleLayout from './components/LocaleLayout';
 import { StudentLegacyRedirect, TeacherLegacyRedirect, GuardianLegacyRedirect } from './components/DashboardRedirect';
-import Logo from './components/Logo';
+import BrandLogo from './components/BrandLogo';
 import QuranChatWidget from './components/QuranChatWidget';
 import PwaInstallPrompt from './components/PwaInstallPrompt';
 import ErrorBoundary from './components/shared/ErrorBoundary';
@@ -42,10 +42,8 @@ const CertificateView = lazy(() => import('./pages/Certificate'));
 const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
-const SetupAdmin = lazy(() => import('./pages/SetupAdmin'));
 const AIHub = lazy(() => import('./pages/AIHub'));
 const Donate = lazy(() => import('./pages/Donate'));
-const DonateCheckoutMock = lazy(() => import('./pages/Donate/CheckoutMock'));
 const WomenPortal = lazy(() => import('./pages/Women'));
 const VideoLibrary = lazy(() => import('./pages/Library'));
 const Careers = lazy(() => import('./pages/Careers'));
@@ -61,7 +59,7 @@ const MeetingRoom = lazy(() => import('./pages/Meeting/MeetingRoom'));
 function PageLoader() {
   return (
     <div className="loading-overlay">
-      <Logo size={60} showText={false} />
+      <BrandLogo size={58} />
       <div className="spinner spinner-lg" />
       <span style={{ color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.9rem' }}>جاري التحميل...</span>
     </div>
@@ -73,7 +71,6 @@ function pageRoutes() {
     <>
       <Route index element={<LandingPage />} />
       <Route path="login" element={<Login />} />
-      <Route path="setup-admin" element={<SetupAdmin />} />
       <Route path="forgot-password" element={<ForgotPassword />} />
       <Route path="register" element={<Register />} />
       <Route path="register/student" element={<Register />} />
@@ -112,7 +109,6 @@ function pageRoutes() {
       <Route path="meeting/:sessionId" element={<MeetingRoom />} />
       <Route path="ai" element={<AIHub />} />
       <Route path="donate" element={<Donate />} />
-      <Route path="donate/checkout-mock" element={<DonateCheckoutMock />} />
       <Route path="women" element={<WomenPortal />} />
       <Route path="library" element={<VideoLibrary />} />
       <Route path="careers" element={<Careers />} />
