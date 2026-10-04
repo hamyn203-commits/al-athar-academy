@@ -1,0 +1,42 @@
+name: Approved Homepage Preview Build
+
+on:
+  push:
+    branches:
+      - design/approved-wahy-namaa-homepage
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  preview-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint approved redesign files
+        run: >
+          npx eslint
+          src/components/WahyNamaaEmblem.jsx
+          src/components/BrandLogo.jsx
+          src/components/GlobalHeader.jsx
+          src/components/GlobalFooter.jsx
+          src/pages/NewLandingPage/index.jsx
+          src/pages/NewLandingPage/sections/HeroSection.jsx
+          src/pages/NewLandingPage/sections/ProgramsSection.jsx
+          src/pages/NewLandingPage/sections/WhyWahyNamaaSection.jsx
+
+      - name: Build frontend
+        run: npx vite build
