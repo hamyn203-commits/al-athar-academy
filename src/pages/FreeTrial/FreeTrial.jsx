@@ -396,7 +396,7 @@ export default function FreeTrial() {
   // توليد كود مرجعي عشوائي راقٍ
   const generateReferenceNumber = () => {
     const randomNum = Math.floor(100000 + Math.random() * 900000);
-    return `ATHAR-TR-${randomNum}`;
+    return `WAHY-TR-${randomNum}`;
   };
 
   // إرسال الحجز
@@ -437,7 +437,7 @@ export default function FreeTrial() {
     } finally {
       // حفظ في التخزين المحلي كنسخة أمان
       try {
-        localStorage.setItem('athar_last_trial', JSON.stringify(payload));
+        localStorage.setItem('wahy_namaa_last_trial', JSON.stringify(payload));
       } catch {
         // ignore
       }

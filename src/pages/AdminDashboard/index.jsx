@@ -305,7 +305,7 @@ export default function AdminDashboard() {
           {tab === 'messages' && (
             <div className="space-y-4">
               {messages.length === 0 ? <Empty text="لا رسائل" /> : messages.map((m) => (
-                <div key={m._id} className="bg-white rounded-xl border p-5">
+                <div key={m._id} className="wn-dashboard-surface">
                   <div className="flex justify-between items-start gap-3 mb-3">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
@@ -344,8 +344,8 @@ export default function AdminDashboard() {
 
           {tab === 'teachers' && (
             <div className="grid lg:grid-cols-2 gap-6">
-              <form onSubmit={addTeacher} className="bg-white rounded-xl border p-6 space-y-3">
-                <h3 className="font-bold flex items-center gap-2"><Plus size={18} /> إضافة شيخ جديد</h3>
+              <form onSubmit={addTeacher} className="wn-dashboard-surface space-y-3">
+                <h3 className="font-bold flex items-center gap-2"><Plus size={18} /> إضافة معلم جديد</h3>
                 {['name', 'email', 'password', 'phone'].map((f) => (
                   <input key={f} required={f !== 'phone'} type={f === 'password' ? 'password' : f === 'email' ? 'email' : 'text'}
                     placeholder={{ name: 'الاسم', email: 'البريد', password: 'كلمة المرور', phone: 'الهاتف' }[f]}
@@ -358,7 +358,7 @@ export default function AdminDashboard() {
                 </div>
                 <button type="submit" className="w-full py-2 bg-emerald-600 text-white rounded-lg text-sm">إضافة واعتماد</button>
               </form>
-              <div className="bg-white rounded-xl border p-6">
+              <div className="wn-dashboard-surface">
                 <h3 className="font-bold mb-4">المعلمون المعتمدون ({approved.length})</h3>
                 {approved.length === 0 ? <Empty text="لا معلمين" /> : approved.map((t) => (
                   <div key={t._id} className="border rounded-lg p-3 mb-2 flex justify-between items-center">
@@ -385,7 +385,7 @@ export default function AdminDashboard() {
                   {seeding ? 'جاري الإنشاء...' : 'إنشاء دورة تجريبية'}
                 </button>
               </div>
-              <form onSubmit={addCourse} className="bg-white rounded-xl border p-6 grid md:grid-cols-2 gap-3">
+              <form onSubmit={addCourse} className="wn-dashboard-surface grid md:grid-cols-2 gap-3">
                 <h3 className="font-bold md:col-span-2 flex items-center gap-2"><BookOpen size={18} /> دورة جديدة</h3>
                 <input required placeholder="عنوان الدورة (عربي)" value={courseForm.titleAr} onChange={(e) => setCourseForm((p) => ({ ...p, titleAr: e.target.value }))} className="border rounded-lg px-3 py-2 text-sm" />
                 <input required placeholder="slug (مثال: quran-kids)" value={courseForm.slug} onChange={(e) => setCourseForm((p) => ({ ...p, slug: e.target.value }))} className="border rounded-lg px-3 py-2 text-sm" />
@@ -411,7 +411,7 @@ export default function AdminDashboard() {
               </form>
 
               <div className="grid lg:grid-cols-2 gap-6">
-                <div className="bg-white rounded-xl border p-6">
+                <div className="wn-dashboard-surface">
                   <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
                     <h3 className="font-bold">الدورات ({courses.filter((c) => courseProgramFilter === 'all' || (c.programs || []).includes(courseProgramFilter)).length})</h3>
                     <select value={courseProgramFilter} onChange={(e) => setCourseProgramFilter(e.target.value)} className="border rounded-lg px-2 py-1 text-sm">
@@ -434,7 +434,7 @@ export default function AdminDashboard() {
                 </div>
 
                 {selectedCourse && (
-                  <div className="bg-white rounded-xl border p-6">
+                  <div className="wn-dashboard-surface">
                     <h3 className="font-bold mb-4 flex items-center gap-2"><Video size={18} /> دروس الدورة</h3>
                     <form onSubmit={addLesson} className="space-y-2 mb-4 p-3 bg-gray-50 rounded-lg">
                       <input required placeholder="عنوان الدرس" value={lessonForm.titleAr} onChange={(e) => setLessonForm((p) => ({ ...p, titleAr: e.target.value }))} className="w-full border rounded-lg px-3 py-2 text-sm" />
@@ -470,7 +470,7 @@ export default function AdminDashboard() {
 
           {tab === 'blog' && (
             <div className="grid lg:grid-cols-2 gap-6">
-              <form onSubmit={addBlog} className="bg-white rounded-xl border p-6 space-y-3">
+              <form onSubmit={addBlog} className="wn-dashboard-surface space-y-3">
                 <h3 className="font-bold flex items-center gap-2"><Edit3 size={18} /> مقال جديد</h3>
                 <input required placeholder="slug" value={blogForm.slug} onChange={(e) => setBlogForm((p) => ({ ...p, slug: e.target.value }))} className="w-full border rounded-lg px-3 py-2 text-sm" />
                 <input required placeholder="العنوان" value={blogForm.titleAr} onChange={(e) => setBlogForm((p) => ({ ...p, titleAr: e.target.value }))} className="w-full border rounded-lg px-3 py-2 text-sm" />
@@ -478,7 +478,7 @@ export default function AdminDashboard() {
                 <textarea required placeholder="المحتوى" rows={6} value={blogForm.contentAr} onChange={(e) => setBlogForm((p) => ({ ...p, contentAr: e.target.value }))} className="w-full border rounded-lg px-3 py-2 text-sm" />
                 <button type="submit" className="w-full py-2 bg-emerald-600 text-white rounded-lg text-sm">نشر</button>
               </form>
-              <div className="bg-white rounded-xl border p-6">
+              <div className="wn-dashboard-surface">
                 <h3 className="font-bold mb-4 flex items-center gap-2"><MessageSquare size={18} /> المقالات ({blogPosts.length})</h3>
                 {blogPosts.length === 0 ? <Empty text="لا مقالات" /> : blogPosts.map((p) => (
                   <div key={p._id} className="border rounded-lg p-3 mb-2 flex justify-between">
@@ -496,7 +496,7 @@ export default function AdminDashboard() {
           {tab === 'withdrawals' && (
             <div className="space-y-3">
               {withdrawals.length === 0 ? <Empty text="لا طلبات سحب" /> : withdrawals.map((w) => (
-                <div key={w._id} className="bg-white rounded-xl border p-5 flex flex-wrap justify-between items-center gap-4">
+                <div key={w._id} className="wn-dashboard-surface flex flex-wrap justify-between items-center gap-4">
                   <div>
                     <p className="font-bold">{w.teacher?.user?.name || w.teacher?.personalInfo?.fullName || 'معلم'}</p>
                     <p className="text-sm text-gray-500">{w.teacher?.user?.email}</p>
@@ -610,7 +610,7 @@ export default function AdminDashboard() {
 
               </div>
 
-              <div className="bg-white rounded-xl border p-6">
+              <div className="wn-dashboard-surface">
                 <h3 className="font-bold mb-4">التبرعات ({donations.length})</h3>
                 {donations.length === 0 ? <Empty text="لا تبرعات" /> : donations.slice(0, 10).map((d) => (
                   <div key={d._id} className="flex flex-wrap justify-between items-center border rounded-lg p-3 mb-2 gap-2">
@@ -628,7 +628,7 @@ export default function AdminDashboard() {
                 ))}
               </div>
 
-              <div className="bg-white rounded-xl border p-6">
+              <div className="wn-dashboard-surface">
                 <h3 className="font-bold mb-4">طلبات التوظيف ({applications.length})</h3>
                 {applications.length === 0 ? <Empty text="لا طلبات" /> : applications.slice(0, 10).map((a) => (
                   <div key={a._id} className="flex flex-wrap justify-between items-center border rounded-lg p-3 mb-2 gap-2">
@@ -655,7 +655,7 @@ export default function AdminDashboard() {
                     setVideoForm({ title: '', category: 'quran', videoUrl: '', duration: 600 });
                     loadGrowth();
                   } catch (err) { toast.error(err.message); }
-                }} className="bg-white rounded-xl border p-6 space-y-3">
+                }} className="wn-dashboard-surface space-y-3">
                   <h3 className="font-bold">فيديو جديد</h3>
                   <input required placeholder="العنوان" className="w-full border rounded-lg px-3 py-2 text-sm" value={videoForm.title} onChange={(e) => setVideoForm((p) => ({ ...p, title: e.target.value }))} />
                   <input required placeholder="رابط YouTube embed" className="w-full border rounded-lg px-3 py-2 text-sm" value={videoForm.videoUrl} onChange={(e) => setVideoForm((p) => ({ ...p, videoUrl: e.target.value }))} />
@@ -664,7 +664,7 @@ export default function AdminDashboard() {
                   </select>
                   <button type="submit" className="w-full py-2 bg-emerald-600 text-white rounded-lg text-sm">إضافة</button>
                 </form>
-                <div className="bg-white rounded-xl border p-6">
+                <div className="wn-dashboard-surface">
                   <h3 className="font-bold mb-4">المكتبة ({videos.length})</h3>
                   {videos.slice(0, 8).map((v) => (
                     <div key={v._id} className="flex justify-between items-center border rounded-lg p-2 mb-2 text-sm">

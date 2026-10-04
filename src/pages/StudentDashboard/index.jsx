@@ -643,7 +643,7 @@ export default function StudentDashboard() {
                     <div className="space-y-1 text-center md:text-right">
                       <div className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-800 bg-amber-200/60 px-3 py-1 rounded-full">
                         <Trophy size={14} />
-                        <span>{locale === 'ar' ? 'مسابقة براعم الأثر النصف سنوية (كل 6 أشهر)' : 'Semi-Annual Kids Contest'}</span>
+                        <span>{locale === 'ar' ? 'مسابقة براعم وحي ونماء النصف سنوية (كل 6 أشهر)' : 'Semi-Annual Kids Contest'}</span>
                       </div>
                       <h4 className="text-lg font-bold text-slate-900">
                         {locale === 'ar' ? 'لوحة شرف الأبطال والجوائز الكبرى' : 'Little Champions Hall of Fame & Grand Prizes'}

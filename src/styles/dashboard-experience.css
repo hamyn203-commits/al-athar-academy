@@ -233,3 +233,24 @@
   background: linear-gradient(135deg, rgba(255,250,238,.96), rgba(239,248,244,.92)) !important;
   box-shadow: 0 22px 50px -44px rgba(7,53,40,.44) !important;
 }
+
+/* Final admin consistency pass */
+.wn-dashboard-shell .bg-white.rounded-xl,
+.wn-dashboard-shell .bg-white.rounded-2xl{
+  border-color:rgba(212,175,107,.16)!important;
+  box-shadow:0 22px 52px -46px rgba(7,53,40,.46);
+}
+.wn-dashboard-shell input:not([type="checkbox"]):not([type="radio"]),
+.wn-dashboard-shell select,
+.wn-dashboard-shell textarea{
+  border-color:rgba(15,107,79,.14)!important;
+  border-radius:10px!important;
+  outline:none;
+}
+.wn-dashboard-shell input:not([type="checkbox"]):not([type="radio"]):focus,
+.wn-dashboard-shell select:focus,
+.wn-dashboard-shell textarea:focus{
+  border-color:rgba(184,138,57,.54)!important;
+  box-shadow:0 0 0 3px rgba(212,175,107,.08);
+}
+.wn-dashboard-shell h3.font-bold{color:var(--wn-emerald-deep)}
