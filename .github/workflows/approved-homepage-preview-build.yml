@@ -37,6 +37,12 @@ jobs:
           src/pages/NewLandingPage/sections/HeroSection.jsx
           src/pages/NewLandingPage/sections/ProgramsSection.jsx
           src/pages/NewLandingPage/sections/WhyWahyNamaaSection.jsx
+          src/pages/NewLandingPage/sections/LearningExperienceSection.jsx
+          src/pages/NewLandingPage/sections/StudentJourneySection.jsx
+          src/pages/NewLandingPage/sections/TeachersSection.jsx
+          src/pages/NewLandingPage/sections/TargetAudiencesSection.jsx
+          src/pages/NewLandingPage/sections/CTASection.jsx
+          src/components/MobileStickyBar.jsx
 
       - name: Build frontend
         run: npx vite build
