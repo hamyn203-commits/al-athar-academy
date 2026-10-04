@@ -1,0 +1,236 @@
+
+.wn-session-shell {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 8% 4%, rgba(212,175,107,.10), transparent 22rem),
+    radial-gradient(circle at 92% 16%, rgba(86,179,166,.09), transparent 26rem),
+    linear-gradient(180deg,#fffdf8 0%,#f5f2e9 58%,#edf5f1 100%);
+  color: var(--wn-text-primary);
+}
+
+.wn-booking-wrap {
+  width: min(100% - 2rem, 68rem);
+  margin-inline: auto;
+  padding-block: clamp(2rem,5vw,4rem);
+}
+
+.wn-booking-card {
+  overflow: hidden;
+  border: 1px solid rgba(212,175,107,.20);
+  border-radius: 26px;
+  background: rgba(255,255,255,.92);
+  box-shadow: 0 34px 80px -58px rgba(7,53,40,.56);
+}
+
+.wn-booking-head {
+  padding: clamp(1.3rem,3vw,2rem);
+  color: white;
+  background:
+    radial-gradient(circle at 84% 15%,rgba(212,175,107,.16),transparent 25%),
+    linear-gradient(135deg,#05281f,#083b2e 54%,#0d6049);
+}
+
+.wn-booking-teacher {
+  display:flex;
+  align-items:center;
+  gap:1rem;
+}
+
+.wn-booking-teacher img {
+  width:5rem;height:5rem;object-fit:cover;border-radius:1.3rem;
+  border:1px solid rgba(212,175,107,.35);
+  box-shadow:0 18px 40px -30px rgba(0,0,0,.65);
+}
+
+.wn-booking-head h1 {
+  color:#fffdf7;
+  font-family:var(--wn-font-display);
+  font-size:clamp(1.65rem,4vw,2.6rem);
+}
+
+.wn-booking-head p { color:rgba(255,255,255,.6); margin-top:.25rem; }
+
+.wn-booking-form {
+  display:grid;
+  gap:1rem;
+  padding:clamp(1.2rem,3vw,2rem);
+}
+
+.wn-booking-note {
+  padding:.9rem 1rem;
+  border:1px solid rgba(15,107,79,.12);
+  border-radius:14px;
+  background:var(--wn-emerald-soft);
+  color:var(--wn-text-secondary);
+  font-size:.78rem;
+  line-height:1.75;
+}
+
+.wn-booking-field { display:grid; gap:.4rem; }
+.wn-booking-field label {
+  color:var(--wn-emerald-deep);
+  font-size:.76rem;font-weight:750;
+}
+.wn-booking-field select,
+.wn-booking-field textarea {
+  width:100%;
+  border:1px solid var(--wn-border);
+  border-radius:12px;
+  background:#fff;
+  color:var(--wn-text-primary);
+  outline:none;
+}
+.wn-booking-field select { min-height:48px;padding-inline:.8rem; }
+.wn-booking-field textarea { padding:.8rem;resize:vertical; }
+.wn-booking-field select:focus,
+.wn-booking-field textarea:focus {
+  border-color:rgba(184,138,57,.56);
+  box-shadow:0 0 0 4px rgba(212,175,107,.09);
+}
+
+.wn-booking-confirm {
+  padding:1rem;
+  border:1px solid rgba(212,175,107,.28);
+  border-radius:16px;
+  background:linear-gradient(145deg,#fff8e8,#eef7f2);
+}
+
+.wn-booking-summary {
+  margin-top:.7rem;
+  display:grid;
+  gap:.35rem;
+  color:var(--wn-text-secondary);
+  font-size:.78rem;
+}
+
+.wn-meeting-shell {
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  background:#061f18;
+}
+
+.wn-meeting-bar {
+  min-height:50px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:1rem;
+  padding:.55rem 1rem;
+  border-bottom:1px solid rgba(212,175,107,.14);
+  background:rgba(7,53,40,.94);
+  color:white;
+  font-size:.75rem;
+}
+
+.wn-meeting-back {
+  display:inline-flex;align-items:center;gap:.35rem;
+  color:#efd28e;
+  font-weight:700;
+}
+
+.wn-meeting-content {
+  min-height:0;
+  flex:1;
+  display:flex;
+  flex-direction:column;
+}
+
+.wn-meeting-stage {
+  min-height:52vh;
+  flex:1;
+  display:flex;
+  background:
+    radial-gradient(circle at 50% 20%,rgba(212,175,107,.07),transparent 30%),
+    #071c16;
+}
+
+.wn-meeting-stage iframe { flex:1;width:100%;border:0; }
+
+.wn-meeting-empty {
+  flex:1;display:grid;place-items:center;
+  color:rgba(255,255,255,.68);
+  text-align:center;padding:2rem;
+}
+
+.wn-meeting-chat {
+  width:100%;
+  height:42vh;
+  border-top:1px solid rgba(212,175,107,.12);
+  background:#fffdf8;
+}
+
+@media(min-width:1024px){
+  .wn-meeting-content{flex-direction:row;}
+  .wn-meeting-stage{min-height:0;}
+  .wn-meeting-chat{
+    width:24rem;height:auto;flex:0 0 auto;
+    border-top:0;border-inline-start:1px solid rgba(212,175,107,.12);
+  }
+}
+
+/* Existing LiveSessions/LiveRoom visual override */
+.live-sessions-page {
+  min-height:100vh !important;
+  background:
+    radial-gradient(circle at 8% 5%,rgba(212,175,107,.10),transparent 22rem),
+    linear-gradient(180deg,#fffdf8,#f2f6f2) !important;
+}
+
+.live-sessions-header {
+  background:rgba(255,253,248,.92) !important;
+  border-bottom:1px solid rgba(212,175,107,.18) !important;
+  box-shadow:none !important;
+  backdrop-filter:blur(18px);
+}
+
+.live-sessions-header .header-info h1 {
+  color:var(--wn-emerald-deep) !important;
+  font-family:var(--wn-font-display);
+}
+
+.live-sessions-header .header-info p { color:var(--wn-text-secondary) !important; }
+
+.live-sessions-main { max-width:72rem !important;margin-inline:auto !important;padding:1.25rem !important; }
+
+.sessions-grid { gap:1rem !important; }
+
+.session-card {
+  border:1px solid rgba(212,175,107,.18) !important;
+  border-radius:20px !important;
+  background:rgba(255,255,255,.92) !important;
+  box-shadow:0 24px 56px -46px rgba(7,53,40,.5) !important;
+}
+
+.session-card:hover { transform:translateY(-4px);border-color:rgba(212,175,107,.42) !important; }
+
+.session-icon {
+  background:var(--wn-emerald-soft) !important;
+  color:var(--wn-emerald-dark) !important;
+}
+
+.session-title { color:var(--wn-emerald-deep) !important;font-family:var(--wn-font-display); }
+.session-description,.meta-item { color:var(--wn-text-secondary) !important; }
+
+.btn-premium,
+.join-btn,
+.create-session-btn {
+  background:var(--wn-emerald) !important;
+  color:#fff !important;
+  border-color:var(--wn-emerald) !important;
+  box-shadow:none !important;
+}
+.btn-premium:hover,.join-btn:hover,.create-session-btn:hover { background:var(--wn-emerald-dark) !important; }
+
+.btn-premium-outline {
+  border:1px solid rgba(15,107,79,.18) !important;
+  color:var(--wn-emerald-dark) !important;
+  background:#fff !important;
+}
+
+.create-session-modal h2 { color:var(--wn-emerald-deep) !important;font-family:var(--wn-font-display); }
+.premium-input {
+  border:1px solid var(--wn-border) !important;
+  border-radius:11px !important;
+  background:#fff !important;
+}

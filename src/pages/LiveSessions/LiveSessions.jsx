@@ -5,12 +5,13 @@ import {
   Video, BookOpen, Trash2, Copy, Check
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import Logo from '../../components/Logo';
+import BrandLogo from '../../components/BrandLogo';
 import Modal from '../../components/shared/Modal';
 import EmptyState from '../../components/shared/EmptyState';
 import { useAppContext } from '../../context/AppProvider';
 import { API_BASE_URL } from '../../config';
 import '../LiveRoom/LiveRoom.css';
+import '../../styles/session-experience.css';
 
 export default function LiveSessions() {
   const navigate = useNavigate();
@@ -81,11 +82,11 @@ export default function LiveSessions() {
   };
 
   return (
-    <div className="live-sessions-page">
+    <div className="live-sessions-page wn-session-shell">
       <header className="live-sessions-header">
         <div className="header-content">
           <div className="header-right">
-            <Logo size={50} showText />
+            <BrandLogo size={50} />
             <div className="header-info">
               <h1>{t.live.sessionsTitle}</h1>
               <p>{t.live.sessionsSubtitle}</p>

@@ -1,11 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Calendar, Clock, CheckCircle, Info, Globe, AlertCircle } from 'lucide-react';
+import { Calendar, Clock, CheckCircle, Globe, AlertCircle, Sparkles } from 'lucide-react';
+import GlobalHeader from '../../components/GlobalHeader';
+import GlobalFooter from '../../components/GlobalFooter';
+import { useI18n } from '../../i18n';
+import { localizedPath } from '../../lib/locale';
 import api from '../../lib/api';
+import '../../styles/session-experience.css';
 
 export default function BookSession() {
   const { teacherId } = useParams();
   const navigate = useNavigate();
+  const { locale } = useI18n();
+  const isAr = locale === 'ar';
   const [teacher, setTeacher] = useState(null);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
@@ -18,274 +25,167 @@ export default function BookSession() {
   useEffect(() => {
     const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
     if (!token) {
-      navigate('/login?redirect=/book-trial/' + teacherId);
+      navigate(localizedPath('/login', locale) + '?redirect=' + encodeURIComponent('/book-trial/' + teacherId));
       return;
     }
 
-    const fetchTeacher = async () => {
-      try {
-        const data = await api.get(`/api/teachers/${teacherId}`);
-        setTeacher(data);
-      } catch (error) {
-        console.error('Error fetching teacher:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    api.get('/api/teachers/' + teacherId)
+      .then(setTeacher)
+      .catch(() => setTeacher(null))
+      .finally(() => setLoading(false));
+  }, [teacherId, navigate, locale]);
 
-    fetchTeacher();
-  }, [teacherId, navigate]);
+  const dates = Array.from({ length: 14 }, (_, index) => {
+    const date = new Date();
+    date.setDate(date.getDate() + index + 1);
+    return date.toISOString().split('T')[0];
+  });
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
+  const times = [];
+  for (let hour = 8; hour <= 20; hour += 1) {
+    times.push(String(hour).padStart(2, '0') + ':00');
+    times.push(String(hour).padStart(2, '0') + ':30');
+  }
+
+  const timezones = [
+    ['Africa/Cairo', isAr ? 'القاهرة' : 'Cairo'],
+    ['Asia/Riyadh', isAr ? 'الرياض' : 'Riyadh'],
+    ['Asia/Dubai', isAr ? 'دبي' : 'Dubai'],
+    ['Asia/Kuwait', isAr ? 'الكويت' : 'Kuwait'],
+    ['Asia/Qatar', isAr ? 'قطر' : 'Qatar'],
+    ['Asia/Amman', isAr ? 'عمّان' : 'Amman'],
+    ['Asia/Beirut', isAr ? 'بيروت' : 'Beirut'],
+    ['Europe/London', 'London'],
+    ['Europe/Paris', 'Paris'],
+    ['America/New_York', 'New York'],
+  ];
+
+  const submit = async (event) => {
+    event.preventDefault();
     if (!showConfirmation) {
       setShowConfirmation(true);
       return;
     }
 
     setSubmitting(true);
-
     try {
-      const scheduledAt = new Date(`${selectedDate}T${selectedTime}`);
-
       await api.post('/api/sessions/trial', {
         teacherId,
-        scheduledAt,
+        scheduledAt: new Date(selectedDate + 'T' + selectedTime),
         timezone,
-        notes
+        notes,
       }, { auth: true });
 
-      alert('✅ تم إرسال طلب الحصة التجريبية بنجاح!\n\nسيتم إعلامك عند موافقة المعلم عبر البريد الإلكتروني.');
-      navigate('/student/dashboard');
+      navigate(localizedPath('/student/dashboard', locale));
     } catch (err) {
-      alert(err.message || 'حدث خطأ أثناء الحجز');
+      alert(err.message || (isAr ? 'تعذر إرسال طلب الحجز' : 'Unable to send booking request'));
     } finally {
       setSubmitting(false);
     }
   };
 
-  const getAvailableDates = () => {
-    const dates = [];
-    const today = new Date();
-    for (let i = 1; i <= 14; i++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() + i);
-      dates.push(date.toISOString().split('T')[0]);
-    }
-    return dates;
-  };
-
-  const getTimeSlots = () => {
-    const slots = [];
-    for (let hour = 8; hour <= 20; hour++) {
-      slots.push(`${hour.toString().padStart(2, '0')}:00`);
-      slots.push(`${hour.toString().padStart(2, '0')}:30`);
-    }
-    return slots;
-  };
-
-  const getTimezones = () => {
-    return [
-      { value: 'Africa/Cairo', label: 'القاهرة (مصر)' },
-      { value: 'Asia/Riyadh', label: 'الرياض (السعودية)' },
-      { value: 'Asia/Dubai', label: 'دبي (الإمارات)' },
-      { value: 'Asia/Kuwait', label: 'الكويت' },
-      { value: 'Asia/Qatar', label: 'قطر' },
-      { value: 'Asia/Amman', label: 'عمّان (الأردن)' },
-      { value: 'Asia/Beirut', label: 'بيروت (لبنان)' },
-      { value: 'Europe/London', label: 'لندن' },
-      { value: 'Europe/Paris', label: 'باريس' },
-      { value: 'America/New_York', label: 'نيويورك' },
-    ];
-  };
-
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
-      </div>
-    );
+    return <div className="wn-session-shell min-h-screen grid place-items-center"><span className="w-9 h-9 rounded-full border-2 border-[var(--wn-emerald)]/20 border-t-[var(--wn-emerald)] animate-spin" /></div>;
   }
 
   if (!teacher) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-xl text-gray-600">المعلم غير موجود</p>
-      </div>
+      <>
+        <GlobalHeader />
+        <main className="wn-session-shell min-h-[70vh] grid place-items-center px-4">
+          <div className="wn-public-empty max-w-xl w-full"><h3>{isAr ? 'ملف المعلم غير متاح' : 'Teacher profile unavailable'}</h3></div>
+        </main>
+        <GlobalFooter />
+      </>
     );
   }
 
+  const name = teacher.user?.name || teacher.personalInfo?.fullName || (isAr ? 'معلم قرآن' : 'Quran teacher');
+  const photo = teacher.media?.profilePhoto || '/default-teacher.png';
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-white py-12 px-4">
-      <div className="max-w-3xl mx-auto">
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          <div className="bg-gradient-to-r from-emerald-600 to-green-600 p-8 text-white">
-            <div className="flex items-center gap-4">
-              <img
-                src={teacher.media.profilePhoto || '/default-teacher.png'}
-                alt={teacher.user.name}
-                className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg"
-              />
-              <div>
-                <h1 className="text-3xl font-bold mb-2">حجز حصة تجريبية مجانية</h1>
-                <p className="text-emerald-100 text-lg">مع {teacher.user.name}</p>
-                <div className="flex items-center gap-4 mt-2 text-sm">
-                  <span className="flex items-center gap-1">
-                    <Clock size={16} />
-                    60 دقيقة
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <CheckCircle size={16} />
-                    مجانية
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <form onSubmit={handleSubmit} className="p-8 space-y-6">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-start gap-2">
-                <Info className="text-blue-600 mt-1 flex-shrink-0" size={20} />
-                <div className="text-sm text-blue-800">
-                  <p className="font-semibold mb-1">معلومات مهمة:</p>
-                  <ul className="list-disc list-inside space-y-1">
-                    <li>الحصة التجريبية مجانية بالكامل</li>
-                    <li>المدة: 60 دقيقة كاملة</li>
-                    <li>سيتم إعلامك عند موافقة المعلم</li>
-                    <li>يمكنك إلغاء الحصة قبل 24 ساعة</li>
-                  </ul>
+    <>
+      <GlobalHeader />
+      <main className="wn-session-shell">
+        <div className="wn-booking-wrap">
+          <section className="wn-booking-card">
+            <div className="wn-booking-head">
+              <span className="wn-auth-visual__eyebrow"><Sparkles size={14} /> {isAr ? 'حجز جلسة تعريفية' : 'BOOK AN INTRODUCTORY SESSION'}</span>
+              <div className="wn-booking-teacher mt-4">
+                <img src={photo} alt={name} />
+                <div>
+                  <h1>{isAr ? 'اختر موعدًا مناسبًا' : 'Choose a suitable time'}</h1>
+                  <p>{isAr ? 'مع ' + name : 'With ' + name}</p>
                 </div>
               </div>
             </div>
 
-            <div>
-              <label className="block mb-2 font-semibold text-gray-700">
-                <Calendar className="inline ml-2 text-emerald-600" size={18} />
-                اختر التاريخ *
-              </label>
-              <select
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                required
-                className="input-field"
-              >
-                <option value="">اختر تاريخ مناسب</option>
-                {getAvailableDates().map((date) => (
-                  <option key={date} value={date}>
-                    {new Date(date).toLocaleDateString('ar-EG', {
-                      weekday: 'long',
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <form onSubmit={submit} className="wn-booking-form">
+              <div className="wn-booking-note">
+                {isAr
+                  ? 'أرسل الموعد المناسب لك. يصبح الموعد مؤكدًا بعد تحديث حالة الطلب من المعلم أو الأكاديمية.'
+                  : 'Send your preferred time. The session is confirmed after the teacher or academy updates the request status.'}
+              </div>
 
-            <div>
-              <label className="block mb-2 font-semibold text-gray-700">
-                <Clock className="inline ml-2 text-emerald-600" size={18} />
-                اختر الوقت *
-              </label>
-              <select
-                value={selectedTime}
-                onChange={(e) => setSelectedTime(e.target.value)}
-                required
-                className="input-field"
-              >
-                <option value="">اختر وقت مناسب</option>
-                {getTimeSlots().map((time) => (
-                  <option key={time} value={time}>
-                    {time}
-                  </option>
-                ))}
-              </select>
-            </div>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="wn-booking-field">
+                  <label><Calendar size={15} className="inline ml-1" /> {isAr ? 'التاريخ' : 'Date'}</label>
+                  <select value={selectedDate} onChange={(event) => setSelectedDate(event.target.value)} required>
+                    <option value="">{isAr ? 'اختر تاريخًا' : 'Choose a date'}</option>
+                    {dates.map((date) => <option key={date} value={date}>{new Date(date).toLocaleDateString(isAr ? 'ar-EG' : 'en', { weekday:'long', month:'long', day:'numeric' })}</option>)}
+                  </select>
+                </div>
 
-            <div>
-              <label className="block mb-2 font-semibold text-gray-700">
-                <Globe className="inline ml-2 text-emerald-600" size={18} />
-                المنطقة الزمنية *
-              </label>
-              <select
-                value={timezone}
-                onChange={(e) => setTimezone(e.target.value)}
-                required
-                className="input-field"
-              >
-                {getTimezones().map((tz) => (
-                  <option key={tz.value} value={tz.value}>
-                    {tz.label}
-                  </option>
-                ))}
-              </select>
-              <p className="text-xs text-gray-500 mt-1">
-                المنطقة الزمنية الحالية: {timezone}
-              </p>
-            </div>
+                <div className="wn-booking-field">
+                  <label><Clock size={15} className="inline ml-1" /> {isAr ? 'الوقت' : 'Time'}</label>
+                  <select value={selectedTime} onChange={(event) => setSelectedTime(event.target.value)} required>
+                    <option value="">{isAr ? 'اختر وقتًا' : 'Choose a time'}</option>
+                    {times.map((time) => <option key={time} value={time}>{time}</option>)}
+                  </select>
+                </div>
+              </div>
 
-            <div>
-              <label className="block mb-2 font-semibold text-gray-700">
-                ملاحظات أو طلبات خاصة (اختياري)
-              </label>
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="مثال: أريد التركيز على التجويد، أو لدي مستوى مبتدئ..."
-                rows={4}
-                className="input-field"
-              />
-            </div>
+              <div className="wn-booking-field">
+                <label><Globe size={15} className="inline ml-1" /> {isAr ? 'المنطقة الزمنية' : 'Timezone'}</label>
+                <select value={timezone} onChange={(event) => setTimezone(event.target.value)} required>
+                  {timezones.map(([value,label]) => <option key={value} value={value}>{label} — {value}</option>)}
+                </select>
+              </div>
 
-            {showConfirmation && (
-              <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-6">
-                <div className="flex items-start gap-3 mb-4">
-                  <AlertCircle className="text-yellow-600 mt-1 flex-shrink-0" size={24} />
-                  <div>
-                    <h3 className="font-bold text-lg mb-2">تأكيد الحجز</h3>
-                    <p className="text-gray-700 mb-3">هل أنت متأكد من حجز الحصة التجريبية؟</p>
-                    <div className="bg-white rounded-lg p-4 space-y-2 text-sm">
-                      <p><strong>المعلم:</strong> {teacher.user.name}</p>
-                      <p><strong>التاريخ:</strong> {selectedDate && new Date(selectedDate).toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                      <p><strong>الوقت:</strong> {selectedTime}</p>
-                      <p><strong>المنطقة الزمنية:</strong> {timezone}</p>
-                      {notes && <p><strong>ملاحظات:</strong> {notes}</p>}
+              <div className="wn-booking-field">
+                <label>{isAr ? 'ملاحظات للمعلم (اختياري)' : 'Notes for the teacher (optional)'}</label>
+                <textarea value={notes} onChange={(event) => setNotes(event.target.value)} rows={4} placeholder={isAr ? 'مثال: أريد التركيز على التجويد أو تحديد المستوى.' : 'Example: I want to focus on Tajweed or assess my level.'} />
+              </div>
+
+              {showConfirmation ? (
+                <div className="wn-booking-confirm">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle size={19} className="text-[var(--wn-gold-dark)] mt-0.5" />
+                    <div className="flex-1">
+                      <strong className="text-[var(--wn-emerald-deep)]">{isAr ? 'راجع طلبك قبل الإرسال' : 'Review your request'}</strong>
+                      <div className="wn-booking-summary">
+                        <span><b>{isAr ? 'المعلم:' : 'Teacher:'}</b> {name}</span>
+                        <span><b>{isAr ? 'التاريخ:' : 'Date:'}</b> {selectedDate}</span>
+                        <span><b>{isAr ? 'الوقت:' : 'Time:'}</b> {selectedTime}</span>
+                        <span><b>{isAr ? 'المنطقة:' : 'Timezone:'}</b> {timezone}</span>
+                      </div>
                     </div>
                   </div>
+                  <div className="grid sm:grid-cols-2 gap-2 mt-4">
+                    <button type="button" onClick={() => setShowConfirmation(false)} className="wn-btn wn-btn--secondary wn-btn--block">{isAr ? 'تعديل' : 'Edit'}</button>
+                    <button type="submit" disabled={submitting} className="wn-btn wn-btn--primary wn-btn--block disabled:opacity-60">
+                      <CheckCircle size={16} /> {submitting ? (isAr ? 'جاري الإرسال...' : 'Sending...') : (isAr ? 'تأكيد الطلب' : 'Confirm request')}
+                    </button>
+                  </div>
                 </div>
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmation(false)}
-                    className="flex-1 px-4 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
-                  >
-                    تعديل
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition disabled:opacity-50"
-                  >
-                    {submitting ? 'جاري الإرسال...' : 'تأكيد الحجز'}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {!showConfirmation && (
-              <button
-                type="submit"
-                className="w-full bg-gradient-to-r from-emerald-600 to-green-600 text-white py-4 rounded-lg hover:from-emerald-700 hover:to-green-700 transition text-lg font-bold shadow-lg"
-              >
-                متابعة الحجز
-              </button>
-            )}
-          </form>
+              ) : (
+                <button type="submit" className="wn-btn wn-btn--primary wn-btn--lg wn-btn--block">{isAr ? 'مراجعة الحجز' : 'Review booking'}</button>
+              )}
+            </form>
+          </section>
         </div>
-      </div>
-    </div>
+      </main>
+      <GlobalFooter />
+    </>
   );
 }

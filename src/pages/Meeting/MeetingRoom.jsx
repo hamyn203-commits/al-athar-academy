@@ -1,11 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowRight, Languages, Video } from 'lucide-react';
 import GlobalHeader from '../../components/GlobalHeader';
 import SessionTranslateChat from '../../components/live/SessionTranslateChat';
 import { useRequireAuth } from '../../hooks/useRequireAuth';
 import { useI18n } from '../../i18n';
+import { localizedPath } from '../../lib/locale';
 import api from '../../lib/api';
+import '../../styles/session-experience.css';
 
 export default function MeetingRoom() {
   const { sessionId } = useParams();
@@ -22,8 +24,8 @@ export default function MeetingRoom() {
   useEffect(() => {
     if (!ready || !user) return;
     Promise.all([
-      api.get(`/api/meetings/session/${sessionId}`, { auth: true }),
-      api.get(`/api/sessions/${sessionId}/translate/languages`, { auth: true }),
+      api.get('/api/meetings/session/' + sessionId, { auth: true }),
+      api.get('/api/sessions/' + sessionId + '/translate/languages', { auth: true }),
     ]).then(([meet, langData]) => {
       setMeeting(meet);
       const isTeacher = user.role === 'teacher' || user.role === 'admin';
@@ -34,39 +36,42 @@ export default function MeetingRoom() {
         setMyLang(langData.student?.lang || user.preferences?.language || 'id');
         setPartnerLang(langData.teacher?.lang || 'ar');
       }
-    }).catch(() => navigate(`/${locale}/student/dashboard`)).finally(() => setLoading(false));
+    }).catch(() => navigate(localizedPath('/student/dashboard', locale))).finally(() => setLoading(false));
   }, [ready, sessionId, navigate, user, locale]);
 
   if (!ready || loading) {
-    return <div className="min-h-screen flex items-center justify-center"><div className="spinner spinner-lg" /></div>;
+    return <div className="wn-meeting-shell grid place-items-center"><span className="w-9 h-9 rounded-full border-2 border-white/20 border-t-[#efd28e] animate-spin" /></div>;
   }
 
   const meetUrl = meeting?.meeting?.url;
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-900">
+    <div className="wn-meeting-shell">
       <GlobalHeader />
-      <div className="flex items-center justify-between px-4 py-2 bg-slate-800 text-white text-sm">
-        <span className="flex items-center gap-2"><Languages size={16} /> {isAr ? 'حصة مع ترجمة فورية' : 'Session with live translation'}</span>
-        <Link to={`/${locale}/student/dashboard`} className="text-emerald-300 hover:underline flex items-center gap-1">
+      <div className="wn-meeting-bar">
+        <span className="flex items-center gap-2"><Languages size={16} /> {isAr ? 'جلسة مع ترجمة فورية' : 'Session with live translation'}</span>
+        <Link to={localizedPath('/student/dashboard', locale)} className="wn-meeting-back">
           <ArrowRight size={14} /> {isAr ? 'لوحة التحكم' : 'Dashboard'}
         </Link>
       </div>
 
-      <div className="flex-1 flex flex-col lg:flex-row min-h-0">
-        <div className="flex-1 flex flex-col min-h-[50vh] lg:min-h-0">
+      <div className="wn-meeting-content">
+        <div className="wn-meeting-stage">
           {meetUrl ? (
-            <iframe title="meeting" src={meetUrl} className="flex-1 w-full border-0" allow="camera; microphone; fullscreen" />
+            <iframe title="meeting" src={meetUrl} allow="camera; microphone; fullscreen" />
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-white gap-4">
-              <Video size={48} className="opacity-50" />
-              <p>{isAr ? 'لا يوجد رابط اجتماع — اطلب من المعلم قبول الحصة' : 'No meeting link yet'}</p>
+            <div className="wn-meeting-empty">
+              <div>
+                <Video size={46} className="mx-auto opacity-50" />
+                <p className="mt-3">{isAr ? 'لم يُضف رابط الاجتماع لهذه الجلسة بعد.' : 'A meeting link has not been added to this session yet.'}</p>
+              </div>
             </div>
           )}
         </div>
-        <div className="w-full lg:w-96 h-[45vh] lg:h-auto shrink-0">
+
+        <aside className="wn-meeting-chat">
           <SessionTranslateChat sessionId={sessionId} myLang={myLang} partnerLang={partnerLang} isAr={isAr} />
-        </div>
+        </aside>
       </div>
     </div>
   );

@@ -12,6 +12,7 @@ import {
 } from '@livekit/components-react';
 import '@livekit/components-styles';
 import './LiveRoom.css';
+import '../../styles/session-experience.css';
 import '../../components/classroom/classroom.css';
 import { 
   Mic, MicOff, Video, VideoOff, Monitor, MonitorOff, 
@@ -19,7 +20,7 @@ import {
   Languages, BookOpen, Shield, Sparkles, AlertTriangle, Eye
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import Logo from '../../components/Logo';
+import BrandLogo from '../../components/BrandLogo';
 import { useAppContext } from '../../context/AppProvider';
 import { API_BASE_URL } from '../../config';
 import { LangSelect } from '../../components/live/SessionTranslateChat';
@@ -163,7 +164,7 @@ function LiveRoomContent({ isHost, isObserver, participantName, roomId }) {
       {/* ── رأس الغرفة المباشرة ── */}
       <div className="live-room-header">
         <div className="live-room-header-right">
-          <Logo size={40} showText />
+          <BrandLogo size={40} variant="light" />
           <div className="live-room-info">
             <div className="flex items-center gap-2">
               <h2>{t.live.title}</h2>
@@ -175,7 +176,7 @@ function LiveRoomContent({ isHost, isObserver, participantName, roomId }) {
               ) : isHost ? (
                 <span className="teacher-badge">
                   <Sparkles size={12} />
-                  الشيخ المعلم
+                  المعلم
                 </span>
               ) : (
                 <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-900">

@@ -742,3 +742,58 @@
   font-weight: 600;
 }
 
+
+
+/* Wahy Wa Namaa live classroom skin */
+.live-room-container {
+  background:
+    radial-gradient(circle at 20% 0%,rgba(212,175,107,.08),transparent 24rem),
+    #061f18 !important;
+  color:#fff;
+}
+
+.live-room-header {
+  min-height:70px;
+  border-bottom:1px solid rgba(212,175,107,.16) !important;
+  background:rgba(5,40,31,.94) !important;
+  backdrop-filter:blur(18px);
+}
+
+.live-room-info h2 { color:#fffdf7 !important;font-family:var(--wn-font-display); }
+.live-room-stats { color:rgba(255,255,255,.62) !important; }
+
+.live-room-tabs {
+  padding:.3rem !important;
+  border:1px solid rgba(255,255,255,.08) !important;
+  background:rgba(255,255,255,.035) !important;
+  border-radius:12px !important;
+}
+
+.room-tab-btn { color:rgba(255,255,255,.62) !important;border-radius:9px !important; }
+.room-tab-btn:hover { color:#fff !important;background:rgba(255,255,255,.06) !important; }
+.room-tab-btn.active {
+  color:#efd28e !important;
+  background:rgba(212,175,107,.10) !important;
+  box-shadow:inset 0 0 0 1px rgba(212,175,107,.18) !important;
+}
+
+.live-room-main,.video-conference-container { background:#071c16 !important; }
+.chat-panel,.live-chat-panel {
+  border-color:rgba(212,175,107,.14) !important;
+  background:#fffdf8 !important;
+  color:var(--wn-text-primary) !important;
+}
+
+.observer-banner {
+  border-bottom:1px solid rgba(212,175,107,.18) !important;
+  background:linear-gradient(90deg,#493512,#6a4a16) !important;
+}
+
+.teacher-badge,.observer-badge,.live-badge {
+  border-color:rgba(212,175,107,.22) !important;
+}
+
+@media(max-width:900px){
+  .live-room-header { gap:.55rem;padding:.55rem !important; }
+  .live-room-tabs span { display:none; }
+}
