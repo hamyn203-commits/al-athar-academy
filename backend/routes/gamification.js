@@ -223,14 +223,9 @@ router.get('/leaderboard/:type/:timeframe', async (req, res) => {
       return res.json({
         type,
         timeframe,
-        entries: [
-          { rank: 1, score: 980, user: { _id: 'u1', name: 'أحمد إبراهيم', avatar: null } },
-          { rank: 2, score: 750, user: { _id: 'u2', name: 'سارة محمد', avatar: null } },
-          { rank: 3, score: 520, user: { _id: 'u3', name: 'عبد الرحمن علي', avatar: null } },
-          { rank: 4, score: 420, user: { _id: req.user?.id || 'u4', name: 'طالب الأثر', avatar: null } },
-        ],
-        userRank: 4,
-        lastUpdated: new Date()
+        entries: [],
+        userRank: null,
+        lastUpdated: null
       });
     }
 
