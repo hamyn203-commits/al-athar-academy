@@ -1,0 +1,175 @@
+
+.wn-dashboard-shell {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 8% 3%, rgba(212,175,107,.09), transparent 22rem),
+    radial-gradient(circle at 92% 9%, rgba(86,179,166,.08), transparent 26rem),
+    linear-gradient(180deg, #fffdf8 0%, #f5f2e9 54%, #edf5f1 100%);
+  color: var(--wn-text-primary);
+}
+
+.wn-dashboard-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  border-bottom: 1px solid rgba(212,175,107,.18);
+  background: rgba(255,253,248,.91);
+  backdrop-filter: blur(18px);
+}
+
+.wn-dashboard-header__bar {
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--wn-gold), var(--wn-emerald), transparent);
+}
+
+.wn-dashboard-header__inner {
+  min-height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.wn-dashboard-title {
+  color: var(--wn-emerald-deep);
+  font-family: var(--wn-font-display);
+  font-size: clamp(1.15rem, 2vw, 1.55rem);
+}
+
+.wn-dashboard-greeting {
+  margin-top: .1rem;
+  color: var(--wn-text-tertiary);
+  font-size: .68rem;
+}
+
+.wn-dashboard-actions {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+}
+
+.wn-dashboard-action {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .35rem;
+  padding: .45rem .65rem;
+  border: 1px solid var(--wn-border);
+  border-radius: 10px;
+  background: rgba(255,255,255,.72);
+  color: var(--wn-text-secondary);
+  font-size: .68rem;
+  font-weight: 700;
+}
+
+.wn-dashboard-action:hover {
+  border-color: rgba(212,175,107,.45);
+  color: var(--wn-emerald-dark);
+}
+
+.wn-dashboard-main {
+  padding-block: clamp(1.4rem, 3vw, 2.5rem);
+}
+
+.wn-stat-card {
+  min-height: 108px;
+  position: relative;
+  overflow: hidden;
+  padding: 1rem;
+  border: 1px solid rgba(212,175,107,.17);
+  border-radius: 18px;
+  background: rgba(255,255,255,.88);
+  box-shadow: 0 22px 50px -44px rgba(7,53,40,.45);
+}
+
+.wn-stat-card::after {
+  content: '';
+  position: absolute;
+  width: 5.5rem;
+  height: 5.5rem;
+  top: -3.2rem;
+  inset-inline-end: -2.2rem;
+  border-radius: 50%;
+  background: rgba(212,175,107,.07);
+}
+
+.wn-stat-card__label {
+  color: var(--wn-text-tertiary);
+  font-size: .65rem;
+}
+
+.wn-stat-card__value {
+  margin-top: .15rem;
+  color: var(--wn-emerald-deep);
+  font-family: var(--wn-font-display);
+  font-size: 1.55rem;
+}
+
+.wn-stat-card__icon {
+  width: 2.7rem;
+  height: 2.7rem;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  background: var(--wn-emerald-soft);
+  color: var(--wn-emerald-dark);
+  border: 1px solid var(--wn-border-mint);
+}
+
+.wn-dashboard-tabs {
+  margin-bottom: 1.25rem;
+  padding: .35rem;
+  overflow-x: auto;
+  border: 1px solid rgba(212,175,107,.16);
+  border-radius: 14px;
+  background: rgba(255,255,255,.66);
+}
+
+.wn-dashboard-tabs__row {
+  display: flex;
+  gap: .25rem;
+  min-width: max-content;
+}
+
+.wn-dashboard-tab {
+  min-height: 38px;
+  padding: .45rem .72rem;
+  border-radius: 10px;
+  color: var(--wn-text-secondary);
+  font-size: .68rem;
+  font-weight: 750;
+  transition: background .2s ease, color .2s ease;
+}
+
+.wn-dashboard-tab.is-active {
+  background: var(--wn-emerald-deep);
+  color: white;
+  box-shadow: 0 12px 24px -18px rgba(7,53,40,.7);
+}
+
+.wn-dashboard-shell .card-modern,
+.wn-dashboard-shell .azhar-card,
+.wn-dashboard-shell .glass-card {
+  border-color: rgba(212,175,107,.16);
+  box-shadow: 0 22px 52px -46px rgba(7,53,40,.46);
+}
+
+@media (max-width: 640px) {
+  .wn-dashboard-header__inner {
+    min-height: 68px;
+  }
+
+  .wn-dashboard-brand {
+    display: none;
+  }
+
+  .wn-dashboard-action span {
+    display: none;
+  }
+
+  .wn-dashboard-action {
+    width: 38px;
+    padding: 0;
+  }
+}

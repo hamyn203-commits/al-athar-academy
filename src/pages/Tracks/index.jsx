@@ -24,6 +24,7 @@ import GlobalFooter from '../../components/GlobalFooter';
 import SEOHead from '../../components/SEOHead';
 import { useI18n } from '../../i18n';
 import { localizedPath } from '../../lib/locale';
+import '../../styles/public-experience.css';
 
 export default function TracksPage() {
   const { locale } = useI18n();
@@ -59,7 +60,7 @@ export default function TracksPage() {
       target: isAr ? 'حفظ القرآن كاملاً عن ظهر قلب مع التثبيت الراسخ وضبط المتشابهات' : 'Full memorization of the Noble Quran with solid retention',
       dailyWorkload: isAr ? 'وجه إلى وجهين يومياً مع اختبار أسبوعي متدرج' : '1 to 2 pages daily with progressive weekly testing',
       reviewSystem: isAr ? 'المراجعة القريبة (آخر 10 أوجه) + المراجعة البعيدة (جزء إلى جزأين يومياً)' : 'Near review (last 10 pages) + Far review (1-2 Juz daily)',
-      highlight: isAr ? 'منهجية أزهرية عريقة تصنع حافظاً متقناً لا يتردد' : 'Prestigious Azhar methodology producing rock-solid Huffaz'
+      highlight: isAr ? 'خطة طويلة المدى تجمع الحفظ الجديد بالمراجعة المستمرة' : 'A long-term plan combining new memorization with structured review'
     }
   ];
 
@@ -146,14 +147,14 @@ export default function TracksPage() {
       />
       <GlobalHeader />
 
-      <main className="min-h-screen bg-[var(--athar-cream)]/30">
+      <main className="wn-program-shell">
         {/* ═══ Hero Section ═══ */}
-        <section className="relative overflow-hidden bg-gradient-to-b from-[var(--azhar-green-deep)] to-emerald-900 text-white py-20 px-4">
-          <div className="absolute inset-0 azhar-star-pattern opacity-10 pointer-events-none" />
-          <div className="max-w-6xl mx-auto relative z-10 text-center">
+        <section className="wn-public-hero">
+          <div className="absolute inset-0 opacity-10 pointer-events-none" />
+          <div className="page-container relative z-10 text-center">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[var(--azhar-gold-leaf)]/20 border border-[var(--azhar-gold-bright)]/40 text-[var(--azhar-gold-bright)] text-sm font-semibold mb-6">
               <Sparkles size={16} />
-              <span>{isAr ? 'منهجية أزهرية متصلة السند' : 'Authentic Azhar-Accredited Curriculum'}</span>
+              <span>{isAr ? 'مسارات تعليمية متدرجة' : 'STRUCTURED QURAN LEARNING'}</span>
             </div>
 
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-black mb-6 leading-tight">
@@ -161,8 +162,8 @@ export default function TracksPage() {
             </h1>
             <p className="text-emerald-100 text-lg md:text-xl max-w-3xl mx-auto leading-relaxed mb-10">
               {isAr
-                ? 'ثلاثة مسارات تربوية وعلمية متكاملة مصممة بعناية فائقة لتلائم كافة الأعمار والمستويات، من التأسيس الأولي للأطفال والبراعم، إلى التحفيظ المتقن، وصولاً إلى مدارج الإجازة بالسند المتصل إلى رسول الله ﷺ.'
-                : 'Three integrated tracks designed to guide students from foundational literacy to complete memorization and continuous Ijazah Sanad to Prophet Muhammad ﷺ.'}
+                ? 'ثلاثة مسارات تعليمية تساعد الطالب على الانتقال من التأسيس إلى الحفظ والإتقان، مع وضوح في الأهداف والمراجعة والخطوة التالية.'
+                : 'Three structured learning paths that guide students from foundations to memorization and advanced recitation goals.'}
             </p>
 
             {/* Quick Track Switcher Pills */}

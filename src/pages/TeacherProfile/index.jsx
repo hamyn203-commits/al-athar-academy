@@ -1,338 +1,215 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Star, MapPin, Award, BookOpen, CheckCircle, Clock } from 'lucide-react';
+import { Star, MapPin, Award, BookOpen, CheckCircle, Clock, Sparkles, Users, Video, GraduationCap } from 'lucide-react';
+import GlobalHeader from '../../components/GlobalHeader';
+import GlobalFooter from '../../components/GlobalFooter';
+import SEOHead from '../../components/SEOHead';
+import { useI18n } from '../../i18n';
+import { localizedPath } from '../../lib/locale';
 import api from '../../lib/api';
+import '../../styles/public-experience.css';
 
 export default function TeacherProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { locale } = useI18n();
+  const isAr = locale === 'ar';
   const [teacher, setTeacher] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('about');
 
   useEffect(() => {
-    const fetchTeacher = async () => {
+    const loadTeacher = async () => {
       try {
-        const data = await api.get(`/api/teachers/${id}`);
-        if (!data._id) {
-          setTeacher(null);
-          return;
-        }
-        setTeacher(data);
-      } catch (error) {
-        console.error('Error fetching teacher:', error);
+        const data = await api.get('/api/teachers/' + id);
+        setTeacher(data?._id ? data : null);
+      } catch {
         setTeacher(null);
       } finally {
         setLoading(false);
       }
     };
 
-    const fetchReviews = async () => {
+    const loadReviews = async () => {
       try {
-        const data = await api.get(`/api/reviews/teacher/${id}`);
-        setReviews(data.reviews || []);
-      } catch (error) {
-        console.error('Error fetching reviews:', error);
+        const data = await api.get('/api/reviews/teacher/' + id);
+        setReviews(Array.isArray(data?.reviews) ? data.reviews : []);
+      } catch {
+        setReviews([]);
       }
     };
 
-    fetchTeacher();
-    fetchReviews();
+    loadTeacher();
+    loadReviews();
   }, [id]);
 
   const handleBookTrial = () => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      navigate('/login?redirect=/book-trial/' + id);
-    } else {
-      navigate('/book-trial/' + id);
-    }
+    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+    const path = '/book-trial/' + id;
+    navigate(token ? localizedPath(path, locale) : localizedPath('/login', locale) + '?redirect=' + encodeURIComponent(path));
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
-      </div>
-    );
+    return <div className="wn-detail-shell min-h-screen grid place-items-center"><span className="w-9 h-9 rounded-full border-2 border-[var(--wn-emerald)]/20 border-t-[var(--wn-emerald)] animate-spin" /></div>;
   }
 
   if (!teacher) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-xl text-gray-600">المعلم غير موجود</p>
-      </div>
+      <>
+        <GlobalHeader />
+        <main className="wn-detail-shell min-h-[70vh] grid place-items-center px-4">
+          <div className="wn-public-empty max-w-xl w-full">
+            <GraduationCap size={48} />
+            <h3>{isAr ? 'ملف المعلم غير متاح' : 'Teacher profile is unavailable'}</h3>
+          </div>
+        </main>
+        <GlobalFooter />
+      </>
     );
   }
 
+  const name = teacher.user?.name || teacher.personalInfo?.fullName || (isAr ? 'معلم قرآن' : 'Quran teacher');
+  const ratingAverage = Number(teacher.rating?.average ?? teacher.stats?.rating?.average ?? 0);
+  const ratingCount = Number(teacher.rating?.count ?? teacher.stats?.rating?.count ?? 0);
+  const specializations = Array.isArray(teacher.quranInfo?.specializations) ? teacher.quranInfo.specializations : [];
+  const languages = Array.isArray(teacher.languages) ? teacher.languages : [];
+
+  const specName = (spec) => ({
+    children: isAr ? 'تعليم الأطفال' : 'Children',
+    adults: isAr ? 'تعليم الكبار' : 'Adults',
+    women: isAr ? 'تعليم النساء' : 'Women',
+    'non-arabic': isAr ? 'غير الناطقين بالعربية' : 'Non-Arabic speakers',
+    tajweed: isAr ? 'التجويد' : 'Tajweed',
+    ijaza: isAr ? 'الإجازة' : 'Ijazah',
+    'arabic-language': isAr ? 'اللغة العربية' : 'Arabic language',
+  }[spec] || spec);
+
+  const languageName = (lang) => ({
+    arabic: isAr ? 'العربية' : 'Arabic',
+    english: isAr ? 'الإنجليزية' : 'English',
+    french: isAr ? 'الفرنسية' : 'French',
+    turkish: isAr ? 'التركية' : 'Turkish',
+    urdu: isAr ? 'الأردية' : 'Urdu',
+  }[lang] || lang);
+
+  const media = teacher.media || {};
+  const mediaItems = [
+    { key: 'intro', title: isAr ? 'فيديو تعريفي' : 'Introduction video', url: media.introductionVideo },
+    { key: 'recitation', title: isAr ? 'تلاوة' : 'Recitation', url: media.recitationVideo },
+    { key: 'method', title: isAr ? 'طريقة التدريس' : 'Teaching method', url: media.teachingMethodVideo },
+  ].filter((item) => item.url);
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-white py-12 px-4">
-      <div className="max-w-6xl mx-auto">
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          <div className="md:flex">
-            <div className="md:w-1/3">
-              <img
-                src={teacher.media?.profilePhoto || teacher.user?.avatar || '/default-teacher.png'}
-                alt={teacher.user?.name || 'معلم'}
-                className="w-full h-96 object-cover"
-              />
+    <>
+      <SEOHead page={{ title: name, description: teacher.user?.bio || (isAr ? 'ملف معلم في أكاديمية وحي ونماء' : 'Teacher profile at Wahy Wa Namaa Academy'), url: '/teachers/' + id, type: 'profile' }} />
+      <GlobalHeader />
+
+      <main className="wn-detail-shell">
+        <section className="wn-detail-hero wn-teacher-profile-hero">
+          <div className="page-container wn-teacher-profile-grid">
+            <div className="wn-teacher-profile-photo">
+              <img src={media.profilePhoto || teacher.user?.avatar || '/default-teacher.png'} alt={name} />
             </div>
-            
-            <div className="md:w-2/3 p-8">
-              <div className="flex items-start justify-between mb-4">
+
+            <div>
+              <span className="wn-auth-visual__eyebrow"><Sparkles size={14} /> {isAr ? 'ملف المعلم' : 'TEACHER PROFILE'}</span>
+              <h1>{name}</h1>
+              <div className="wn-detail-meta">
+                {ratingCount > 0 && ratingAverage > 0 ? <span><Star size={14} /> {ratingAverage.toFixed(1)} ({ratingCount} {isAr ? 'تقييم' : 'reviews'})</span> : null}
+                {teacher.personalInfo?.country ? <span><MapPin size={14} /> {teacher.personalInfo.country}</span> : null}
+                {teacher.isFeatured ? <span><Award size={14} /> {isAr ? 'ملف مميز' : 'Featured profile'}</span> : null}
+              </div>
+
+              <div className="wn-teacher-stats">
+                {teacher.quranInfo?.teachingExperience != null ? <div className="wn-teacher-stat"><Clock size={17} /><strong>{teacher.quranInfo.teachingExperience}</strong><small>{isAr ? 'سنوات خبرة' : 'Years experience'}</small></div> : null}
+                {teacher.quranInfo?.memorizedParts != null ? <div className="wn-teacher-stat"><BookOpen size={17} /><strong>{teacher.quranInfo.memorizedParts}</strong><small>{isAr ? 'أجزاء محفوظة' : 'Juz memorized'}</small></div> : null}
+                {teacher.quranInfo?.numberOfIjazat != null ? <div className="wn-teacher-stat"><Award size={17} /><strong>{teacher.quranInfo.numberOfIjazat}</strong><small>{isAr ? 'إجازات مسجلة' : 'Listed ijazahs'}</small></div> : null}
+                {teacher.stats?.totalStudents != null ? <div className="wn-teacher-stat"><Users size={17} /><strong>{teacher.stats.totalStudents}</strong><small>{isAr ? 'طلاب' : 'Students'}</small></div> : null}
+              </div>
+
+              <button onClick={handleBookTrial} className="wn-btn wn-btn--accent wn-btn--lg mt-5">
+                {isAr ? 'احجز حصة تجريبية' : 'Book a trial session'}
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <div className="page-container wn-public-copy-section">
+          <section className="wn-detail-card">
+            <div className="wn-teacher-tabs">
+              {[
+                { id: 'about', label: isAr ? 'عن المعلم' : 'About' },
+                { id: 'videos', label: isAr ? 'الوسائط' : 'Media' },
+                { id: 'reviews', label: (isAr ? 'التقييمات' : 'Reviews') + ' (' + reviews.length + ')' },
+              ].map((tab) => (
+                <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id)} className={'wn-teacher-tab ' + (activeTab === tab.id ? 'is-active' : '')}>
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="wn-detail-card__body">
+              {activeTab === 'about' ? (
+                <div className="grid gap-7">
+                  <div>
+                    <h3>{isAr ? 'نبذة' : 'Biography'}</h3>
+                    <p className="mt-2 text-sm leading-8 text-[var(--wn-text-secondary)]">{teacher.user?.bio || (isAr ? 'لم تُضف نبذة لهذا الملف بعد.' : 'No biography has been added yet.')}</p>
+                  </div>
+
+                  {(teacher.academicInfo?.university || teacher.academicInfo?.faculty || teacher.academicInfo?.specialization) ? (
+                    <div>
+                      <h3>{isAr ? 'المؤهلات الأكاديمية' : 'Academic background'}</h3>
+                      <div className="mt-2 grid gap-1 text-sm text-[var(--wn-text-secondary)]">
+                        {teacher.academicInfo?.university ? <p>{teacher.academicInfo.university}{teacher.academicInfo?.faculty ? ' — ' + teacher.academicInfo.faculty : ''}</p> : null}
+                        {teacher.academicInfo?.specialization ? <p>{isAr ? 'التخصص: ' : 'Specialization: '}{teacher.academicInfo.specialization}</p> : null}
+                        {teacher.academicInfo?.graduationYear ? <p>{isAr ? 'سنة التخرج: ' : 'Graduation year: '}{teacher.academicInfo.graduationYear}</p> : null}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {specializations.length ? <div><h3>{isAr ? 'التخصصات' : 'Specializations'}</h3><div className="wn-detail-tags mt-2">{specializations.map((spec) => <span key={spec}>{specName(spec)}</span>)}</div></div> : null}
+                  {languages.length ? <div><h3>{isAr ? 'اللغات' : 'Languages'}</h3><div className="wn-detail-tags mt-2">{languages.map((lang) => <span key={lang}>{languageName(lang)}</span>)}</div></div> : null}
+                </div>
+              ) : null}
+
+              {activeTab === 'videos' ? (
+                <div className="grid gap-5">
+                  {mediaItems.length ? mediaItems.map((item) => (
+                    <div key={item.key}>
+                      <h3 className="mb-2 flex items-center gap-2"><Video size={17} /> {item.title}</h3>
+                      <div className="wn-media-block"><video controls preload="metadata"><source src={item.url} /></video></div>
+                    </div>
+                  )) : <div className="wn-public-empty !py-10"><Video size={40} /><h3>{isAr ? 'لا توجد وسائط منشورة' : 'No published media'}</h3></div>}
+
+                  {Array.isArray(media.audioRecordings) && media.audioRecordings.length ? (
+                    <div className="grid gap-3">
+                      {media.audioRecordings.map((audio, index) => <div key={audio + index} className="wn-media-block p-3"><audio controls preload="metadata"><source src={audio} /></audio></div>)}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {activeTab === 'reviews' ? (
                 <div>
-                  <h1 className="text-3xl font-bold mb-2">{teacher.user?.name || teacher.personalInfo?.fullName}</h1>
-                  <div className="flex items-center gap-4 text-gray-600">
-                    <div className="flex items-center gap-1">
-                      <Star className="text-yellow-400 fill-yellow-400" size={20} />
-                      <span className="font-bold">{(teacher.rating?.average ?? teacher.stats?.rating?.average ?? 0).toFixed(1)}</span>
-                      <span>({teacher.rating?.count ?? teacher.stats?.rating?.count ?? 0} تقييم)</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <MapPin size={18} />
-                      <span>{teacher.personalInfo.country}</span>
-                    </div>
-                  </div>
-                </div>
-                {teacher.isFeatured && (
-                  <span className="bg-yellow-400 text-yellow-900 px-4 py-2 rounded-full font-bold">
-                    معلم مميز
-                  </span>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <div className="bg-emerald-50 p-4 rounded-lg text-center">
-                  <Clock className="mx-auto mb-2 text-emerald-600" size={24} />
-                  <p className="text-2xl font-bold text-emerald-600">{teacher.quranInfo?.teachingExperience ?? 0}</p>
-                  <p className="text-sm text-gray-600">سنوات خبرة</p>
-                </div>
-                <div className="bg-emerald-50 p-4 rounded-lg text-center">
-                  <BookOpen className="mx-auto mb-2 text-emerald-600" size={24} />
-                  <p className="text-2xl font-bold text-emerald-600">{teacher.quranInfo?.memorizedParts ?? 0}</p>
-                  <p className="text-sm text-gray-600">جزء محفوظ</p>
-                </div>
-                <div className="bg-emerald-50 p-4 rounded-lg text-center">
-                  <Award className="mx-auto mb-2 text-emerald-600" size={24} />
-                  <p className="text-2xl font-bold text-emerald-600">{teacher.quranInfo?.numberOfIjazat ?? 0}</p>
-                  <p className="text-sm text-gray-600">إجازات</p>
-                </div>
-                <div className="bg-emerald-50 p-4 rounded-lg text-center">
-                  <CheckCircle className="mx-auto mb-2 text-emerald-600" size={24} />
-                  <p className="text-2xl font-bold text-emerald-600">{teacher.stats?.totalStudents ?? 0}</p>
-                  <p className="text-sm text-gray-600">طالب</p>
-                </div>
-              </div>
-
-              <button
-                onClick={handleBookTrial}
-                className="w-full bg-emerald-600 text-white py-4 rounded-lg hover:bg-emerald-700 transition text-lg font-bold"
-              >
-                احجز حصة تجريبية مجانية
-              </button>
-            </div>
-          </div>
-
-          <div className="border-t">
-            <div className="flex border-b">
-              <button
-                onClick={() => setActiveTab('about')}
-                className={`px-6 py-4 font-semibold ${
-                  activeTab === 'about'
-                    ? 'border-b-2 border-emerald-600 text-emerald-600'
-                    : 'text-gray-600'
-                }`}
-              >
-                نبذة عن المعلم
-              </button>
-              <button
-                onClick={() => setActiveTab('videos')}
-                className={`px-6 py-4 font-semibold ${
-                  activeTab === 'videos'
-                    ? 'border-b-2 border-emerald-600 text-emerald-600'
-                    : 'text-gray-600'
-                }`}
-              >
-                الفيديوهات
-              </button>
-              <button
-                onClick={() => setActiveTab('reviews')}
-                className={`px-6 py-4 font-semibold ${
-                  activeTab === 'reviews'
-                    ? 'border-b-2 border-emerald-600 text-emerald-600'
-                    : 'text-gray-600'
-                }`}
-              >
-                التقييمات ({reviews.length})
-              </button>
-            </div>
-
-            <div className="p-8">
-              {activeTab === 'about' && (
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-xl font-bold mb-3">السيرة الذاتية</h3>
-                    <p className="text-gray-700 leading-relaxed">{teacher.user.bio || 'لا توجد سيرة ذاتية'}</p>
-                  </div>
-
-                  <div>
-                    <h3 className="text-xl font-bold mb-3">المؤهلات الأكاديمية</h3>
-                    <ul className="space-y-2 text-gray-700">
-                      <li>• {teacher.academicInfo.university} - {teacher.academicInfo.faculty}</li>
-                      <li>• التخصص: {teacher.academicInfo.specialization}</li>
-                      <li>• سنة التخرج: {teacher.academicInfo.graduationYear}</li>
-                    </ul>
-                  </div>
-
-                  <div>
-                    <h3 className="text-xl font-bold mb-3">التخصصات</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {teacher.quranInfo.specializations.map((spec) => (
-                        <span
-                          key={spec}
-                          className="bg-emerald-100 text-emerald-700 px-4 py-2 rounded-full"
-                        >
-                          {spec === 'children' ? 'تعليم الأطفال' : 
-                           spec === 'adults' ? 'تعليم الكبار' :
-                           spec === 'women' ? 'تعليم النساء' :
-                           spec === 'non-arabic' ? 'غير الناطقين بالعربية' :
-                           spec === 'tajweed' ? 'التجويد' :
-                           spec === 'ijaza' ? 'الإجازة' : 'اللغة العربية'}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <h3 className="text-xl font-bold mb-3">اللغات</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {teacher.languages.map((lang) => (
-                        <span
-                          key={lang}
-                          className="bg-blue-100 text-blue-700 px-4 py-2 rounded-full"
-                        >
-                          {lang === 'arabic' ? 'العربية' :
-                           lang === 'english' ? 'الإنجليزية' :
-                           lang === 'french' ? 'الفرنسية' :
-                           lang === 'turkish' ? 'التركية' : 'الأردية'}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'videos' && (
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-xl font-bold mb-3">📹 فيديو تعريفي</h3>
-                    {teacher.media.introductionVideo ? (
-                      <video controls className="w-full rounded-lg shadow-lg">
-                        <source src={teacher.media.introductionVideo} type="video/mp4" />
-                      </video>
-                    ) : (
-                      <p className="text-gray-500">لا يوجد فيديو تعريفي</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <h3 className="text-xl font-bold mb-3">🎙️ فيديو تلاوة قرآن</h3>
-                    {teacher.media.recitationVideo ? (
-                      <video controls className="w-full rounded-lg shadow-lg">
-                        <source src={teacher.media.recitationVideo} type="video/mp4" />
-                      </video>
-                    ) : (
-                      <p className="text-gray-500">لا يوجد فيديو تلاوة</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <h3 className="text-xl font-bold mb-3">📚 فيديو طريقة التدريس</h3>
-                    {teacher.media.teachingMethodVideo ? (
-                      <video controls className="w-full rounded-lg shadow-lg">
-                        <source src={teacher.media.teachingMethodVideo} type="video/mp4" />
-                      </video>
-                    ) : (
-                      <p className="text-gray-500">لا يوجد فيديو طريقة التدريس</p>
-                    )}
-                  </div>
-
-                  {teacher.media.additionalVideos && teacher.media.additionalVideos.length > 0 && (
-                    <div>
-                      <h3 className="text-xl font-bold mb-3">🎬 فيديوهات إضافية</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {teacher.media.additionalVideos.map((video, index) => (
-                          <div key={index} className="border rounded-lg overflow-hidden shadow-md">
-                            <video controls className="w-full">
-                              <source src={video} type="video/mp4" />
-                            </video>
-                            <div className="p-3 bg-gray-50">
-                              <p className="text-sm text-gray-600">فيديو {index + 1}</p>
-                            </div>
-                          </div>
-                        ))}
+                  {reviews.length ? reviews.map((review) => (
+                    <article key={review._id} className="wn-review-row">
+                      <div className="flex items-center justify-between gap-3">
+                        <strong className="text-sm text-[var(--wn-emerald-deep)]">{review.student?.name || (isAr ? 'طالب' : 'Student')}</strong>
+                        <span className="inline-flex items-center gap-1 text-xs text-[var(--wn-gold-dark)]"><Star size={13} fill="currentColor" /> {review.rating}</span>
                       </div>
-                    </div>
-                  )}
-
-                  {teacher.media.audioRecordings && teacher.media.audioRecordings.length > 0 && (
-                    <div>
-                      <h3 className="text-xl font-bold mb-3">🎵 تسجيلات صوتية</h3>
-                      <div className="space-y-3">
-                        {teacher.media.audioRecordings.map((audio, index) => (
-                          <div key={index} className="border rounded-lg p-4 bg-gray-50">
-                            <p className="text-sm font-semibold mb-2">تسجيل {index + 1}</p>
-                            <audio controls className="w-full">
-                              <source src={audio} type="audio/mpeg" />
-                            </audio>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                      {review.comment ? <p className="mt-2 text-sm text-[var(--wn-text-secondary)]">{review.comment}</p> : null}
+                      {review.createdAt ? <p className="mt-2 text-[10px] text-[var(--wn-text-tertiary)]">{new Date(review.createdAt).toLocaleDateString(isAr ? 'ar-EG' : 'en')}</p> : null}
+                    </article>
+                  )) : <div className="wn-public-empty !py-10"><CheckCircle size={40} /><h3>{isAr ? 'لا توجد تقييمات منشورة بعد' : 'No published reviews yet'}</h3></div>}
                 </div>
-              )}
-
-              {activeTab === 'reviews' && (
-                <div className="space-y-4">
-                  {reviews.length === 0 ? (
-                    <p className="text-center text-gray-500 py-8">لا توجد تقييمات بعد</p>
-                  ) : (
-                    reviews.map((review) => (
-                      <div key={review._id} className="border-b pb-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <img
-                              src={review.student.avatar || '/default-avatar.png'}
-                              alt={review.student.name}
-                              className="w-10 h-10 rounded-full"
-                            />
-                            <span className="font-semibold">{review.student.name}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            {Array.from({ length: 5 }).map((_, i) => (
-                              <Star
-                                key={i}
-                                size={16}
-                                className={i < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                        <p className="text-gray-700">{review.comment}</p>
-                        <p className="text-sm text-gray-500 mt-2">
-                          {new Date(review.createdAt).toLocaleDateString('ar-EG')}
-                        </p>
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
+              ) : null}
             </div>
-          </div>
+          </section>
         </div>
-      </div>
-    </div>
+      </main>
+
+      <GlobalFooter />
+    </>
   );
 }

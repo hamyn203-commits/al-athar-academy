@@ -1154,3 +1154,311 @@
     grid-template-columns: minmax(0,1.15fr) minmax(300px,.85fr);
   }
 }
+
+
+/* Course and teacher detail pages */
+.wn-detail-shell {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 8% 5%, rgba(212,175,107,.10), transparent 22rem),
+    linear-gradient(180deg, #fffdf8 0%, #f4f2e9 55%, #eef6f2 100%);
+}
+
+.wn-detail-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding-block: clamp(3.7rem, 7vw, 6rem);
+  color: white;
+  background:
+    radial-gradient(circle at 12% 18%, rgba(212,175,107,.17), transparent 22rem),
+    radial-gradient(circle at 88% 76%, rgba(86,179,166,.14), transparent 26rem),
+    linear-gradient(135deg, #05281f, #083b2e 48%, #0d6049);
+}
+
+.wn-detail-hero::after {
+  content: '';
+  position: absolute;
+  width: 28rem;
+  height: 34rem;
+  top: -18rem;
+  inset-inline-end: -8rem;
+  border: 1px solid rgba(212,175,107,.19);
+  border-radius: 15rem 15rem 0 0;
+  box-shadow: 0 0 0 22px rgba(255,255,255,.02);
+  z-index: -1;
+}
+
+.wn-detail-hero h1 {
+  margin-top: .65rem;
+  max-width: 56rem;
+  font-family: var(--wn-font-display);
+  font-size: clamp(2.45rem, 5vw, 4.5rem);
+  line-height: 1.18;
+  color: #fffdf7;
+}
+
+.wn-detail-hero p {
+  max-width: 47rem;
+  margin-top: .7rem;
+  color: rgba(255,255,255,.66);
+  line-height: 1.85;
+}
+
+.wn-detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .55rem;
+  margin-top: 1.3rem;
+}
+
+.wn-detail-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .42rem .62rem;
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 999px;
+  background: rgba(255,255,255,.055);
+  color: rgba(255,255,255,.75);
+  font-size: .7rem;
+  backdrop-filter: blur(8px);
+}
+
+.wn-detail-layout {
+  display: grid;
+  gap: 1rem;
+  align-items: start;
+  padding-block: clamp(2.4rem, 5vw, 4rem);
+}
+
+.wn-detail-card {
+  border: 1px solid rgba(212,175,107,.18);
+  border-radius: 22px;
+  background: rgba(255,255,255,.92);
+  box-shadow: 0 28px 66px -52px rgba(7,53,40,.5);
+}
+
+.wn-detail-card__body {
+  padding: clamp(1.1rem, 3vw, 1.7rem);
+}
+
+.wn-detail-card h2,
+.wn-detail-card h3 {
+  color: var(--wn-emerald-deep);
+  font-family: var(--wn-font-display);
+}
+
+.wn-detail-card h2 { font-size: 1.45rem; }
+.wn-detail-card h3 { font-size: 1.08rem; }
+
+.wn-lesson-list {
+  display: grid;
+  gap: .6rem;
+  margin-top: 1rem;
+}
+
+.wn-lesson-row {
+  min-height: 52px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: .7rem;
+  padding: .75rem .85rem;
+  border: 1px solid rgba(15,107,79,.08);
+  border-radius: 13px;
+  background: rgba(248,250,248,.9);
+}
+
+.wn-lesson-row__status {
+  width: 1.35rem;
+  height: 1.35rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(15,107,79,.18);
+  border-radius: 50%;
+  color: var(--wn-emerald);
+}
+
+.wn-lesson-row__title {
+  color: var(--wn-text-primary);
+  font-size: .82rem;
+  font-weight: 650;
+}
+
+.wn-lesson-row__tag {
+  padding: .25rem .45rem;
+  border-radius: 999px;
+  background: var(--wn-emerald-soft);
+  color: var(--wn-emerald-dark);
+  font-size: .61rem;
+  font-weight: 750;
+}
+
+.wn-detail-aside {
+  padding: 1.2rem;
+  position: sticky;
+  top: 94px;
+}
+
+.wn-detail-price {
+  color: var(--wn-emerald-deep);
+  font-family: var(--wn-font-display);
+  font-size: 1.65rem;
+}
+
+.wn-detail-progress {
+  margin-bottom: 1rem;
+}
+
+.wn-detail-progress__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .7rem;
+  margin-bottom: .4rem;
+  color: var(--wn-text-secondary);
+  font-size: .72rem;
+}
+
+.wn-detail-progress__bar {
+  height: .45rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(15,107,79,.08);
+}
+
+.wn-detail-progress__bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--wn-emerald), var(--wn-teal));
+}
+
+.wn-teacher-profile-hero {
+  padding-block: clamp(2.2rem, 5vw, 4rem);
+}
+
+.wn-teacher-profile-grid {
+  display: grid;
+  gap: 1.2rem;
+  align-items: center;
+}
+
+.wn-teacher-profile-photo {
+  min-height: 340px;
+  overflow: hidden;
+  border: 1px solid rgba(212,175,107,.24);
+  border-radius: 26px;
+  background: linear-gradient(145deg, #dcefe7, #f2e4c7);
+  box-shadow: 0 34px 74px -54px rgba(0,0,0,.7);
+}
+
+.wn-teacher-profile-photo img {
+  width: 100%;
+  height: 100%;
+  min-height: 340px;
+  object-fit: cover;
+}
+
+.wn-teacher-stats {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: .65rem;
+  margin-top: 1.2rem;
+}
+
+.wn-teacher-stat {
+  padding: .75rem;
+  border: 1px solid rgba(255,255,255,.09);
+  border-radius: 14px;
+  background: rgba(255,255,255,.045);
+  backdrop-filter: blur(8px);
+}
+
+.wn-teacher-stat strong,
+.wn-teacher-stat small {
+  display: block;
+}
+
+.wn-teacher-stat strong {
+  margin-top: .3rem;
+  color: #fff;
+  font-family: var(--wn-font-display);
+  font-size: 1.1rem;
+}
+
+.wn-teacher-stat small {
+  color: rgba(255,255,255,.5);
+  font-size: .63rem;
+}
+
+.wn-teacher-tabs {
+  display: flex;
+  gap: .35rem;
+  overflow-x: auto;
+  padding: .55rem;
+  border-bottom: 1px solid var(--wn-border);
+}
+
+.wn-teacher-tab {
+  flex: 0 0 auto;
+  min-height: 40px;
+  padding: .55rem .8rem;
+  border-radius: 10px;
+  color: var(--wn-text-secondary);
+  font-size: .72rem;
+  font-weight: 750;
+}
+
+.wn-teacher-tab.is-active {
+  background: var(--wn-emerald-soft);
+  color: var(--wn-emerald-deep);
+}
+
+.wn-detail-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+}
+
+.wn-detail-tags span {
+  padding: .35rem .55rem;
+  border: 1px solid var(--wn-border-mint);
+  border-radius: 999px;
+  background: var(--wn-emerald-soft);
+  color: var(--wn-emerald-dark);
+  font-size: .68rem;
+  font-weight: 700;
+}
+
+.wn-media-block {
+  overflow: hidden;
+  border: 1px solid var(--wn-border);
+  border-radius: 16px;
+  background: #f7f8f7;
+}
+
+.wn-media-block video,
+.wn-media-block audio {
+  width: 100%;
+}
+
+.wn-review-row {
+  padding-block: 1rem;
+  border-bottom: 1px solid var(--wn-border);
+}
+
+@media (min-width: 900px) {
+  .wn-detail-layout {
+    grid-template-columns: minmax(0,1fr) 330px;
+  }
+
+  .wn-teacher-profile-grid {
+    grid-template-columns: minmax(280px,.72fr) minmax(0,1.28fr);
+  }
+
+  .wn-teacher-stats {
+    grid-template-columns: repeat(4,minmax(0,1fr));
+  }
+}
