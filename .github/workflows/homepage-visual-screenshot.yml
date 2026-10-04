@@ -51,7 +51,7 @@ jobs:
 
       - name: Capture desktop and mobile after reveal
         run: |
-          cat > /tmp/capture-homepage.mjs <<'NODE'
+          cat > capture-homepage.mjs <<'NODE'
           import { chromium } from 'playwright';
 
           async function revealAndCapture(page, url, path) {
@@ -80,7 +80,8 @@ jobs:
 
           await browser.close();
           NODE
-          node /tmp/capture-homepage.mjs
+          node capture-homepage.mjs
+          rm capture-homepage.mjs
 
       - name: Upload screenshots
         uses: actions/upload-artifact@v4
