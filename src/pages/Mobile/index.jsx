@@ -1,53 +1,67 @@
 import { Link } from 'react-router-dom';
-import { Smartphone, Download, Share, Bell, WifiOff } from 'lucide-react';
+import { Smartphone, Download, Share, Bell, WifiOff, Sparkles } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import { localizedPath } from '../../lib/locale';
 import GlobalHeader from '../../components/GlobalHeader';
 import GlobalFooter from '../../components/GlobalFooter';
 import SEOHead from '../../components/SEOHead';
 import PwaInstallPrompt from '../../components/PwaInstallPrompt';
+import '../../styles/public-experience.css';
 
 const STEPS = [
-  { icon: Download, ar: 'اضغط «ثبّت التطبيق» عند ظهور الشريط السفلي', en: 'Tap "Install app" when the banner appears' },
-  { icon: Share, ar: 'أو من Safari: مشاركة ← إضافة إلى الشاشة الرئيسية', en: 'Or in Safari: Share → Add to Home Screen' },
-  { icon: Bell, ar: 'فعّل الإشعارات من إعدادات الحساب', en: 'Enable notifications in account settings' },
-  { icon: WifiOff, ar: 'صفحات رئيسية تعمل بدون إنترنت بعد التثبيت', en: 'Key pages work offline after install' },
+  { icon: Download, ar: 'استخدم خيار تثبيت التطبيق عندما يظهر في المتصفح', en: 'Use the install option when your browser offers it' },
+  { icon: Share, ar: 'في Safari: مشاركة ← إضافة إلى الشاشة الرئيسية', en: 'In Safari: Share → Add to Home Screen' },
+  { icon: Bell, ar: 'فعّل الإشعارات من إعدادات حسابك إذا رغبت', en: 'Enable notifications from account settings if you want them' },
+  { icon: WifiOff, ar: 'بعض الموارد قد تبقى متاحة بعد التثبيت حسب التخزين المحلي', en: 'Some resources may remain available after install depending on local cache' },
 ];
 
 export default function MobileAppPage() {
   const { locale } = useI18n();
   const isAr = locale === 'ar';
-  const lp = (p) => localizedPath(p, locale);
+  const lp = (path) => localizedPath(path, locale);
 
   return (
     <>
-      <SEOHead page={{ url: '/app', title: isAr ? 'تطبيق الهاتف' : 'Mobile App', description: isAr ? 'ثبّت أكاديمية وَحْيٌ وَنَمَاء على هاتفك' : 'Install Wahy Wa Namaa Academy on your phone' }} />
+      <SEOHead page={{ url: '/app', title: isAr ? 'وحي ونماء على الهاتف' : 'Wahy Wa Namaa on mobile', description: isAr ? 'تعرف على طريقة تثبيت تجربة وحي ونماء على هاتفك كتطبيق ويب.' : 'Learn how to install Wahy Wa Namaa as a web app on your phone.' }} />
       <GlobalHeader />
-      <main className="min-h-screen bg-gradient-to-b from-emerald-50 to-white py-16 px-4">
-        <div className="max-w-lg mx-auto text-center">
-          <Smartphone className="mx-auto text-emerald-600 mb-6" size={56} />
-          <h1 className="text-3xl font-bold mb-3">{isAr ? 'تطبيق أكاديمية وَحْيٌ وَنَمَاء' : 'Wahy Wa Namaa Mobile App'}</h1>
-          <p className="text-gray-600 mb-10">{isAr ? 'PWA — بدون متجر، تحديثات فورية، وصول للحصص والشهادات' : 'PWA — no store needed, instant updates, access lessons & certificates'}</p>
 
-          <div className="space-y-4 text-right mb-10">
-            {STEPS.map((s) => {
-              const Icon = s.icon;
-              return (
-                <div key={s.ar} className="flex items-start gap-4 bg-white rounded-xl p-4 shadow-sm border border-emerald-100">
-                  <Icon className="text-emerald-600 shrink-0 mt-0.5" size={22} />
-                  <p className="text-sm text-gray-700">{isAr ? s.ar : s.en}</p>
+      <main className="wn-public-shell">
+        <section className="wn-public-hero">
+          <div className="page-container wn-public-hero__inner">
+            <div>
+              <span className="wn-auth-visual__eyebrow"><Sparkles size={14} /> {isAr ? 'تجربة الهاتف' : 'MOBILE EXPERIENCE'}</span>
+              <h1>{isAr ? 'خلي وحي ونماء أقرب إليك' : 'Keep Wahy Wa Namaa close at hand'}</h1>
+              <p>{isAr ? 'يمكن تثبيت المنصة كتطبيق ويب من المتصفح للوصول السريع إلى حسابك ودروسك.' : 'Install the platform as a web app from your browser for faster access to your account and lessons.'}</p>
+              <div className="flex flex-wrap gap-2 mt-5">
+                <Link to={lp('/register/student')} className="wn-btn wn-btn--accent">{isAr ? 'إنشاء حساب' : 'Create account'}</Link>
+                <Link to={lp('/login')} className="wn-btn wn-btn--secondary">{isAr ? 'تسجيل الدخول' : 'Sign in'}</Link>
+              </div>
+            </div>
+
+            <div className="wn-public-hero__art">
+              <div className="wn-mobile-preview" aria-hidden="true">
+                <div className="wn-mobile-preview__screen">
+                  <Smartphone size={52} strokeWidth={1.2} />
+                  <strong>{isAr ? 'وحي ونماء' : 'Wahy Wa Namaa'}</strong>
+                  <small>{isAr ? 'تعلم • احفظ • انمُ' : 'Learn • Memorize • Grow'}</small>
                 </div>
-              );
-            })}
+              </div>
+            </div>
           </div>
+        </section>
 
-          <div className="flex flex-col gap-3">
-            <Link to={lp('/register/student')} className="btn-primary">{isAr ? 'إنشاء حساب' : 'Create account'}</Link>
-            <Link to={lp('/settings/notifications')} className="text-emerald-700 font-medium hover:underline">{isAr ? 'فعّل الإشعارات ←' : 'Enable notifications →'}</Link>
-            <Link to={lp('/leaderboard')} className="text-emerald-700 font-medium hover:underline">{isAr ? 'لوحة المتصدرين ←' : 'Leaderboard →'}</Link>
+        <section className="page-container wn-public-copy-section">
+          <div className="wn-public-feature-grid">
+            {STEPS.map(({ icon: Icon, ar, en }) => (
+              <article key={ar} className="wn-public-feature-card">
+                <span><Icon size={21} /></span>
+                <h3>{isAr ? ar : en}</h3>
+              </article>
+            ))}
           </div>
-        </div>
+        </section>
       </main>
+
       <GlobalFooter />
       <PwaInstallPrompt />
     </>
