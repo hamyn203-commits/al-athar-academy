@@ -421,7 +421,7 @@ export default function LiveRoom() {
   const isHost = searchParams.get('host') === 'true' || searchParams.get('teacher') === 'true';
   const roleParam = searchParams.get('role');
   const isObserver = roleParam === 'guardian' || roleParam === 'supervisor' || roleParam === 'observer' || searchParams.get('observer') === 'true';
-  const participantName = searchParams.get('name') || (isObserver ? 'مراقب أكاديمي' : isHost ? 'الشيخ المعلم' : 'طالب');
+  const participantName = searchParams.get('name') || (isObserver ? 'مراقب أكاديمي' : isHost ? 'المعلم' : 'طالب');
 
   useEffect(() => {
     const fetchToken = async () => {
@@ -458,7 +458,7 @@ export default function LiveRoom() {
   if (loading) {
     return (
       <div className="live-room-loading">
-        <Logo size={80} showText={false} />
+        <BrandLogo size={72} variant="light" />
         <div className="spinner spinner-lg"></div>
         <p>{t.live.connecting}</p>
       </div>
@@ -468,7 +468,7 @@ export default function LiveRoom() {
   if (error) {
     return (
       <div className="live-room-error">
-        <Logo size={80} showText={false} />
+        <BrandLogo size={72} variant="light" />
         <h2>{t.live.error}</h2>
         <p>{error}</p>
         <button onClick={() => navigate('/')} className="btn-premium">

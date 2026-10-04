@@ -47,7 +47,7 @@ router.post('/demo-room', async (_req, res) => {
     const roomId = `demo-${Date.now()}`;
     const session = await LiveSession.create({
       roomId,
-      title: 'حصة تجريبية — أكاديمية الأثر',
+      title: 'حصة تجريبية — أكاديمية وَحْيٌ وَنَمَاء',
       description: 'غرفة LiveKit تجريبية',
       subject: 'quran',
       isLive: false,

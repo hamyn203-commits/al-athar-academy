@@ -1,5 +1,5 @@
 /**
- * WhatsApp Notification Service — Al-Athar Academy
+ * WhatsApp Notification Service — Wahy Wa Namaa Academy
  * Supports WhatsApp Cloud API (Meta Graph API) & Twilio Fallback & Safe Mock Logger
  */
 
@@ -134,11 +134,11 @@ async function send24HourReminder(session, student, guardianPhone) {
     timeZone: session.timezone || 'Africa/Cairo'
   }) : 'الموعد المحدد';
 
-  const siteUrl = (process.env.FRONTEND_URL || 'https://al-athar-academy.vercel.app').replace(/\/$/, '');
+  const siteUrl = (process.env.FRONTEND_URL || 'https://wahy-wa-namaa-academy.vercel.app').replace(/\/$/, '');
   const rsvpUrl = `${siteUrl}/sessions/${session._id}/rsvp`;
   const roomUrl = session.meetingLink || `${siteUrl}/live/${session._id}`;
 
-  const message = `🌿 *أكاديمية الأثر لتعليم القرآن الكريم* 🌿
+  const message = `🌿 *أكاديمية وَحْيٌ وَنَمَاء* 🌿
 السلام عليكم ورحمة الله وبركاته،
 
 نود تذكيركم بموعد حلقة القرآن الكريم لـ *${studentName}*:
@@ -163,7 +163,7 @@ async function send24HourReminder(session, student, guardianPhone) {
  */
 async function send30MinuteReminder(session, student, guardianPhone, roomUrl) {
   const studentName = student?.name || 'الطالب';
-  const siteUrl = (process.env.FRONTEND_URL || 'https://al-athar-academy.vercel.app').replace(/\/$/, '');
+  const siteUrl = (process.env.FRONTEND_URL || 'https://wahy-wa-namaa-academy.vercel.app').replace(/\/$/, '');
   const link = roomUrl || session.meetingLink || `${siteUrl}/live/${session._id}`;
 
   const message = `⏰ *تذكير: الحصة ستبدأ بعد 30 دقيقة!*
@@ -194,7 +194,7 @@ async function sendAbsenceAlert(session, student, guardianPhone) {
     timeZone: session.timezone || 'Africa/Cairo'
   }) : 'اليوم';
 
-  const siteUrl = (process.env.FRONTEND_URL || 'https://al-athar-academy.vercel.app').replace(/\/$/, '');
+  const siteUrl = (process.env.FRONTEND_URL || 'https://wahy-wa-namaa-academy.vercel.app').replace(/\/$/, '');
   const contactUrl = `${siteUrl}/contact`;
 
   const message = `السلام عليكم ورحمة الله وبركاته،
@@ -234,7 +234,7 @@ async function sendSessionReport(session, student, report, guardianPhone) {
   const notes = report.notes ? `📝 *ملاحظات المعلم:* ${report.notes}\n` : '';
 
   const message = `📊 *تقرير إنجاز الحصة القرآنية* 📊
-*أكاديمية الأثر لتعليم القرآن الكريم*
+*أكاديمية وَحْيٌ وَنَمَاء*
 ----------------------------------------
 👤 *الطالب:* ${studentName}
 📖 *السورة/المقطع المُسمَّع:* ${surahInfo}

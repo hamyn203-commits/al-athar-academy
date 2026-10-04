@@ -4,7 +4,7 @@ const crypto = require('crypto');
 const VerificationCode = require('../models/VerificationCode');
 const { sendWhatsApp, sendTelegram } = require('../services/notificationDispatcher');
 
-const OTP_MSG = (code) => `رمز التحقق — أكاديمية الأثر: ${code}\nصالح 10 دقائق.`;
+const OTP_MSG = (code) => `رمز التحقق — أكاديمية وَحْيٌ وَنَمَاء: ${code}\nصالح 10 دقائق.`;
 
 router.post('/send-verification', async (req, res) => {
   try {

@@ -128,7 +128,7 @@ export default function KidsCompetitionsAndAwards() {
         'مصحف الحفظ برسم عثماني فاخر',
         'مفكرة الأوراد والمتابعة اليومية للطفل',
         'سجادة صلاة مريحة ومبطنة خاصة بالأطفال',
-        'ميدالية أبطال الأثر التذكارية'
+        'ميدالية أبطال وحي ونماء التذكارية'
       ] : [
         'Deluxe Ottoman script study Mushaf',
         'Daily homework & revision tracker',
@@ -210,7 +210,7 @@ export default function KidsCompetitionsAndAwards() {
         <div className="relative z-10 text-center space-y-6 max-w-4xl mx-auto">
           <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-white/20 backdrop-blur-md border border-white/40 text-white text-xs md:text-sm font-black shadow-inner">
             <Trophy size={18} className="text-yellow-200 animate-bounce" />
-            <span>{isAr ? 'مسابقة براعم الأثر النصف سنوية الكبرى (الدورة الشتوية / الصيفية)' : 'Semi-Annual Grand Kids Quran Contest (Winter / Summer)'}</span>
+            <span>{isAr ? 'مسابقة براعم وحي ونماء النصف سنوية الكبرى (الدورة الشتوية / الصيفية)' : 'Semi-Annual Grand Kids Quran Contest (Winter / Summer)'}</span>
           </div>
 
           <h2 className="text-3xl md:text-5xl font-black leading-tight text-white drop-shadow-md">
@@ -269,7 +269,7 @@ export default function KidsCompetitionsAndAwards() {
               <span>{isAr ? 'لوحة الشرف النصف سنوية' : 'Semi-Annual Hall of Fame'}</span>
             </div>
             <h3 className="text-2xl md:text-3xl font-black text-slate-900">
-              {isAr ? 'أبطال الأثر الصغار المتوّجون بالدورة السابقة' : 'Honored Champions of the Previous Contest'}
+              {isAr ? 'أبطال وحي ونماء الصغار المتوّجون بالدورة السابقة' : 'Honored Champions of the Previous Contest'}
             </h3>
             <p className="text-slate-500 text-sm">
               {isAr
