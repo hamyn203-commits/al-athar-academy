@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - design/approved-wahy-namaa-homepage
+      - design/wahy-namaa-v2-immersive
 
 permissions:
   contents: read
