@@ -10,10 +10,35 @@ const isDBConnected = () => mongoose.connection.readyState === 1;
 
 router.post('/', async (req, res) => {
   try {
-    const { name, email, phone, amount, currency, category, message, isAnonymous } = req.body;
-    if (!name || !email || !amount) {
+    const { name, email, phone, amount, currency = 'USD', category = 'general', message, isAnonymous } = req.body;
+    const cleanName = String(name || '').trim();
+    const cleanEmail = String(email || '').trim().toLowerCase();
+    const cleanPhone = String(phone || '').trim();
+    const cleanMessage = String(message || '').trim();
+    const numericAmount = Number(amount);
+    const normalizedCurrency = String(currency || 'USD').toUpperCase();
+    const allowedCurrencies = ['USD', 'EUR', 'GBP', 'SAR', 'AED', 'EGP'];
+    const allowedCategories = ['student', 'teacher', 'halaqa', 'general'];
+
+    if (!cleanName || !cleanEmail || !numericAmount) {
       return res.status(400).json({ error: 'الاسم والبريد والمبلغ مطلوبة' });
     }
+    if (cleanName.length < 2 || cleanName.length > 100) {
+      return res.status(400).json({ error: 'الاسم غير صالح' });
+    }
+    if (!/^\S+@\S+\.\S+$/.test(cleanEmail) || cleanEmail.length > 254) {
+      return res.status(400).json({ error: 'البريد الإلكتروني غير صالح' });
+    }
+    if (!Number.isFinite(numericAmount) || numericAmount < 1 || numericAmount > 10000000) {
+      return res.status(400).json({ error: 'المبلغ غير صالح' });
+    }
+    if (!allowedCurrencies.includes(normalizedCurrency) || !allowedCategories.includes(category)) {
+      return res.status(400).json({ error: 'العملة أو فئة التبرع غير صالحة' });
+    }
+    if (cleanPhone.length > 32 || cleanMessage.length > 500) {
+      return res.status(400).json({ error: 'بيانات التبرع تتجاوز الحد المسموح' });
+    }
+
     if (isMockMode || !isDBConnected()) {
       return res.status(201).json({
         success: true,
@@ -22,11 +47,18 @@ router.post('/', async (req, res) => {
       });
     }
     const donation = await Donation.create({
-      name, email, phone, amount: Number(amount), currency, category, message, isAnonymous,
+      name: cleanName,
+      email: cleanEmail,
+      phone: cleanPhone,
+      amount: numericAmount,
+      currency: normalizedCurrency,
+      category,
+      message: cleanMessage,
+      isAnonymous: Boolean(isAnonymous),
     });
     notifyAdmin({
-      subject: `تبرع جديد — ${amount} ${currency || 'USD'}`,
-      html: `<p>تبرع من ${isAnonymous ? 'مجهول' : name} (${email})</p><p>الفئة: ${category} — ${amount} ${currency}</p>`,
+      subject: `تبرع جديد — ${numericAmount} ${normalizedCurrency}`,
+      html: `<p>تم تسجيل تعهد تبرع جديد.</p><p>راجع لوحة الإدارة للاطلاع على بيانات المتبرع.</p>`,
     }).catch(() => {});
     res.status(201).json({ success: true, message: 'شكراً لتبرعك — سنتواصل معك لإتمام العملية', id: donation._id });
   } catch (error) {
@@ -88,7 +120,15 @@ router.get('/', protect, authorize('admin'), async (req, res) => {
 router.put('/:id/status', protect, authorize('admin'), async (req, res) => {
   try {
     const { status } = req.body;
-    const donation = await Donation.findByIdAndUpdate(req.params.id, { status }, { new: true });
+    const allowedStatuses = ['pledged', 'confirmed', 'cancelled'];
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({ error: 'حالة التبرع غير صالحة' });
+    }
+    const donation = await Donation.findByIdAndUpdate(
+      req.params.id,
+      { status },
+      { new: true, runValidators: true }
+    );
     if (!donation) return res.status(404).json({ error: 'التبرع غير موجود' });
     res.json(donation);
   } catch (error) {
