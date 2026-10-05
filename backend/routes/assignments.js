@@ -205,7 +205,25 @@ router.post('/:id/submit', protect, upload.single('file'), async (req, res) => {
       content: {}
     };
 
-    if (req.file) {
+    const directFile = req.body?.storageFile && typeof req.body.storageFile === 'object'
+      ? req.body.storageFile
+      : null;
+
+    if (directFile) {
+      submissionData.content.file = {
+        name: directFile.name || 'submission',
+        url: directFile.url || directFile.pathname,
+        type: directFile.contentType || 'application/octet-stream',
+        size: Number(directFile.size || 0)
+      };
+      submissionData.submissionType = 'file';
+    } else if (req.file) {
+      if (externalStorage) {
+        return res.status(400).json({
+          error: 'Direct object-storage upload is required',
+          code: 'DIRECT_UPLOAD_REQUIRED'
+        });
+      }
       submissionData.content.file = {
         name: req.file.originalname,
         url: req.file.path,
