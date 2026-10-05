@@ -2,47 +2,11 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const { Badge, UserBadge, Achievement, Leaderboard } = require('../models/Gamification');
+const Progress = require('../models/Progress');
 const { protect, authorize } = require('../middleware/auth');
 
 const isDBConnected = () => mongoose.connection.readyState === 1;
 const isValidObjectId = (id) => id && mongoose.Types.ObjectId.isValid(id);
-
-// @route   GET /api/gamification/stats
-// @desc    Get user's gamification stats (points, badges, streaks)
-// @access  Private
-router.get('/stats', protect, async (req, res) => {
-  try {
-    if (!isDBConnected() || !isValidObjectId(req.user.id)) {
-      return res.json({
-        points: { total: 420, level: 3, pointsToNextLevel: 80 },
-        badges: { unlocked: 2, total: 10 },
-        streaks: { current: 7, longest: 14 }
-      });
-    }
-
-    const Student = require('../models/Student');
-    const student = await Student.findOne({ user: req.user.id });
-    const userBadges = await UserBadge.find({ user: req.user.id, isUnlocked: true });
-
-    res.json({
-      points: {
-        total: student?.points || 150,
-        level: student?.level || 2,
-        pointsToNextLevel: 100
-      },
-      badges: {
-        unlocked: userBadges.length,
-        total: await Badge.countDocuments({ isActive: true }) || 10
-      },
-      streaks: {
-        current: student?.streak || 3,
-        longest: 10
-      }
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
 
 // @route   GET /api/gamification/badges
 // @desc    Get all available badges
@@ -50,11 +14,7 @@ router.get('/stats', protect, async (req, res) => {
 router.get('/badges', async (req, res) => {
   try {
     if (!isDBConnected()) {
-      return res.json([
-        { _id: 'b1', name: 'الحافظ المبادر', description: 'أول تلاوة متقنة في الحلقة', icon: '🌟', color: '#D4AF37' },
-        { _id: 'b2', name: 'المداوم المثابر', description: 'حضور 5 جلسات متتالية', icon: '🔥', color: '#E53E3E' },
-        { _id: 'b3', name: 'سفير القرآن', description: 'إتمام حفظ جزء كامل', icon: '👑', color: '#3182CE' }
-      ]);
+      return res.status(503).json({ error: 'Gamification data is temporarily unavailable' });
     }
 
     const badges = await Badge.find({ isActive: true, isSecret: false })
@@ -73,20 +33,7 @@ router.get('/badges', async (req, res) => {
 router.get('/my-badges', protect, async (req, res) => {
   try {
     if (!isDBConnected() || !isValidObjectId(req.user.id)) {
-      return res.json({
-        unlocked: [
-          { _id: 'b1', badge: { name: 'الحافظ المبادر', description: 'أول تلاوة متقنة في الحلقة', icon: '🌟', color: '#D4AF37' }, isUnlocked: true, unlockedAt: new Date() },
-          { _id: 'b2', badge: { name: 'المداوم المثابر', description: 'حضور 5 جلسات متتالية', icon: '🔥', color: '#E53E3E' }, isUnlocked: true, unlockedAt: new Date() }
-        ],
-        locked: [
-          { _id: 'b3', badge: { name: 'سفير القرآن', description: 'إتمام حفظ جزء كامل', icon: '👑', color: '#3182CE' }, isUnlocked: false }
-        ],
-        stats: {
-          totalUnlocked: 2,
-          totalLocked: 1,
-          completionRate: 67
-        }
-      });
+      return res.status(503).json({ error: 'Gamification data is temporarily unavailable' });
     }
 
     const userBadges = await UserBadge.find({ user: req.user.id })
