@@ -8,7 +8,7 @@ const User = require('../models/User');
 const Teacher = require('../models/Teacher');
 const { Quiz } = require('../models/Quiz');
 const Certificate = require('../models/Certificate');
-const { protect, authorize } = require('../middleware/auth');
+const { protect, authorize, attachTeacherProfile } = require('../middleware/auth');
 const { notifyCourseEnrollment, notifyCertificateIssued } = require('../utils/notify');
 const { isMockMode } = require('../config/runtime');
 
@@ -24,7 +24,7 @@ const mongoose = require('mongoose');
 const isDBConnected = () => mongoose.connection.readyState === 1;
 
 // GET /api/lms/course/:slug — course + lessons + enrollment for student
-router.get('/course/:slug', protect, async (req, res) => {
+router.get('/course/:slug', protect, attachTeacherProfile, authorize('student', 'teacher', 'admin'), async (req, res) => {
   try {
     if (!isDBConnected()) {
       if (!isMockMode) {
@@ -91,9 +91,28 @@ router.get('/course/:slug', protect, async (req, res) => {
     const course = await getCourseBySlug(req.params.slug);
     if (!course) return res.status(404).json({ error: 'Course not found' });
 
-    const lessons = await Lesson.find({ course: course._id, isPublished: true }).sort({ order: 1 });
-    const enrollment = await getEnrollment(req.user.id, course._id);
+    let enrollment = null;
 
+    if (req.user.role === 'student') {
+      enrollment = await Enrollment.findOne({
+        student: req.user.id,
+        course: course._id,
+        status: { $in: ['active', 'completed'] }
+      });
+
+      if (!enrollment) {
+        return res.status(403).json({
+          error: 'Not enrolled in this course',
+          code: 'ENROLLMENT_REQUIRED'
+        });
+      }
+    } else if (req.user.role === 'teacher') {
+      if (!req.user.teacherProfile || String(course.instructor) !== String(req.user.teacherProfile)) {
+        return res.status(403).json({ error: 'Not authorized to access this course' });
+      }
+    }
+
+    const lessons = await Lesson.find({ course: course._id, isPublished: true }).sort({ order: 1 });
     res.json({ course, lessons, enrollment });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -101,7 +120,7 @@ router.get('/course/:slug', protect, async (req, res) => {
 });
 
 // POST /api/lms/course/:slug/enroll
-router.post('/course/:slug/enroll', protect, async (req, res) => {
+router.post('/course/:slug/enroll', protect, authorize('student'), async (req, res) => {
   try {
     const course = await getCourseBySlug(req.params.slug);
     if (!course) return res.status(404).json({ error: 'Course not found' });
@@ -109,10 +128,17 @@ router.post('/course/:slug/enroll', protect, async (req, res) => {
     const existing = await getEnrollment(req.user.id, course._id);
     if (existing) return res.status(400).json({ error: 'Already enrolled', enrollment: existing });
 
+    if (Number(course.price || 0) > 0) {
+      return res.status(402).json({
+        error: 'Payment is required before enrollment',
+        code: 'PAYMENT_REQUIRED'
+      });
+    }
+
     const enrollment = await Enrollment.create({
       student: req.user.id,
       course: course._id,
-      payment: { amount: course.price, currency: course.currency, status: 'completed', paidAt: new Date() },
+      payment: { amount: 0, currency: course.currency, status: 'completed', paidAt: new Date() },
     });
 
     course.stats.enrolled += 1;
@@ -140,21 +166,33 @@ router.post('/course/:slug/enroll', protect, async (req, res) => {
 });
 
 // GET /api/lms/course/:slug/lesson/:lessonId
-router.get('/course/:slug/lesson/:lessonId', protect, async (req, res) => {
+router.get('/course/:slug/lesson/:lessonId', protect, attachTeacherProfile, authorize('student', 'teacher', 'admin'), async (req, res) => {
   try {
     const course = await getCourseBySlug(req.params.slug);
     if (!course) return res.status(404).json({ error: 'Course not found' });
 
-    const enrollment = await getEnrollment(req.user.id, course._id);
-    const isStaff = ['admin', 'teacher'].includes(req.user.role);
+    const enrollment = req.user.role === 'student'
+      ? await Enrollment.findOne({
+          student: req.user.id,
+          course: course._id,
+          status: { $in: ['active', 'completed'] }
+        })
+      : null;
 
     const lesson = await Lesson.findOne({ _id: req.params.lessonId, course: course._id, isPublished: true })
       .populate('content.quiz');
 
     if (!lesson) return res.status(404).json({ error: 'Lesson not found' });
 
-    if (!lesson.isFree && !enrollment && !isStaff) {
+    if (req.user.role === 'student' && !lesson.isFree && !enrollment) {
       return res.status(403).json({ error: 'Not enrolled in this course' });
+    }
+
+    if (
+      req.user.role === 'teacher' &&
+      (!req.user.teacherProfile || String(course.instructor) !== String(req.user.teacherProfile))
+    ) {
+      return res.status(403).json({ error: 'Not authorized to access this course' });
     }
 
     if (enrollment) {
@@ -177,12 +215,16 @@ router.get('/course/:slug/lesson/:lessonId', protect, async (req, res) => {
 });
 
 // POST /api/lms/course/:slug/lesson/:lessonId/complete
-router.post('/course/:slug/lesson/:lessonId/complete', protect, async (req, res) => {
+router.post('/course/:slug/lesson/:lessonId/complete', protect, authorize('student'), async (req, res) => {
   try {
     const course = await getCourseBySlug(req.params.slug);
     if (!course) return res.status(404).json({ error: 'Course not found' });
 
-    const enrollment = await getEnrollment(req.user.id, course._id);
+    const enrollment = await Enrollment.findOne({
+      student: req.user.id,
+      course: course._id,
+      status: 'active'
+    });
     if (!enrollment) return res.status(403).json({ error: 'Not enrolled' });
 
     const { score = 100 } = req.body;
@@ -259,7 +301,7 @@ router.post('/course/:slug/lesson/:lessonId/complete', protect, async (req, res)
 });
 
 // GET /api/lms/my-certificates
-router.get('/my-certificates', protect, async (req, res) => {
+router.get('/my-certificates', protect, authorize('student'), async (req, res) => {
   try {
     const certs = await Certificate.find({ student: req.user.id })
       .populate('course', 'title slug')
