@@ -59,3 +59,7 @@ jobs:
         run: |
           find . -path ./node_modules -prune -o -name '*.js' -print0 \
             | xargs -0 -r -n1 node --check
+
+      - name: Security regression gate
+        working-directory: backend
+        run: npm run test:security
