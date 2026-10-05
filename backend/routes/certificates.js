@@ -28,8 +28,10 @@ router.post('/generate', protect, async (req, res) => {
       return res.status(400).json({ error: 'Course not completed yet' });
     }
 
+    const certificateStudentId = enrollment.student._id || enrollment.student;
+
     const existingCert = await Certificate.findOne({
-      student: req.user.id,
+      student: certificateStudentId,
       course: enrollment.course._id
     });
 
@@ -43,7 +45,7 @@ router.post('/generate', protect, async (req, res) => {
     const qrCode = await Certificate.generateQRCode(verificationUrl);
 
     const certificate = new Certificate({
-      student: req.user.id,
+      student: certificateStudentId,
       course: enrollment.course._id,
       enrollment: enrollmentId,
       certificateId,
@@ -132,8 +134,8 @@ router.get('/verify/:certificateId', async (req, res) => {
 router.get('/:certificateId', async (req, res) => {
   try {
     const certificate = await Certificate.findOne({ certificateId: req.params.certificateId })
-      .populate('student', 'name email')
-      .populate('course', 'title slug image instructor')
+      .populate('student', 'name')
+      .populate('course', 'title slug')
       .populate('metadata.instructor', 'name');
 
     if (!certificate) {
@@ -141,9 +143,29 @@ router.get('/:certificateId', async (req, res) => {
     }
 
     const verification = certificate.verify();
-    
+
     res.json({
-      certificate,
+      certificate: {
+        certificateId: certificate.certificateId,
+        student: certificate.student ? { name: certificate.student.name } : null,
+        course: certificate.course
+          ? {
+              title: certificate.course.title,
+              slug: certificate.course.slug,
+            }
+          : null,
+        issuedAt: certificate.issuedAt,
+        status: certificate.status,
+        language: certificate.language,
+        metadata: {
+          completionDate: certificate.metadata?.completionDate,
+          score: certificate.metadata?.score,
+          instructor: certificate.metadata?.instructor
+            ? { name: certificate.metadata.instructor.name }
+            : null,
+          duration: certificate.metadata?.duration,
+        },
+      },
       verification
     });
   } catch (error) {
