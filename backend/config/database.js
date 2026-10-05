@@ -3,7 +3,8 @@ const mongoose = require('mongoose');
 let connectionPromise = null;
 
 async function connectDB() {
-  if (!process.env.MONGODB_URI) {
+  const mongoUri = process.env.MONGODB_URI || process.env.MONGODB_URL;
+  if (!mongoUri) {
     return false;
   }
 
@@ -12,7 +13,7 @@ async function connectDB() {
   }
 
   if (!connectionPromise) {
-    connectionPromise = mongoose.connect(process.env.MONGODB_URI, {
+    connectionPromise = mongoose.connect(mongoUri, {
       serverSelectionTimeoutMS: 15000,
       socketTimeoutMS: 45000,
       maxPoolSize: Number(process.env.MONGODB_MAX_POOL_SIZE || 10),

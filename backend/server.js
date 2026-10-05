@@ -14,7 +14,7 @@ async function start() {
     const connected = await connectDB();
 
     if (!connected && process.env.NODE_ENV === 'production') {
-      throw new Error('MONGODB_URI is required for production Node runtime');
+      throw new Error('MONGODB_URI or MONGODB_URL is required for production Node runtime');
     }
 
     if (connected && process.env.ENABLE_IN_PROCESS_SCHEDULER !== 'false') {
