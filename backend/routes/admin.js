@@ -15,7 +15,9 @@ const { protect, authorize } = require('../middleware/auth');
 const cdnService = require('../services/cdn');
 
 const coursesUploadDir = path.join(__dirname, '..', 'uploads', 'courses');
-if (!fs.existsSync(coursesUploadDir)) fs.mkdirSync(coursesUploadDir, { recursive: true });
+if (process.env.FILE_STORAGE_DRIVER !== 'external') {
+  if (!fs.existsSync(coursesUploadDir)) fs.mkdirSync(coursesUploadDir, { recursive: true });
+}
 
 const upload = multer({
   storage: multer.memoryStorage(),
