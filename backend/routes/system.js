@@ -60,7 +60,7 @@ async function ensureDemoTeacher() {
 
   return Teacher.create({
     user: user._id,
-    personalInfo: { fullName: user.name, age: 35, gender: 'male', country: 'مصر', city: 'القاهرة', phone: '+201234567890' },
+    personalInfo: { fullName: user.name, age: 35, gender: 'male', country: 'مصر', city: 'القاهرة', phone: '+200000000000' },
     academicInfo: { university: 'الأزهر', faculty: 'الدراسات الإسلامية', graduationYear: 2010, specialization: 'التجويد', qualification: 'إجازة في القرآن' },
     documents: { idCard: '/uploads/demo/id.pdf', graduationCertificate: '/uploads/demo/cert.pdf' },
     media: {
