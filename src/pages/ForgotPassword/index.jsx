@@ -14,19 +14,31 @@ export default function ForgotPassword() {
   const ArrowIcon = isAr ? ArrowLeft : ArrowRight;
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState('');
+  const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setLoading(true);
     setStatus('');
+    setMessage('');
 
     try {
       await api.post('/api/auth/forgot-password', { email });
-    } catch {
-      // Keep the same response to avoid revealing whether an account exists.
-    } finally {
       setStatus('success');
+    } catch (error) {
+      if (error?.status === 503) {
+        setStatus('unavailable');
+        setMessage(
+          isAr
+            ? 'خدمة البريد الخاصة باستعادة كلمة المرور غير متاحة مؤقتًا. حاول مرة أخرى لاحقًا.'
+            : 'Password recovery email is temporarily unavailable. Please try again later.'
+        );
+      } else {
+        // Keep the same account-agnostic response for all other failures.
+        setStatus('success');
+      }
+    } finally {
       setLoading(false);
     }
   };
@@ -52,6 +64,19 @@ export default function ForgotPassword() {
               {isAr ? 'العودة لتسجيل الدخول' : 'Back to sign in'}
               <ArrowIcon size={15} />
             </Link>
+          </div>
+        ) : status === 'unavailable' ? (
+          <div className="text-center">
+            <div className="w-14 h-14 mx-auto grid place-items-center rounded-2xl bg-amber-50 text-amber-700"><Mail size={25} /></div>
+            <p className="mt-4 text-sm leading-7 text-[var(--wn-text-secondary)]">{message}</p>
+            <button
+              type="button"
+              onClick={() => setStatus('')}
+              className="wn-btn wn-btn--primary wn-btn--block mt-5"
+            >
+              {isAr ? 'المحاولة مرة أخرى' : 'Try again'}
+              <ArrowIcon size={15} />
+            </button>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="grid gap-4">
