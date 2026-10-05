@@ -106,7 +106,7 @@ export default function TeacherRegistration() {
                       </select>
                     </Field>
                     <Field label="رقم التليفون *">
-                      <input type="tel" dir="ltr" className={inputCls} placeholder="+201234567890"
+                      <input type="tel" dir="ltr" className={inputCls} placeholder="+2010XXXXXXXX"
                         value={f.formData.personalInfo.phone}
                         onChange={(e) => f.update('personalInfo', 'phone', e.target.value)} />
                     </Field>
