@@ -81,7 +81,7 @@ app.use(cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) return callback(null, true);
-    if (/^https:\/\/wahy-wa-namaa-academy(-[a-z0-9-]+)?\.vercel\.app$i.test(origin)) {
+    if (/^https:\/\/wahy-wa-namaa-academy(-[a-z0-9-]+)?\.vercel\.app$/i.test(origin)) {
       return callback(null, true);
     }
     const siteUrl = (process.env.SITE_URL || process.env.VITE_SITE_URL || '').replace(/\/$/, '');
