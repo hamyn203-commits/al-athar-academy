@@ -85,15 +85,35 @@ async function streamPrivateFile(res, req, reference) {
 // @route   GET /api/assignments
 // @desc    Get all assignments for a course
 // @access  Private
-router.get('/', protect, async (req, res) => {
+router.get('/', protect, attachTeacherProfile, authorize('student', 'teacher', 'admin'), async (req, res) => {
   try {
     const { courseId, status = 'published' } = req.query;
-
     const filter = { status };
-    if (courseId) filter.course = courseId;
+
+    if (req.user.role === 'student') {
+      const enrollmentFilter = {
+        student: req.user.id,
+        status: { $in: ['active', 'completed'] }
+      };
+      if (courseId) enrollmentFilter.course = courseId;
+
+      const enrollments = await Enrollment.find(enrollmentFilter).select('course');
+      const courseIds = enrollments.map((enrollment) => enrollment.course);
+
+      if (!courseIds.length) return res.json([]);
+      filter.course = { $in: courseIds };
+    } else if (req.user.role === 'teacher') {
+      if (!req.user.teacherProfile) {
+        return res.status(403).json({ error: 'Teacher profile is required' });
+      }
+      filter.instructor = req.user.teacherProfile;
+      if (courseId) filter.course = courseId;
+    } else if (courseId) {
+      filter.course = courseId;
+    }
 
     const assignments = await Assignment.find(filter)
-      .populate('instructor', 'name')
+      .populate('instructor', 'personalInfo.fullName user')
       .sort({ dueDate: 1 });
 
     res.json(assignments);
@@ -106,7 +126,7 @@ router.get('/', protect, async (req, res) => {
 // @route   GET /api/assignments/my-submissions
 // @desc    Get all submissions for the current user
 // @access  Private
-router.get('/my-submissions', protect, async (req, res) => {
+router.get('/my-submissions', protect, authorize('student'), async (req, res) => {
   try {
     const submissions = await AssignmentSubmission.find({ student: req.user.id })
       .populate({
@@ -125,14 +145,32 @@ router.get('/my-submissions', protect, async (req, res) => {
 // @route   GET /api/assignments/:id
 // @desc    Get a single assignment
 // @access  Private
-router.get('/:id', protect, async (req, res) => {
+router.get('/:id', protect, attachTeacherProfile, authorize('student', 'teacher', 'admin'), async (req, res) => {
   try {
     const assignment = await Assignment.findById(req.params.id)
-      .populate('instructor', 'name')
+      .populate('instructor', 'personalInfo.fullName user')
       .populate('course', 'title');
 
     if (!assignment) {
       return res.status(404).json({ error: 'Assignment not found' });
+    }
+
+    if (req.user.role === 'student') {
+      const enrollment = await Enrollment.exists({
+        student: req.user.id,
+        course: assignment.course?._id || assignment.course,
+        status: { $in: ['active', 'completed'] }
+      });
+      if (!enrollment) {
+        return res.status(403).json({ error: 'Not enrolled in this course' });
+      }
+    }
+
+    if (
+      req.user.role === 'teacher' &&
+      (!req.user.teacherProfile || String(assignment.instructor?._id || assignment.instructor) !== String(req.user.teacherProfile))
+    ) {
+      return res.status(403).json({ error: 'Not authorized to access this assignment' });
     }
 
     res.json(assignment);
