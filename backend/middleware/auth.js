@@ -33,7 +33,10 @@ const generateAccessToken = (user) => {
 
 const generateRefreshToken = (user) => {
   return jwt.sign(
-    { id: user._id || user.id },
+    {
+      id: user._id || user.id,
+      v: Number(user.refreshTokenVersion || 0),
+    },
     refreshSecret(),
     { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d' }
   );
@@ -75,12 +78,7 @@ function readCookie(req, name) {
 }
 
 const verifyRefreshToken = (req, res, next) => {
-  // Body support is temporary migration compatibility for sessions created
-  // before refresh tokens moved to HttpOnly cookies.
-  const refreshToken =
-    readCookie(req, 'wn_refresh') ||
-    req.body?.refreshToken ||
-    null;
+  const refreshToken = readCookie(req, 'wn_refresh') || null;
 
   if (!refreshToken) {
     return res.status(401).json({ error: 'Refresh session is required' });
