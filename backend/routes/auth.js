@@ -336,7 +336,7 @@ router.post('/change-password', verifyAccessToken, async (req, res) => {
       });
     }
 
-    const user = await User.findById(req.user.id).select('+password');
+    const user = await User.findById(req.user.id).select('+password +refreshTokenVersion');
 
     const isPasswordValid = await user.comparePassword(currentPassword);
     if (!isPasswordValid) {
