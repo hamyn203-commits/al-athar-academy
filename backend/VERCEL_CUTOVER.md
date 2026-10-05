@@ -5,6 +5,12 @@ Candidate API:
 
 Current frontend remains routed to Azure until this document reaches **GO**.
 
+Migration status:
+- MongoDB Atlas integration: connected to Vercel Production + Preview
+- Candidate API deployment: active
+- External object storage: pending
+
+
 ## Current architecture
 
 - Frontend: Vercel
