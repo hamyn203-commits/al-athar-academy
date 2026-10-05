@@ -31,8 +31,12 @@ export function MarketProvider({ children }) {
 
         let countryCode = '';
 
-        // Check mock country parameter first for QA/testing
-        if (typeof window !== 'undefined' && window.location.search.includes('mock_country=ID')) {
+        // QA-only market override. Never allow query-string market spoofing in production.
+        if (
+          import.meta.env.DEV &&
+          typeof window !== 'undefined' &&
+          window.location.search.includes('mock_country=ID')
+        ) {
           countryCode = 'ID';
         }
 
