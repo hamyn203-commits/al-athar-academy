@@ -7,7 +7,7 @@ function slugify(id) {
 }
 
 function generateJitsiLink(sessionId, roomName) {
-  const room = roomName || `alathar-${slugify(sessionId)}`;
+  const room = roomName || `wahy-namaa-${slugify(sessionId)}`;
   return {
     provider: 'jitsi',
     url: `https://meet.jit.si/${room}`,
@@ -50,7 +50,7 @@ function generateGoogleMeetLink(sessionId) {
   }
   return {
     provider: 'google_meet',
-    url: `https://meet.jit.si/alathar-gmeet-${slugify(sessionId)}`,
+    url: `https://meet.jit.si/wahy-namaa-gmeet-${slugify(sessionId)}`,
     instructions: {
       ar: 'جلسة عبر Jitsi (بديل Meet) — اضبط GOOGLE_MEET_BASE_URL لرابط Meet حقيقي',
       en: 'Jitsi fallback — set GOOGLE_MEET_BASE_URL for real Meet links',
