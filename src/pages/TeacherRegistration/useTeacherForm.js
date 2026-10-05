@@ -23,6 +23,7 @@ export function useTeacherForm() {
   const [verificationCode, setVerificationCode] = useState('');
   const [isCodeSent, setIsCodeSent] = useState(false);
   const [phoneVerified, setPhoneVerified] = useState(false);
+  const [phoneVerificationToken, setPhoneVerificationToken] = useState('');
   const [verificationMethod, setVerificationMethod] = useState('');
   const [fieldError, setFieldError] = useState('');
 
@@ -34,15 +35,15 @@ export function useTeacherForm() {
       if (d.formData) setFormData(d.formData);
       if (d.credentials) setCredentials((p) => ({ ...p, email: d.credentials.email || '' }));
       if (d.step) setStep(d.step);
-      if (d.phoneVerified) setPhoneVerified(true);
+      // Phone verification proof is intentionally not restored from localStorage.
     } catch { /* ignore */ }
   }, []);
 
   const saveDraft = useCallback(() => {
     localStorage.setItem(DRAFT_KEY, JSON.stringify({
-      formData, credentials: { email: credentials.email }, step, phoneVerified,
+      formData, credentials: { email: credentials.email }, step,
     }));
-  }, [formData, credentials.email, step, phoneVerified]);
+  }, [formData, credentials.email, step]);
 
   useEffect(() => {
     const t = setTimeout(saveDraft, 500);
@@ -88,16 +89,12 @@ export function useTeacherForm() {
       const data = await r.json();
       if (!r.ok) throw new Error(data.error || 'كود غير صحيح');
       setPhoneVerified(true);
+      setPhoneVerificationToken(data.verificationToken || '');
       toast.success('تم التحقق من الهاتف');
       setStep(3);
     } catch (e) { toast.error(e.message); }
   };
 
-  const skipVerification = () => {
-    setPhoneVerified(true);
-    toast.info('تم التخطي — سيتواصل معك الأدمن للتحقق لاحقاً');
-    setStep(3);
-  };
 
   const validate = (s) => {
     const p = formData.personalInfo;
@@ -113,7 +110,7 @@ export function useTeacherForm() {
         if (!p.phone?.trim()) return 'رقم الهاتف مطلوب';
         return null;
       case 2:
-        if (!phoneVerified) return 'تحقق من الهاتف أو اضغط تخطي';
+        if (!phoneVerified || !phoneVerificationToken) return 'يجب التحقق من الهاتف أولاً';
         return null;
       case 3:
         if (!credentials.email?.trim()) return 'البريد مطلوب';
@@ -167,6 +164,7 @@ export function useTeacherForm() {
     fd.append('availability', JSON.stringify([]));
     fd.append('email', credentials.email);
     fd.append('password', credentials.password);
+    fd.append('phoneVerificationToken', phoneVerificationToken);
 
     if (files.profilePhoto) fd.append('profilePhoto', files.profilePhoto);
     if (files.idCard) fd.append('idCard', files.idCard);
@@ -196,7 +194,7 @@ export function useTeacherForm() {
     formData, files, setFile, update,
     verificationCode, setVerificationCode, isCodeSent, phoneVerified,
     verificationMethod, setVerificationMethod, fieldError,
-    sendCode, verifyCode, skipVerification, next, prev, submit,
+    sendCode, verifyCode, next, prev, submit,
     setIsCodeSent,
   };
 }

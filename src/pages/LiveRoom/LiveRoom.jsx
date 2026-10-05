@@ -417,11 +417,18 @@ export default function LiveRoom() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // استخراج الصلاحيات والدور من الرابط
-  const isHost = searchParams.get('host') === 'true' || searchParams.get('teacher') === 'true';
-  const roleParam = searchParams.get('role');
-  const isObserver = roleParam === 'guardian' || roleParam === 'supervisor' || roleParam === 'observer' || searchParams.get('observer') === 'true';
-  const participantName = searchParams.get('name') || (isObserver ? 'مراقب أكاديمي' : isHost ? 'المعلم' : 'طالب');
+  let storedUser = null;
+  try {
+    storedUser = JSON.parse(localStorage.getItem('user') || 'null');
+  } catch {
+    storedUser = null;
+  }
+
+  const accessToken = localStorage.getItem('accessToken') || localStorage.getItem('token');
+  const role = storedUser?.role || '';
+  const isHost = role === 'teacher' || role === 'admin';
+  const isObserver = role === 'guardian' || role === 'supervisor';
+  const participantName = storedUser?.name || storedUser?.email || (isObserver ? 'مراقب' : isHost ? 'المعلم' : 'طالب');
 
   useEffect(() => {
     const fetchToken = async () => {
@@ -429,11 +436,13 @@ export default function LiveRoom() {
         setLoading(true);
         const response = await fetch(`${API_BASE_URL}/api/live/token`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+          },
           body: JSON.stringify({
             roomName: roomId,
             participantName,
-            isHost: isHost && !isObserver
           })
         });
 
@@ -450,10 +459,13 @@ export default function LiveRoom() {
       }
     };
 
-    if (roomId) {
-      fetchToken();
+    if (!accessToken) {
+      navigate('/login');
+      return;
     }
-  }, [roomId, participantName, isHost, isObserver]);
+
+    if (roomId) fetchToken();
+  }, [roomId, participantName, accessToken, navigate]);
 
   if (loading) {
     return (

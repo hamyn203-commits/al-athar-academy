@@ -153,10 +153,6 @@ export default function TeacherRegistration() {
                         className="text-sm text-slate-500 w-full">إعادة الإرسال</button>
                     </div>
                   )}
-                  <button type="button" onClick={f.skipVerification}
-                    className="w-full text-sm text-slate-500 hover:text-emerald-700 py-2 border-t border-slate-100 mt-2">
-                    تخطي الآن — التحقق لاحقاً من الإدارة
-                  </button>
                 </div>
               )}
 

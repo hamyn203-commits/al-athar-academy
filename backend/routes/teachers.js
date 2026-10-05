@@ -3,6 +3,7 @@ const router = express.Router();
 const fs = require('fs');
 const path = require('path');
 const mongoose = require('mongoose');
+const jwt = require('jsonwebtoken');
 const Teacher = require('../models/Teacher');
 const User = require('../models/User');
 const Session = require('../models/Session');
@@ -79,9 +80,32 @@ router.post(
   ]),
   async (req, res) => {
     try {
-      const { personalInfo, academicInfo, quranInfo, languages, availability, email, password } = req.body;
+      const { personalInfo, academicInfo, quranInfo, languages, availability, email, password, phoneVerificationToken } = req.body;
 
       let userId = req.user?.id;
+      const parsedPersonalForVerification = personalInfo ? JSON.parse(personalInfo) : {};
+
+      if (!userId) {
+        if (!phoneVerificationToken) {
+          return res.status(400).json({ error: 'Phone verification is required' });
+        }
+
+        try {
+          const verification = jwt.verify(
+            phoneVerificationToken,
+            process.env.JWT_SECRET || 'wahy-namaa-dev-access-secret-change-me'
+          );
+
+          if (
+            verification.purpose !== 'teacher-phone-verification' ||
+            verification.phone !== parsedPersonalForVerification.phone
+          ) {
+            return res.status(400).json({ error: 'Phone verification does not match this application' });
+          }
+        } catch {
+          return res.status(400).json({ error: 'Phone verification is invalid or expired' });
+        }
+      }
 
       if (!userId && email && password) {
         const normalizedEmail = email.toLowerCase().trim();

@@ -51,8 +51,11 @@ router.post('/register', async (req, res) => {
         });
       }
 
-      const allowedRoles = ['student', 'teacher', 'guardian', 'admin', 'supervisor'];
-      const assignedRole = allowedRoles.includes(role) ? role : 'student';
+      const allowedRoles = ['student', 'guardian'];
+      if (role && !allowedRoles.includes(role)) {
+        return res.status(400).json({ error: 'This role cannot be self-registered' });
+      }
+      const assignedRole = role || 'student';
 
       const user = await User.create({
         name,

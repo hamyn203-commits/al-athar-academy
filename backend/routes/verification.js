@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
+const jwt = require('jsonwebtoken');
 const VerificationCode = require('../models/VerificationCode');
 const { sendWhatsApp, sendTelegram } = require('../services/notificationDispatcher');
 
@@ -10,16 +11,14 @@ router.post('/send-verification', async (req, res) => {
   try {
     const { phone, method, whatsapp, telegram } = req.body;
 
-    if (!phone) {
-      return res.status(400).json({ error: 'Phone number is required' });
+    if (!phone) return res.status(400).json({ error: 'Phone number is required' });
+    if (!['whatsapp', 'telegram'].includes(method)) {
+      return res.status(400).json({ error: 'Unsupported verification method' });
     }
 
-    if (!method) {
-      return res.status(400).json({ error: 'Verification method is required' });
-    }
+    const code = crypto.randomInt(100000, 1000000).toString();
 
-    const code = crypto.randomInt(100000, 999999).toString();
-
+    await VerificationCode.deleteMany({ phone });
     await VerificationCode.create({
       phone,
       code,
@@ -28,42 +27,31 @@ router.post('/send-verification', async (req, res) => {
       attempts: 0
     });
 
-    let result;
     const msg = OTP_MSG(code);
-    if (method === 'telegram' && telegram) {
-      result = await sendTelegram({ chatId: telegram, text: msg });
-    } else {
-      result = await sendWhatsApp({ phone: whatsapp || phone, text: msg });
-    }
+    const result = method === 'telegram' && telegram
+      ? await sendTelegram({ chatId: telegram, text: msg })
+      : await sendWhatsApp({ phone: whatsapp || phone, text: msg });
 
-    if (result?.sent) {
-      res.json({
-        success: true,
-        message: `Verification code sent via ${method}`,
-        ...(process.env.NODE_ENV !== 'production' && { code })
-      });
-    } else {
-      res.status(500).json({ error: 'Failed to send verification code' });
-    }
+    if (!result?.sent) return res.status(502).json({ error: 'Failed to send verification code' });
+
+    return res.json({
+      success: true,
+      message: `Verification code sent via ${method}`,
+      ...(process.env.NODE_ENV !== 'production' && { code })
+    });
   } catch (error) {
     console.error('Send verification error:', error);
-    res.status(500).json({ error: 'Failed to send verification code' });
+    return res.status(500).json({ error: 'Failed to send verification code' });
   }
 });
 
 router.post('/verify-code', async (req, res) => {
   try {
     const { phone, code } = req.body;
-
-    if (!phone || !code) {
-      return res.status(400).json({ error: 'Phone and code are required' });
-    }
+    if (!phone || !code) return res.status(400).json({ error: 'Phone and code are required' });
 
     const verification = await VerificationCode.findOne({ phone }).sort({ createdAt: -1 });
-
-    if (!verification) {
-      return res.status(400).json({ error: 'No verification code found for this phone' });
-    }
+    if (!verification) return res.status(400).json({ error: 'No verification code found for this phone' });
 
     if (Date.now() > verification.expires.getTime()) {
       await VerificationCode.deleteOne({ _id: verification._id });
@@ -72,20 +60,36 @@ router.post('/verify-code', async (req, res) => {
 
     if (verification.attempts >= 5) {
       await VerificationCode.deleteOne({ _id: verification._id });
-      return res.status(400).json({ error: 'Too many attempts. Please request a new code' });
+      return res.status(429).json({ error: 'Too many attempts. Please request a new code' });
     }
 
     if (verification.code !== code) {
-      verification.attempts++;
+      verification.attempts += 1;
       await verification.save();
       return res.status(400).json({ error: 'Invalid verification code' });
     }
 
     await VerificationCode.deleteOne({ _id: verification._id });
-    res.json({ success: true, message: 'Phone verified successfully' });
+
+    const secret = process.env.JWT_SECRET;
+    if (!secret && process.env.NODE_ENV === 'production') {
+      return res.status(503).json({ error: 'Verification service is not configured' });
+    }
+
+    const verificationToken = jwt.sign(
+      { phone, purpose: 'teacher-phone-verification' },
+      secret || 'wahy-namaa-dev-access-secret-change-me',
+      { expiresIn: '30m' }
+    );
+
+    return res.json({
+      success: true,
+      message: 'Phone verified successfully',
+      verificationToken,
+    });
   } catch (error) {
     console.error('Verify code error:', error);
-    res.status(500).json({ error: 'Verification failed' });
+    return res.status(500).json({ error: 'Verification failed' });
   }
 });
 

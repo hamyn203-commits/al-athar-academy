@@ -2,182 +2,156 @@ const express = require('express');
 const router = express.Router();
 const { AccessToken } = require('livekit-server-sdk');
 const LiveSession = require('../models/LiveSession');
+const { verifyAccessToken, requireRole } = require('../middleware/auth');
 
-const LIVEKIT_API_KEY = process.env.LIVEKIT_API_KEY || 'your-api-key';
-const LIVEKIT_API_SECRET = process.env.LIVEKIT_API_SECRET || 'your-api-secret';
+const LIVEKIT_API_KEY = process.env.LIVEKIT_API_KEY || '';
+const LIVEKIT_API_SECRET = process.env.LIVEKIT_API_SECRET || '';
+const LIVEKIT_URL = process.env.LIVEKIT_URL || '';
 
-function createToken(roomName, participantName, isHost = false) {
+function isLiveKitConfigured() {
+  return Boolean(LIVEKIT_API_KEY && LIVEKIT_API_SECRET && LIVEKIT_URL);
+}
+
+function createToken({ roomName, identity, participantName, canPublish }) {
   const at = new AccessToken(LIVEKIT_API_KEY, LIVEKIT_API_SECRET, {
-    identity: participantName,
+    identity,
     name: participantName,
   });
 
   at.addGrant({
     room: roomName,
     roomJoin: true,
-    canPublish: isHost,
+    canPublish,
     canSubscribe: true,
     canPublishData: true,
   });
 
-  if (isHost) {
-    at.addGrant({
-      roomCreate: true,
-      roomList: true,
-      roomRecord: true,
-    });
-  }
-
   return at.toJwt();
 }
 
-const LIVEKIT_URL = process.env.LIVEKIT_URL || '';
-
-function isLiveKitConfigured() {
-  return LIVEKIT_API_KEY && LIVEKIT_API_SECRET &&
-    LIVEKIT_API_KEY !== 'your-api-key' && LIVEKIT_API_SECRET !== 'your-api-secret';
-}
-
 router.get('/status', (_req, res) => {
-  res.json({ configured: isLiveKitConfigured(), url: LIVEKIT_URL || null });
+  res.json({ configured: isLiveKitConfigured() });
 });
 
-router.post('/demo-room', async (_req, res) => {
+router.post('/demo-room', verifyAccessToken, requireRole('admin'), async (_req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(404).json({ error: 'Route not found' });
+  }
+
   try {
     const roomId = `demo-${Date.now()}`;
     const session = await LiveSession.create({
       roomId,
-      title: 'حصة تجريبية — أكاديمية وَحْيٌ وَنَمَاء',
-      description: 'غرفة LiveKit تجريبية',
+      title: 'غرفة تطوير — وَحْيٌ وَنَمَاء',
+      description: 'Development-only LiveKit room',
       subject: 'quran',
       isLive: false,
       participants: 0,
     });
-    if (!isLiveKitConfigured()) {
-      return res.status(201).json({ session, configured: false, message: 'LiveKit غير مُعد — أضف LIVEKIT_* على Azure' });
-    }
-    const token = createToken(roomId, 'Guest', false);
-    res.status(201).json({ session, configured: true, token, livekitUrl: LIVEKIT_URL });
+    return res.status(201).json({ session, configured: isLiveKitConfigured() });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: 'Failed to create demo room' });
   }
 });
 
-router.post('/token', (req, res) => {
+router.post('/token', verifyAccessToken, async (req, res) => {
   try {
-    const { roomName, participantName, isHost } = req.body;
-
-    if (!roomName || !participantName) {
-      return res.status(400).json({
-        message: 'Room name and participant name are required'
-      });
-    }
+    const { roomName } = req.body;
+    if (!roomName) return res.status(400).json({ message: 'Room name is required' });
 
     if (!isLiveKitConfigured()) {
-      return res.status(503).json({
-        message: 'LiveKit not configured',
-        note: 'Please set LIVEKIT_API_KEY and LIVEKIT_API_SECRET in .env file',
-        mockToken: 'mock-token-for-development'
-      });
+      return res.status(503).json({ message: 'LiveKit is not configured' });
     }
 
-    const token = createToken(roomName, participantName, isHost);
+    const session = await LiveSession.findOne({ roomId: roomName }).select('_id roomId');
+    if (!session) return res.status(404).json({ message: 'Session not found' });
 
-    res.json({ token });
+    const role = req.user.role;
+    const allowedRoles = ['student', 'teacher', 'guardian', 'supervisor', 'admin'];
+    if (!allowedRoles.includes(role)) return res.status(403).json({ message: 'Role is not allowed in live rooms' });
+
+    const observer = role === 'guardian' || role === 'supervisor';
+    const canPublish = !observer;
+    const participantName = String(req.body.participantName || req.user.email || role).slice(0, 80);
+    const identity = `${role}:${req.user.id}`;
+
+    const token = createToken({ roomName, identity, participantName, canPublish });
+    return res.json({
+      token,
+      permissions: {
+        role,
+        isHost: role === 'teacher' || role === 'admin',
+        isObserver: observer,
+        canPublish,
+      },
+    });
   } catch (error) {
     console.error('Token generation error:', error);
-    res.status(500).json({ message: 'Failed to generate token' });
+    return res.status(500).json({ message: 'Failed to generate token' });
   }
 });
 
-router.get('/sessions', async (req, res) => {
+router.get('/sessions', verifyAccessToken, async (_req, res) => {
   try {
     const sessionsList = await LiveSession.find().sort({ createdAt: -1 });
-    res.json(sessionsList);
+    return res.json(sessionsList);
   } catch (error) {
-    console.error('Fetch sessions error:', error);
-    res.status(500).json({ message: 'Failed to fetch sessions' });
+    return res.status(500).json({ message: 'Failed to fetch sessions' });
   }
 });
 
-router.post('/sessions', async (req, res) => {
+router.post('/sessions', verifyAccessToken, requireRole('teacher', 'admin'), async (req, res) => {
   try {
     const { title, description, subject } = req.body;
+    if (!title) return res.status(400).json({ message: 'Title is required' });
 
-    if (!title) {
-      return res.status(400).json({ message: 'Title is required' });
-    }
-
-    const roomId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
+    const roomId = `session_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
     const session = await LiveSession.create({
       roomId,
-      title,
-      description: description || '',
-      subject: subject || 'general',
+      title: String(title).slice(0, 160),
+      description: String(description || '').slice(0, 1000),
+      subject: String(subject || 'general').slice(0, 80),
       isLive: false,
-      isHost: true,
-      participants: 0
+      participants: 0,
     });
 
-    res.status(201).json(session);
+    return res.status(201).json(session);
   } catch (error) {
-    console.error('Create session error:', error);
-    res.status(500).json({ message: 'Failed to create session' });
+    return res.status(500).json({ message: 'Failed to create session' });
   }
 });
 
-router.get('/sessions/:roomId', async (req, res) => {
+router.get('/sessions/:roomId', verifyAccessToken, async (req, res) => {
   try {
     const session = await LiveSession.findOne({ roomId: req.params.roomId });
-
-    if (!session) {
-      return res.status(404).json({ message: 'Session not found' });
-    }
-
-    res.json(session);
-  } catch (error) {
-    console.error('Get session error:', error);
-    res.status(500).json({ message: 'Failed to get session' });
+    if (!session) return res.status(404).json({ message: 'Session not found' });
+    return res.json(session);
+  } catch {
+    return res.status(500).json({ message: 'Failed to get session' });
   }
 });
 
-router.delete('/sessions/:roomId', async (req, res) => {
+router.delete('/sessions/:roomId', verifyAccessToken, requireRole('teacher', 'admin'), async (req, res) => {
   try {
-    const { roomId } = req.params;
-
-    const result = await LiveSession.deleteOne({ roomId });
-
-    if (result.deletedCount === 0) {
-      return res.status(404).json({ message: 'Session not found' });
-    }
-
-    res.json({ message: 'Session deleted successfully' });
-  } catch (error) {
-    console.error('Delete session error:', error);
-    res.status(500).json({ message: 'Failed to delete session' });
+    const result = await LiveSession.deleteOne({ roomId: req.params.roomId });
+    if (result.deletedCount === 0) return res.status(404).json({ message: 'Session not found' });
+    return res.json({ message: 'Session deleted successfully' });
+  } catch {
+    return res.status(500).json({ message: 'Failed to delete session' });
   }
 });
 
-router.patch('/sessions/:roomId/live', async (req, res) => {
+router.patch('/sessions/:roomId/live', verifyAccessToken, requireRole('teacher', 'admin'), async (req, res) => {
   try {
-    const { roomId } = req.params;
-    const { isLive } = req.body;
-
     const session = await LiveSession.findOneAndUpdate(
-      { roomId },
-      { isLive },
+      { roomId: req.params.roomId },
+      { isLive: Boolean(req.body.isLive) },
       { new: true }
     );
-
-    if (!session) {
-      return res.status(404).json({ message: 'Session not found' });
-    }
-
-    res.json(session);
-  } catch (error) {
-    console.error('Update session error:', error);
-    res.status(500).json({ message: 'Failed to update session' });
+    if (!session) return res.status(404).json({ message: 'Session not found' });
+    return res.json(session);
+  } catch {
+    return res.status(500).json({ message: 'Failed to update session' });
   }
 });
 

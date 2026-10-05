@@ -68,19 +68,8 @@ router.get('/', protect, authorize('admin'), async (req, res) => {
   const { page = 1, limit = 20, status } = req.query;
   if (isMockMode || !isDBConnected()) {
     return res.json({
-      donations: [
-        {
-          _id: 'mock-donation-1',
-          name: 'فاعل خير',
-          email: 'donor@example.com',
-          amount: 100,
-          currency: 'USD',
-          category: 'general',
-          status: 'completed',
-          createdAt: new Date().toISOString()
-        }
-      ],
-      pagination: { page: Number(page), limit: Number(limit), total: 1 }
+      donations: [],
+      pagination: { page: Number(page), limit: Number(limit), total: 0 }
     });
   }
   try {
@@ -93,22 +82,6 @@ router.get('/', protect, authorize('admin'), async (req, res) => {
     res.json({ donations, pagination: { page: Number(page), limit: Number(limit), total } });
   } catch (error) {
     res.status(500).json({ error: error.message });
-  }
-});
-
-router.put('/:id/confirm-mock', async (req, res) => {
-  try {
-    const donation = await Donation.findByIdAndUpdate(req.params.id, { status: 'confirmed' }, { new: true });
-    if (!donation) return res.status(404).json({ error: 'التبرع غير موجود' });
-    notifyAdmin({
-      subject: `تأكيد تبرع (تجريبي) — ${donation.amount} ${donation.currency}`,
-      html: `<p>تم تأكيد التبرع بنجاح عبر بوابة الدفع الافتراضية</p>
-             <p>المتبرع: ${donation.isAnonymous ? 'مجهول' : donation.name} (${donation.email})</p>
-             <p>المبلغ: ${donation.amount} ${donation.currency} — الفئة: ${donation.category}</p>`,
-    }).catch(() => {});
-    res.json({ success: true, donation });
-  } catch (error) {
-    res.status(400).json({ error: error.message });
   }
 });
 
