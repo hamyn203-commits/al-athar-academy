@@ -136,7 +136,7 @@ async function chatWithChain(messages, prompt, { locale = 'ar' } = {}) {
 
   return {
     text: locale === 'ar'
-      ? `بخصوص: "${prompt.slice(0, 120)}" — راجع التفسير الميسر واستمع لتلاوة مجودة. (وضع محلي — أضف مفاتيح AI في Azure)`
+      ? `بخصوص: "${prompt.slice(0, 120)}" — راجع التفسير الميسر واستمع لتلاوة مجودة. (وضع محلي — فعّل مزود AI في إعدادات الخادم)`
       : `Regarding "${prompt.slice(0, 120)}" — review tafsir and qualified reciters. (local mode — add API keys)`,
     provider: 'local',
     fallback: true,
