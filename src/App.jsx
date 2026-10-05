@@ -42,6 +42,7 @@ const CertificateView = lazy(() => import('./pages/Certificate'));
 const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const AIHub = lazy(() => import('./pages/AIHub'));
 const Donate = lazy(() => import('./pages/Donate'));
 const WomenPortal = lazy(() => import('./pages/Women'));
@@ -72,6 +73,7 @@ function pageRoutes() {
       <Route index element={<LandingPage />} />
       <Route path="login" element={<Login />} />
       <Route path="forgot-password" element={<ForgotPassword />} />
+      <Route path="reset-password" element={<ResetPassword />} />
       <Route path="register" element={<Register />} />
       <Route path="register/student" element={<Register />} />
       <Route path="register/guardian" element={<Register />} />
