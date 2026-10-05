@@ -170,7 +170,7 @@ router.post('/login', async (req, res) => {
 
     const user = isMockMode && !isDBConnected()
       ? findMockUserByEmail(email)
-      : await User.findOne({ email: email.toLowerCase() }).select('+password');
+      : await User.findOne({ email: email.toLowerCase() }).select('+password +refreshTokenVersion');
     
     if (!user) {
       return res.status(401).json({ 
@@ -443,7 +443,7 @@ router.post('/reset-password', async (req, res) => {
     const user = await User.findOne({
       passwordResetToken: hashedToken,
       passwordResetExpires: { $gt: Date.now() }
-    });
+    }).select('+refreshTokenVersion');
 
     if (!user) {
       return res.status(400).json({ 
