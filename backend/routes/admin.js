@@ -13,6 +13,7 @@ const Blog = require('../models/Blog');
 const WithdrawRequest = require('../models/WithdrawRequest');
 const { protect, authorize } = require('../middleware/auth');
 const cdnService = require('../services/cdn');
+const objectStorage = require('../services/objectStorage');
 
 const coursesUploadDir = path.join(__dirname, '..', 'uploads', 'courses');
 if (process.env.FILE_STORAGE_DRIVER !== 'external') {
@@ -235,6 +236,23 @@ router.put('/teachers/:id', protect, authorize('admin'), async (req, res) => {
 });
 
 router.post('/upload', protect, authorize('admin', 'teacher'), upload.single('file'), async (req, res) => {
+  const directFile = req.body?.storageFile && typeof req.body.storageFile === 'object'
+    ? req.body.storageFile
+    : null;
+
+  if (directFile?.url) {
+    if (!objectStorage.referenceMatches(directFile.url, 'course-media', req.user.id)) {
+      return res.status(400).json({ error: 'Invalid uploaded media reference' });
+    }
+    return res.json({
+      url: objectStorage.publicProxyUrl(directFile.url),
+      source: objectStorage.getDriver(),
+      filename: directFile.name,
+      mimetype: directFile.contentType,
+      size: directFile.size,
+    });
+  }
+
   if (!req.file) return res.status(400).json({ error: 'لم يُرفع ملف' });
   const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(req.file.originalname)}`;
   try {
