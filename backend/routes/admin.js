@@ -12,7 +12,6 @@ const Enrollment = require('../models/Enrollment');
 const Blog = require('../models/Blog');
 const WithdrawRequest = require('../models/WithdrawRequest');
 const { protect, authorize } = require('../middleware/auth');
-const cdnService = require('../services/cdn');
 const objectStorage = require('../services/objectStorage');
 
 const coursesUploadDir = path.join(__dirname, '..', 'uploads', 'courses');
@@ -256,11 +255,6 @@ router.post('/upload', protect, authorize('admin', 'teacher'), upload.single('fi
   if (!req.file) return res.status(400).json({ error: 'لم يُرفع ملف' });
   const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(req.file.originalname)}`;
   try {
-    if (cdnService.isConfigured()) {
-      const url = await cdnService.uploadToCDN(req.file.buffer, filename, req.file.mimetype);
-      return res.json({ url, source: 'cdn', filename, mimetype: req.file.mimetype, size: req.file.size });
-    }
-
     if (process.env.FILE_STORAGE_DRIVER === 'external') {
       return res.status(503).json({ error: 'External file storage is not configured yet', code: 'FILE_STORAGE_NOT_READY' });
     }
