@@ -133,13 +133,6 @@ router.post('/register', async (req, res) => {
       lastLogin: new Date(),
     });
 
-    const expectedVersion = Number(user.refreshTokenVersion || 0);
-    const tokenVersion = Number(req.refreshToken.v || 0);
-    if (tokenVersion !== expectedVersion) {
-      clearRefreshCookie(res);
-      return res.status(401).json({ error: 'Refresh session has been revoked' });
-    }
-
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
     setRefreshCookie(res, refreshToken);
@@ -232,9 +225,17 @@ router.post('/refresh', verifyRefreshToken, async (req, res) => {
       : await User.findById(req.refreshToken.id).select('+refreshTokenVersion');
     
     if (!user || !user.isActive) {
+      clearRefreshCookie(res);
       return res.status(401).json({ 
         error: 'User not found or deactivated' 
       });
+    }
+
+    const expectedVersion = Number(user.refreshTokenVersion || 0);
+    const tokenVersion = Number(req.refreshToken.v || 0);
+    if (tokenVersion !== expectedVersion) {
+      clearRefreshCookie(res);
+      return res.status(401).json({ error: 'Refresh session has been revoked' });
     }
 
     const accessToken = generateAccessToken(user);
