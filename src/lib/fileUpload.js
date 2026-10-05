@@ -1,5 +1,6 @@
 import { upload } from '@vercel/blob/client';
 import { apiUrl } from '../config';
+import { getAccessToken } from './authSession';
 
 function decodeJwt(token) {
   try {
@@ -21,7 +22,7 @@ function sanitizeSegment(value = 'file') {
 }
 
 function currentAccessToken() {
-  return localStorage.getItem('accessToken') || localStorage.getItem('token') || '';
+  return getAccessToken() || '';
 }
 
 export async function uploadFileDirect(file, purpose, options = {}) {
