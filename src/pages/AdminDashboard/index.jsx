@@ -10,6 +10,7 @@ import DashboardLayout, { StatCard, TabBar } from '../../components/dashboard/Da
 import { useRequireAuth } from '../../hooks/useRequireAuth';
 import { useToast } from '../../context/ToastProvider';
 import api from '../../lib/api';
+import { uploadFileDirect } from '../../lib/fileUpload';
 
 const STATUS_LABEL = { new: 'جديدة', read: 'مقروءة', replied: 'تم الرد', closed: 'مغلقة' };
 const STATUS_COLOR = { new: 'bg-blue-100 text-blue-700', read: 'bg-gray-100', replied: 'bg-green-100 text-green-700', closed: 'bg-gray-200' };
@@ -189,9 +190,8 @@ export default function AdminDashboard() {
     if (!file) return;
     setUploading(true);
     try {
-      const fd = new FormData();
-      fd.append('file', file);
-      const r = await api.post('/api/admin/upload', fd, { auth: true });
+      const storageFile = await uploadFileDirect(file, 'course-media');
+      const r = await api.post('/api/admin/upload', { storageFile }, { auth: true });
       setLessonForm((p) => ({ ...p, [lessonField]: r.url }));
       toast.success('تم رفع الفيديو');
     } catch (err) { toast.error(err.message); }
