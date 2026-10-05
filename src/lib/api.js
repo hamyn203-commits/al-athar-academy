@@ -1,5 +1,15 @@
 import { API_BASE_URL } from '../config';
 
+export class ApiError extends Error {
+  constructor(message, status, data = {}) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.code = data?.code;
+    this.data = data;
+  }
+}
+
 class ApiClient {
   constructor(baseUrl = API_BASE_URL) {
     this.baseUrl = baseUrl.replace(/\/$/, '');
@@ -31,7 +41,11 @@ class ApiClient {
     const data = json ? await response.json().catch(() => ({})) : null;
 
     if (!response.ok) {
-      throw new Error(data?.error || data?.message || `HTTP ${response.status}`);
+      throw new ApiError(
+        data?.error || data?.message || `HTTP ${response.status}`,
+        response.status,
+        data
+      );
     }
 
     return data;
