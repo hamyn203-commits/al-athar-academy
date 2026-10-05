@@ -241,7 +241,7 @@ router.post('/:homeworkId/submit', protect, authorize('student'), upload.single(
       : req.file;
 
     if (!submittedFile) {
-      if (isMockMode || !isDBConnected() || String(homeworkId).startsWith('mock-')) {
+      if (isMockMode && !isDBConnected() || String(homeworkId).startsWith('mock-')) {
         return res.json({
           success: true,
           message: 'تم تسليم الواجب بنجاح',
