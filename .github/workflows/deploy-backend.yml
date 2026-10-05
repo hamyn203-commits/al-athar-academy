@@ -1,50 +1,19 @@
-name: Deploy Backend to Azure
+name: Legacy Azure Backend Deploy (Manual Only)
 
+# Production backend now deploys through the native Vercel Git integration.
+# Keep this workflow only as a historical rollback path if Azure is intentionally restored.
 on:
-  push:
-    branches:
-      - master
-    paths:
-      - 'backend/**'
-      - '.github/workflows/deploy-backend.yml'
-      - '.github/workflows/deploy-production.yml'
   workflow_dispatch:
 
-concurrency:
-  group: azure-backend-deploy
-  cancel-in-progress: false
-
-env:
-  AZURE_WEBAPP_NAME: al-athar-api
-  AZURE_WEBAPP_PACKAGE_PATH: './backend'
-  NODE_VERSION: '22.x'
+permissions:
+  contents: read
 
 jobs:
-  build-and-deploy:
-    name: Build and Deploy Backend
+  legacy-notice:
     runs-on: ubuntu-latest
-    
     steps:
-    - uses: actions/checkout@v4
-
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        cache-dependency-path: './backend/package-lock.json'
-
-    - name: Install dependencies
-      run: npm ci
-      working-directory: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
-
-    - name: Azure Login
-      uses: azure/login@v2
-      with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-    - name: Deploy to Azure Web App
-      uses: azure/webapps-deploy@v3
-      with:
-        app-name: ${{ env.AZURE_WEBAPP_NAME }}
-        package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+      - name: Legacy deployment notice
+        run: |
+          echo "Azure automatic deployment is retired."
+          echo "Active API: https://wahy-wa-namaa-api.vercel.app"
+          echo "Use the Vercel Git integration for production backend deployments."
