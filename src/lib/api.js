@@ -1,4 +1,5 @@
 import { API_BASE_URL } from '../config';
+import { getAccessToken, refreshAccessToken, clearAccessToken } from './authSession';
 
 export class ApiError extends Error {
   constructor(message, status, data = {}) {
@@ -16,7 +17,7 @@ class ApiClient {
   }
 
   getToken() {
-    return localStorage.getItem('accessToken') || localStorage.getItem('token');
+    return getAccessToken();
   }
 
   async request(path, options = {}) {
@@ -27,29 +28,49 @@ class ApiClient {
       reqHeaders['Content-Type'] = 'application/json';
     }
 
-    if (auth) {
-      const token = this.getToken();
-      if (token) reqHeaders.Authorization = `Bearer ${token}`;
+    let token = auth ? this.getToken() : null;
+    if (auth && !token) {
+      try {
+        token = await refreshAccessToken();
+      } catch {
+        token = null;
+      }
     }
 
-    const response = await fetch(`${this.baseUrl}${path}`, {
-      credentials: 'include',
-      ...rest,
-      headers: reqHeaders,
-      body: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined,
-    });
+    const makeRequest = async (activeToken) => {
+      const activeHeaders = { ...reqHeaders };
+      if (auth && activeToken) activeHeaders.Authorization = `Bearer ${activeToken}`;
 
-    const data = json ? await response.json().catch(() => ({})) : null;
+      return fetch(`${this.baseUrl}${path}`, {
+        credentials: 'include',
+        ...rest,
+        headers: activeHeaders,
+        body: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined,
+      });
+    };
+
+    let response = await makeRequest(token);
+    let data = json ? await response.clone().json().catch(() => ({})) : null;
+
+    if (auth && response.status === 401 && data?.code === 'TOKEN_EXPIRED') {
+      try {
+        token = await refreshAccessToken();
+        response = await makeRequest(token);
+        data = json ? await response.clone().json().catch(() => ({})) : null;
+      } catch {
+        clearAccessToken();
+      }
+    }
 
     if (!response.ok) {
       throw new ApiError(
         data?.error || data?.message || `HTTP ${response.status}`,
         response.status,
-        data
+        data || {}
       );
     }
 
-    return data;
+    return json ? data : response;
   }
 
   get(path, opts) { return this.request(path, { ...opts, method: 'GET' }); }
