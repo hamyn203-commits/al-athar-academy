@@ -20,14 +20,14 @@ const StudentSchema = new mongoose.Schema({
     index: true
   },
   name: { type: String, required: true },
-  plan: { type: String, default: 'حفظ القرآن كاملاً' },
-  currentSurah: { type: String, default: 'سورة الفاتحة' },
+  plan: { type: String, default: '' },
+  currentSurah: { type: String, default: '' },
   progress: { type: Number, default: 0 },
-  sheikh: { type: String, default: 'الشيخ عبد الرحمن الشريف' },
-  lastGrade: { type: String, default: 'مبتدئ' },
+  sheikh: { type: String, default: '' },
+  lastGrade: { type: String, default: '' },
   status: { type: String, default: 'نشط' },
-  homework: { type: String, default: 'حفظ وجه التسميع الأول والبدء بالخطة' },
-  lastUpdate: { type: String, default: 'الآن' },
+  homework: { type: String, default: '' },
+  lastUpdate: { type: String, default: '' },
   
   // Gamification fields
   points: { type: Number, default: 0 },

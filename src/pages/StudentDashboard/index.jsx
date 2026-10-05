@@ -333,6 +333,26 @@ export default function StudentDashboard() {
     }
   };
 
+  const copyGuardianLinkCode = async () => {
+    const code = profile?.user?.guardianLinkCode;
+    if (!code) return;
+    await navigator.clipboard?.writeText(code);
+    toast.success(locale === 'ar' ? 'تم نسخ كود ربط ولي الأمر' : 'Guardian link code copied');
+  };
+
+  const rotateGuardianLinkCode = async () => {
+    try {
+      const result = await api.post('/api/students/dashboard/guardian-link-code/rotate', {}, { auth: true });
+      setProfile((current) => ({
+        ...current,
+        user: { ...current?.user, guardianLinkCode: result.guardianLinkCode }
+      }));
+      toast.success(locale === 'ar' ? 'تم إنشاء كود ربط جديد وإلغاء الكود السابق' : 'A new guardian link code was created');
+    } catch (error) {
+      toast.error(error.message || (locale === 'ar' ? 'تعذر تغيير كود الربط' : 'Could not rotate link code'));
+    }
+  };
+
   const hasReviewed = (sessionId) => reviews.some((r) => r.session === sessionId || r.session?._id === sessionId);
 
   const tabs = [

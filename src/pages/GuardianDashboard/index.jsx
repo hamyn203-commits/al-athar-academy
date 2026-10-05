@@ -96,16 +96,15 @@ export default function GuardianDashboard() {
   const handleLinkChild = async (e) => {
     e.preventDefault();
     if (!linkInput.trim()) {
-      toast.error('يرجى إدخال البريد الإلكتروني أو كود الطالب');
+      toast.error('يرجى إدخال كود ربط الطالب');
       return;
     }
 
     setLinking(true);
     try {
-      const isEmail = linkInput.includes('@');
       const payload = {
         relationship,
-        ...(isEmail ? { email: linkInput.trim() } : { studentCode: linkInput.trim() })
+        studentCode: linkInput.trim()
       };
 
       const res = await api.post('/api/guardian/link-child', payload, { auth: true });
@@ -114,7 +113,7 @@ export default function GuardianDashboard() {
       setLinkInput('');
       await loadDashboardData();
     } catch (err) {
-      toast.error(err.message || 'فشل ربط الطالب، تأكد من صحة الكود أو البريد');
+      toast.error(err.message || 'فشل ربط الطالب، تأكد من صحة كود الربط');
     } finally {
       setLinking(false);
     }
@@ -663,17 +662,17 @@ export default function GuardianDashboard() {
             </div>
 
             <p className="text-sm text-gray-600 mb-4 font-arabic">
-              أدخل البريد الإلكتروني للطالب المسجل في الأكاديمية أو كود الطالب الفريد لربطه بحسابك ومتابعة تقدمه فوراً:
+              اطلب من الطالب كود ربط ولي الأمر الموجود في لوحة حسابه، ثم أدخله هنا. الكود يُستخدم مرة واحدة فقط:
             </p>
 
             <form onSubmit={handleLinkChild} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1">
-                  البريد الإلكتروني أو كود الطالب
+                  كود ربط الطالب
                 </label>
                 <input
                   type="text"
-                  placeholder="مثال: student@athar.edu أو ATH-1029"
+                  placeholder="مثال: WN-7F3A91C2"
                   value={linkInput}
                   onChange={(e) => setLinkInput(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"

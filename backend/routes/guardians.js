@@ -33,31 +33,10 @@ router.get('/my-children', protect, authorize('guardian', 'admin'), async (req, 
 // @route   POST /api/guardians/add-child
 // @desc    Add a child to guardian
 // @access  Private (Guardian)
-router.post('/add-child', protect, authorize('guardian', 'admin'), async (req, res) => {
-  try {
-    const { studentId, relationship, permissions } = req.body;
-
-    const student = await User.findById(studentId);
-    if (!student || student.role !== 'student') {
-      return res.status(404).json({ error: 'Student not found' });
-    }
-
-    let guardian = await Guardian.findOne({ user: req.user.id });
-
-    if (!guardian) {
-      guardian = new Guardian({
-        user: req.user.id,
-        children: []
-      });
-    }
-
-    await guardian.addChild(studentId, relationship, permissions);
-
-    res.status(201).json(guardian);
-  } catch (error) {
-    console.error('Add child error:', error);
-    res.status(400).json({ error: error.message });
-  }
+router.post('/add-child', protect, authorize('guardian', 'admin'), (_req, res) => {
+  return res.status(410).json({
+    error: 'هذا المسار تم إيقافه. استخدم كود ربط ولي الأمر من حساب الطالب.'
+  });
 });
 
 // @route   DELETE /api/guardians/remove-child/:studentId

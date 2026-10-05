@@ -95,6 +95,14 @@ const UserSchema = new mongoose.Schema({
   pushPlatform: String,
   telegramId: String,
   referralCode: { type: String, unique: true, sparse: true, uppercase: true },
+  guardianLinkCode: {
+    type: String,
+    unique: true,
+    sparse: true,
+    uppercase: true,
+    trim: true,
+    select: false
+  },
   referredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   preferences: {
     language: { type: String, default: 'ar', enum: ['ar', 'en', 'fr', 'de', 'tr', 'ur', 'id', 'ms', 'ku'] },
@@ -151,6 +159,7 @@ UserSchema.methods.toJSON = function() {
   delete obj.emailVerificationExpires;
   delete obj.passwordResetToken;
   delete obj.passwordResetExpires;
+  delete obj.guardianLinkCode;
   delete obj.__v;
   return obj;
 };

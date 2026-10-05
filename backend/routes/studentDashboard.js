@@ -10,6 +10,16 @@ const { findMockUserById } = require('../mockStore');
 const isDBConnected = () => mongoose.connection.readyState === 1;
 const isValidObjectId = (id) => id && mongoose.Types.ObjectId.isValid(id);
 
+async function createUniqueGuardianLinkCode() {
+  const crypto = require('crypto');
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const code = `WN-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
+    const exists = await User.exists({ guardianLinkCode: code });
+    if (!exists) return code;
+  }
+  throw new Error('Unable to generate a unique guardian link code');
+}
+
 router.get('/profile', protect, authorize('student'), async (req, res) => {
   try {
     if (!isDBConnected() || !isValidObjectId(req.user.id)) {
@@ -32,8 +42,14 @@ router.get('/profile', protect, authorize('student'), async (req, res) => {
       });
     }
 
-    const user = await User.findById(req.user.id).select('name email phone avatar role createdAt');
+    const user = await User.findById(req.user.id)
+      .select('name email phone avatar role createdAt +guardianLinkCode');
     if (!user) return res.status(404).json({ error: 'Student not found' });
+
+    if (!user.guardianLinkCode) {
+      user.guardianLinkCode = await createUniqueGuardianLinkCode();
+      await user.save();
+    }
 
     const [totalSessions, completedSessions, pendingHomework] = await Promise.all([
       Session.countDocuments({ student: req.user.id }),
@@ -41,8 +57,11 @@ router.get('/profile', protect, authorize('student'), async (req, res) => {
       TeacherTask.countDocuments({ student: req.user.id, status: 'pending' }),
     ]);
 
+    const safeUser = user.toObject();
+    safeUser.guardianLinkCode = user.guardianLinkCode;
+
     res.json({
-      user,
+      user: safeUser,
       summary: {
         totalSessions,
         completedSessions,
@@ -51,6 +70,26 @@ router.get('/profile', protect, authorize('student'), async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/guardian-link-code/rotate', protect, authorize('student'), async (req, res) => {
+  try {
+    if (!isDBConnected() || !isValidObjectId(req.user.id)) {
+      return res.status(503).json({ error: 'Guardian linking requires the database' });
+    }
+
+    const user = await User.findById(req.user.id).select('+guardianLinkCode role');
+    if (!user || user.role !== 'student') {
+      return res.status(404).json({ error: 'Student not found' });
+    }
+
+    user.guardianLinkCode = await createUniqueGuardianLinkCode();
+    await user.save();
+
+    return res.json({ guardianLinkCode: user.guardianLinkCode });
+  } catch (error) {
+    return res.status(500).json({ error: 'Failed to rotate guardian link code' });
   }
 });
 

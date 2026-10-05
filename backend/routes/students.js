@@ -2,41 +2,16 @@ const express = require('express');
 const router = express.Router();
 const Student = require('../models/Student');
 const mongoose = require('mongoose');
+const Teacher = require('../models/Teacher');
+const Session = require('../models/Session');
 const { protect, authorize } = require('../middleware/auth');
 
 const isDBConnected = () => mongoose.connection.readyState === 1;
 
-const mockStudents = [
-  {
-    id: 1,
-    name: 'أحمد محمد',
-    plan: 'حفظ القرآن كاملاً',
-    currentSurah: 'سورة البقرة',
-    progress: 15,
-    sheikh: 'الشيخ عبد الرحمن الشريف',
-    lastGrade: 'جيد جداً',
-    status: 'نشط',
-    homework: 'حفظ الوجه الأول من سورة البقرة',
-    points: 150,
-    level: 'متعلم',
-    streak: 5,
-    dailyHabits: { adhkar: true, werd: true, murajaah: false },
-    activityData: [
-      { name: 'السبت', points: 20 },
-      { name: 'الأحد', points: 30 },
-      { name: 'الإثنين', points: 25 },
-      { name: 'الثلاثاء', points: 40 },
-      { name: 'الأربعاء', points: 35 },
-      { name: 'الخميس', points: 0 },
-      { name: 'الجمعة', points: 0 }
-    ]
-  }
-];
-
-router.get('/', protect, authorize('admin', 'teacher', 'supervisor'), async (req, res) => {
+router.get('/', protect, authorize('admin', 'supervisor'), async (req, res) => {
   try {
     if (!isDBConnected()) {
-      return res.json(mockStudents);
+      return res.json([]);
     }
     const students = await Student.find().sort({ createdAt: -1 });
     res.json(students);
@@ -50,10 +25,26 @@ router.get('/:id', protect, async (req, res) => {
     const student = await Student.findById(req.params.id);
     if (!student) return res.status(404).json({ message: 'Student not found' });
     
-    // Ensure student can only view their own profile unless admin/teacher
-    if (req.user.role === 'student' && student.user && student.user.toString() !== req.user.id) {
+    const studentUserId = student.user ? String(student.user) : null;
+    let allowed = req.user.role === 'admin' || req.user.role === 'supervisor';
+
+    if (req.user.role === 'student') {
+      allowed = studentUserId === String(req.user.id);
+    } else if (req.user.role === 'teacher') {
+      const teacher = await Teacher.findOne({ user: req.user.id }).select('_id');
+      if (teacher && studentUserId) {
+        allowed = Boolean(await Session.exists({
+          teacher: teacher._id,
+          student: studentUserId,
+          status: { $in: ['accepted', 'completed'] }
+        }));
+      }
+    }
+
+    if (!allowed) {
       return res.status(403).json({ error: 'غير مصرح بالوصول إلى بيانات هذا الطالب' });
     }
+
     res.json(student);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -81,12 +72,12 @@ router.patch('/:id', protect, async (req, res) => {
     }
 
     // If student updating themselves, prevent elevating points or changing plan unilaterally
-    const updates = { ...req.body };
+    let updates = { ...req.body };
     if (req.user.role === 'student') {
-      delete updates.points;
-      delete updates.plan;
-      delete updates.streak;
-      delete updates.sheikh;
+      const allowedSelfFields = ['dailyHabits'];
+      updates = Object.fromEntries(
+        Object.entries(updates).filter(([key]) => allowedSelfFields.includes(key))
+      );
     }
 
     const student = await Student.findByIdAndUpdate(

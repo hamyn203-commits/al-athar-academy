@@ -189,95 +189,70 @@ router.get('/children', protect, authorize('guardian', 'admin'), async (req, res
  */
 router.post('/link-child', protect, authorize('guardian', 'admin'), async (req, res) => {
   try {
-    const { studentCode, email, studentEmail, relationship = 'guardian' } = req.body;
-    const targetEmail = (email || studentEmail || '').toLowerCase().trim();
+    const { studentCode, relationship = 'guardian' } = req.body;
+    const normalizedCode = String(studentCode || '').trim().toUpperCase();
 
-    if (!studentCode && !targetEmail) {
-      return res.status(400).json({ error: 'يرجى تقديم البريد الإلكتروني أو كود الطالب للربط' });
+    if (!/^WN-[A-F0-9]{8}$/.test(normalizedCode)) {
+      return res.status(400).json({ error: 'كود ربط الطالب غير صالح' });
     }
 
     if (!isDBConnected() || !isValidObjectId(req.user.id)) {
-      const childName = targetEmail ? targetEmail.split('@')[0] : (studentCode || 'طالب جديد');
-      const childEmail = targetEmail || `${studentCode.toLowerCase()}@student.athar.com`;
-      const linked = addMockGuardianChild(req.user.id, {
-        name: childName,
-        email: childEmail,
-        relationship: relationship || 'guardian'
-      });
-      return res.status(201).json({
-        success: true,
-        message: `تم ربط الطالب ${linked.name} بحسابك بنجاح`,
-        child: {
-          id: linked.studentId,
-          _id: linked.studentId,
-          name: linked.name,
-          email: linked.email,
-          relationship: linked.relationship
-        }
-      });
+      return res.status(503).json({ error: 'ربط ولي الأمر يتطلب اتصال قاعدة البيانات' });
     }
 
-    const query = { role: 'student' };
-    if (targetEmail) {
-      query.email = targetEmail;
-    } else if (studentCode) {
-      query.$or = [
-        { referralCode: studentCode.trim().toUpperCase() },
-        { studentCode: studentCode.trim() },
-        { _id: studentCode.match(/^[0-9a-fA-F]{24}$/) ? studentCode : null }
-      ];
-    }
+    const student = await User.findOne({
+      role: 'student',
+      guardianLinkCode: normalizedCode
+    }).select('+guardianLinkCode guardian name');
 
-    const student = await User.findOne(query);
     if (!student) {
-      return res.status(404).json({ error: 'لم يتم العثور على طالب مطابق للمعلومات المدخلة' });
+      return res.status(404).json({ error: 'كود الربط غير صحيح أو تم استخدامه من قبل' });
     }
 
-    // Check or create Guardian document
-    let guardian = await Guardian.findOne({ user: req.user.id });
-    if (!guardian) {
-      guardian = new Guardian({
-        user: req.user.id,
-        children: []
-      });
+    if (student.guardian && String(student.guardian) !== String(req.user.id)) {
+      return res.status(409).json({ error: 'هذا الطالب مرتبط بالفعل بولي أمر آخر' });
     }
 
-    const alreadyLinked = guardian.children.some(
-      c => c.student && c.student.toString() === student._id.toString()
+    let guardianProfile = await Guardian.findOne({ user: req.user.id });
+    if (!guardianProfile) {
+      guardianProfile = new Guardian({ user: req.user.id, children: [] });
+    }
+
+    const alreadyLinked = guardianProfile.children.some(
+      (child) => child.student && String(child.student) === String(student._id)
     );
 
     if (alreadyLinked) {
-      return res.status(400).json({ error: 'هذا الطالب مربوط بالفعل بحسابك' });
+      return res.status(409).json({ error: 'هذا الطالب مربوط بالفعل بحسابك' });
     }
 
-    await guardian.addChild(student._id.toString(), relationship, {
+    await guardianProfile.addChild(student._id.toString(), relationship, {
       viewProgress: true,
       viewGrades: true,
       viewAttendance: true,
       receiveNotifications: true
     });
 
-    // Link bidirectional references
     student.guardian = req.user.id;
+    student.guardianLinkCode = undefined;
     await student.save();
 
     await User.findByIdAndUpdate(req.user.id, {
       $addToSet: { children: student._id }
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: `تم ربط الطالب ${student.name} بحسابك بنجاح`,
       child: {
         id: student._id,
         name: student.name,
-        email: student.email,
         relationship
       }
     });
   } catch (error) {
     console.error('Link child error:', error);
-    res.status(400).json({ error: error.message });
+    return res.status(400).json({ error: error.message });
   }
 });
 
