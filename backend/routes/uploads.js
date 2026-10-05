@@ -11,6 +11,11 @@ const PURPOSES = {
     types: ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/webm', 'audio/mp4', 'audio/aac', 'audio/x-m4a'],
     maxBytes: 20 * 1024 * 1024,
   },
+  'recitation-audio': {
+    roles: ['student', 'teacher'],
+    types: ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/webm', 'audio/mp4', 'audio/aac', 'audio/x-m4a'],
+    maxBytes: 25 * 1024 * 1024,
+  },
   assignment: {
     roles: ['student'],
     types: ['application/pdf', 'image/jpeg', 'image/png', 'audio/mpeg', 'audio/wav', 'video/mp4', 'video/webm'],
