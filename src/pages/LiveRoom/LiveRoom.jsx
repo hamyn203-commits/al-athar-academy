@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { 
   LiveKitRoom, 
   VideoConference, 
@@ -22,7 +22,8 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import BrandLogo from '../../components/BrandLogo';
 import { useAppContext } from '../../context/AppProvider';
-import { API_BASE_URL } from '../../config';
+import api from '../../lib/api';
+import { useAuth } from '../../hooks/useAuth.jsx';
 import { LangSelect } from '../../components/live/SessionTranslateChat';
 import { translateText } from '../../lib/translateApi';
 import { detectBrowserLocale } from '../../lib/locale';
@@ -409,63 +410,47 @@ function LiveRoomContent({ isHost, isObserver, participantName, roomId }) {
 
 export default function LiveRoom() {
   const { roomId } = useParams();
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { t } = useAppContext();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  let storedUser = null;
-  try {
-    storedUser = JSON.parse(localStorage.getItem('user') || 'null');
-  } catch {
-    storedUser = null;
-  }
-
-  const accessToken = localStorage.getItem('accessToken') || localStorage.getItem('token');
-  const role = storedUser?.role || '';
+  const role = user?.role || '';
   const isHost = role === 'teacher' || role === 'admin';
   const isObserver = role === 'guardian' || role === 'supervisor';
-  const participantName = storedUser?.name || storedUser?.email || (isObserver ? 'مراقب' : isHost ? 'المعلم' : 'طالب');
+  const participantName = user?.name || user?.email || (isObserver ? 'مراقب' : isHost ? 'المعلم' : 'طالب');
 
   useEffect(() => {
+    if (authLoading) return;
+
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+
     const fetchToken = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`${API_BASE_URL}/api/live/token`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify({
-            roomName: roomId,
-            participantName,
-          })
-        });
+        setError(null);
 
-        if (!response.ok) {
-          throw new Error('Failed to get token');
-        }
+        const data = await api.post('/api/live/token', {
+          roomName: roomId,
+          participantName,
+        }, { auth: true });
 
-        const data = await response.json();
         setToken(data.token);
       } catch (err) {
-        setError(err.message);
+        setError(err.message || 'Failed to get token');
       } finally {
         setLoading(false);
       }
     };
 
-    if (!accessToken) {
-      navigate('/login');
-      return;
-    }
-
     if (roomId) fetchToken();
-  }, [roomId, participantName, accessToken, navigate]);
+  }, [roomId, participantName, authLoading, isAuthenticated, navigate]);
 
   if (loading) {
     return (
