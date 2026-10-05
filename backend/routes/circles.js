@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const GroupCircle = require('../models/GroupCircle');
 const User = require('../models/User');
 const Teacher = require('../models/Teacher');
+const Guardian = require('../models/Guardian');
 const { protect, authorize } = require('../middleware/auth');
 
 const { isMockMode } = require('../config/runtime');
@@ -348,8 +349,29 @@ router.post('/', protect, authorize('admin', 'teacher'), async (req, res) => {
 // @route   POST /api/circles/:id/join
 // @desc    Join circle for students (Strict validation: capacity <= 10, gender match, no duplicate, updates User.circle)
 // @access  Protected
-router.post('/:id/join', protect, async (req, res) => {
+router.post('/:id/join', protect, authorize('student', 'guardian', 'admin'), async (req, res) => {
   try {
+    let studentId;
+
+    if (req.user.role === 'student') {
+      studentId = req.user.id;
+    } else {
+      studentId = String(req.body.studentId || '').trim();
+      if (!studentId) {
+        return res.status(400).json({ error: 'معرف الطالب مطلوب' });
+      }
+
+      if (req.user.role === 'guardian') {
+        const linkedGuardian = await Guardian.exists({
+          user: req.user.id,
+          'children.student': studentId,
+        });
+        if (!linkedGuardian) {
+          return res.status(403).json({ error: 'غير مصرح بإضافة هذا الطالب إلى الحلقة' });
+        }
+      }
+    }
+
     const circle = await GroupCircle.findById(req.params.id);
     if (!circle) {
       return res.status(404).json({ error: 'الحلقة غير موجودة' });
@@ -371,13 +393,8 @@ router.post('/:id/join', protect, async (req, res) => {
       });
     }
 
-    let studentId = req.user.id;
-    if (req.user.role === 'guardian' && req.body.studentId) {
-      studentId = req.body.studentId;
-    }
-
     const studentUser = await User.findById(studentId);
-    if (!studentUser) {
+    if (!studentUser || studentUser.role !== 'student') {
       return res.status(404).json({ error: 'حساب الطالب غير موجود' });
     }
 
