@@ -17,11 +17,12 @@ import {
 import BrandLogo from '../../components/BrandLogo';
 import { useI18n } from '../../i18n';
 import { localizedPath } from '../../lib/locale';
-import api from '../../lib/api';
+import { useAuth } from '../../hooks/useAuth.jsx';
 import '../../styles/public-experience.css';
 
 export default function Login() {
   const navigate = useNavigate();
+  const { login: signIn } = useAuth();
   const { locale } = useI18n();
   const isAr = locale === 'ar';
   const ArrowIcon = isAr ? ArrowLeft : ArrowRight;
@@ -43,11 +44,10 @@ export default function Login() {
     setError('');
 
     try {
-      const data = await api.post('/api/auth/login', formData);
-
-      localStorage.setItem('accessToken', data.accessToken);
-      localStorage.setItem('refreshToken', data.refreshToken);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      const result = await signIn(formData.email, formData.password);
+      if (!result.success) {
+        throw new Error(result.error || (isAr ? 'تعذر تسجيل الدخول' : 'Unable to sign in'));
+      }
 
       const roleRoutes = {
         admin: '/admin',
@@ -56,7 +56,7 @@ export default function Login() {
         student: '/student/dashboard',
       };
 
-      navigate(roleRoutes[data.user.role] || '/student/dashboard');
+      navigate(roleRoutes[result.user?.role] || '/student/dashboard');
     } catch (err) {
       setError(err.message || (isAr ? 'تعذر تسجيل الدخول' : 'Unable to sign in'));
     } finally {

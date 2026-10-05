@@ -8,10 +8,12 @@ import {
 import BrandLogo from '../../components/BrandLogo';
 import { useI18n } from '../../i18n';
 import { useMarket } from '../../context/MarketProvider';
+import { useAuth } from '../../hooks/useAuth.jsx';
 import '../../styles/public-experience.css';
 
 export default function Register() {
   const navigate = useNavigate();
+  const { register: createAccount } = useAuth();
   const [searchParams] = useSearchParams();
   const referralCode = searchParams.get('ref') || '';
   
@@ -68,37 +70,21 @@ export default function Register() {
     }
 
     try {
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone,
-          password: formData.password,
-          role,
-          ...(referralCode ? { referralCode } : {}),
-          // Pass pre-selected plan parameters to auth registration if backend supports it
-          ...(planPath ? { selectedPlan: { path: planPath, freq: planFreq, level: planLevel } } : {}),
-        })
+      const result = await createAccount({
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        password: formData.password,
+        role,
+        ...(referralCode ? { referralCode } : {}),
+        ...(planPath ? { selectedPlan: { path: planPath, freq: planFreq, level: planLevel } } : {}),
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || (locale === 'ar' ? 'فشل إنشاء الحساب' : 'Registration failed'));
+      if (!result.success) {
+        throw new Error(result.error || (locale === 'ar' ? 'فشل إنشاء الحساب' : 'Registration failed'));
       }
 
-      // حفظ الـ token وبيانات المستخدم
-      localStorage.setItem('accessToken', data.accessToken);
-      localStorage.setItem('token', data.accessToken);
-      localStorage.setItem('refreshToken', data.refreshToken);
-      localStorage.setItem('user', JSON.stringify(data.user));
-
-      // التوجيه بحسب الدور
-      if (data.user?.role === 'guardian') {
+      if (result.user?.role === 'guardian') {
         navigate('/guardian/dashboard');
       } else {
         navigate('/student/dashboard');

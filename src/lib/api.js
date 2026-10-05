@@ -33,6 +33,7 @@ class ApiClient {
     }
 
     const response = await fetch(`${this.baseUrl}${path}`, {
+      credentials: 'include',
       ...rest,
       headers: reqHeaders,
       body: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined,
