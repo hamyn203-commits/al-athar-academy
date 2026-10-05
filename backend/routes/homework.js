@@ -11,7 +11,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-const isMockMode = !process.env.MONGODB_URI;
+const { isMockMode } = require('../config/runtime');
 const isDBConnected = () => mongoose.connection.readyState === 1;
 
 const externalStorage = process.env.FILE_STORAGE_DRIVER === 'external';
