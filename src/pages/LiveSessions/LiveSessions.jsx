@@ -23,9 +23,23 @@ export default function LiveSessions() {
   const [liveStatus, setLiveStatus] = useState({ configured: false });
   const [demoLoading, setDemoLoading] = useState(false);
 
+  let storedUser = null;
+  try {
+    storedUser = JSON.parse(localStorage.getItem('user') || 'null');
+  } catch {
+    storedUser = null;
+  }
+
+  const accessToken = localStorage.getItem('accessToken') || localStorage.getItem('token') || '';
+  const role = storedUser?.role || '';
+  const canManage = role === 'teacher' || role === 'admin';
+  const authHeaders = accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
+
   const fetchSessions = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/live/sessions`);
+      const response = await fetch(`${API_BASE_URL}/api/live/sessions`, {
+        headers: authHeaders,
+      });
       if (response.ok) {
         const data = await response.json();
         setSessions(data);
@@ -39,9 +53,16 @@ export default function LiveSessions() {
   };
 
   useEffect(() => {
+    if (!accessToken) {
+      navigate('/login');
+      return;
+    }
+
     fetchSessions();
     fetch(`${API_BASE_URL}/api/live/status`).then((r) => r.json()).then(setLiveStatus).catch(() => {});
-  }, []);
+    // Authentication state is read once when this protected page mounts.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accessToken, navigate]);
 
   const copyLink = (roomId) => {
     const link = `${window.location.origin}/live/${roomId}`;
@@ -58,7 +79,10 @@ export default function LiveSessions() {
   const startDemo = async () => {
     setDemoLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/live/demo-room`, { method: 'POST' });
+      const res = await fetch(`${API_BASE_URL}/api/live/demo-room`, {
+        method: 'POST',
+        headers: authHeaders,
+      });
       const data = await res.json();
       if (data.roomId) joinSession(data.roomId, true);
     } catch (e) {
@@ -72,9 +96,11 @@ export default function LiveSessions() {
     if (!confirm(t.live.confirmDelete)) return;
     
     try {
-      await fetch(`${API_BASE_URL}/api/live/sessions/${roomId}`, {
-        method: 'DELETE'
+      const response = await fetch(`${API_BASE_URL}/api/live/sessions/${roomId}`, {
+        method: 'DELETE',
+        headers: authHeaders,
       });
+      if (!response.ok) throw new Error('Failed to delete session');
       setSessions(prev => prev.filter(s => s.roomId !== roomId));
     } catch (error) {
       console.error('Failed to delete session:', error);
@@ -92,13 +118,15 @@ export default function LiveSessions() {
               <p>{t.live.sessionsSubtitle}</p>
             </div>
           </div>
-          <button 
-            className="btn-premium create-session-btn"
-            onClick={() => setShowCreateModal(true)}
-          >
-            <Plus size={20} />
-            {t.live.createSession}
-          </button>
+          {canManage && liveStatus.configured && (
+            <button 
+              className="btn-premium create-session-btn"
+              onClick={() => setShowCreateModal(true)}
+            >
+              <Plus size={20} />
+              {t.live.createSession}
+            </button>
+          )}
         </div>
       </header>
 
@@ -110,10 +138,12 @@ export default function LiveSessions() {
               ? (t.live?.liveKitReady || 'LiveKit جاهز — يمكنك إنشاء غرفة أو تجربة العرض')
               : (t.live?.liveKitPending || 'LiveKit غير مُفعّل — استخدم «غرفة تجريبية» للمعاينة')}
           </span>
-          <button type="button" onClick={startDemo} disabled={demoLoading} className="btn-premium text-sm py-2 px-4">
-            <Play size={16} />
-            {demoLoading ? '...' : (t.live?.tryDemo || 'غرفة تجريبية')}
-          </button>
+          {import.meta.env.DEV && role === 'admin' && (
+            <button type="button" onClick={startDemo} disabled={demoLoading} className="btn-premium text-sm py-2 px-4">
+              <Play size={16} />
+              {demoLoading ? '...' : (t.live?.tryDemo || 'غرفة تجريبية')}
+            </button>
+          )}
         </div>
       </div>
 
@@ -128,7 +158,7 @@ export default function LiveSessions() {
             icon={Radio}
             title={t.live.noSessions}
             description={t.live.noSessionsDesc}
-            action={
+            action={canManage && liveStatus.configured ? (
               <button 
                 className="btn-premium"
                 onClick={() => setShowCreateModal(true)}
@@ -136,7 +166,7 @@ export default function LiveSessions() {
                 <Plus size={20} />
                 {t.live.createFirst}
               </button>
-            }
+            ) : null}
           />
         ) : (
           <div className="sessions-grid">
@@ -208,13 +238,15 @@ export default function LiveSessions() {
                       {copiedId === session.roomId ? <Check size={18} /> : <Copy size={18} />}
                     </button>
 
-                    <button 
-                      className="btn-icon delete-btn"
-                      onClick={() => deleteSession(session.roomId)}
-                      title={t.common.delete}
-                    >
-                      <Trash2 size={18} />
-                    </button>
+                    {session.canManage && (
+                      <button 
+                        className="btn-icon delete-btn"
+                        onClick={() => deleteSession(session.roomId)}
+                        title={t.common.delete}
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    )}
                   </div>
                 </motion.div>
               ))}
@@ -226,6 +258,8 @@ export default function LiveSessions() {
       <CreateSessionModal 
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
+        role={role}
+        accessToken={accessToken}
         onCreated={(session) => {
           setSessions(prev => [session, ...prev]);
           setShowCreateModal(false);
@@ -235,23 +269,53 @@ export default function LiveSessions() {
   );
 }
 
-function CreateSessionModal({ isOpen, onClose, onCreated }) {
+function CreateSessionModal({ isOpen, onClose, onCreated, role, accessToken }) {
   const { t } = useAppContext();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [subject, setSubject] = useState('');
   const [creating, setCreating] = useState(false);
+  const [sessionId, setSessionId] = useState('');
+  const [bookedSessions, setBookedSessions] = useState([]);
+
+  useEffect(() => {
+    if (!isOpen || role !== 'teacher' || !accessToken) return;
+
+    let active = true;
+    fetch(`${API_BASE_URL}/api/sessions/my-sessions?status=accepted&limit=50`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    })
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error('Failed to load booked sessions')))
+      .then((data) => {
+        if (active) setBookedSessions(data.sessions || []);
+      })
+      .catch(() => {
+        if (active) setBookedSessions([]);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [isOpen, role, accessToken]);
 
   const handleCreate = async (e) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim() || (role === 'teacher' && !sessionId)) return;
 
     setCreating(true);
     try {
       const response = await fetch(`${API_BASE_URL}/api/live/sessions`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, description, subject })
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          title,
+          description,
+          subject,
+          sessionId: sessionId || undefined,
+        })
       });
 
       if (response.ok) {
@@ -260,6 +324,7 @@ function CreateSessionModal({ isOpen, onClose, onCreated }) {
         setTitle('');
         setDescription('');
         setSubject('');
+        setSessionId('');
       }
     } catch (error) {
       console.error('Failed to create session:', error);
@@ -275,6 +340,25 @@ function CreateSessionModal({ isOpen, onClose, onCreated }) {
         <p className="modal-subtitle">{t.live.createSessionDesc}</p>
 
         <form onSubmit={handleCreate} className="session-form">
+          {role === 'teacher' && (
+            <div className="form-group">
+              <label>الحصة المرتبطة</label>
+              <select
+                value={sessionId}
+                onChange={(e) => setSessionId(e.target.value)}
+                className="premium-input"
+                required
+              >
+                <option value="">اختر حصة مقبولة</option>
+                {bookedSessions.map((session) => (
+                  <option key={session._id} value={session._id}>
+                    {session.student?.name || 'حلقة / طالب'} — {new Date(session.scheduledAt).toLocaleString('ar-EG')}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <div className="form-group">
             <label>{t.live.sessionTitle}</label>
             <input
@@ -326,7 +410,7 @@ function CreateSessionModal({ isOpen, onClose, onCreated }) {
             <button 
               type="submit" 
               className="btn-premium"
-              disabled={creating || !title.trim()}
+              disabled={creating || !title.trim() || (role === 'teacher' && !sessionId)}
             >
               {creating ? t.common.loading : (
                 <>
