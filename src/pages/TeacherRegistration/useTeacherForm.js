@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '../../context/ToastProvider';
 import { apiUrl } from '../../config';
 import { INITIAL_FORM, DRAFT_KEY } from './constants';
+import { uploadFileDirect } from '../../lib/fileUpload';
 
 const emptyFiles = () => ({
   profilePhoto: null,
@@ -139,44 +140,77 @@ export function useTeacherForm() {
     const err = validate(4);
     if (err) { toast.error(err); return; }
     setSubmitting(true);
-    const fd = new FormData();
     const city = pCity(formData.personalInfo.address);
-    fd.append('personalInfo', JSON.stringify({
-      ...formData.personalInfo,
-      age: Number(formData.personalInfo.age),
-      city,
-      whatsapp: formData.personalInfo.whatsapp || formData.personalInfo.phone,
-    }));
-    fd.append('academicInfo', JSON.stringify({
-      university: formData.academicInfo.university,
-      graduationYear: Number(formData.academicInfo.graduationYear),
-      faculty: '—',
-      specialization: 'تحفيظ قرآن',
-      qualification: 'خريج',
-    }));
-    fd.append('quranInfo', JSON.stringify({
-      numberOfIjazat: 0,
-      memorizedParts: 30,
-      teachingExperience: 0,
-      specializations: ['tajweed'],
-    }));
-    fd.append('languages', JSON.stringify(['arabic']));
-    fd.append('availability', JSON.stringify([]));
-    fd.append('email', credentials.email);
-    fd.append('password', credentials.password);
-    fd.append('phoneVerificationToken', phoneVerificationToken);
-
-    if (files.profilePhoto) fd.append('profilePhoto', files.profilePhoto);
-    if (files.idCard) fd.append('idCard', files.idCard);
-    if (files.graduationCertificate) fd.append('graduationCertificate', files.graduationCertificate);
-    files.tajweedCertificates.forEach((f) => fd.append('tajweedCertificates', f));
-    files.ijazat.forEach((f) => fd.append('ijazat', f));
-    files.recitationVideos.forEach((f) => fd.append('recitationVideo', f));
 
     try {
+      const uploadOne = (file, purpose) => file
+        ? uploadFileDirect(file, purpose, { phoneVerificationToken })
+        : Promise.resolve(null);
+      const uploadMany = (items, purpose) => Promise.all(
+        (items || []).map((file) => uploadFileDirect(file, purpose, { phoneVerificationToken }))
+      );
+
+      const [
+        profilePhoto,
+        idCard,
+        graduationCertificate,
+        tajweedCertificates,
+        ijazat,
+        recitationVideo,
+      ] = await Promise.all([
+        uploadOne(files.profilePhoto, 'teacher-public'),
+        uploadOne(files.idCard, 'teacher-private'),
+        uploadOne(files.graduationCertificate, 'teacher-private'),
+        uploadMany(files.tajweedCertificates, 'teacher-private'),
+        uploadMany(files.ijazat, 'teacher-private'),
+        uploadMany(files.recitationVideos, 'teacher-public'),
+      ]);
+
+      const payload = {
+        personalInfo: JSON.stringify({
+          ...formData.personalInfo,
+          age: Number(formData.personalInfo.age),
+          city,
+          whatsapp: formData.personalInfo.whatsapp || formData.personalInfo.phone,
+        }),
+        academicInfo: JSON.stringify({
+          university: formData.academicInfo.university,
+          graduationYear: Number(formData.academicInfo.graduationYear),
+          faculty: '—',
+          specialization: 'تحفيظ قرآن',
+          qualification: 'خريج',
+        }),
+        quranInfo: JSON.stringify({
+          numberOfIjazat: 0,
+          memorizedParts: 30,
+          teachingExperience: 0,
+          specializations: ['tajweed'],
+        }),
+        languages: JSON.stringify(['arabic']),
+        availability: JSON.stringify([]),
+        email: credentials.email,
+        password: credentials.password,
+        phoneVerificationToken,
+        uploadedFiles: {
+          profilePhoto,
+          idCard,
+          graduationCertificate,
+          tajweedCertificates,
+          ijazat,
+          recitationVideo,
+        },
+      };
+
       const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const r = await fetch(apiUrl('/api/teachers/register'), { method: 'POST', headers, body: fd });
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      };
+      const r = await fetch(apiUrl('/api/teachers/register'), {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+      });
       const data = await r.json();
       if (!r.ok) throw new Error(data.error || 'فشل التسجيل');
       localStorage.removeItem(DRAFT_KEY);
