@@ -66,7 +66,7 @@ router.get('/', async (req, res) => {
   const pageNum = Math.max(1, parseInt(page, 10) || 1);
   const limitNum = Math.min(50, Math.max(1, parseInt(limit, 10) || 20));
 
-  if (isMockMode || !isDBConnected()) {
+  if (isMockMode && !isDBConnected()) {
     let filtered = [...MOCK_CIRCLES];
     if (track) filtered = filtered.filter(c => c.track === track);
     if (level) filtered = filtered.filter(c => c.level === level);
@@ -143,7 +143,7 @@ router.get('/', async (req, res) => {
 // @desc    Get details of a single circle with teacher, students, and schedule
 // @access  Public / Protected
 router.get('/:id', async (req, res) => {
-  if (isMockMode || !isDBConnected()) {
+  if (isMockMode && !isDBConnected()) {
     const found = MOCK_CIRCLES.find(c => c._id === req.params.id) || MOCK_CIRCLES[0];
     return res.json({
       success: true,
@@ -210,7 +210,7 @@ router.post('/', protect, authorize('admin', 'teacher'), async (req, res) => {
       return res.status(400).json({ error: 'اسم الحلقة وجنس الطلاب مطلوبان' });
     }
 
-    if (isMockMode || !isDBConnected()) {
+    if (isMockMode && !isDBConnected()) {
       const genderPrefix = String(gender).charAt(0).toUpperCase() || 'C';
       const randomCode = Math.floor(1000 + Math.random() * 9000);
       const code = 'CIR-' + genderPrefix + '-' + randomCode;
@@ -406,7 +406,7 @@ router.post('/:id/join', protect, async (req, res) => {
 // @access  Protected (admin, teacher)
 router.put('/:id', protect, authorize('admin', 'teacher'), async (req, res) => {
   try {
-    if (isMockMode || !isDBConnected()) {
+    if (isMockMode && !isDBConnected()) {
       const found = MOCK_CIRCLES.find(c => c._id === req.params.id) || MOCK_CIRCLES[0];
       if (!found) return res.status(404).json({ error: 'الحلقة غير موجودة' });
       const { name, track, level, gender, schedule, status, notes } = req.body;
@@ -496,7 +496,7 @@ router.delete('/:id', protect, authorize('admin'), async (req, res) => {
   try {
     const { archive = 'true' } = req.query;
 
-    if (isMockMode || !isDBConnected()) {
+    if (isMockMode && !isDBConnected()) {
       const idx = MOCK_CIRCLES.findIndex(c => c._id === req.params.id);
       if (idx !== -1) {
         if (archive === 'true') {
