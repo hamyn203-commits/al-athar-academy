@@ -1,42 +1,12 @@
-const { BlobServiceClient } = require('@azure/storage-blob');
+// Legacy compatibility shim.
+// New uploads use services/objectStorage.js and direct browser-to-storage flows.
+// Kept temporarily so older imports fail closed rather than loading a cloud-specific SDK.
 
-let blobServiceClient = null;
-let containerClient = null;
-
-const connStr = process.env.AZURE_STORAGE_CONNECTION_STRING;
-if (connStr) {
-  try {
-    blobServiceClient = BlobServiceClient.fromConnectionString(connStr);
-    containerClient = blobServiceClient.getContainerClient('uploads');
-  } catch (err) {
-    console.error('Failed to initialize Azure Blob Storage client:', err.message);
-  }
-}
-
-/**
- * Uploads a buffer to Azure Blob Storage (CDN)
- * @param {Buffer} buffer 
- * @param {string} blobName 
- * @param {string} mimeType 
- * @returns {Promise<string>} Public URL of the uploaded blob
- */
-async function uploadToCDN(buffer, blobName, mimeType) {
-  if (!containerClient) {
-    throw new Error('Azure Blob Storage is not configured or initialized');
-  }
-  
-  // Ensure the container exists with public read access for blobs
-  await containerClient.createIfNotExists({ access: 'blob' });
-  
-  const blockBlobClient = containerClient.getBlockBlobClient(blobName);
-  await blockBlobClient.upload(buffer, buffer.length, {
-    blobHTTPHeaders: { blobContentType: mimeType }
-  });
-  
-  return blockBlobClient.url;
+async function uploadToCDN() {
+  throw new Error('Legacy CDN upload is retired. Use the object storage direct-upload flow.');
 }
 
 module.exports = {
-  isConfigured: () => !!containerClient,
-  uploadToCDN
+  isConfigured: () => false,
+  uploadToCDN,
 };
