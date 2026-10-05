@@ -1,5 +1,5 @@
 /**
- * Automated Session Reminder Scheduler — Al-Athar Academy
+ * Automated Session Reminder Scheduler — Wahy Wa Namaa Academy
  * Runs periodically (every 5 minutes) to dispatch:
  * 1. 24-hour advance reminders (sessions starting in 23-24 hours)
  * 2. 30-minute direct access reminders (sessions starting in 25-35 minutes)
