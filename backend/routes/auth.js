@@ -54,8 +54,10 @@ function sanitizeUserResponse(user) {
 router.post('/register', async (req, res) => {
   try {
     const { name, email, password, phone, role } = req.body;
+    const normalizedEmail = String(email || '').trim().toLowerCase();
+    const allowedRoles = ['student', 'guardian'];
 
-    if (!name || !email || !password) {
+    if (!name || !normalizedEmail || !password) {
       return res.status(400).json({ 
         error: 'Name, email, and password are required' 
       });
@@ -67,23 +69,22 @@ router.post('/register', async (req, res) => {
       });
     }
 
+    if (role && !allowedRoles.includes(role)) {
+      return res.status(400).json({ error: 'This role cannot be self-registered' });
+    }
+    const assignedRole = role || 'student';
+
     if (!isMockMode || isDBConnected()) {
-      const existingUser = await User.findOne({ email: email.toLowerCase() });
+      const existingUser = await User.findOne({ email: normalizedEmail });
       if (existingUser) {
         return res.status(409).json({ 
           error: 'Email already registered' 
         });
       }
 
-      const allowedRoles = ['student', 'guardian'];
-      if (role && !allowedRoles.includes(role)) {
-        return res.status(400).json({ error: 'This role cannot be self-registered' });
-      }
-      const assignedRole = role || 'student';
-
       const user = await User.create({
         name,
-        email,
+        email: normalizedEmail,
         password,
         phone,
         role: assignedRole,
@@ -109,22 +110,16 @@ router.post('/register', async (req, res) => {
       return;
     }
 
-    const existingUser = findMockUserByEmail(email);
+    const existingUser = findMockUserByEmail(normalizedEmail);
     if (existingUser) {
       return res.status(409).json({
         error: 'Email already registered'
       });
     }
 
-    const allowedRoles = ['student', 'guardian'];
-    if (role && !allowedRoles.includes(role)) {
-      return res.status(400).json({ error: 'This role cannot be self-registered' });
-    }
-    const assignedRole = role || 'student';
-
     const user = addMockUser({
       _id: `mock-${Date.now()}`,
-      email,
+      email: normalizedEmail,
       password,
       name,
       phone,
