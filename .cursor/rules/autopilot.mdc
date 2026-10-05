@@ -1,16 +1,17 @@
 ---
-description: Autopilot overnight development for Al-Athar Academy V4
+description: Autopilot development for Wahy Wa Namaa Academy
 alwaysApply: true
 ---
 
-# Autopilot Al-Athar
+# Autopilot — Wahy Wa Namaa
 
 When working autonomously or on scheduled runs:
 1. Read `AGENTS.md` and pick the first `pending` backlog item only.
-2. Do not touch `platform/`.
-3. Run `npm run build` before committing.
-4. Push to `master` to trigger deploy (Azure backend + Vercel frontend).
-5. Mark the backlog item `done` in `AGENTS.md`.
-6. Reply in Arabic, concise.
+2. Do not touch `platform/` unless the task explicitly targets V2.
+3. Run the frontend build and backend syntax checks before finishing.
+4. Push to `master`; native Vercel Git Integration deploys frontend and API.
+5. Verify `https://wahy-wa-namaa-api.vercel.app/api/readiness` returns ready.
+6. Mark the backlog item `done` in `AGENTS.md`.
+7. Reply in Arabic, concise.
 
-Stack: React 19 + Vite + Tailwind | Express 5 + MongoDB Cosmos | Vercel + Azure.
+Current V1 stack: React 19 + Vite | Express 5 + MongoDB Atlas | portable object storage | Vercel runtime adapter.
