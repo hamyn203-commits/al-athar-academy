@@ -6,6 +6,7 @@ const TeacherTask = require('../models/TeacherTask');
 const User = require('../models/User');
 const { protect, authorize } = require('../middleware/auth');
 const { findMockUserById } = require('../mockStore');
+const { isMockMode } = require('../config/runtime');
 
 const isDBConnected = () => mongoose.connection.readyState === 1;
 const isValidObjectId = (id) => id && mongoose.Types.ObjectId.isValid(id);
@@ -23,6 +24,9 @@ async function createUniqueGuardianLinkCode() {
 router.get('/profile', protect, authorize('student'), async (req, res) => {
   try {
     if (!isDBConnected() || !isValidObjectId(req.user.id)) {
+      if (!isMockMode) {
+        return res.status(503).json({ error: 'Student data is temporarily unavailable' });
+      }
       const mockUser = findMockUserById(req.user.id);
       return res.json({
         user: {
@@ -76,6 +80,9 @@ router.get('/profile', protect, authorize('student'), async (req, res) => {
 router.post('/guardian-link-code/rotate', protect, authorize('student'), async (req, res) => {
   try {
     if (!isDBConnected() || !isValidObjectId(req.user.id)) {
+      if (!isMockMode) {
+        return res.status(503).json({ error: 'Student data is temporarily unavailable' });
+      }
       return res.status(503).json({ error: 'Guardian linking requires the database' });
     }
 
@@ -96,6 +103,9 @@ router.post('/guardian-link-code/rotate', protect, authorize('student'), async (
 router.get('/stats', protect, authorize('student'), async (req, res) => {
   try {
     if (!isDBConnected() || !isValidObjectId(req.user.id)) {
+      if (!isMockMode) {
+        return res.status(503).json({ error: 'Student data is temporarily unavailable' });
+      }
       return res.json({
         pendingTrials: 0,
         upcomingSessions: 0,
@@ -128,6 +138,9 @@ router.get('/stats', protect, authorize('student'), async (req, res) => {
 router.get('/teachers', protect, authorize('student'), async (req, res) => {
   try {
     if (!isDBConnected() || !isValidObjectId(req.user.id)) {
+      if (!isMockMode) {
+        return res.status(503).json({ error: 'Student data is temporarily unavailable' });
+      }
       return res.json({ teachers: [] });
     }
 
@@ -173,6 +186,9 @@ router.get('/teachers', protect, authorize('student'), async (req, res) => {
 router.get('/evaluations', protect, authorize('student'), async (req, res) => {
   try {
     if (!isDBConnected() || !isValidObjectId(req.user.id)) {
+      if (!isMockMode) {
+        return res.status(503).json({ error: 'Student data is temporarily unavailable' });
+      }
       return res.json({ evaluations: [] });
     }
 
@@ -196,6 +212,9 @@ router.get('/evaluations', protect, authorize('student'), async (req, res) => {
 router.get('/recordings', protect, authorize('student'), async (req, res) => {
   try {
     if (!isDBConnected() || !isValidObjectId(req.user.id)) {
+      if (!isMockMode) {
+        return res.status(503).json({ error: 'Student data is temporarily unavailable' });
+      }
       return res.json({ sessions: [] });
     }
 
