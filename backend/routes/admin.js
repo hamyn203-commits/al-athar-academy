@@ -90,17 +90,7 @@ router.get('/stats', protect, authorize('admin'), async (req, res) => {
 
 router.get('/teachers/approved', protect, authorize('admin'), async (req, res) => {
   if (isMockMode && !isDBConnected()) {
-    return res.json([
-      {
-        _id: 'mock-teacher-approved-1',
-        user: { _id: 'mock-u1', name: 'الشيخ عبد الله القرشي', email: 'abdullah@alathar.com', avatar: PLACEHOLDER },
-        personalInfo: { fullName: 'عبد الله القرشي', phone: '+201099998888', country: 'السعودية', city: 'مكة المكرمة' },
-        hourlyRate: 60,
-        status: 'approved',
-        isVerified: true,
-        createdAt: new Date().toISOString()
-      }
-    ]);
+    return res.json([]);
   }
   try {
     const teachers = await Teacher.find({ status: 'approved', isVerified: true })
@@ -114,17 +104,7 @@ router.get('/teachers/approved', protect, authorize('admin'), async (req, res) =
 
 router.get('/teachers/pending', protect, authorize('admin'), async (req, res) => {
   if (isMockMode && !isDBConnected()) {
-    return res.json([
-      {
-        _id: 'mock-teacher-pending-1',
-        user: { _id: 'mock-u2', name: 'الشيخ أحمد محمود', email: 'ahmed.m@alathar.com' },
-        personalInfo: { fullName: 'أحمد محمود', phone: '+201011112222', country: 'مصر', city: 'القاهرة' },
-        academicInfo: { university: 'الأزهر الشريف', qualification: 'ليسانس أصول الدين' },
-        quranInfo: { memorizedParts: 30, teachingExperience: 7 },
-        status: 'pending',
-        createdAt: new Date().toISOString()
-      }
-    ]);
+    return res.json([]);
   }
   try {
     const teachers = await Teacher.find({ status: { $in: ['pending', 'under-review'] } })
@@ -138,21 +118,7 @@ router.get('/teachers/pending', protect, authorize('admin'), async (req, res) =>
 
 router.get('/donations', protect, authorize('admin'), async (req, res) => {
   if (isMockMode && !isDBConnected()) {
-    return res.json({
-      donations: [
-        {
-          _id: 'mock-donation-1',
-          name: 'فاعل خير',
-          email: 'donor@example.com',
-          amount: 100,
-          currency: 'USD',
-          category: 'general',
-          status: 'completed',
-          createdAt: new Date().toISOString()
-        }
-      ],
-      pagination: { page: 1, limit: 20, total: 1 }
-    });
+    return res.json({ donations: [], pagination: { page: 1, limit: 20, total: 0 } });
   }
   try {
     const Donation = require('../models/Donation');
@@ -488,22 +454,7 @@ router.delete('/blog/:id', protect, authorize('admin'), async (req, res) => {
 
 router.get('/withdrawals', protect, authorize('admin'), async (req, res) => {
   if (isMockMode && !isDBConnected()) {
-    return res.json({
-      withdrawals: [
-        {
-          _id: 'mock-w1',
-          teacher: {
-            user: { name: 'الشيخ عبد الله القرشي', email: 'abdullah@alathar.com' },
-            personalInfo: { fullName: 'عبد الله القرشي' }
-          },
-          amount: 850,
-          method: 'vodafone_cash',
-          accountInfo: '01012345678',
-          status: 'pending',
-          createdAt: new Date().toISOString()
-        }
-      ]
-    });
+    return res.json({ withdrawals: [] });
   }
   try {
     const status = req.query.status || 'pending';
