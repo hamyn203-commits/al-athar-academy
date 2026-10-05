@@ -134,7 +134,10 @@ router.post(
   ]),
   async (req, res) => {
     try {
-      const { personalInfo, academicInfo, quranInfo, languages, availability, email, password, phoneVerificationToken } = req.body;
+      const {
+        personalInfo, academicInfo, quranInfo, languages, availability,
+        email, password, verificationToken, phoneVerificationToken
+      } = req.body;
       const uploadedFiles = req.body.uploadedFiles
         ? (typeof req.body.uploadedFiles === 'string' ? JSON.parse(req.body.uploadedFiles) : req.body.uploadedFiles)
         : {};
@@ -149,26 +152,35 @@ router.post(
       const parsedPersonalForVerification = personalInfo ? JSON.parse(personalInfo) : {};
 
       if (!userId) {
-        if (!phoneVerificationToken) {
-          return res.status(400).json({ error: 'Phone verification is required' });
+        const teacherVerificationToken = verificationToken || phoneVerificationToken;
+        if (!teacherVerificationToken) {
+          return res.status(400).json({ error: 'Email verification is required' });
         }
 
         try {
           const verification = jwt.verify(
-            phoneVerificationToken,
+            teacherVerificationToken,
             process.env.JWT_SECRET || 'wahy-namaa-dev-access-secret-change-me'
           );
+          const normalizedEmail = String(email || '').trim().toLowerCase();
 
-          if (
-            verification.purpose !== 'teacher-phone-verification' ||
-            verification.phone !== parsedPersonalForVerification.phone
+          if (verification.purpose === 'teacher-email-verification') {
+            if (!normalizedEmail || verification.email !== normalizedEmail) {
+              return res.status(400).json({ error: 'Email verification does not match this application' });
+            }
+            uploadOwner = verification.email;
+          } else if (
+            phoneVerificationToken &&
+            verification.purpose === 'teacher-phone-verification' &&
+            verification.phone === parsedPersonalForVerification.phone
           ) {
-            return res.status(400).json({ error: 'Phone verification does not match this application' });
+            // Transitional support for verification tokens issued before the email-OTP rollout.
+            uploadOwner = verification.phone;
+          } else {
+            return res.status(400).json({ error: 'Verification does not match this application' });
           }
-
-          uploadOwner = verification.phone;
         } catch {
-          return res.status(400).json({ error: 'Phone verification is invalid or expired' });
+          return res.status(400).json({ error: 'Email verification is invalid or expired' });
         }
       }
 
