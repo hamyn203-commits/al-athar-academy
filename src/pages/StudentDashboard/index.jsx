@@ -11,6 +11,7 @@ import { useRequireAuth } from '../../hooks/useRequireAuth';
 import { useGamificationApi } from '../../hooks/useGamificationApi';
 import { useToast } from '../../context/ToastProvider';
 import api from '../../lib/api';
+import { uploadFileDirect } from '../../lib/fileUpload';
 import { TASK_TYPES } from '../TeacherRegistration/constants';
 import { useI18n } from '../../i18n';
 
@@ -190,11 +191,12 @@ export default function StudentDashboard() {
 
   const submitHomework = async (homeworkId, file, sessionId) => {
     if (!file) return;
-    const fd = new FormData();
-    fd.append('submission', file);
-    if (sessionId) fd.append('sessionId', sessionId);
     try {
-      await api.post(`/api/homework/${homeworkId}/submit`, fd, { auth: true, json: false });
+      const storageFile = await uploadFileDirect(file, 'homework');
+      await api.post(`/api/homework/${homeworkId}/submit`, {
+        storageFile,
+        sessionId,
+      }, { auth: true });
       toast.success(locale === 'id' ? 'Tugas berhasil diunggah' : locale === 'ar' ? 'تم تسليم التلاوة للشيخ بنجاح' : 'Homework uploaded successfully');
       load();
     } catch (e) {
