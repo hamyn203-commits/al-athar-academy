@@ -3,6 +3,7 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const Session = require('../models/Session');
 const Teacher = require('../models/Teacher');
+const GroupCircle = require('../models/GroupCircle');
 const { protect, authorize } = require('../middleware/auth');
 const meetingService = require('../services/meetingService');
 const { notifyTeacherForSessionRequest, notifySessionAccepted, notifyUser } = require('../utils/notify');
@@ -10,8 +11,22 @@ const { notifyTeacherForSessionRequest, notifySessionAccepted, notifyUser } = re
 const isMockMode = !process.env.MONGODB_URI;
 const isDBConnected = () => mongoose.connection.readyState === 1;
 
+async function sessionIncludesStudent(session, studentId) {
+  if (!session || !studentId) return false;
+  const id = String(studentId);
 
-router.post('/trial', protect, async (req, res) => {
+  if (session.student && String(session.student) === id) return true;
+  if (session.attendance?.some((entry) => entry.student && String(entry.student) === id)) return true;
+
+  if (session.circle) {
+    return Boolean(await GroupCircle.exists({ _id: session.circle, students: studentId }));
+  }
+
+  return false;
+}
+
+
+router.post('/trial', protect, authorize('student'), async (req, res) => {
   try {
     const { teacherId, scheduledAt, timezone, notes } = req.body;
 
@@ -120,45 +135,9 @@ router.get('/my-sessions', protect, async (req, res) => {
     const { status, type, page = 1, limit = 10 } = req.query;
 
     if (isMockMode || !isDBConnected()) {
-      const mockSessions = [
-        {
-          _id: 'mock-sess-1',
-          id: 'mock-sess-1',
-          type: 'regular',
-          status: 'accepted',
-          scheduledAt: new Date(Date.now() + 3600000 * 3).toISOString(),
-          student: { _id: 'std-1', name: 'عمر خالد المنشاوي', email: 'omar@example.com' },
-          teacher: { _id: 'tch-1', user: { name: req.user?.name || 'الشيخ المعلم' } },
-          notes: 'حصة تسميع سورة الكهف والتدريب على أحكام الراءات',
-          roomUrl: '/live/room-athar-demo',
-        },
-        {
-          _id: 'mock-sess-2',
-          id: 'mock-sess-2',
-          type: 'trial',
-          status: 'pending',
-          scheduledAt: new Date(Date.now() + 3600000 * 24).toISOString(),
-          student: { _id: 'std-2', name: 'ياسين محمود', email: 'yassine@example.com' },
-          teacher: { _id: 'tch-1', user: { name: req.user?.name || 'الشيخ المعلم' } },
-          notes: 'حصة تجريبية لتحديد المستوى وتأسيس نور البيان',
-          roomUrl: '/live/room-trial-102',
-        },
-        {
-          _id: 'mock-sess-3',
-          id: 'mock-sess-3',
-          type: 'regular',
-          status: 'pending',
-          scheduledAt: new Date(Date.now() + 3600000 * 48).toISOString(),
-          student: { _id: 'std-3', name: 'إبراهيم مصطفى', email: 'ibrahim@example.com' },
-          teacher: { _id: 'tch-1', user: { name: req.user?.name || 'الشيخ المعلم' } },
-          notes: 'حلقة جماعية 10 طلاب - مسار الإتقان والتجويد',
-          roomUrl: '/live/room-athar-group',
-        },
-      ].filter((s) => (!status || s.status === status) && (!type || s.type === type));
-
       return res.json({
-        sessions: mockSessions,
-        pagination: { page: 1, limit: 10, total: mockSessions.length, pages: 1 },
+        sessions: [],
+        pagination: { page: 1, limit: Number(limit), total: 0, pages: 0 },
       });
     }
 
@@ -435,8 +414,13 @@ router.post('/:id/rsvp', protect, async (req, res) => {
       return res.status(404).json({ error: 'الحصة غير موجودة' });
     }
 
-    // Verify permission: student herself, or guardian of student, or admin
-    if (req.user.role !== 'admin' && req.user.id !== studentId.toString()) {
+    const belongsToSession = await sessionIncludesStudent(session, studentId);
+    if (!belongsToSession) {
+      return res.status(403).json({ error: 'الطالب غير مسجل في هذه الحصة' });
+    }
+
+    // Verify actor permission: the student, their linked guardian, or an admin.
+    if (req.user.role !== 'admin' && String(req.user.id) !== String(studentId)) {
       const Guardian = require('../models/Guardian');
       const guardian = await Guardian.findOne({ user: req.user.id, 'children.student': studentId });
       if (!guardian) {
@@ -529,6 +513,13 @@ router.post('/:id/report', protect, authorize('teacher', 'admin'), async (req, r
       return res.status(404).json({ error: 'الحصة غير موجودة' });
     }
 
+    if (req.user.role === 'teacher') {
+      const teacher = await Teacher.findOne({ user: req.user.id }).select('_id');
+      if (!teacher || String(session.teacher) !== String(teacher._id)) {
+        return res.status(403).json({ error: 'غير مصرح بكتابة تقرير لهذه الحصة' });
+      }
+    }
+
     const reportsInput = Array.isArray(studentReports) ? studentReports : [req.body];
     if (reportsInput.length === 0 || (!reportsInput[0].student && !session.student)) {
       return res.status(400).json({ error: 'بيانات التقرير أو معرف الطالب مطلوبة' });
@@ -548,7 +539,14 @@ router.post('/:id/report', protect, authorize('teacher', 'admin'), async (req, r
       const studentId = reportItem.student || reportItem.studentId || session.student;
       if (!studentId) continue;
 
+      if (!(await sessionIncludesStudent(session, studentId))) {
+        return res.status(403).json({ error: 'لا يمكن إضافة تقرير لطالب غير مسجل في هذه الحصة' });
+      }
+
       const studentUser = await User.findById(studentId).select('name phone whatsappPhone guardian');
+      if (!studentUser) {
+        return res.status(404).json({ error: 'الطالب غير موجود' });
+      }
 
       const memScore = reportItem.memorizationScore != null ? Number(reportItem.memorizationScore) : undefined;
       const tajScore = reportItem.tajweedScore != null ? Number(reportItem.tajweedScore) : undefined;

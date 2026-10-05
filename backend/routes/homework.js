@@ -53,28 +53,7 @@ router.get('/student', protect, authorize('student'), async (req, res) => {
     const isValidObjectId = (id) => id && mongoose.Types.ObjectId.isValid(id);
 
     if (!isDBConnected() || !isValidObjectId(req.user.id)) {
-      return res.json({
-        homework: [
-          {
-            _id: 'mock-hw-1',
-            sessionId: 'mock-session-1',
-            title: 'حفظ سورة مريم من آية 1 إلى 15',
-            description: 'تلاوة وحفظ متقن مع مراعاة الغنن والمدود',
-            type: 'memorization',
-            status: 'pending',
-            dueDate: new Date(Date.now() + 86400000 * 2),
-          },
-          {
-            _id: 'mock-hw-2',
-            sessionId: 'mock-session-2',
-            title: 'مراجعة سورة الكهف من آية 1 إلى 20',
-            description: 'مراجعة تثبيت مع المعلم',
-            type: 'review-recent',
-            status: 'done',
-            dueDate: new Date(Date.now() - 86400000),
-          }
-        ]
-      });
+      return res.json({ homework: [] });
     }
 
     const sessions = await Session.find({
@@ -221,6 +200,11 @@ router.post('/:homeworkId/submit', protect, authorize('student'), upload.single(
     const sessionId = req.body.sessionId;
     if (!sessionId || !mongoose.Types.ObjectId.isValid(sessionId)) {
       return res.status(400).json({ error: 'Invalid homework reference' });
+    }
+
+    const ownedSession = await Session.findOne({ _id: sessionId, student: req.user.id }).select('_id');
+    if (!ownedSession) {
+      return res.status(403).json({ error: 'This session does not belong to the authenticated student' });
     }
 
     const submission = await HomeworkSubmission.create({

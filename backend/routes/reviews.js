@@ -7,7 +7,7 @@ const { protect, authorize } = require('../middleware/auth');
 
 router.post('/', protect, authorize('student'), async (req, res) => {
   try {
-    const { teacherId, sessionId, rating, comment, categories, isAnonymous } = req.body;
+    const { sessionId, rating, comment, categories, isAnonymous } = req.body;
 
     const session = await Session.findOne({
       _id: sessionId,
@@ -26,6 +26,11 @@ router.post('/', protect, authorize('student'), async (req, res) => {
 
     if (existingReview) {
       return res.status(400).json({ error: 'You already reviewed this session' });
+    }
+
+    const teacherId = session.teacher;
+    if (!teacherId) {
+      return res.status(400).json({ error: 'Session has no teacher assigned' });
     }
 
     const review = await Review.create({
@@ -53,18 +58,7 @@ router.get('/student', protect, authorize('student'), async (req, res) => {
     const isValidObjectId = (id) => id && mongoose.Types.ObjectId.isValid(id);
 
     if (!isDBConnected() || !isValidObjectId(req.user.id)) {
-      return res.json([
-        {
-          _id: 'mock-rev-1',
-          rating: 5,
-          comment: 'ما شاء الله تبارك الله، شيخ ممتاز وصبور جداً.',
-          teacher: {
-            personalInfo: { fullName: 'الشيخ أحمد منصور' },
-            rating: { average: 4.9 }
-          },
-          createdAt: new Date(Date.now() - 86400000 * 3)
-        }
-      ]);
+      return res.json([]);
     }
 
     const reviews = await Review.find({ student: req.user.id })
