@@ -133,6 +133,13 @@ router.post('/register', async (req, res) => {
       lastLogin: new Date(),
     });
 
+    const expectedVersion = Number(user.refreshTokenVersion || 0);
+    const tokenVersion = Number(req.refreshToken.v || 0);
+    if (tokenVersion !== expectedVersion) {
+      clearRefreshCookie(res);
+      return res.status(401).json({ error: 'Refresh session has been revoked' });
+    }
+
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
     setRefreshCookie(res, refreshToken);
@@ -222,7 +229,7 @@ router.post('/refresh', verifyRefreshToken, async (req, res) => {
   try {
     const user = isMockMode && !isDBConnected()
       ? findMockUserById(req.refreshToken.id)
-      : await User.findById(req.refreshToken.id);
+      : await User.findById(req.refreshToken.id).select('+refreshTokenVersion');
     
     if (!user || !user.isActive) {
       return res.status(401).json({ 
@@ -338,10 +345,12 @@ router.post('/change-password', verifyAccessToken, async (req, res) => {
     }
 
     user.password = newPassword;
+    user.refreshTokenVersion = Number(user.refreshTokenVersion || 0) + 1;
     await user.save();
 
+    clearRefreshCookie(res);
     res.json({ 
-      message: 'Password changed successfully' 
+      message: 'Password changed successfully. Please sign in again.' 
     });
   } catch (error) {
     console.error('Change password error:', error);
@@ -444,10 +453,12 @@ router.post('/reset-password', async (req, res) => {
     user.password = newPassword;
     user.passwordResetToken = undefined;
     user.passwordResetExpires = undefined;
+    user.refreshTokenVersion = Number(user.refreshTokenVersion || 0) + 1;
     await user.save();
 
+    clearRefreshCookie(res);
     res.json({ 
-      message: 'Password reset successful' 
+      message: 'Password reset successful. Please sign in again.' 
     });
   } catch (error) {
     console.error('Reset password error:', error);
