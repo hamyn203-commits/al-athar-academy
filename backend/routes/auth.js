@@ -11,6 +11,7 @@ const {
   requireRole 
 } = require('../middleware/auth');
 const { addMockUser, findMockUserByEmail, findMockUserById, updateMockUser } = require('../mockStore');
+const { sendEmail } = require('../services/notificationDispatcher');
 
 const isMockMode = !process.env.MONGODB_URI;
 const isDBConnected = () => mongoose.connection.readyState === 1;
@@ -92,8 +93,11 @@ router.post('/register', async (req, res) => {
       });
     }
 
-    const allowedRoles = ['student', 'teacher', 'guardian', 'admin', 'supervisor'];
-    const assignedRole = allowedRoles.includes(role) ? role : 'student';
+    const allowedRoles = ['student', 'guardian'];
+    if (role && !allowedRoles.includes(role)) {
+      return res.status(400).json({ error: 'This role cannot be self-registered' });
+    }
+    const assignedRole = role || 'student';
 
     const user = addMockUser({
       _id: `mock-${Date.now()}`,
@@ -353,12 +357,37 @@ router.post('/forgot-password', async (req, res) => {
     const resetToken = user.generatePasswordResetToken();
     await user.save();
 
-    console.log('Password reset token generated for:', email);
-    console.log('Reset token (dev only):', resetToken);
+    const frontendUrl = String(
+      process.env.FRONTEND_URL || 'https://wahy-wa-namaa-academy.vercel.app'
+    ).replace(/\/$/, '');
+    const resetUrl = `${frontendUrl}/reset-password?token=${encodeURIComponent(resetToken)}`;
+
+    if (process.env.RESEND_API_KEY) {
+      await sendEmail({
+        to: user.email,
+        subject: 'استعادة كلمة المرور — وَحْيٌ وَنَمَاء',
+        text: `استخدم الرابط التالي لإعادة تعيين كلمة المرور: ${resetUrl}`,
+        html: `
+          <div dir="rtl" style="font-family:Arial,sans-serif;line-height:1.8">
+            <h2>استعادة كلمة المرور</h2>
+            <p>وصلنا طلب لإعادة تعيين كلمة المرور لحسابك في أكاديمية وَحْيٌ وَنَمَاء.</p>
+            <p><a href="${resetUrl}">اضغط هنا لإعادة تعيين كلمة المرور</a></p>
+            <p>إذا لم تطلب ذلك، تجاهل هذه الرسالة.</p>
+          </div>
+        `,
+      });
+    } else if (process.env.NODE_ENV === 'production') {
+      user.passwordResetToken = undefined;
+      user.passwordResetExpires = undefined;
+      await user.save();
+      return res.status(503).json({
+        error: 'Password reset email service is temporarily unavailable'
+      });
+    }
 
     res.json({ 
       message: 'If your email is registered, you will receive a password reset link',
-      ...(process.env.NODE_ENV !== 'production' && { resetToken })
+      ...(process.env.NODE_ENV !== 'production' && { resetToken, resetUrl })
     });
   } catch (error) {
     console.error('Forgot password error:', error);
