@@ -4,6 +4,8 @@ const router = express.Router();
 const Session = require('../models/Session');
 const HomeworkSubmission = require('../models/HomeworkSubmission');
 const TeacherTask = require('../models/TeacherTask');
+const Teacher = require('../models/Teacher');
+const objectStorage = require('../services/objectStorage');
 const { protect, authorize } = require('../middleware/auth');
 const multer = require('multer');
 const path = require('path');
@@ -47,6 +49,50 @@ function parseSessionHomeworkId(homeworkId) {
   const match = String(homeworkId).match(/^([a-f0-9]{24})-(\d+)$/);
   if (!match) return null;
   return { sessionId: match[1], index: Number(match[2]) };
+}
+
+async function streamPrivateFile(res, req, reference) {
+  if (!reference) return res.status(404).json({ error: 'File not found' });
+
+  if (/^https?:\/\//i.test(reference)) {
+    const result = await objectStorage.getPrivateObject(reference, {
+      ifNoneMatch: req.headers['if-none-match'],
+    });
+
+    if (!result) return res.status(404).json({ error: 'File not found' });
+    if (result.statusCode === 304) return res.status(304).end();
+
+    res.setHeader('Content-Type', result.blob?.contentType || 'application/octet-stream');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Cache-Control', 'private, no-store');
+    if (result.blob?.etag) res.setHeader('ETag', result.blob.etag);
+
+    if (result.stream?.pipe) return result.stream.pipe(res);
+
+    const reader = result.stream?.getReader?.();
+    if (!reader) return res.status(404).json({ error: 'File not found' });
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      res.write(Buffer.from(value));
+    }
+    return res.end();
+  }
+
+  const absolute = path.resolve(reference);
+  const allowedRoot = path.resolve(process.cwd(), 'uploads', 'homework');
+  if (!absolute.startsWith(allowedRoot + path.sep)) {
+    return res.status(404).json({ error: 'File not found' });
+  }
+  if (!fs.existsSync(absolute)) return res.status(404).json({ error: 'File not found' });
+
+  res.setHeader('Cache-Control', 'private, no-store');
+  return res.sendFile(absolute);
+}
+
+async function teacherProfileIdForUser(userId) {
+  const teacher = await Teacher.findOne({ user: userId }).select('_id');
+  return teacher?._id || null;
 }
 
 router.get('/student', protect, authorize('student'), async (req, res) => {
@@ -119,6 +165,46 @@ router.get('/student', protect, authorize('student'), async (req, res) => {
   }
 });
 
+router.get('/submissions/:id/file', protect, async (req, res) => {
+  try {
+    const submission = await HomeworkSubmission.findById(req.params.id).select('student sessionId filePath');
+    if (!submission) return res.status(404).json({ error: 'Submission not found' });
+
+    let allowed = req.user.role === 'admin' || String(submission.student) === String(req.user.id);
+
+    if (!allowed && req.user.role === 'teacher') {
+      const teacherId = await teacherProfileIdForUser(req.user.id);
+      allowed = Boolean(teacherId && await Session.exists({ _id: submission.sessionId, teacher: teacherId }));
+    }
+
+    if (!allowed) return res.status(403).json({ error: 'Not authorized to access this file' });
+    return streamPrivateFile(res, req, submission.filePath);
+  } catch (error) {
+    console.error('Homework file download failed:', error.message);
+    return res.status(500).json({ error: 'Failed to load file' });
+  }
+});
+
+router.get('/tasks/:id/file', protect, async (req, res) => {
+  try {
+    const task = await TeacherTask.findById(req.params.id).select('student teacher submissionFile');
+    if (!task || !task.submissionFile) return res.status(404).json({ error: 'Submission file not found' });
+
+    let allowed = req.user.role === 'admin' || String(task.student) === String(req.user.id);
+
+    if (!allowed && req.user.role === 'teacher') {
+      const teacherId = await teacherProfileIdForUser(req.user.id);
+      allowed = Boolean(teacherId && String(task.teacher) === String(teacherId));
+    }
+
+    if (!allowed) return res.status(403).json({ error: 'Not authorized to access this file' });
+    return streamPrivateFile(res, req, task.submissionFile);
+  } catch (error) {
+    console.error('Task file download failed:', error.message);
+    return res.status(500).json({ error: 'Failed to load file' });
+  }
+});
+
 router.post('/:homeworkId/submit', protect, authorize('student'), upload.single('submission'), async (req, res) => {
   try {
     const { homeworkId } = req.params;
@@ -131,6 +217,18 @@ router.post('/:homeworkId/submit', protect, authorize('student'), upload.single(
         error: 'Direct object-storage upload is required',
         code: 'DIRECT_UPLOAD_REQUIRED'
       });
+    }
+
+    if (directFile) {
+      const reference = directFile.url || directFile.pathname;
+      const validReference =
+        Boolean(reference) &&
+        objectStorage.referenceMatches(reference, 'homework', req.user.id) &&
+        (objectStorage.getDriver() !== 'vercel-blob' || objectStorage.isVercelBlobReference(reference));
+
+      if (!validReference) {
+        return res.status(400).json({ error: 'Invalid homework upload reference' });
+      }
     }
 
     const submittedFile = directFile
