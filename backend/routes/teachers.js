@@ -27,11 +27,13 @@ const publicUploadDir = path.join(__dirname, '..', 'uploads', 'teachers', 'publi
 const privateUploadDir = path.join(__dirname, '..', 'uploads', 'private', 'teachers');
 const privateFields = new Set(['idCard', 'graduationCertificate', 'tajweedCertificates', 'ijazat']);
 
-for (const dir of [publicUploadDir, privateUploadDir]) {
-  try {
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  } catch (e) {
-    console.warn('Uploads dir warning:', e.message);
+if (process.env.FILE_STORAGE_DRIVER !== 'external') {
+  for (const dir of [publicUploadDir, privateUploadDir]) {
+    try {
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    } catch (e) {
+      console.warn('Uploads dir warning:', e.message);
+    }
   }
 }
 
@@ -457,7 +459,7 @@ router.put('/admin/:id/review', protect, authorize('admin'), async (req, res) =>
   }
 });
 
-router.get('/admin/:id/document/:kind/:index?', protect, authorize('admin'), async (req, res) => {
+router.get('/admin/:id/document/:kind{/:index}', protect, authorize('admin'), async (req, res) => {
   try {
     const teacher = await Teacher.findById(req.params.id).select('documents');
     if (!teacher) return res.status(404).json({ error: 'Teacher not found' });
