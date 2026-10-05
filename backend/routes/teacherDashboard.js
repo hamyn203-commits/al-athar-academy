@@ -7,7 +7,7 @@ const WithdrawRequest = require('../models/WithdrawRequest');
 const { protect, authorize } = require('../middleware/auth');
 
 const SESSION_RATE = 50;
-const isMockMode = !process.env.MONGODB_URI;
+const { isMockMode } = require('../config/runtime');
 
 // Simple mock-mode fallbacks so the teacher dashboard works in local dev without DB.
 if (isMockMode) {
