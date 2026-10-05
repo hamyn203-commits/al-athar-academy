@@ -29,6 +29,9 @@ jobs:
       - name: Install
         run: npm install --no-audit --no-fund
 
+      - name: Production safety scan
+        run: npm run safety:production
+
       - name: Build
         run: npm run build --ignore-scripts
 
