@@ -10,7 +10,7 @@ async function sendEmail({ to, subject, html, text }) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: process.env.EMAIL_FROM || 'Al-Athar <noreply@alathar.edu>',
+        from: process.env.EMAIL_FROM || 'Wahy Wa Namaa <noreply@example.com>',
         to: [to],
         subject,
         html: html || `<p>${text || subject}</p>`,
