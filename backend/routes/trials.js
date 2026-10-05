@@ -19,7 +19,7 @@ const publicTrialLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-const isMockMode = !process.env.MONGODB_URI;
+const { isMockMode } = require('../config/runtime');
 const isDBConnected = () => mongoose.connection.readyState === 1;
 
 const MOCK_TRIALS = [
@@ -107,7 +107,7 @@ router.post('/', publicTrialLimiter, async (req, res) => {
     const validTeacherGenders = ['male', 'female', 'any'];
     const teacherGender = validTeacherGenders.includes(preferredTeacherGender) ? preferredTeacherGender : 'any';
 
-    if (isMockMode || !isDBConnected()) {
+    if (isMockMode && !isDBConnected()) {
       const mockTrialId = 'mock-trial-' + Date.now();
       const mockObj = {
         _id: mockTrialId,
@@ -168,7 +168,7 @@ router.get('/', protect, authorize('admin', 'teacher'), async (req, res) => {
   const pageNum = Math.max(1, parseInt(page, 10) || 1);
   const limitNum = Math.min(50, Math.max(1, parseInt(limit, 10) || 20));
 
-  if (isMockMode || !isDBConnected()) {
+  if (isMockMode && !isDBConnected()) {
     let filtered = [...MOCK_TRIALS];
     if (status) filtered = filtered.filter(t => t.status === status);
     if (track) filtered = filtered.filter(t => t.preferredTrack === track);
@@ -281,7 +281,7 @@ router.put('/:id/assign', protect, authorize('admin'), async (req, res) => {
       return res.status(400).json({ error: 'يجب تحديد المعلم وموعد الجلسة' });
     }
 
-    if (isMockMode || !isDBConnected()) {
+    if (isMockMode && !isDBConnected()) {
       const trial = MOCK_TRIALS.find(t => t._id === req.params.id) || MOCK_TRIALS[0];
       if (trial) {
         trial.assignedTeacher = teacherId;
@@ -391,7 +391,7 @@ router.put('/:id/assess', protect, authorize('teacher', 'admin'), async (req, re
   try {
     const { level, recommendedTrack, notes, assignedCircleId } = req.body;
 
-    if (isMockMode || !isDBConnected()) {
+    if (isMockMode && !isDBConnected()) {
       const trial = MOCK_TRIALS.find(t => t._id === req.params.id) || MOCK_TRIALS[0];
       if (trial) {
         trial.status = 'completed';
