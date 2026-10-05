@@ -47,9 +47,9 @@ function addMockTeacher(teacher) {
     id: teacher.id || `mock-teacher-${Date.now()}`,
     status: teacher.status || 'approved',
     isVerified: true,
-    rating: { average: 4.9, count: 18 },
+    rating: { average: 0, count: 0 },
     hourlyRate: 50,
-    wallet: { pendingEarnings: 850, totalWithdrawn: 3400 },
+    wallet: { pendingEarnings: 0, totalWithdrawn: 0 },
     ...teacher,
   };
   teachers.push(newT);
@@ -67,52 +67,7 @@ function getMockTeachers() {
 
 function getMockGuardianChildren(guardianUserId) {
   if (!guardianChildren.has(guardianUserId)) {
-    // Seed default sample child for newly registered guardian
-    guardianChildren.set(guardianUserId, [
-      {
-        studentId: 'mock-child-1',
-        name: 'عبد الله أحمد',
-        email: 'abdallah@student.athar.com',
-        phone: '+201012345678',
-        avatar: null,
-        relationship: 'father',
-        permissions: { viewProgress: true, viewGrades: true, viewAttendance: true, receiveNotifications: true },
-        circle: {
-          _id: 'mock-circle-1',
-          name: 'حلقة الإمام قالون (بنين - مبتدئ)',
-          level: 'beginner',
-          schedule: 'السبت والإثنين والأربعاء 05:00 م',
-          capacity: 10
-        },
-        studentProfile: {
-          plan: 'حفظ جزء عم وتبارك',
-          currentSurah: 'سورة الملك',
-          points: 420,
-          streak: 7,
-          level: 'مبتدئ'
-        },
-        attendance: {
-          rate: 92,
-          total: 12,
-          attended: 11,
-          excused: 1,
-          absent: 0
-        },
-        latestEvaluation: {
-          memorizationScore: 9.5,
-          tajweedScore: 9,
-          surahRecited: 'الملك',
-          fromAyah: 1,
-          toAyah: 15,
-          nextHomework: 'حفظ من آية 16 إلى 30 مع المراجعة',
-          notes: 'ما شاء الله تبارك الله، تميز واضح في مخارج الحروف وأحكام القلقلة',
-          date: new Date(Date.now() - 86400000)
-        },
-        coursesProgress: [
-          { courseTitle: 'أحكام النون الساكنة والتنوين', percentage: 75 }
-        ]
-      }
-    ]);
+    guardianChildren.set(guardianUserId, []);
   }
   return guardianChildren.get(guardianUserId);
 }
