@@ -6,7 +6,7 @@ const User = require('../models/User');
 const Teacher = require('../models/Teacher');
 const { protect, authorize } = require('../middleware/auth');
 
-const isMockMode = !process.env.MONGODB_URI;
+const { isMockMode } = require('../config/runtime');
 const isDBConnected = () => mongoose.connection.readyState === 1;
 
 const MOCK_CIRCLES = [
