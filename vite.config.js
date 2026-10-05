@@ -2,11 +2,14 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import viteCompression from 'vite-plugin-compression';
 import { writeFileSync } from 'fs';
-import { resolve } from 'path';
+import { dirname, resolve } from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // دالة لإنشاء sitemap ديناميكي
 function generateSitemap() {
-  const baseUrl = 'https://al-athar-academy.vercel.app';
+  const baseUrl = 'https://wahy-wa-namaa-academy.vercel.app';
   const currentDate = new Date().toISOString().split('T')[0];
   
   const pages = [
