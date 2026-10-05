@@ -46,12 +46,24 @@ function verifyClientIdentity(payload = {}) {
     return { role: user.role, owner: user.id };
   }
 
-  if (payload.phoneVerificationToken) {
-    const verification = jwt.verify(payload.phoneVerificationToken, secret);
-    if (verification.purpose !== 'teacher-phone-verification') {
-      throw new Error('Invalid teacher verification proof');
+  const teacherVerificationToken = payload.verificationToken || payload.phoneVerificationToken;
+  if (teacherVerificationToken) {
+    const verification = jwt.verify(teacherVerificationToken, secret);
+
+    if (verification.purpose === 'teacher-email-verification' && verification.email) {
+      return { role: 'teacher-registration', owner: verification.email };
     }
-    return { role: 'teacher-registration', owner: verification.phone };
+
+    // Transitional support for verification tokens issued shortly before the email-OTP rollout.
+    if (
+      payload.phoneVerificationToken &&
+      verification.purpose === 'teacher-phone-verification' &&
+      verification.phone
+    ) {
+      return { role: 'teacher-registration', owner: verification.phone };
+    }
+
+    throw new Error('Invalid teacher verification proof');
   }
 
   throw new Error('Authentication required');
