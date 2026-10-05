@@ -10,6 +10,7 @@ import { useI18n } from '../../i18n';
 import { localizedPath } from '../../lib/locale';
 import { useToast } from '../../context/ToastProvider';
 import api from '../../lib/api';
+import { useAuth } from '../../hooks/useAuth.jsx';
 import '../../styles/public-experience.css';
 
 function textValue(value, locale) {
@@ -24,32 +25,33 @@ export default function CourseDetail() {
   const isAr = locale === 'ar';
   const ArrowIcon = isAr ? ArrowLeft : ArrowRight;
   const toast = useToast();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [course, setCourse] = useState(null);
   const [enrollment, setEnrollment] = useState(null);
   const [loading, setLoading] = useState(true);
   const [enrolling, setEnrolling] = useState(false);
 
-  const token = typeof window !== 'undefined' ? (localStorage.getItem('token') || localStorage.getItem('accessToken')) : null;
-
   useEffect(() => {
     api.get('/api/courses/' + slug)
       .then(async (data) => {
         setCourse(data);
-        if (token) {
+        if (!authLoading && isAuthenticated) {
           try {
             const lms = await api.get('/api/lms/course/' + slug, { auth: true });
             setEnrollment(lms.enrollment);
           } catch {
             setEnrollment(null);
           }
+        } else if (!authLoading) {
+          setEnrollment(null);
         }
       })
       .catch(() => setCourse(null))
       .finally(() => setLoading(false));
-  }, [slug, token]);
+  }, [slug, authLoading, isAuthenticated]);
 
   const handleEnroll = async () => {
-    if (!token) {
+    if (!isAuthenticated) {
       navigate(localizedPath('/login', locale));
       return;
     }
@@ -181,7 +183,7 @@ export default function CourseDetail() {
                 </button>
               )}
 
-              {!token ? <LocalizedLink to="/login" locale={locale} className="wn-btn wn-btn--secondary wn-btn--block">{isAr ? 'تسجيل الدخول أولًا' : 'Sign in first'}</LocalizedLink> : null}
+              {!isAuthenticated ? <LocalizedLink to="/login" locale={locale} className="wn-btn wn-btn--secondary wn-btn--block">{isAr ? 'تسجيل الدخول أولًا' : 'Sign in first'}</LocalizedLink> : null}
               <LocalizedLink to="/contact" locale={locale} className="text-center text-xs font-semibold text-[var(--wn-text-secondary)] hover:text-[var(--wn-emerald-dark)] py-2">
                 {isAr ? 'لديك سؤال عن هذه الدورة؟' : 'Have a question about this course?'}
               </LocalizedLink>
