@@ -22,19 +22,6 @@ async function getEnrollment(userId, courseId) {
 const mongoose = require('mongoose');
 const isDBConnected = () => mongoose.connection.readyState === 1;
 
-// GET /api/lms/my-certificates — alias for student dashboard
-router.get('/my-certificates', protect, async (req, res) => {
-  return res.json([
-    {
-      _id: 'mock-cert-1',
-      certificateId: 'ATHAR-2026-001',
-      course: { title: 'دورة إتقان التجويد الميسر', slug: 'easy-tajweed', image: '/images/courses/tajweed.jpg' },
-      issuedAt: new Date(Date.now() - 86400000 * 5),
-      metadata: { score: 96 }
-    }
-  ]);
-});
-
 // GET /api/lms/course/:slug — course + lessons + enrollment for student
 router.get('/course/:slug', protect, async (req, res) => {
   try {
@@ -238,7 +225,7 @@ router.post('/course/:slug/lesson/:lessonId/complete', protect, async (req, res)
       const existing = await Certificate.findOne({ student: req.user.id, course: course._id });
       if (!existing) {
         const certificateId = Certificate.generateCertificateId();
-        const verificationUrl = `${process.env.FRONTEND_URL || 'https://al-athar-academy.vercel.app'}/verify-certificate/${certificateId}`;
+        const verificationUrl = `${process.env.FRONTEND_URL || 'https://wahy-wa-namaa-academy.vercel.app'}/verify-certificate/${certificateId}`;
         const qrCode = await Certificate.generateQRCode(verificationUrl);
         certificate = await Certificate.create({
           student: req.user.id,
@@ -281,6 +268,9 @@ router.get('/my-certificates', protect, async (req, res) => {
 // POST /api/lms/seed-demo — إنشاء دورة تجريبية (admin)
 router.post('/seed-demo', protect, authorize('admin'), async (req, res) => {
   try {
+    if (process.env.NODE_ENV === 'production' && process.env.ALLOW_DEMO_BOOTSTRAP !== 'true') {
+      return res.status(404).json({ error: 'Route not found' });
+    }
     const existing = await Course.findOne({ slug: 'quran-memorization-beginner' });
     if (existing) return res.json({ message: 'Demo course already exists', course: existing });
 
