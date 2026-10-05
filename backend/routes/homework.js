@@ -122,15 +122,27 @@ router.get('/student', protect, authorize('student'), async (req, res) => {
 router.post('/:homeworkId/submit', protect, authorize('student'), upload.single('submission'), async (req, res) => {
   try {
     const { homeworkId } = req.params;
+    const directFile = req.body?.storageFile && typeof req.body.storageFile === 'object'
+      ? req.body.storageFile
+      : null;
 
     if (externalStorage && req.file) {
-      return res.status(503).json({
-        error: 'External file storage is not configured yet',
-        code: 'FILE_STORAGE_NOT_READY'
+      return res.status(400).json({
+        error: 'Direct object-storage upload is required',
+        code: 'DIRECT_UPLOAD_REQUIRED'
       });
     }
 
-    if (!req.file) {
+    const submittedFile = directFile
+      ? {
+          path: directFile.url || directFile.pathname,
+          originalname: directFile.name || 'submission',
+          size: Number(directFile.size || 0),
+          mimetype: directFile.contentType || 'application/octet-stream',
+        }
+      : req.file;
+
+    if (!submittedFile) {
       if (isMockMode || !isDBConnected() || String(homeworkId).startsWith('mock-')) {
         return res.json({
           success: true,
@@ -155,9 +167,9 @@ router.post('/:homeworkId/submit', protect, authorize('student'), upload.single(
         message: 'تم تسليم الواجب الصوتي بنجاح',
         submission: {
           homeworkId,
-          audioUrl: `/uploads/homework/${path.basename(req.file.path)}`,
-          fileName: req.file.originalname,
-          fileSize: req.file.size,
+          audioUrl: `/uploads/homework/${path.basename(submittedFile.path)}`,
+          fileName: submittedFile.originalname,
+          fileSize: submittedFile.size,
           status: 'submitted',
           submittedAt: new Date()
         }
@@ -167,7 +179,7 @@ router.post('/:homeworkId/submit', protect, authorize('student'), upload.single(
     if (mongoose.Types.ObjectId.isValid(homeworkId)) {
       const task = await TeacherTask.findOneAndUpdate(
         { _id: homeworkId, student: req.user.id, status: { $in: ['pending', 'submitted'] } },
-        { status: 'submitted', submissionFile: req.file.path },
+        { status: 'submitted', submissionFile: submittedFile.path },
         { new: true },
       );
       if (task) {
@@ -191,9 +203,9 @@ router.post('/:homeworkId/submit', protect, authorize('student'), upload.single(
         homeworkId,
         sessionId: parsed.sessionId,
         student: req.user.id,
-        filePath: req.file.path,
-        fileName: req.file.originalname,
-        fileSize: req.file.size,
+        filePath: submittedFile.path,
+        fileName: submittedFile.originalname,
+        fileSize: submittedFile.size,
       });
 
       session.teacherEvaluation.assignedHomework[parsed.index].status = 'submitted';
@@ -220,9 +232,9 @@ router.post('/:homeworkId/submit', protect, authorize('student'), upload.single(
       homeworkId,
       sessionId,
       student: req.user.id,
-      filePath: req.file.path,
-      fileName: req.file.originalname,
-      fileSize: req.file.size,
+      filePath: submittedFile.path,
+      fileName: submittedFile.originalname,
+      fileSize: submittedFile.size,
     });
 
     res.json({
