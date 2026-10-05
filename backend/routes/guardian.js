@@ -6,9 +6,10 @@ const User = require('../models/User');
 const Student = require('../models/Student');
 const Session = require('../models/Session');
 const GroupCircle = require('../models/GroupCircle');
+const LiveSession = require('../models/LiveSession');
 const Progress = require('../models/Progress');
 const { protect, authorize } = require('../middleware/auth');
-const { getMockGuardianChildren, addMockGuardianChild } = require('../mockStore');
+
 
 const isDBConnected = () => mongoose.connection.readyState === 1;
 const isValidObjectId = (id) => id && mongoose.Types.ObjectId.isValid(id);
@@ -21,11 +22,7 @@ const isValidObjectId = (id) => id && mongoose.Types.ObjectId.isValid(id);
 router.get('/children', protect, authorize('guardian', 'admin'), async (req, res) => {
   try {
     if (!isDBConnected() || !isValidObjectId(req.user.id)) {
-      const mockKids = getMockGuardianChildren(req.user.id);
-      return res.json({
-        success: true,
-        children: mockKids
-      });
+      return res.status(503).json({ error: 'Guardian data is temporarily unavailable' });
     }
 
     let guardian = await Guardian.findOne({ user: req.user.id })
@@ -104,9 +101,9 @@ router.get('/children', protect, authorize('guardian', 'admin'), async (req, res
         }
       });
 
-      const attendanceRate = totalSessions > 0 
-        ? Math.round((attendedSessions / totalSessions) * 100) 
-        : 100;
+      const attendanceRate = totalSessions > 0
+        ? Math.round((attendedSessions / totalSessions) * 100)
+        : null;
 
       // 4. Fetch latest evaluation report across sessions
       const sessionWithReport = await Session.findOne({
@@ -266,45 +263,7 @@ router.get('/reports/:studentId', protect, authorize('guardian', 'admin'), async
     const { studentId } = req.params;
 
     if (!isDBConnected() || !isValidObjectId(req.user.id) || !isValidObjectId(studentId)) {
-      return res.json({
-        success: true,
-        student: {
-          id: studentId,
-          name: 'عبد الله أحمد',
-          email: 'abdallah@student.athar.com'
-        },
-        reportsCount: 2,
-        reports: [
-          {
-            sessionId: 'sess-mock-1',
-            scheduledAt: new Date(Date.now() - 86400000),
-            teacherName: 'الشيخ أحمد منصور',
-            memorizationScore: 9.5,
-            tajweedScore: 9,
-            surahRecited: 'سورة الملك',
-            fromAyah: 1,
-            toAyah: 15,
-            nextHomework: 'حفظ من آية 16 إلى 30 مع المراجعة',
-            notes: 'ما شاء الله تبارك الله، تميز واضح في مخارج الحروف وأحكام القلقلة',
-            sentToWhatsApp: true,
-            sentAt: new Date(Date.now() - 86400000 + 3600000)
-          },
-          {
-            sessionId: 'sess-mock-2',
-            scheduledAt: new Date(Date.now() - 86400000 * 3),
-            teacherName: 'الشيخ أحمد منصور',
-            memorizationScore: 9,
-            tajweedScore: 8.5,
-            surahRecited: 'سورة التحريم',
-            fromAyah: 1,
-            toAyah: 12,
-            nextHomework: 'مراجعة سورة التحريم كاملة',
-            notes: 'يرجى التركيز على مد الصلة الكبرى وتثبيت الآيات الأخيرة',
-            sentToWhatsApp: true,
-            sentAt: new Date(Date.now() - 86400000 * 3 + 3600000)
-          }
-        ]
-      });
+      return res.status(503).json({ error: 'Guardian reports are temporarily unavailable' });
     }
 
     // Verify guardian has authority over this child (unless admin)
@@ -384,55 +343,7 @@ router.get('/reports/:studentId', protect, authorize('guardian', 'admin'), async
 router.get('/upcoming-sessions', protect, authorize('guardian', 'admin'), async (req, res) => {
   try {
     if (!isDBConnected() || !isValidObjectId(req.user.id)) {
-      const now = new Date();
-      const sess1Date = new Date(now.getTime() + 86400000 * 2);
-      const sess2Date = new Date(now.getTime() + 86400000 * 4);
-      const diff1 = (sess1Date.getTime() - now.getTime()) / (1000 * 60 * 60);
-      const diff2 = (sess2Date.getTime() - now.getTime()) / (1000 * 60 * 60);
-
-      const { getMockSessionRsvp } = require('../mockStore');
-      const sess1Rsvp = getMockSessionRsvp('sess-up-1')?.status || 'confirmed';
-      const sess2Rsvp = getMockSessionRsvp('sess-up-2')?.status || 'pending';
-
-      return res.json({
-        success: true,
-        sessions: [
-          {
-            _id: 'sess-up-1',
-            scheduledAt: sess1Date,
-            duration: 45,
-            type: 'regular',
-            status: 'accepted',
-            meetingLink: '/live/room-circle-1?role=guardian&observer=true',
-            circleName: 'حلقة الإمام قالون (بنين - مبتدئ)',
-            child: { id: 'mock-child-1', name: 'عبد الله أحمد' },
-            teacher: {
-              name: 'الشيخ أحمد منصور',
-              phone: '+201012345678'
-            },
-            rsvp: sess1Rsvp,
-            canExcuseWithCompensation: diff1 >= 6,
-            hoursUntilSession: Math.round(diff1 * 10) / 10
-          },
-          {
-            _id: 'sess-up-2',
-            scheduledAt: sess2Date,
-            duration: 45,
-            type: 'regular',
-            status: 'accepted',
-            meetingLink: '/live/room-circle-1?role=guardian&observer=true',
-            circleName: 'حلقة الإمام قالون (بنين - مبتدئ)',
-            child: { id: 'mock-child-1', name: 'عبد الله أحمد' },
-            teacher: {
-              name: 'الشيخ أحمد منصور',
-              phone: '+201012345678'
-            },
-            rsvp: sess2Rsvp,
-            canExcuseWithCompensation: diff2 >= 6,
-            hoursUntilSession: Math.round(diff2 * 10) / 10
-          }
-        ]
-      });
+      return res.status(503).json({ error: 'Guardian sessions are temporarily unavailable' });
     }
 
     let guardian = await Guardian.findOne({ user: req.user.id });
@@ -473,6 +384,14 @@ router.get('/upcoming-sessions', protect, authorize('guardian', 'admin'), async 
     .limit(10)
     .lean();
 
+    const liveSessions = await LiveSession.find({
+      session: { $in: upcoming.map((session) => session._id) }
+    }).select('session roomId').lean();
+
+    const liveRoomBySession = new Map(
+      liveSessions.map((live) => [String(live.session), live.roomId])
+    );
+
     const formattedSessions = upcoming.map(sess => {
       // Determine which child this belongs to
       let child = null;
@@ -495,7 +414,9 @@ router.get('/upcoming-sessions', protect, authorize('guardian', 'admin'), async 
         _id: sess._id,
         scheduledAt: sess.scheduledAt,
         duration: sess.duration,
-        meetingLink: sess.meetingLink || `/live/session-${sess._id}?role=guardian&observer=true`,
+        meetingLink: liveRoomBySession.get(String(sess._id))
+          ? `/live/${liveRoomBySession.get(String(sess._id))}`
+          : null,
         type: sess.type,
         status: sess.status,
         circleName: sess.circle?.name || (sess.type === 'trial' ? 'حصة تجريبية مجانية' : 'حلقة فردية'),
