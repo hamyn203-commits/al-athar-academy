@@ -90,6 +90,7 @@ const UserSchema = new mongoose.Schema({
   emailVerificationExpires: Date,
   passwordResetToken: String,
   passwordResetExpires: Date,
+  refreshTokenVersion: { type: Number, default: 0, select: false },
   lastLogin: Date,
   pushToken: String,
   pushPlatform: String,
@@ -159,6 +160,7 @@ UserSchema.methods.toJSON = function() {
   delete obj.emailVerificationExpires;
   delete obj.passwordResetToken;
   delete obj.passwordResetExpires;
+  delete obj.refreshTokenVersion;
   delete obj.guardianLinkCode;
   delete obj.__v;
   return obj;
