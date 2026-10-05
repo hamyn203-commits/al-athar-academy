@@ -9,13 +9,15 @@ import BrandLogo from '../../components/BrandLogo';
 import Modal from '../../components/shared/Modal';
 import EmptyState from '../../components/shared/EmptyState';
 import { useAppContext } from '../../context/AppProvider';
-import { API_BASE_URL } from '../../config';
+import api from '../../lib/api';
+import { useAuth } from '../../hooks/useAuth.jsx';
 import '../LiveRoom/LiveRoom.css';
 import '../../styles/session-experience.css';
 
 export default function LiveSessions() {
   const navigate = useNavigate();
-  const { t, activeStudentProfile } = useAppContext();
+  const { t } = useAppContext();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -23,27 +25,13 @@ export default function LiveSessions() {
   const [liveStatus, setLiveStatus] = useState({ configured: false });
   const [demoLoading, setDemoLoading] = useState(false);
 
-  let storedUser = null;
-  try {
-    storedUser = JSON.parse(localStorage.getItem('user') || 'null');
-  } catch {
-    storedUser = null;
-  }
-
-  const accessToken = localStorage.getItem('accessToken') || localStorage.getItem('token') || '';
-  const role = storedUser?.role || '';
+  const role = user?.role || '';
   const canManage = role === 'teacher' || role === 'admin';
-  const authHeaders = accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
 
   const fetchSessions = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/live/sessions`, {
-        headers: authHeaders,
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setSessions(data);
-      }
+      const data = await api.get('/api/live/sessions', { auth: true });
+      setSessions(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Failed to fetch sessions:', error);
       setSessions([]);
@@ -53,16 +41,18 @@ export default function LiveSessions() {
   };
 
   useEffect(() => {
-    if (!accessToken) {
+    if (authLoading) return;
+
+    if (!isAuthenticated) {
       navigate('/login');
       return;
     }
 
     fetchSessions();
-    fetch(`${API_BASE_URL}/api/live/status`).then((r) => r.json()).then(setLiveStatus).catch(() => {});
-    // Authentication state is read once when this protected page mounts.
+    api.get('/api/live/status').then(setLiveStatus).catch(() => {});
+    // fetchSessions is intentionally scoped to this authenticated page mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accessToken, navigate]);
+  }, [authLoading, isAuthenticated, navigate]);
 
   const copyLink = (roomId) => {
     const link = `${window.location.origin}/live/${roomId}`;
@@ -71,20 +61,15 @@ export default function LiveSessions() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const joinSession = (roomId, isHost = false) => {
-    const name = activeStudentProfile?.name || 'مشارك';
-    navigate(`/live/${roomId}?name=${encodeURIComponent(name)}&host=${isHost}`);
+  const joinSession = (roomId) => {
+    navigate(`/live/${roomId}`);
   };
 
   const startDemo = async () => {
     setDemoLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/live/demo-room`, {
-        method: 'POST',
-        headers: authHeaders,
-      });
-      const data = await res.json();
-      if (data.roomId) joinSession(data.roomId, true);
+      const data = await api.post('/api/live/demo-room', {}, { auth: true });
+      if (data.roomId) joinSession(data.roomId);
     } catch (e) {
       console.error(e);
     } finally {
@@ -96,11 +81,7 @@ export default function LiveSessions() {
     if (!confirm(t.live.confirmDelete)) return;
     
     try {
-      const response = await fetch(`${API_BASE_URL}/api/live/sessions/${roomId}`, {
-        method: 'DELETE',
-        headers: authHeaders,
-      });
-      if (!response.ok) throw new Error('Failed to delete session');
+      await api.delete(`/api/live/sessions/${roomId}`, { auth: true });
       setSessions(prev => prev.filter(s => s.roomId !== roomId));
     } catch (error) {
       console.error('Failed to delete session:', error);
@@ -224,7 +205,7 @@ export default function LiveSessions() {
                   <div className="session-actions">
                     <button 
                       className="btn-premium join-btn"
-                      onClick={() => joinSession(session.roomId, session.isHost)}
+                      onClick={() => joinSession(session.roomId)}
                     >
                       <Play size={18} />
                       {session.isLive ? t.live.joinNow : t.live.enterRoom}
@@ -259,7 +240,6 @@ export default function LiveSessions() {
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         role={role}
-        accessToken={accessToken}
         onCreated={(session) => {
           setSessions(prev => [session, ...prev]);
           setShowCreateModal(false);
@@ -269,7 +249,7 @@ export default function LiveSessions() {
   );
 }
 
-function CreateSessionModal({ isOpen, onClose, onCreated, role, accessToken }) {
+function CreateSessionModal({ isOpen, onClose, onCreated, role }) {
   const { t } = useAppContext();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -279,13 +259,10 @@ function CreateSessionModal({ isOpen, onClose, onCreated, role, accessToken }) {
   const [bookedSessions, setBookedSessions] = useState([]);
 
   useEffect(() => {
-    if (!isOpen || role !== 'teacher' || !accessToken) return;
+    if (!isOpen || role !== 'teacher') return;
 
     let active = true;
-    fetch(`${API_BASE_URL}/api/sessions/my-sessions?status=accepted&limit=50`, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    })
-      .then((response) => response.ok ? response.json() : Promise.reject(new Error('Failed to load booked sessions')))
+    api.get('/api/sessions/my-sessions?status=accepted&limit=50', { auth: true })
       .then((data) => {
         if (active) setBookedSessions(data.sessions || []);
       })
@@ -296,7 +273,7 @@ function CreateSessionModal({ isOpen, onClose, onCreated, role, accessToken }) {
     return () => {
       active = false;
     };
-  }, [isOpen, role, accessToken]);
+  }, [isOpen, role]);
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -304,28 +281,18 @@ function CreateSessionModal({ isOpen, onClose, onCreated, role, accessToken }) {
 
     setCreating(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/live/sessions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          title,
-          description,
-          subject,
-          sessionId: sessionId || undefined,
-        })
-      });
+      const session = await api.post('/api/live/sessions', {
+        title,
+        description,
+        subject,
+        sessionId: sessionId || undefined,
+      }, { auth: true });
 
-      if (response.ok) {
-        const session = await response.json();
-        onCreated(session);
-        setTitle('');
-        setDescription('');
-        setSubject('');
-        setSessionId('');
-      }
+      onCreated(session);
+      setTitle('');
+      setDescription('');
+      setSubject('');
+      setSessionId('');
     } catch (error) {
       console.error('Failed to create session:', error);
     } finally {
