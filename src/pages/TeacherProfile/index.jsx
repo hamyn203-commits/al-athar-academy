@@ -7,6 +7,7 @@ import SEOHead from '../../components/SEOHead';
 import { useI18n } from '../../i18n';
 import { localizedPath } from '../../lib/locale';
 import api from '../../lib/api';
+import { useAuth } from '../../hooks/useAuth.jsx';
 import '../../styles/public-experience.css';
 
 export default function TeacherProfile() {
@@ -14,6 +15,7 @@ export default function TeacherProfile() {
   const navigate = useNavigate();
   const { locale } = useI18n();
   const isAr = locale === 'ar';
+  const { isAuthenticated } = useAuth();
   const [teacher, setTeacher] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -45,9 +47,8 @@ export default function TeacherProfile() {
   }, [id]);
 
   const handleBookTrial = () => {
-    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
     const path = '/book-trial/' + id;
-    navigate(token ? localizedPath(path, locale) : localizedPath('/login', locale) + '?redirect=' + encodeURIComponent(path));
+    navigate(isAuthenticated ? localizedPath(path, locale) : localizedPath('/login', locale) + '?redirect=' + encodeURIComponent(path));
   };
 
   if (loading) {
