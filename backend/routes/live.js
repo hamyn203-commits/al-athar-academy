@@ -66,7 +66,7 @@ async function getRoomAccess(liveSession, user) {
   const bookedSession = await Session.findById(liveSession.session)
     .select('student teacher circle attendance scheduledAt status');
 
-  if (!bookedSession || !['accepted', 'completed'].includes(bookedSession.status)) {
+  if (!bookedSession || bookedSession.status !== 'accepted') {
     return { allowed: false, isHost: false, isObserver: false, bookedSession };
   }
 
