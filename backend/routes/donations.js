@@ -5,7 +5,7 @@ const Donation = require('../models/Donation');
 const { protect, authorize } = require('../middleware/auth');
 const { notifyAdmin } = require('../services/growthNotify');
 
-const isMockMode = !process.env.MONGODB_URI;
+const { isMockMode } = require('../config/runtime');
 const isDBConnected = () => mongoose.connection.readyState === 1;
 
 router.post('/', async (req, res) => {
