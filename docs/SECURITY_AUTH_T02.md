@@ -21,6 +21,7 @@ This is the fixed execution record for roadmap task T02. The task was developed 
 - access/refresh token storage behavior
 - weak/reused JWT secrets
 - trusted-origin CORS and cookie-session endpoints
+- teacher registration email OTP, email-bound proof, and fail-closed production delivery
 - centralized frontend role guards
 - circle public PII and guardian ownership
 - assignment enrollment/instructor ownership
