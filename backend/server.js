@@ -10,12 +10,13 @@ const path = require('path');
 
 dotenv.config({ path: path.join(__dirname, '.env') });
 
-const uploadsDir = path.join(__dirname, 'uploads', 'teachers');
+const teacherPublicDir = path.join(__dirname, 'uploads', 'teachers', 'public');
+const teacherPrivateDir = path.join(__dirname, 'uploads', 'private', 'teachers');
 const homeworkDir = path.join(__dirname, 'uploads', 'homework');
 const coursesDir = path.join(__dirname, 'uploads', 'courses');
-if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-if (!fs.existsSync(homeworkDir)) fs.mkdirSync(homeworkDir, { recursive: true });
-if (!fs.existsSync(coursesDir)) fs.mkdirSync(coursesDir, { recursive: true });
+for (const dir of [teacherPublicDir, teacherPrivateDir, homeworkDir, coursesDir]) {
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+}
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -73,14 +74,14 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
     'http://localhost:5173',
     'http://localhost:5174',
     'http://localhost:5175',
-    'https://al-athar-academy.vercel.app',
+    'https://wahy-wa-namaa-academy.vercel.app',
   ];
 
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) return callback(null, true);
-    if (/^https:\/\/al-athar-academy(-[a-z0-9-]+)?\.vercel\.app$/i.test(origin)) {
+    if (/^https:\/\/wahy-wa-namaa-academy(-[a-z0-9-]+)?\.vercel\.app$i.test(origin)) {
       return callback(null, true);
     }
     const siteUrl = (process.env.SITE_URL || process.env.VITE_SITE_URL || '').replace(/\/$/, '');
@@ -93,7 +94,22 @@ app.use(cors({
 
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true, limit: '5mb' }));
-app.use('/uploads', express.static('uploads'));
+
+// Teacher identity documents and certificates are never exposed through static hosting.
+// Only explicitly public teacher media is available under /uploads/teachers/public.
+app.use(
+  '/uploads/teachers/public',
+  express.static(teacherPublicDir, {
+    fallthrough: false,
+    dotfiles: 'deny',
+    maxAge: process.env.NODE_ENV === 'production' ? '1d' : 0,
+  })
+);
+app.use('/uploads/teachers', (_req, res) => res.status(404).end());
+
+// Legacy/static uploads for other modules remain unchanged until their authenticated
+// download flows are migrated.
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(require('./middleware/detectMarket'));
 
 function sanitizeObject(obj) {
@@ -160,7 +176,7 @@ app.get('/', (req, res) => {
     status: 'ok',
     message: 'الـ API يعمل — استخدم المسارات تحت /api',
     health: '/api/health',
-    frontend: process.env.FRONTEND_URL || 'https://al-athar-academy.vercel.app',
+    frontend: process.env.FRONTEND_URL || 'https://wahy-wa-namaa-academy.vercel.app',
   });
 });
 

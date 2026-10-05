@@ -23,30 +23,59 @@ const {
 const isMockMode = !process.env.MONGODB_URI;
 const isDBConnected = () => mongoose.connection.readyState === 1;
 
-// التأكد من وجود مجلد رفع ملفات المعلمين تلقائياً
-const uploadDir = path.join(process.cwd(), 'uploads/teachers');
-try {
-  if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
+const publicUploadDir = path.join(__dirname, '..', 'uploads', 'teachers', 'public');
+const privateUploadDir = path.join(__dirname, '..', 'uploads', 'private', 'teachers');
+const privateFields = new Set(['idCard', 'graduationCertificate', 'tajweedCertificates', 'ijazat']);
+
+for (const dir of [publicUploadDir, privateUploadDir]) {
+  try {
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  } catch (e) {
+    console.warn('Uploads dir warning:', e.message);
   }
-} catch (e) {
-  console.warn('Uploads dir warning:', e.message);
 }
 
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    try {
-      if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true });
-      }
-    } catch {}
-    cb(null, uploadDir);
+  destination: (_req, file, cb) => {
+    cb(null, privateFields.has(file.fieldname) ? privateUploadDir : publicUploadDir);
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
     cb(null, uniqueSuffix + path.extname(file.originalname));
   },
 });
+
+const publicMediaPath = (file) => file ? `/uploads/teachers/public/${path.basename(file.path)}` : null;
+const privateDocumentPath = (file) => file ? `private/teachers/${path.basename(file.path)}` : null;
+
+function sanitizePublicTeacher(doc) {
+  const teacher = typeof doc?.toObject === 'function' ? doc.toObject() : { ...doc };
+
+  delete teacher.documents;
+  delete teacher.reviewNotes;
+  delete teacher.earnings;
+
+  if (teacher.personalInfo) {
+    teacher.personalInfo = {
+      fullName: teacher.personalInfo.fullName,
+      age: teacher.personalInfo.age,
+      gender: teacher.personalInfo.gender,
+      country: teacher.personalInfo.country,
+      city: teacher.personalInfo.city,
+    };
+  }
+
+  if (teacher.user && typeof teacher.user === 'object') {
+    teacher.user = {
+      _id: teacher.user._id,
+      name: teacher.user.name,
+      avatar: teacher.user.avatar,
+      bio: teacher.user.bio,
+    };
+  }
+
+  return teacher;
+}
 
 const upload = multer({
   storage,
@@ -206,29 +235,30 @@ router.post(
       }
 
       const documents = {
-        idCard: req.files?.idCard?.[0]?.path || req.files?.profilePhoto?.[0]?.path || '/uploads/teachers/placeholder.jpg',
-        graduationCertificate: req.files?.graduationCertificate?.[0]?.path || req.files?.profilePhoto?.[0]?.path || '/uploads/teachers/placeholder.jpg',
-        tajweedCertificates: req.files?.tajweedCertificates?.map((f) => f.path) || [],
-        ijazat: req.files?.ijazat?.map((f) => f.path) || [],
+        idCard: privateDocumentPath(req.files?.idCard?.[0]) || 'not-provided',
+        graduationCertificate: privateDocumentPath(req.files?.graduationCertificate?.[0]) || 'not-provided',
+        tajweedCertificates: req.files?.tajweedCertificates?.map(privateDocumentPath).filter(Boolean) || [],
+        ijazat: req.files?.ijazat?.map(privateDocumentPath).filter(Boolean) || [],
       };
 
       const recitationFiles = req.files?.recitationVideo || [];
+      const profilePhoto = publicMediaPath(req.files?.profilePhoto?.[0]);
       const mainVideo =
-        recitationFiles[0]?.path ||
-        req.files?.additionalVideos?.[0]?.path ||
-        req.files?.profilePhoto?.[0]?.path ||
-        '/uploads/teachers/placeholder.jpg';
+        publicMediaPath(recitationFiles[0]) ||
+        publicMediaPath(req.files?.additionalVideos?.[0]) ||
+        profilePhoto ||
+        '/default-teacher.png';
 
       const media = {
-        profilePhoto: req.files?.profilePhoto?.[0]?.path || mainVideo,
-        introductionVideo: mainVideo,
+        profilePhoto: profilePhoto || '/default-teacher.png',
+        introductionVideo: publicMediaPath(req.files?.introductionVideo?.[0]) || mainVideo,
         recitationVideo: mainVideo,
-        teachingMethodVideo: mainVideo,
+        teachingMethodVideo: publicMediaPath(req.files?.teachingMethodVideo?.[0]) || mainVideo,
         additionalVideos: [
-          ...recitationFiles.slice(1).map((f) => f.path),
-          ...(req.files?.additionalVideos?.map((f) => f.path) || []),
-        ],
-        audioRecordings: req.files?.audioRecordings?.map((f) => f.path) || [],
+          ...recitationFiles.slice(1).map(publicMediaPath),
+          ...(req.files?.additionalVideos?.map(publicMediaPath) || []),
+        ].filter(Boolean),
+        audioRecordings: req.files?.audioRecordings?.map(publicMediaPath).filter(Boolean) || [],
       };
 
 
@@ -318,7 +348,7 @@ router.get('/', async (req, res) => {
 
     const [teachers, total] = await Promise.all([
       Teacher.find(filter)
-        .populate('user', 'name email avatar')
+        .populate('user', 'name avatar bio')
         .sort(sort)
         .skip(skip)
         .limit(parseInt(limit)),
@@ -326,7 +356,7 @@ router.get('/', async (req, res) => {
     ]);
 
     res.json({
-      teachers,
+      teachers: teachers.map(sanitizePublicTeacher),
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
@@ -346,11 +376,11 @@ router.get('/featured', async (req, res) => {
       isVerified: true, 
       isFeatured: true 
     })
-      .populate('user', 'name email avatar')
+      .populate('user', 'name avatar bio')
       .sort({ 'rating.average': -1 })
       .limit(6);
 
-    res.json(teachers);
+    res.json(teachers.map(sanitizePublicTeacher));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -424,6 +454,36 @@ router.put('/admin/:id/review', protect, authorize('admin'), async (req, res) =>
     res.json({ success: true, teacher });
   } catch (error) {
     res.status(400).json({ error: error.message });
+  }
+});
+
+router.get('/admin/:id/document/:kind/:index?', protect, authorize('admin'), async (req, res) => {
+  try {
+    const teacher = await Teacher.findById(req.params.id).select('documents');
+    if (!teacher) return res.status(404).json({ error: 'Teacher not found' });
+
+    const { kind } = req.params;
+    const allowed = ['idCard', 'graduationCertificate', 'tajweedCertificates', 'ijazat'];
+    if (!allowed.includes(kind)) return res.status(400).json({ error: 'Invalid document type' });
+
+    let stored = teacher.documents?.[kind];
+    if (Array.isArray(stored)) {
+      const index = Number(req.params.index || 0);
+      stored = stored[index];
+    }
+
+    if (!stored || stored === 'not-provided' || !stored.startsWith('private/teachers/')) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+
+    const filename = path.basename(stored);
+    const absolutePath = path.join(privateUploadDir, filename);
+    if (!fs.existsSync(absolutePath)) return res.status(404).json({ error: 'Document not found' });
+
+    res.setHeader('Cache-Control', 'private, no-store');
+    return res.sendFile(absolutePath);
+  } catch (error) {
+    return res.status(500).json({ error: 'Failed to load document' });
   }
 });
 
@@ -681,13 +741,13 @@ router.get('/:id', async (req, res) => {
       _id: req.params.id, 
       status: 'approved', 
       isVerified: true 
-    }).populate('user', 'name email avatar bio');
+    }).populate('user', 'name avatar bio');
 
     if (!teacher) {
       return res.status(404).json({ error: 'Teacher not found' });
     }
 
-    res.json(teacher);
+    res.json(sanitizePublicTeacher(teacher));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
