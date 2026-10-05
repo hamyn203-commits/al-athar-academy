@@ -11,6 +11,7 @@ import BrandLogo from './components/BrandLogo';
 import QuranChatWidget from './components/QuranChatWidget';
 import PwaInstallPrompt from './components/PwaInstallPrompt';
 import ErrorBoundary from './components/shared/ErrorBoundary';
+import ProtectedRoute from './components/auth/ProtectedRoute';
 
 const LandingPage = lazy(() => import('./pages/NewLandingPage'));
 const LiveSessions = lazy(() => import('./pages/LiveSessions/LiveSessions'));
@@ -91,12 +92,12 @@ function pageRoutes() {
       <Route path="contact" element={<Contact />} />
       <Route path="verify-certificate/:certificateId" element={<CertificateView />} />
       <Route path="student" element={<StudentLegacyRedirect />} />
-      <Route path="student/dashboard" element={<StudentDashboard />} />
+      <Route path="student/dashboard" element={<ProtectedRoute roles={['student']}><StudentDashboard /></ProtectedRoute>} />
       <Route path="guardian" element={<GuardianLegacyRedirect />} />
-      <Route path="guardian/dashboard" element={<GuardianDashboard />} />
+      <Route path="guardian/dashboard" element={<ProtectedRoute roles={['guardian']}><GuardianDashboard /></ProtectedRoute>} />
       <Route path="teacher" element={<TeacherLegacyRedirect />} />
       <Route path="teacher/register" element={<TeacherRegistration />} />
-      <Route path="teacher/dashboard" element={<TeacherDashboard />} />
+      <Route path="teacher/dashboard" element={<ProtectedRoute roles={['teacher']}><TeacherDashboard /></ProtectedRoute>} />
       <Route path="teachers" element={<Teachers />} />
       <Route path="teachers/:id" element={<TeacherProfile />} />
       <Route path="free-trial" element={<FreeTrial />} />
@@ -105,10 +106,10 @@ function pageRoutes() {
       <Route path="global-platform" element={<GlobalPlatform />} />
       <Route path="markets" element={<MarketsIndex />} />
       <Route path="markets/:slug" element={<MarketDetail />} />
-      <Route path="admin" element={<AdminDashboard />} />
-      <Route path="live" element={<LiveSessions />} />
-      <Route path="live/:roomId" element={<LiveRoom />} />
-      <Route path="meeting/:sessionId" element={<MeetingRoom />} />
+      <Route path="admin" element={<ProtectedRoute roles={['admin']}><AdminDashboard /></ProtectedRoute>} />
+      <Route path="live" element={<ProtectedRoute><LiveSessions /></ProtectedRoute>} />
+      <Route path="live/:roomId" element={<ProtectedRoute><LiveRoom /></ProtectedRoute>} />
+      <Route path="meeting/:sessionId" element={<ProtectedRoute><MeetingRoom /></ProtectedRoute>} />
       <Route path="ai" element={<AIHub />} />
       <Route path="donate" element={<Donate />} />
       <Route path="women" element={<WomenPortal />} />
@@ -120,8 +121,8 @@ function pageRoutes() {
       <Route path="tracks" element={<TracksPage />} />
       <Route path="leaderboard" element={<LeaderboardPage />} />
       <Route path="app" element={<MobileAppPage />} />
-      <Route path="notifications" element={<NotificationsPage />} />
-      <Route path="settings/notifications" element={<NotificationSettings />} />
+      <Route path="notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
+      <Route path="settings/notifications" element={<ProtectedRoute><NotificationSettings /></ProtectedRoute>} />
     </>
   );
 }
