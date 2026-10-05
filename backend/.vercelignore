@@ -1,0 +1,6 @@
+uploads/
+.env
+.env.*
+*.log
+coverage/
+node_modules/
