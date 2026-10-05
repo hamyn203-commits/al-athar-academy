@@ -180,7 +180,10 @@ router.get('/course/:slug/lesson/:lessonId', protect, attachTeacherProfile, auth
       : null;
 
     const lesson = await Lesson.findOne({ _id: req.params.lessonId, course: course._id, isPublished: true })
-      .populate('content.quiz');
+      .populate({
+        path: 'content.quiz',
+        select: '-questions.correctAnswer -questions.options.isCorrect'
+      });
 
     if (!lesson) return res.status(404).json({ error: 'Lesson not found' });
 
