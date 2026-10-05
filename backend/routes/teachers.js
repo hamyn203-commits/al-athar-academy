@@ -8,6 +8,7 @@ const Teacher = require('../models/Teacher');
 const User = require('../models/User');
 const Session = require('../models/Session');
 const { protect, authorize } = require('../middleware/auth');
+const objectStorage = require('../services/objectStorage');
 const multer = require('multer');
 const {
   addMockUser,
@@ -114,6 +115,9 @@ router.post(
   async (req, res) => {
     try {
       const { personalInfo, academicInfo, quranInfo, languages, availability, email, password, phoneVerificationToken } = req.body;
+      const uploadedFiles = req.body.uploadedFiles
+        ? (typeof req.body.uploadedFiles === 'string' ? JSON.parse(req.body.uploadedFiles) : req.body.uploadedFiles)
+        : {};
 
       const uploadedFileCount = Object.values(req.files || {}).reduce((sum, list) => sum + (Array.isArray(list) ? list.length : 0), 0);
       if (externalStorage && uploadedFileCount > 0) {
@@ -243,31 +247,50 @@ router.post(
         return res.status(400).json({ error: 'Teacher profile already exists' });
       }
 
-      const documents = {
-        idCard: privateDocumentPath(req.files?.idCard?.[0]) || 'not-provided',
-        graduationCertificate: privateDocumentPath(req.files?.graduationCertificate?.[0]) || 'not-provided',
-        tajweedCertificates: req.files?.tajweedCertificates?.map(privateDocumentPath).filter(Boolean) || [],
-        ijazat: req.files?.ijazat?.map(privateDocumentPath).filter(Boolean) || [],
+      const directRef = (value) => value?.url || value?.pathname || null;
+      const directPublic = (value) => {
+        const ref = directRef(value);
+        return ref ? objectStorage.publicProxyUrl(ref) : null;
       };
 
+      const documents = {
+        idCard: directRef(uploadedFiles.idCard) || privateDocumentPath(req.files?.idCard?.[0]) || 'not-provided',
+        graduationCertificate: directRef(uploadedFiles.graduationCertificate) || privateDocumentPath(req.files?.graduationCertificate?.[0]) || 'not-provided',
+        tajweedCertificates: uploadedFiles.tajweedCertificates?.map(directRef).filter(Boolean)
+          || req.files?.tajweedCertificates?.map(privateDocumentPath).filter(Boolean)
+          || [],
+        ijazat: uploadedFiles.ijazat?.map(directRef).filter(Boolean)
+          || req.files?.ijazat?.map(privateDocumentPath).filter(Boolean)
+          || [],
+      };
+
+      const directRecitations = uploadedFiles.recitationVideo || [];
       const recitationFiles = req.files?.recitationVideo || [];
-      const profilePhoto = publicMediaPath(req.files?.profilePhoto?.[0]);
+      const profilePhoto =
+        directPublic(uploadedFiles.profilePhoto) ||
+        publicMediaPath(req.files?.profilePhoto?.[0]);
+
       const mainVideo =
+        directPublic(directRecitations[0]) ||
         publicMediaPath(recitationFiles[0]) ||
-        publicMediaPath(req.files?.additionalVideos?.[0]) ||
         profilePhoto ||
         '/default-teacher.png';
 
       const media = {
         profilePhoto: profilePhoto || '/default-teacher.png',
-        introductionVideo: publicMediaPath(req.files?.introductionVideo?.[0]) || mainVideo,
+        introductionVideo: directPublic(uploadedFiles.introductionVideo) || publicMediaPath(req.files?.introductionVideo?.[0]) || mainVideo,
         recitationVideo: mainVideo,
-        teachingMethodVideo: publicMediaPath(req.files?.teachingMethodVideo?.[0]) || mainVideo,
+        teachingMethodVideo: directPublic(uploadedFiles.teachingMethodVideo) || publicMediaPath(req.files?.teachingMethodVideo?.[0]) || mainVideo,
         additionalVideos: [
+          ...directRecitations.slice(1).map(directPublic),
+          ...(uploadedFiles.additionalVideos?.map(directPublic) || []),
           ...recitationFiles.slice(1).map(publicMediaPath),
           ...(req.files?.additionalVideos?.map(publicMediaPath) || []),
         ].filter(Boolean),
-        audioRecordings: req.files?.audioRecordings?.map(publicMediaPath).filter(Boolean) || [],
+        audioRecordings: [
+          ...(uploadedFiles.audioRecordings?.map(directPublic) || []),
+          ...(req.files?.audioRecordings?.map(publicMediaPath) || []),
+        ].filter(Boolean),
       };
 
 
@@ -481,15 +504,42 @@ router.get('/admin/:id/document/:kind{/:index}', protect, authorize('admin'), as
       stored = stored[index];
     }
 
-    if (!stored || stored === 'not-provided' || !stored.startsWith('private/teachers/')) {
+    if (!stored || stored === 'not-provided') {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+
+    res.setHeader('Cache-Control', 'private, no-store');
+
+    if (/^https?:\/\//i.test(stored)) {
+      const result = await objectStorage.getPrivateObject(stored, {
+        ifNoneMatch: req.headers['if-none-match'],
+      });
+      if (!result) return res.status(404).json({ error: 'Document not found' });
+      if (result.statusCode === 304) return res.status(304).end();
+
+      res.setHeader('Content-Type', result.blob?.contentType || 'application/octet-stream');
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      if (result.blob?.etag) res.setHeader('ETag', result.blob.etag);
+
+      if (result.stream?.pipe) return result.stream.pipe(res);
+      const reader = result.stream?.getReader?.();
+      if (!reader) return res.status(404).json({ error: 'Document not found' });
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        res.write(Buffer.from(value));
+      }
+      return res.end();
+    }
+
+    if (!stored.startsWith('private/teachers/')) {
       return res.status(404).json({ error: 'Document not found' });
     }
 
     const filename = path.basename(stored);
     const absolutePath = path.join(privateUploadDir, filename);
     if (!fs.existsSync(absolutePath)) return res.status(404).json({ error: 'Document not found' });
-
-    res.setHeader('Cache-Control', 'private, no-store');
     return res.sendFile(absolutePath);
   } catch (error) {
     return res.status(500).json({ error: 'Failed to load document' });
