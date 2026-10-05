@@ -13,7 +13,7 @@ const {
 const { addMockUser, findMockUserByEmail, findMockUserById, updateMockUser } = require('../mockStore');
 const { sendEmail } = require('../services/notificationDispatcher');
 
-const isMockMode = !process.env.MONGODB_URI;
+const { isMockMode } = require('../config/runtime');
 const isDBConnected = () => mongoose.connection.readyState === 1;
 
 const REFRESH_COOKIE = 'wn_refresh';
