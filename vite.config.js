@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import viteCompression from 'vite-plugin-compression';
-import { writeFileSync } from 'fs';
+import { mkdirSync, writeFileSync } from 'fs';
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -65,6 +65,7 @@ const sitemapPlugin = {
   closeBundle() {
     const sitemap = generateSitemap();
     const distPath = resolve(__dirname, 'dist');
+    mkdirSync(distPath, { recursive: true });
     writeFileSync(resolve(distPath, 'sitemap.xml'), sitemap);
     console.log('✅ Sitemap generated successfully');
   }
