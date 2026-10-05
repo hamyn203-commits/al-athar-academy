@@ -3,17 +3,69 @@ const router = express.Router();
 const { Quiz, QuizAttempt } = require('../models/Quiz');
 const Enrollment = require('../models/Enrollment');
 const Progress = require('../models/Progress');
+const Course = require('../models/Course');
 const { protect, authorize, attachTeacherProfile } = require('../middleware/auth');
+
+function hideQuizAnswers(value) {
+  const quiz = typeof value?.toObject === 'function' ? value.toObject() : { ...value };
+  if (!Array.isArray(quiz.questions)) return quiz;
+
+  quiz.questions = quiz.questions.map((question) => {
+    const safeQuestion = { ...question };
+    delete safeQuestion.correctAnswer;
+    if (Array.isArray(safeQuestion.options)) {
+      safeQuestion.options = safeQuestion.options.map((option) => {
+        const safeOption = { ...option };
+        delete safeOption.isCorrect;
+        return safeOption;
+      });
+    }
+    return safeQuestion;
+  });
+
+  return quiz;
+}
+
+function hideAttemptQuizAnswers(value) {
+  const attempt = typeof value?.toObject === 'function' ? value.toObject() : { ...value };
+  if (attempt.quiz && typeof attempt.quiz === 'object') {
+    attempt.quiz = hideQuizAnswers(attempt.quiz);
+  }
+  return attempt;
+}
 
 // @route   GET /api/quizzes
 // @desc    Get all quizzes for a course
 // @access  Private
-router.get('/', protect, async (req, res) => {
+router.get('/', protect, attachTeacherProfile, async (req, res) => {
   try {
-    const { courseId, status = 'published' } = req.query;
+    const { courseId } = req.query;
+    const filter = {};
 
-    const filter = { status };
-    if (courseId) filter.course = courseId;
+    if (req.user.role === 'student') {
+      const enrollments = await Enrollment.find({
+        student: req.user.id,
+        status: { $in: ['active', 'completed'] }
+      }).select('course');
+
+      const enrolledCourseIds = enrollments.map((enrollment) => enrollment.course);
+      if (courseId && !enrolledCourseIds.some((id) => String(id) === String(courseId))) {
+        return res.status(403).json({ error: 'Not enrolled in this course' });
+      }
+
+      filter.course = courseId || { $in: enrolledCourseIds };
+      filter.status = 'published';
+    } else if (req.user.role === 'teacher') {
+      if (!req.user.teacherProfile) return res.status(403).json({ error: 'Teacher profile is required' });
+      filter.instructor = req.user.teacherProfile;
+      if (courseId) filter.course = courseId;
+      if (req.query.status) filter.status = req.query.status;
+    } else if (req.user.role === 'admin') {
+      if (courseId) filter.course = courseId;
+      if (req.query.status) filter.status = req.query.status;
+    } else {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
 
     const quizzes = await Quiz.find(filter)
       .populate('instructor', 'name')
@@ -27,7 +79,7 @@ router.get('/', protect, async (req, res) => {
   }
 });
 
-router.get('/my-attempts/list', protect, async (req, res) => {
+router.get('/my-attempts/list', protect, authorize('student'), async (req, res) => {
   try {
     const attempts = await QuizAttempt.find({ student: req.user.id })
       .populate({ path: 'quiz', select: 'title type', populate: { path: 'course', select: 'title' } })
@@ -41,7 +93,7 @@ router.get('/my-attempts/list', protect, async (req, res) => {
 // @route   GET /api/quizzes/my-attempts
 // @desc    Get all quiz attempts for the current user
 // @access  Private
-router.get('/my-attempts', protect, async (req, res) => {
+router.get('/my-attempts', protect, authorize('student'), async (req, res) => {
   try {
     const attempts = await QuizAttempt.find({ student: req.user.id })
       .populate({
@@ -61,10 +113,10 @@ router.get('/my-attempts', protect, async (req, res) => {
 // @route   GET /api/quizzes/:id
 // @desc    Get a single quiz
 // @access  Private
-router.get('/:id', protect, async (req, res) => {
+router.get('/:id', protect, attachTeacherProfile, async (req, res) => {
   try {
     const quiz = await Quiz.findById(req.params.id)
-      .populate('instructor', 'name')
+      .populate('instructor', 'personalInfo.fullName')
       .populate('course', 'title');
 
     if (!quiz) {
@@ -72,17 +124,26 @@ router.get('/:id', protect, async (req, res) => {
     }
 
     if (req.user.role === 'student') {
-      quiz.questions = quiz.questions.map((q) => {
-        const question = q.toObject();
-        delete question.correctAnswer;
-        if (question.options) {
-          question.options = question.options.map((opt) => ({
-            _id: opt._id,
-            text: opt.text,
-          }));
-        }
-        return question;
+      const enrollment = await Enrollment.exists({
+        student: req.user.id,
+        course: quiz.course?._id || quiz.course,
+        status: { $in: ['active', 'completed'] }
       });
+
+      if (!enrollment || quiz.status !== 'published') {
+        return res.status(403).json({ error: 'Not authorized to access this quiz' });
+      }
+
+      return res.json(hideQuizAnswers(quiz));
+    }
+
+    if (req.user.role === 'teacher') {
+      const instructorId = quiz.instructor?._id || quiz.instructor;
+      if (!req.user.teacherProfile || String(instructorId) !== String(req.user.teacherProfile)) {
+        return res.status(403).json({ error: 'Not authorized to access this quiz' });
+      }
+    } else if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Not authorized' });
     }
 
     res.json(quiz);
@@ -97,6 +158,22 @@ router.get('/:id', protect, async (req, res) => {
 // @access  Private (Teacher/Admin)
 router.post('/', protect, attachTeacherProfile, authorize('teacher', 'admin'), async (req, res) => {
   try {
+    if (req.user.role === 'teacher') {
+      if (!req.user.teacherProfile) {
+        return res.status(403).json({ error: 'Teacher profile is required' });
+      }
+
+      const ownsCourse = await Course.exists({
+        _id: req.body.course,
+        instructor: req.user.teacherProfile
+      });
+      if (!ownsCourse) {
+        return res.status(403).json({ error: 'You can only create quizzes for your own courses' });
+      }
+    } else if (!await Course.exists({ _id: req.body.course })) {
+      return res.status(404).json({ error: 'Course not found' });
+    }
+
     const quizData = {
       ...req.body,
       instructor: req.user.role === 'teacher' ? req.user.teacherProfile : req.body.instructor
@@ -127,7 +204,27 @@ router.put('/:id', protect, attachTeacherProfile, authorize('teacher', 'admin'),
       return res.status(403).json({ error: 'Not authorized' });
     }
 
-    Object.assign(quiz, req.body);
+    const updates = { ...req.body };
+
+    if (req.user.role === 'teacher') {
+      delete updates.instructor;
+      if (updates.course && String(updates.course) !== String(quiz.course)) {
+        const ownsNewCourse = await Course.exists({
+          _id: updates.course,
+          instructor: req.user.teacherProfile
+        });
+        if (!ownsNewCourse) {
+          return res.status(403).json({ error: 'You can only move quizzes to your own courses' });
+        }
+      }
+    }
+
+    delete updates._id;
+    delete updates.createdAt;
+    delete updates.updatedAt;
+    delete updates.stats;
+
+    Object.assign(quiz, updates);
     await quiz.save();
 
     res.json(quiz);
@@ -164,7 +261,7 @@ router.delete('/:id', protect, attachTeacherProfile, authorize('teacher', 'admin
 // @route   POST /api/quizzes/:id/start
 // @desc    Start a quiz attempt
 // @access  Private (Student)
-router.post('/:id/start', protect, async (req, res) => {
+router.post('/:id/start', protect, authorize('student'), async (req, res) => {
   try {
     const quiz = await Quiz.findById(req.params.id);
 
@@ -223,7 +320,7 @@ router.post('/:id/start', protect, async (req, res) => {
 // @route   PUT /api/quizzes/attempts/:attemptId/answer
 // @desc    Submit an answer for a question
 // @access  Private (Student)
-router.put('/attempts/:attemptId/answer', protect, async (req, res) => {
+router.put('/attempts/:attemptId/answer', protect, authorize('student'), async (req, res) => {
   try {
     const { questionId, answer } = req.body;
     const attempt = await QuizAttempt.findById(req.params.attemptId)
@@ -254,7 +351,7 @@ router.put('/attempts/:attemptId/answer', protect, async (req, res) => {
     attempt.answers[answerIndex].answer = answer;
     await attempt.save();
 
-    res.json(attempt);
+    res.json(hideAttemptQuizAnswers(attempt));
   } catch (error) {
     console.error('Submit answer error:', error);
     res.status(400).json({ error: error.message });
@@ -264,7 +361,7 @@ router.put('/attempts/:attemptId/answer', protect, async (req, res) => {
 // @route   POST /api/quizzes/attempts/:attemptId/submit
 // @desc    Submit a quiz attempt
 // @access  Private (Student)
-router.post('/attempts/:attemptId/submit', protect, async (req, res) => {
+router.post('/attempts/:attemptId/submit', protect, authorize('student'), async (req, res) => {
   try {
     const attempt = await QuizAttempt.findById(req.params.attemptId)
       .populate('quiz');
@@ -370,7 +467,7 @@ router.post('/attempts/:attemptId/submit', protect, async (req, res) => {
     
     await quiz.save();
 
-    res.json(attempt);
+    res.json(hideAttemptQuizAnswers(attempt));
   } catch (error) {
     console.error('Submit quiz error:', error);
     res.status(400).json({ error: error.message });
@@ -380,19 +477,31 @@ router.post('/attempts/:attemptId/submit', protect, async (req, res) => {
 // @route   GET /api/quizzes/attempts/:attemptId
 // @desc    Get a quiz attempt with results
 // @access  Private
-router.get('/attempts/:attemptId', protect, async (req, res) => {
+router.get('/attempts/:attemptId', protect, attachTeacherProfile, async (req, res) => {
   try {
     const attempt = await QuizAttempt.findById(req.params.attemptId)
-      .populate({
-        path: 'quiz',
-        populate: { path: 'questions' }
-      });
+      .populate('quiz');
 
     if (!attempt) {
       return res.status(404).json({ error: 'Attempt not found' });
     }
 
-    if (attempt.student.toString() !== req.user.id && req.user.role !== 'teacher' && req.user.role !== 'admin') {
+    if (req.user.role === 'student') {
+      if (String(attempt.student) !== String(req.user.id)) {
+        return res.status(403).json({ error: 'Not authorized' });
+      }
+      return res.json(hideAttemptQuizAnswers(attempt));
+    }
+
+    if (req.user.role === 'teacher') {
+      if (
+        !req.user.teacherProfile ||
+        !attempt.quiz ||
+        String(attempt.quiz.instructor) !== String(req.user.teacherProfile)
+      ) {
+        return res.status(403).json({ error: 'Not authorized' });
+      }
+    } else if (req.user.role !== 'admin') {
       return res.status(403).json({ error: 'Not authorized' });
     }
 
@@ -406,8 +515,18 @@ router.get('/attempts/:attemptId', protect, async (req, res) => {
 // @route   GET /api/quizzes/:id/attempts
 // @desc    Get all attempts for a quiz
 // @access  Private (Teacher/Admin)
-router.get('/:id/attempts', protect, authorize('teacher', 'admin'), async (req, res) => {
+router.get('/:id/attempts', protect, attachTeacherProfile, authorize('teacher', 'admin'), async (req, res) => {
   try {
+    const quiz = await Quiz.findById(req.params.id).select('instructor');
+    if (!quiz) return res.status(404).json({ error: 'Quiz not found' });
+
+    if (
+      req.user.role === 'teacher' &&
+      (!req.user.teacherProfile || String(quiz.instructor) !== String(req.user.teacherProfile))
+    ) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
     const attempts = await QuizAttempt.find({ quiz: req.params.id })
       .populate('student', 'name email')
       .sort({ submittedAt: -1 });

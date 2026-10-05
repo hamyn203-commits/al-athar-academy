@@ -9,6 +9,15 @@ const User = require('../models/User');
 const { protect, authorize } = require('../middleware/auth');
 const meetingService = require('../services/meetingService');
 const { notifyUser } = require('../utils/notify');
+const rateLimit = require('express-rate-limit');
+
+const publicTrialLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: Number(process.env.TRIAL_RATE_LIMIT_MAX || 8),
+  message: { error: 'Too many trial requests. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 const isMockMode = !process.env.MONGODB_URI;
 const isDBConnected = () => mongoose.connection.readyState === 1;
@@ -41,7 +50,7 @@ function normalizePhone(rawPhone) {
 // @route   POST /api/trials
 // @desc    Public trial booking funnel (No login required)
 // @access  Public
-router.post('/', async (req, res) => {
+router.post('/', publicTrialLimiter, async (req, res) => {
   try {
     const {
       studentName,
@@ -182,16 +191,13 @@ router.get('/', protect, authorize('admin', 'teacher'), async (req, res) => {
     if (track) filter.preferredTrack = track;
     if (gender) filter.gender = gender;
 
-    // If teacher, show trials assigned to them or unassigned pending trials
+    // Teachers may only access trial requests explicitly assigned to them.
     if (req.user.role === 'teacher') {
-      const teacherDoc = await Teacher.findOne({ user: req.user.id });
-      if (teacherDoc) {
-        filter.$or = [
-          { assignedTeacher: teacherDoc._id },
-          { status: 'pending', assignedTeacher: { $exists: false } },
-          { status: 'pending', assignedTeacher: null }
-        ];
+      const teacherDoc = await Teacher.findOne({ user: req.user.id }).select('_id');
+      if (!teacherDoc) {
+        return res.status(403).json({ error: 'Teacher profile is required' });
       }
+      filter.assignedTeacher = teacherDoc._id;
     }
 
     const pageNum = Math.max(1, parseInt(page, 10) || 1);
@@ -248,6 +254,13 @@ router.get('/:id', protect, authorize('admin', 'teacher'), async (req, res) => {
       return res.status(404).json({ error: 'طلب الحصة التجريبية غير موجود' });
     }
 
+    if (req.user.role === 'teacher') {
+      const teacherDoc = await Teacher.findOne({ user: req.user.id }).select('_id');
+      if (!teacherDoc || !trial.assignedTeacher || String(trial.assignedTeacher._id || trial.assignedTeacher) !== String(teacherDoc._id)) {
+        return res.status(403).json({ error: 'غير مصرح بالاطلاع على هذا الطلب' });
+      }
+    }
+
     res.json({
       success: true,
       trial
@@ -300,9 +313,13 @@ router.put('/:id/assign', protect, authorize('admin'), async (req, res) => {
       return res.status(404).json({ error: 'طلب الحصة التجريبية غير موجود' });
     }
 
-    const teacher = await Teacher.findById(teacherId).populate('user');
+    const teacher = await Teacher.findOne({
+      _id: teacherId,
+      status: 'approved',
+      isVerified: true
+    }).populate('user');
     if (!teacher) {
-      return res.status(404).json({ error: 'المعلم المحدد غير موجود' });
+      return res.status(404).json({ error: 'المعلم المحدد غير موجود أو غير متاح' });
     }
 
     // Attempt to match or find student User account by email or phone
@@ -408,6 +425,9 @@ router.put('/:id/assess', protect, authorize('teacher', 'admin'), async (req, re
       if (!teacherDoc) {
         return res.status(400).json({ error: 'لم يتم العثور على بروفايل المعلم الخاص بك' });
       }
+      if (!trial.assignedTeacher || String(trial.assignedTeacher) !== String(teacherDoc._id)) {
+        return res.status(403).json({ error: 'هذا الطلب التجريبي غير مسند إليك' });
+      }
       teacherProfileId = teacherDoc._id;
     } else if (trial.assignedTeacher) {
       teacherProfileId = trial.assignedTeacher;
@@ -437,6 +457,12 @@ router.put('/:id/assess', protect, authorize('teacher', 'admin'), async (req, re
     if (assignedCircleId) {
       const circle = await GroupCircle.findById(assignedCircleId);
       if (circle) {
+        if (
+          req.user.role === 'teacher' &&
+          String(circle.teacher) !== String(teacherProfileId)
+        ) {
+          return res.status(403).json({ error: 'لا يمكنك إلحاق الطالب بحلقة لا تديرها' });
+        }
         // Find or create User for student to link to circle
         let studentUser = null;
         if (trial.email) {

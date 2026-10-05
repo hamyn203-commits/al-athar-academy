@@ -54,7 +54,7 @@ router.get('/my', protect, async (req, res) => {
     const code = await ensureReferralCode(user);
 
     const referrals = await Referral.find({ referrer: req.user.id })
-      .populate('referee', 'name email createdAt')
+      .populate('referee', 'name createdAt')
       .sort({ createdAt: -1 });
 
     const rewards = await ReferralReward.find({ user: req.user.id }).sort({ createdAt: -1 }).limit(20);
@@ -130,6 +130,10 @@ async function processReferralFirstSession(studentUserId) {
 
 async function processReferralSignup(referrerCode, newUserId) {
   if (!referrerCode) return null;
+
+  const existingReferral = await Referral.findOne({ referee: newUserId });
+  if (existingReferral) return existingReferral;
+
   const code = referrerCode.toUpperCase();
   const referrer = await User.findOne({ referralCode: code, isActive: true });
   if (!referrer || referrer._id.toString() === newUserId.toString()) return null;
