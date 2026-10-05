@@ -1,19 +1,17 @@
-name: Nightly Bootstrap Data
+name: Demo Bootstrap (Manual Only)
 
+# Demo seeding is intentionally disabled in production.
+# Keep this workflow only for an explicitly enabled non-production environment.
 on:
-  schedule:
-    - cron: '30 2 * * *'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
-  seed:
+  disabled:
     runs-on: ubuntu-latest
     steps:
-      - name: Seed demo teacher/course if empty
-        run: |
-          resp=$(curl -sf -X POST \
-            -H "Content-Type: application/json" \
-            -H "X-Seed-Secret: ${{ secrets.SEED_SECRET }}" \
-            https://al-athar-api.azurewebsites.net/api/system/bootstrap \
-            -d '{}' || echo '{"error":"failed"}')
-          echo "$resp"
+      - run: |
+          echo "Demo bootstrap is disabled for the Wahy Wa Namaa production environment."
+          echo "No data was created."
