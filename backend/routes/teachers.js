@@ -21,7 +21,7 @@ const {
 } = require('../mockStore');
 
 
-const isMockMode = !process.env.MONGODB_URI;
+const { isMockMode } = require('../config/runtime');
 const isDBConnected = () => mongoose.connection.readyState === 1;
 
 const publicUploadDir = path.join(__dirname, '..', 'uploads', 'teachers', 'public');
