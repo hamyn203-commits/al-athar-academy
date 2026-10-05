@@ -10,6 +10,7 @@ const { Quiz } = require('../models/Quiz');
 const Certificate = require('../models/Certificate');
 const { protect, authorize } = require('../middleware/auth');
 const { notifyCourseEnrollment, notifyCertificateIssued } = require('../utils/notify');
+const { isMockMode } = require('../config/runtime');
 
 async function getCourseBySlug(slug) {
   return Course.findOne({ slug, status: 'published' });
@@ -26,6 +27,10 @@ const isDBConnected = () => mongoose.connection.readyState === 1;
 router.get('/course/:slug', protect, async (req, res) => {
   try {
     if (!isDBConnected()) {
+      if (!isMockMode) {
+        return res.status(503).json({ error: 'Learning data is temporarily unavailable' });
+      }
+
       const mockCourse = {
         _id: 'mock-course-1',
         title: 'دورة إتقان التجويد العملي',
