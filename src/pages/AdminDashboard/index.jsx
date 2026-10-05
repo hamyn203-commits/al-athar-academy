@@ -274,7 +274,7 @@ export default function AdminDashboard() {
                 <div className="bg-slate-900 text-white rounded-xl p-5 mb-6">
                   <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
                     <h3 className="font-bold flex items-center gap-2"><MonitorPlay size={18} /> صحة النظام v{health.version}</h3>
-                    <a href="https://al-athar-api.azurewebsites.net/api/health" target="_blank" rel="noreferrer" className="text-xs text-emerald-300 hover:underline">فتح API health ↗</a>
+                    <a href="https://wahy-wa-namaa-api.vercel.app/api/health" target="_blank" rel="noreferrer" className="text-xs text-emerald-300 hover:underline">فتح API health ↗</a>
                   </div>
                   <div className="flex flex-wrap gap-2 text-xs">
                     {Object.entries(health.features || {}).map(([k, v]) => (
