@@ -8,7 +8,7 @@ const { protect, authorize } = require('../middleware/auth');
 const meetingService = require('../services/meetingService');
 const { notifyTeacherForSessionRequest, notifySessionAccepted, notifyUser } = require('../utils/notify');
 
-const isMockMode = !process.env.MONGODB_URI;
+const { isMockMode } = require('../config/runtime');
 const isDBConnected = () => mongoose.connection.readyState === 1;
 
 async function sessionIncludesStudent(session, studentId) {
@@ -134,7 +134,7 @@ router.get('/my-sessions', protect, async (req, res) => {
   try {
     const { status, type, page = 1, limit = 10 } = req.query;
 
-    if (isMockMode || !isDBConnected()) {
+    if (isMockMode && !isDBConnected()) {
       return res.json({
         sessions: [],
         pagination: { page: 1, limit: Number(limit), total: 0, pages: 0 },
@@ -374,7 +374,7 @@ router.post('/:id/rsvp', protect, async (req, res) => {
       return res.status(400).json({ error: 'الحالة غير صالحة. يجب أن تكون confirmed أو excused' });
     }
 
-    if (!isDBConnected() || !isValidObjectId(req.params.id)) {
+    if (isMockMode && (!isDBConnected() || !isValidObjectId(req.params.id))) {
       const now = new Date();
       const scheduledTime = new Date(now.getTime() + 48 * 60 * 60 * 1000);
       const diffHours = (scheduledTime.getTime() - now.getTime()) / (1000 * 60 * 60);
