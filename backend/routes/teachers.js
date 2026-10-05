@@ -459,17 +459,7 @@ router.get('/featured', async (req, res) => {
 
 router.get('/admin/pending', protect, authorize('admin'), async (req, res) => {
   if (isMockMode && !isDBConnected()) {
-    return res.json([
-      {
-        _id: 'mock-teacher-pending-1',
-        user: { _id: 'mock-u2', name: 'الشيخ أحمد محمود', email: 'ahmed.m@alathar.com' },
-        personalInfo: { fullName: 'أحمد محمود', phone: '+201011112222', country: 'مصر', city: 'القاهرة' },
-        academicInfo: { university: 'الأزهر الشريف', qualification: 'ليسانس أصول الدين' },
-        quranInfo: { memorizedParts: 30, teachingExperience: 7 },
-        status: 'pending',
-        createdAt: new Date().toISOString()
-      }
-    ]);
+    return res.json([]);
   }
   try {
     const teachers = await Teacher.find({ status: { $in: ['pending', 'under-review'] } })
