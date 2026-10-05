@@ -1,6 +1,6 @@
 {
   "name": "wahy-wa-namaa-api",
-  "version": "7.0.0",
+  "version": "6.3.0",
   "private": true,
   "description": "Portable Express API for Wahy Wa Namaa Academy",
   "main": "server.js",
@@ -13,7 +13,7 @@
     "check:env": "node scripts/production-env-check.cjs"
   },
   "engines": {
-    "node": ">=20"
+    "node": "22.x"
   },
   "license": "UNLICENSED",
   "type": "commonjs",
