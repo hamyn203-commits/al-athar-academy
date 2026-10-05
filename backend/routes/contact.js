@@ -6,10 +6,32 @@ const { protect, authorize } = require('../middleware/auth');
 router.post('/', async (req, res) => {
   try {
     const { name, email, phone, subject, message } = req.body;
-    if (!name || !email || !subject || !message) {
+    const cleanName = String(name || '').trim();
+    const cleanEmail = String(email || '').trim().toLowerCase();
+    const cleanPhone = String(phone || '').trim();
+    const cleanSubject = String(subject || '').trim();
+    const cleanMessage = String(message || '').trim();
+
+    if (!cleanName || !cleanEmail || !cleanSubject || !cleanMessage) {
       return res.status(400).json({ error: 'جميع الحقول المطلوبة يجب تعبئتها' });
     }
-    const msg = await ContactMessage.create({ name, email, phone, subject, message });
+    if (cleanName.length < 2 || cleanName.length > 100) {
+      return res.status(400).json({ error: 'الاسم غير صالح' });
+    }
+    if (!/^\S+@\S+\.\S+$/.test(cleanEmail) || cleanEmail.length > 254) {
+      return res.status(400).json({ error: 'البريد الإلكتروني غير صالح' });
+    }
+    if (cleanPhone.length > 32 || cleanSubject.length > 160 || cleanMessage.length > 5000) {
+      return res.status(400).json({ error: 'الرسالة تتجاوز الحد المسموح' });
+    }
+
+    const msg = await ContactMessage.create({
+      name: cleanName,
+      email: cleanEmail,
+      phone: cleanPhone,
+      subject: cleanSubject,
+      message: cleanMessage,
+    });
     res.status(201).json({ success: true, message: 'تم إرسال رسالتك بنجاح', id: msg._id });
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -34,10 +56,18 @@ router.get('/', protect, authorize('admin'), async (req, res) => {
 router.put('/:id/reply', protect, authorize('admin'), async (req, res) => {
   try {
     const { reply, status = 'replied' } = req.body;
+    const allowedStatuses = ['new', 'read', 'replied', 'closed'];
+    const cleanReply = String(reply || '').trim();
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({ error: 'حالة الرسالة غير صالحة' });
+    }
+    if (cleanReply.length > 5000) {
+      return res.status(400).json({ error: 'الرد يتجاوز الحد المسموح' });
+    }
     const msg = await ContactMessage.findByIdAndUpdate(
       req.params.id,
-      { adminReply: reply, status, repliedBy: req.user.id, repliedAt: new Date() },
-      { new: true }
+      { adminReply: cleanReply, status, repliedBy: req.user.id, repliedAt: new Date() },
+      { new: true, runValidators: true }
     );
     if (!msg) return res.status(404).json({ error: 'الرسالة غير موجودة' });
     res.json(msg);
@@ -48,10 +78,14 @@ router.put('/:id/reply', protect, authorize('admin'), async (req, res) => {
 
 router.put('/:id/status', protect, authorize('admin'), async (req, res) => {
   try {
+    const allowedStatuses = ['new', 'read', 'replied', 'closed'];
+    if (!allowedStatuses.includes(req.body.status)) {
+      return res.status(400).json({ error: 'حالة الرسالة غير صالحة' });
+    }
     const msg = await ContactMessage.findByIdAndUpdate(
       req.params.id,
       { status: req.body.status },
-      { new: true }
+      { new: true, runValidators: true }
     );
     if (!msg) return res.status(404).json({ error: 'الرسالة غير موجودة' });
     res.json(msg);
