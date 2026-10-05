@@ -8,6 +8,7 @@ const path = require('path');
 const mongoose = require('mongoose');
 const { connectDB } = require('./config/database');
 const { getConfigurationReadiness } = require('./config/readiness');
+const { isTrustedOrigin } = require('./config/origins');
 const { version: APP_VERSION } = require('./package.json');
 
 dotenv.config({ path: path.join(__dirname, '.env') });
@@ -110,23 +111,10 @@ const publicSubmissionLimiter = rateLimit({
   skip: (req) => req.method !== 'POST',
 });
 
-const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(',').map((value) => value.trim()).filter(Boolean)
-  : [
-      'http://localhost:5173',
-      'http://localhost:5174',
-      'http://localhost:5175',
-      'https://wahy-wa-namaa-academy.vercel.app',
-    ];
-
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    if (/^https:\/\/wahy-wa-namaa-academy(-[a-z0-9-]+)?\.vercel\.app$/i.test(origin)) {
-      return callback(null, true);
-    }
-    if (/^http:\/\/localhost:\d+$/i.test(origin)) return callback(null, true);
+    if (isTrustedOrigin(origin)) return callback(null, true);
     return callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
