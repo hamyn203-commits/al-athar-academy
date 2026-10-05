@@ -29,7 +29,7 @@ const upload = multer({
 });
 
 const mongoose = require('mongoose');
-const isMockMode = !process.env.MONGODB_URI;
+const { isMockMode } = require('../config/runtime');
 const isDBConnected = () => mongoose.connection.readyState === 1;
 
 const PLACEHOLDER = '/uploads/teachers/placeholder.jpg';
@@ -40,7 +40,7 @@ router.get('/', protect, authorize('admin'), (_req, res) => {
 });
 
 router.get('/stats', protect, authorize('admin'), async (req, res) => {
-  if (isMockMode || !isDBConnected()) {
+  if (isMockMode && !isDBConnected()) {
     return res.json({
       totalStudents: 0,
       totalTeachers: 0,
@@ -89,7 +89,7 @@ router.get('/stats', protect, authorize('admin'), async (req, res) => {
 });
 
 router.get('/teachers/approved', protect, authorize('admin'), async (req, res) => {
-  if (isMockMode || !isDBConnected()) {
+  if (isMockMode && !isDBConnected()) {
     return res.json([
       {
         _id: 'mock-teacher-approved-1',
@@ -113,7 +113,7 @@ router.get('/teachers/approved', protect, authorize('admin'), async (req, res) =
 });
 
 router.get('/teachers/pending', protect, authorize('admin'), async (req, res) => {
-  if (isMockMode || !isDBConnected()) {
+  if (isMockMode && !isDBConnected()) {
     return res.json([
       {
         _id: 'mock-teacher-pending-1',
@@ -137,7 +137,7 @@ router.get('/teachers/pending', protect, authorize('admin'), async (req, res) =>
 });
 
 router.get('/donations', protect, authorize('admin'), async (req, res) => {
-  if (isMockMode || !isDBConnected()) {
+  if (isMockMode && !isDBConnected()) {
     return res.json({
       donations: [
         {
@@ -487,7 +487,7 @@ router.delete('/blog/:id', protect, authorize('admin'), async (req, res) => {
 });
 
 router.get('/withdrawals', protect, authorize('admin'), async (req, res) => {
-  if (isMockMode || !isDBConnected()) {
+  if (isMockMode && !isDBConnected()) {
     return res.json({
       withdrawals: [
         {
@@ -518,7 +518,7 @@ router.get('/withdrawals', protect, authorize('admin'), async (req, res) => {
 });
 
 router.patch('/withdrawals/:id', protect, authorize('admin'), async (req, res) => {
-  if (isMockMode || !isDBConnected()) {
+  if (isMockMode && !isDBConnected()) {
     return res.json({
       success: true,
       withdrawal: {
