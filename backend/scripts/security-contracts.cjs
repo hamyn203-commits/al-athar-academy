@@ -205,7 +205,7 @@ requireContains(
 requireContains(
   'backend/routes/assignments.js',
   'student assignment reads must use enrollment ownership',
-  /Enrollment\.find\([\s\S]{0,220}student:\s*req\.user\.id/
+  /enrollmentFilter\s*=\s*\{[\s\S]{0,220}student:\s*req\.user\.id[\s\S]{0,260}Enrollment\.find\(enrollmentFilter\)/
 );
 
 // T02: paid LMS content/enrollment must fail closed.
