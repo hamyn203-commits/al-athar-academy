@@ -1,7 +1,6 @@
 import { upload } from '@vercel/blob/client';
 import { apiUrl } from '../config';
 import { getAccessToken } from './authSession';
-import { getAccessToken } from './authSession';
 
 function decodeJwt(token) {
   try {
