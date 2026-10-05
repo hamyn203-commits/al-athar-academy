@@ -115,6 +115,15 @@ const bootstrapLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+const publicSubmissionLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: Number(process.env.PUBLIC_SUBMISSION_RATE_LIMIT_MAX || 12),
+  message: { error: 'Too many submissions. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => req.method !== 'POST',
+});
+
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',').map((value) => value.trim()).filter(Boolean)
   : [
@@ -150,6 +159,9 @@ if (process.env.DISABLE_RATE_LIMIT !== 'true') {
   app.use('/api/auth/reset-password', passwordResetLimiter);
   app.use('/api/auth/refresh', refreshLimiter);
   app.use('/api/setup', bootstrapLimiter);
+  app.use('/api/contact', publicSubmissionLimiter);
+  app.use('/api/careers/apply', publicSubmissionLimiter);
+  app.use('/api/donations', publicSubmissionLimiter);
 }
 
 app.use(require('./middleware/detectMarket'));
