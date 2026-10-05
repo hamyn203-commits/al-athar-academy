@@ -429,26 +429,27 @@ export default function FreeTrial() {
     };
 
     try {
-      // إرسال POST /api/trials
       await api.post('/api/trials', payload);
-    } catch (err) {
-      // نسجل محلياً حتى لو السيرفر في وضع mock أو لم يتم تفعيل endpoint backend بعد
-      console.warn('Trials API fallback/mock notice:', err?.message || err);
-    } finally {
-      // حفظ في التخزين المحلي كنسخة أمان
-      try {
-        localStorage.setItem('wahy_namaa_last_trial', JSON.stringify(payload));
-      } catch {
-        // ignore
-      }
-      setIsSubmitting(false);
+      setErrors((current) => ({ ...current, submit: undefined }));
       setStep('success');
+    } catch (err) {
+      setErrors((current) => ({
+        ...current,
+        submit: err?.message || (
+          activeLocale === 'ar'
+            ? 'تعذر تسجيل الطلب الآن. حاول مرة أخرى أو استخدم نموذج التواصل.'
+            : 'We could not save the request. Please try again or use the contact form.'
+        ),
+      }));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   // رابط واتساب الأكاديمية المباشر مع رسالة معدّة مسبقاً
   const getWhatsAppConfirmationUrl = () => {
-    const rawNumber = SOCIAL_LINKS.whatsapp.replace(/\D/g, '') || '201234567890';
+    const rawNumber = SOCIAL_LINKS.whatsapp.replace(/\D/g, '');
+    if (!rawNumber) return '';
     const trackNames = {
       memorization: activeLocale === 'ar' ? 'مسار التحفيظ والمراجعة' : 'Memorization Track',
       ijaza: activeLocale === 'ar' ? 'مسار الإجازة وأحكام التجويد' : 'Ijaza & Tajweed Track',
@@ -1006,6 +1007,12 @@ export default function FreeTrial() {
                 )}
 
                 {/* ── أزرار التنقل بين الخطوات ── */}
+                {errors.submit ? (
+                  <div className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                    {errors.submit}
+                  </div>
+                ) : null}
+
                 <div className="mt-8 pt-6 border-t border-slate-100 flex items-center justify-between gap-4">
                   {step > 1 ? (
                     <button
@@ -1126,16 +1133,26 @@ export default function FreeTrial() {
 
                 {/* زر واتساب المباشر الأساسي البارز */}
                 <div className="space-y-3 max-w-md mx-auto">
-                  <a
-                    href={getWhatsAppConfirmationUrl()}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full inline-flex items-center justify-center gap-3 rounded-xl py-3.5 px-6 font-bold text-white text-base shadow-lg shadow-emerald-700/25 transition hover:brightness-110"
-                    style={{ backgroundColor: '#25D366' }}
-                  >
-                    <MessageCircle size={22} />
-                    <span>{text.whatsappBtn}</span>
-                  </a>
+                  {SOCIAL_LINKS.whatsapp ? (
+                    <a
+                      href={getWhatsAppConfirmationUrl()}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full inline-flex items-center justify-center gap-3 rounded-xl py-3.5 px-6 font-bold text-white text-base shadow-lg shadow-emerald-700/25 transition hover:brightness-110"
+                      style={{ backgroundColor: '#25D366' }}
+                    >
+                      <MessageCircle size={22} />
+                      <span>{text.whatsappBtn}</span>
+                    </a>
+                  ) : (
+                    <Link
+                      to={lp('/contact')}
+                      className="btn-primary w-full inline-flex items-center justify-center gap-2 !py-3.5"
+                    >
+                      <MessageCircle size={20} />
+                      <span>{activeLocale === 'ar' ? 'تواصل مع فريق الأكاديمية' : 'Contact the academy team'}</span>
+                    </Link>
+                  )}
 
                   <div className="flex items-center justify-center gap-3 pt-2">
                     <Link
@@ -1163,11 +1180,11 @@ export default function FreeTrial() {
                 <Award size={24} />
               </div>
               <h4 className="font-bold text-slate-800 text-sm mb-1">
-                {activeLocale === 'ar' ? 'معلمون أزهريون مجازون' : 'Certified Al-Azhar Teachers'}
+                {activeLocale === 'ar' ? 'معلمون ومعلمات متخصصون' : 'Specialized Quran Teachers'}
               </h4>
               <p className="text-xs text-slate-500 leading-relaxed">
                 {activeLocale === 'ar'
-                  ? 'نخبة مختارة بعناية مجازة بالقراءات العشر والأسانيد المتصلة'
+                  ? 'اختيار المعلم أو المعلمة يتم وفق التخصص والخبرة المتاحة لكل مسار'
                   : 'Handpicked certified scholars with connected Sanad'}
               </p>
             </div>
