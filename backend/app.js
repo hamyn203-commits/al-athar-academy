@@ -67,6 +67,46 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+const registrationLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: Number(process.env.REGISTRATION_RATE_LIMIT_MAX || 6),
+  message: { error: 'Too many registration attempts. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const otpSendLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: Number(process.env.OTP_SEND_RATE_LIMIT_MAX || 4),
+  message: { error: 'Too many verification code requests. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const otpVerifyLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: Number(process.env.OTP_VERIFY_RATE_LIMIT_MAX || 10),
+  message: { error: 'Too many verification attempts. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const passwordResetLimiter = rateLimit({
+  windowMs: 30 * 60 * 1000,
+  max: Number(process.env.PASSWORD_RESET_RATE_LIMIT_MAX || 5),
+  message: { error: 'Too many password reset requests. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const refreshLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: Number(process.env.REFRESH_RATE_LIMIT_MAX || 60),
+  message: { error: 'Too many token refresh requests. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',').map((value) => value.trim()).filter(Boolean)
   : [
@@ -95,6 +135,12 @@ app.use(express.urlencoded({ extended: true, limit: '4mb' }));
 if (process.env.DISABLE_RATE_LIMIT !== 'true') {
   app.use('/api/', generalLimiter);
   app.use('/api/auth/login', authLimiter);
+  app.use('/api/auth/register', registrationLimiter);
+  app.use('/api/auth/send-verification', otpSendLimiter);
+  app.use('/api/auth/verify-code', otpVerifyLimiter);
+  app.use('/api/auth/forgot-password', passwordResetLimiter);
+  app.use('/api/auth/reset-password', passwordResetLimiter);
+  app.use('/api/auth/refresh', refreshLimiter);
 }
 
 app.use(require('./middleware/detectMarket'));
