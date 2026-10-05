@@ -12,7 +12,9 @@ const fs = require('fs');
 const isMockMode = !process.env.MONGODB_URI;
 const isDBConnected = () => mongoose.connection.readyState === 1;
 
-const storage = multer.diskStorage({
+const externalStorage = process.env.FILE_STORAGE_DRIVER === 'external';
+
+const diskStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     const dir = path.join(process.cwd(), 'uploads/homework');
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
@@ -25,7 +27,7 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({
-  storage,
+  storage: externalStorage ? multer.memoryStorage() : diskStorage,
   limits: { fileSize: 20 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const allowedTypes = /mp3|wav|ogg|m4a|webm|aac|flac/;
@@ -120,6 +122,13 @@ router.get('/student', protect, authorize('student'), async (req, res) => {
 router.post('/:homeworkId/submit', protect, authorize('student'), upload.single('submission'), async (req, res) => {
   try {
     const { homeworkId } = req.params;
+
+    if (externalStorage && req.file) {
+      return res.status(503).json({
+        error: 'External file storage is not configured yet',
+        code: 'FILE_STORAGE_NOT_READY'
+      });
+    }
 
     if (!req.file) {
       if (isMockMode || !isDBConnected() || String(homeworkId).startsWith('mock-')) {

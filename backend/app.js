@@ -8,6 +8,21 @@ const path = require('path');
 const mongoose = require('mongoose');
 const { connectDB } = require('./config/database');
 
+function getReadiness() {
+  const databaseConfigured = Boolean(process.env.MONGODB_URI);
+  const authConfigured = Boolean(process.env.JWT_SECRET && process.env.JWT_REFRESH_SECRET);
+  const externalStorage = process.env.FILE_STORAGE_DRIVER === 'external';
+  const storageConfigured = !externalStorage || process.env.EXTERNAL_STORAGE_READY === 'true';
+
+  return {
+    ready: databaseConfigured && authConfigured && storageConfigured,
+    databaseConfigured,
+    authConfigured,
+    storageConfigured,
+    storageDriver: process.env.FILE_STORAGE_DRIVER || 'filesystem',
+  };
+}
+
 dotenv.config({ path: path.join(__dirname, '.env') });
 
 const app = express();
@@ -104,8 +119,17 @@ app.use(process.env.NODE_ENV === 'production' ? morgan('combined') : morgan('dev
 // Ensure database connectivity before business API requests. Health remains available
 // even when the database is unavailable so deployment diagnostics still work.
 app.use('/api', async (req, res, next) => {
-  if (req.path === '/health') return next();
-  if (!process.env.MONGODB_URI) return next();
+  if (req.path === '/health' || req.path === '/readiness') return next();
+
+  if (!process.env.MONGODB_URI) {
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(503).json({
+        error: 'API not ready',
+        code: 'DATABASE_NOT_CONFIGURED'
+      });
+    }
+    return next();
+  }
 
   try {
     await connectDB();
@@ -137,6 +161,7 @@ app.get('/', (_req, res) => {
 app.get('/api', (_req, res) => res.redirect(301, '/api/health'));
 
 app.get('/api/health', (_req, res) => {
+  const readiness = getReadiness();
   res.status(200).json({
     status: 'ok',
     service: 'wahy-wa-namaa-api',
@@ -144,12 +169,27 @@ app.get('/api/health', (_req, res) => {
     runtime: process.env.VERCEL ? 'vercel' : 'node',
     timestamp: new Date().toISOString(),
     database: mongoose.connection.readyState === 1,
-    databaseConfigured: Boolean(process.env.MONGODB_URI),
-    storageDriver: process.env.FILE_STORAGE_DRIVER || 'filesystem',
+    databaseConfigured: readiness.databaseConfigured,
+    storageDriver: readiness.storageDriver,
+    storageConfigured: readiness.storageConfigured,
     features: {
       ai: Boolean(process.env.OPENAI_API_KEY || process.env.GEMINI_API_KEY || process.env.AWS_BEARER_TOKEN_BEDROCK),
       email: Boolean(process.env.RESEND_API_KEY),
       telegram: Boolean(process.env.TELEGRAM_BOT_TOKEN),
+      whatsapp: Boolean(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN),
+      livekit: Boolean(process.env.LIVEKIT_API_KEY && process.env.LIVEKIT_API_SECRET && process.env.LIVEKIT_URL),
+    },
+  });
+});
+
+app.get('/api/readiness', (_req, res) => {
+  const readiness = getReadiness();
+  return res.status(readiness.ready ? 200 : 503).json({
+    status: readiness.ready ? 'ready' : 'not-ready',
+    ...readiness,
+    optionalFeatures: {
+      ai: Boolean(process.env.OPENAI_API_KEY || process.env.GEMINI_API_KEY || process.env.AWS_BEARER_TOKEN_BEDROCK),
+      email: Boolean(process.env.RESEND_API_KEY),
       whatsapp: Boolean(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN),
       livekit: Boolean(process.env.LIVEKIT_API_KEY && process.env.LIVEKIT_API_SECRET && process.env.LIVEKIT_URL),
     },

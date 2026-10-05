@@ -6,7 +6,9 @@ const { protect, authorize, attachTeacherProfile } = require('../middleware/auth
 const multer = require('multer');
 const path = require('path');
 
-const storage = multer.diskStorage({
+const externalStorage = process.env.FILE_STORAGE_DRIVER === 'external';
+
+const diskStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, 'uploads/assignments');
   },
@@ -17,7 +19,7 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({
-  storage,
+  storage: externalStorage ? multer.memoryStorage() : diskStorage,
   limits: { fileSize: 50 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const allowedTypes = /jpeg|jpg|png|pdf|doc|docx|mp3|mp4|wav|ogg|webm/;
@@ -117,6 +119,10 @@ router.post('/', protect, attachTeacherProfile, authorize('teacher', 'admin'), a
 // @access  Private (Teacher/Admin)
 router.put('/:id', protect, attachTeacherProfile, authorize('teacher', 'admin'), async (req, res) => {
   try {
+    if (externalStorage && req.file) {
+      return res.status(503).json({ error: 'External file storage is not configured yet', code: 'FILE_STORAGE_NOT_READY' });
+    }
+
     const assignment = await Assignment.findById(req.params.id);
 
     if (!assignment) {

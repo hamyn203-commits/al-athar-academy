@@ -33,7 +33,7 @@ const isMockMode = !process.env.MONGODB_URI;
 const isDBConnected = () => mongoose.connection.readyState === 1;
 
 const PLACEHOLDER = '/uploads/teachers/placeholder.jpg';
-const API_PUBLIC = process.env.API_PUBLIC_URL || 'https://al-athar-api.azurewebsites.net';
+const API_PUBLIC = process.env.API_PUBLIC_URL || 'https://wahy-wa-namaa-api.vercel.app';
 
 router.get('/', protect, authorize('admin'), (_req, res) => {
   res.json({ ok: true, module: 'admin', version: 2 });
@@ -42,16 +42,16 @@ router.get('/', protect, authorize('admin'), (_req, res) => {
 router.get('/stats', protect, authorize('admin'), async (req, res) => {
   if (isMockMode || !isDBConnected()) {
     return res.json({
-      totalStudents: 142,
-      totalTeachers: 18,
-      totalSessions: 520,
-      totalCourses: 12,
-      totalEnrollments: 89,
-      pendingTeachers: 2,
-      totalCircles: 14,
-      pendingTrials: 5,
-      totalHours: 390,
-      totalEarnings: 4250,
+      totalStudents: 0,
+      totalTeachers: 0,
+      totalSessions: 0,
+      totalCourses: 0,
+      totalEnrollments: 0,
+      pendingTeachers: 0,
+      totalCircles: 0,
+      pendingTrials: 0,
+      totalHours: 0,
+      totalEarnings: 0,
     });
   }
   try {
@@ -240,14 +240,18 @@ router.post('/upload', protect, authorize('admin', 'teacher'), upload.single('fi
   try {
     if (cdnService.isConfigured()) {
       const url = await cdnService.uploadToCDN(req.file.buffer, filename, req.file.mimetype);
-      res.json({ url, source: 'cdn', filename, mimetype: req.file.mimetype, size: req.file.size });
-    } else {
-      const filePath = path.join(coursesUploadDir, filename);
-      fs.writeFileSync(filePath, req.file.buffer);
-      const rel = `/uploads/courses/${filename}`;
-      const url = `${API_PUBLIC}${rel}`;
-      res.json({ url, path: rel, source: 'local', filename, mimetype: req.file.mimetype, size: req.file.size });
+      return res.json({ url, source: 'cdn', filename, mimetype: req.file.mimetype, size: req.file.size });
     }
+
+    if (process.env.FILE_STORAGE_DRIVER === 'external') {
+      return res.status(503).json({ error: 'External file storage is not configured yet', code: 'FILE_STORAGE_NOT_READY' });
+    }
+
+    const filePath = path.join(coursesUploadDir, filename);
+    fs.writeFileSync(filePath, req.file.buffer);
+    const rel = `/uploads/courses/${filename}`;
+    const url = `${API_PUBLIC}${rel}`;
+    return res.json({ url, path: rel, source: 'local', filename, mimetype: req.file.mimetype, size: req.file.size });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

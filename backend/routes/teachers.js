@@ -37,7 +37,9 @@ if (process.env.FILE_STORAGE_DRIVER !== 'external') {
   }
 }
 
-const storage = multer.diskStorage({
+const externalStorage = process.env.FILE_STORAGE_DRIVER === 'external';
+
+const diskStorage = multer.diskStorage({
   destination: (_req, file, cb) => {
     cb(null, privateFields.has(file.fieldname) ? privateUploadDir : publicUploadDir);
   },
@@ -80,7 +82,7 @@ function sanitizePublicTeacher(doc) {
 }
 
 const upload = multer({
-  storage,
+  storage: externalStorage ? multer.memoryStorage() : diskStorage,
   limits: { fileSize: 50 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const allowedTypes = /jpeg|jpg|png|pdf|mp4|mp3|wav/;
@@ -112,6 +114,11 @@ router.post(
   async (req, res) => {
     try {
       const { personalInfo, academicInfo, quranInfo, languages, availability, email, password, phoneVerificationToken } = req.body;
+
+      const uploadedFileCount = Object.values(req.files || {}).reduce((sum, list) => sum + (Array.isArray(list) ? list.length : 0), 0);
+      if (externalStorage && uploadedFileCount > 0) {
+        return res.status(503).json({ error: 'External file storage is not configured yet', code: 'FILE_STORAGE_NOT_READY' });
+      }
 
       let userId = req.user?.id;
       const parsedPersonalForVerification = personalInfo ? JSON.parse(personalInfo) : {};

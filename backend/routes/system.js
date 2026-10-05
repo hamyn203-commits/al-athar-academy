@@ -380,6 +380,9 @@ async function seedLessonsForCourse(course, teacherId) {
 
 router.post('/bootstrap', async (req, res) => {
   try {
+    if (process.env.NODE_ENV === 'production' && process.env.ALLOW_DEMO_BOOTSTRAP !== 'true') {
+      return res.status(404).json({ error: 'Route not found' });
+    }
     const secret = req.headers['x-seed-secret'] || req.body?.secret;
     if (!process.env.SEED_SECRET || secret !== process.env.SEED_SECRET) {
       return res.status(403).json({ error: 'Forbidden' });
