@@ -38,7 +38,7 @@ router.post('/generate', protect, async (req, res) => {
     }
 
     const certificateId = Certificate.generateCertificateId();
-    const verificationUrl = `${process.env.FRONTEND_URL || 'https://al-athar-academy.vercel.app'}/verify-certificate/${certificateId}`;
+    const verificationUrl = `${process.env.FRONTEND_URL || 'https://wahy-wa-namaa-academy.vercel.app'}/verify-certificate/${certificateId}`;
     
     const qrCode = await Certificate.generateQRCode(verificationUrl);
 
@@ -84,15 +84,7 @@ router.get('/my-certificates', protect, async (req, res) => {
     const isValidObjectId = (id) => id && mongoose.Types.ObjectId.isValid(id);
 
     if (!isDBConnected() || !isValidObjectId(req.user.id)) {
-      return res.json([
-        {
-          _id: 'mock-cert-1',
-          certificateId: 'ATHAR-2026-001',
-          course: { title: 'دورة إتقان التجويد الميسر', slug: 'easy-tajweed', image: '/images/courses/tajweed.jpg' },
-          issuedAt: new Date(Date.now() - 86400000 * 5),
-          metadata: { score: 96 }
-        }
-      ]);
+      return res.json([]);
     }
 
     const certificates = await Certificate.find({ student: req.user.id })
@@ -237,7 +229,7 @@ router.post('/batch-generate', protect, async (req, res) => {
       }
 
       const certificateId = Certificate.generateCertificateId();
-      const verificationUrl = `${process.env.FRONTEND_URL || 'https://al-athar-academy.vercel.app'}/verify-certificate/${certificateId}`;
+      const verificationUrl = `${process.env.FRONTEND_URL || 'https://wahy-wa-namaa-academy.vercel.app'}/verify-certificate/${certificateId}`;
       const qrCode = await Certificate.generateQRCode(verificationUrl);
 
       const certificate = new Certificate({
