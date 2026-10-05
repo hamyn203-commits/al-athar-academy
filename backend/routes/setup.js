@@ -5,7 +5,7 @@ const crypto = require('crypto');
 const User = require('../models/User');
 const { addMockUser, findMockUserByEmail, updateMockUser } = require('../mockStore');
 
-const isMockMode = !process.env.MONGODB_URI;
+const { isMockMode } = require('../config/runtime');
 const isDBConnected = () => mongoose.connection.readyState === 1;
 
 function safeEqual(a, b) {
