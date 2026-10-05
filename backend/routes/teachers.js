@@ -191,7 +191,7 @@ router.post(
       if (!userId && email && password) {
         const normalizedEmail = email.toLowerCase().trim();
 
-        if (isMockMode || !isDBConnected()) {
+        if (isMockMode && !isDBConnected()) {
           const existingUser = findMockUserByEmail(normalizedEmail);
           if (existingUser) {
             return res.status(409).json({ error: 'البريد الإلكتروني مسجل مسبقاً' });
@@ -234,7 +234,7 @@ router.post(
       const parsedAcademic = academicInfo ? JSON.parse(academicInfo) : {};
       const parsedQuran = quranInfo ? JSON.parse(quranInfo) : {};
 
-      if (isMockMode || !isDBConnected()) {
+      if (isMockMode && !isDBConnected()) {
         const existingT = findMockTeacherByUserId(userId);
         if (existingT) {
           return res.status(400).json({ error: 'ملف المعلم مسجل مسبقاً' });
@@ -458,7 +458,7 @@ router.get('/featured', async (req, res) => {
 });
 
 router.get('/admin/pending', protect, authorize('admin'), async (req, res) => {
-  if (isMockMode || !isDBConnected()) {
+  if (isMockMode && !isDBConnected()) {
     return res.json([
       {
         _id: 'mock-teacher-pending-1',
@@ -490,7 +490,7 @@ router.put('/admin/:id/review', protect, authorize('admin'), async (req, res) =>
     'request-changes': 'under-review'
   };
 
-  if (isMockMode || !isDBConnected()) {
+  if (isMockMode && !isDBConnected()) {
     return res.json({
       success: true,
       teacher: {
