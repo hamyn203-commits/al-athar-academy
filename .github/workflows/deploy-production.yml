@@ -1,80 +1,35 @@
-name: Deploy Production (Full Stack)
+name: Production Verification
 
-# تشغيل يدوي — ينشر Backend + Frontend معاً (مثالي قبل النوم)
+# Both frontend and backend deploy automatically from master through Vercel Git.
+# This manual workflow verifies the active production stack without a second deploy path.
 on:
   workflow_dispatch:
-    inputs:
-      skip_backend:
-        description: 'Skip Azure backend deploy'
-        type: boolean
-        default: false
-      skip_frontend:
-        description: 'Skip Vercel frontend deploy'
-        type: boolean
-        default: false
 
-concurrency:
-  group: azure-backend-deploy
-  cancel-in-progress: false
-
-env:
-  AZURE_WEBAPP_NAME: al-athar-api
-  AZURE_WEBAPP_PACKAGE_PATH: './backend'
-  NODE_VERSION: '22.x'
-  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+permissions:
+  contents: read
 
 jobs:
-  deploy-backend:
-    if: ${{ inputs.skip_backend != true }}
-    name: Azure Backend
+  verify:
+    name: Verify Vercel Frontend + API
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-          cache-dependency-path: backend/package-lock.json
-
-      - name: Install backend deps
-        run: npm ci
-        working-directory: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
-
-      - uses: azure/login@v2
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - uses: azure/webapps-deploy@v3
-        with:
-          app-name: ${{ env.AZURE_WEBAPP_NAME }}
-          package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
-
-      - run: echo "### Backend → https://al-athar-api.azurewebsites.net" >> "$GITHUB_STEP_SUMMARY"
-
-  deploy-frontend:
-    name: Vercel Frontend
-    runs-on: ubuntu-latest
-    needs: [deploy-backend]
-    if: always() && (needs.deploy-backend.result == 'success' || needs.deploy-backend.result == 'skipped') && inputs.skip_frontend != true
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
-
-      - run: npm install --global vercel@latest
-
-      - run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
-
-      - run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
-
-      - id: deploy
+      - name: API readiness
         run: |
-          url=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
-          echo "url=$url" >> "$GITHUB_OUTPUT"
+          body=$(curl --fail --silent --show-error https://wahy-wa-namaa-api.vercel.app/api/readiness)
+          echo "$body"
+          echo "$body" | grep -q '"ready":true'
 
-      - run: echo "### Frontend → ${{ steps.deploy.outputs.url }}" >> "$GITHUB_STEP_SUMMARY"
+      - name: API through frontend rewrite
+        run: |
+          body=$(curl --fail --silent --show-error https://wahy-wa-namaa-academy.vercel.app/api/readiness)
+          echo "$body"
+          echo "$body" | grep -q '"ready":true'
+
+      - name: Frontend
+        run: curl --fail --silent --show-error -o /dev/null https://wahy-wa-namaa-academy.vercel.app/ar
+
+      - name: Summary
+        run: |
+          echo "### Production verification passed ✅" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Frontend: https://wahy-wa-namaa-academy.vercel.app" >> "$GITHUB_STEP_SUMMARY"
+          echo "- API: https://wahy-wa-namaa-api.vercel.app" >> "$GITHUB_STEP_SUMMARY"
