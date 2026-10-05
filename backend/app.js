@@ -107,6 +107,14 @@ const refreshLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+const bootstrapLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: Number(process.env.ADMIN_BOOTSTRAP_RATE_LIMIT_MAX || 3),
+  message: { error: 'Too many bootstrap attempts. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',').map((value) => value.trim()).filter(Boolean)
   : [
@@ -141,6 +149,7 @@ if (process.env.DISABLE_RATE_LIMIT !== 'true') {
   app.use('/api/auth/forgot-password', passwordResetLimiter);
   app.use('/api/auth/reset-password', passwordResetLimiter);
   app.use('/api/auth/refresh', refreshLimiter);
+  app.use('/api/setup', bootstrapLimiter);
 }
 
 app.use(require('./middleware/detectMarket'));
