@@ -12,7 +12,7 @@ const STUDENT_RATE_USD = 1;  // 1$ للمغتربين لكل طالب في ال�
 const MIN_PAYOUT_EGP = 100;  // الحد الأدنى للسحب بالجنيه المصري
 const MIN_PAYOUT_USD = 10;   // الحد الأدنى للسحب بالدولار
 
-const isMockMode = !process.env.MONGODB_URI;
+const { isMockMode } = require('../config/runtime');
 
 /**
  * Helper: Calculate teacher balance across currencies
@@ -87,8 +87,8 @@ router.get('/teacher/balance', protect, authorize('teacher'), async (req, res) =
       return res.json({
         success: true,
         balances: {
-          EGP: { available: 1200, pending: 200, withdrawn: 3400, totalEarned: 4800 },
-          USD: { available: 45, pending: 0, withdrawn: 90, totalEarned: 135 },
+          EGP: { available: 0, pending: 0, withdrawn: 0, totalEarned: 0 },
+          USD: { available: 0, pending: 0, withdrawn: 0, totalEarned: 0 },
         },
         limits: {
           minPayoutEGP: MIN_PAYOUT_EGP,
@@ -125,31 +125,8 @@ router.get('/teacher/transactions', protect, authorize('teacher'), async (req, r
     if (isMockMode) {
       return res.json({
         success: true,
-        transactions: [
-          {
-            _id: 'mock-tx-1',
-            type: 'session_earning',
-            amount: 200,
-            currency: 'EGP',
-            attendeesCount: 10,
-            status: 'completed',
-            description: 'مستحقات حلقة جماعية مكتملة (10 طلاب)',
-            createdAt: new Date().toISOString(),
-          },
-          {
-            _id: 'mock-tx-2',
-            type: 'payout',
-            amount: 500,
-            currency: 'EGP',
-            payoutMethod: 'instapay',
-            payoutDetails: { ipaAddress: 'teacher@instapay' },
-            status: 'completed',
-            referenceNumber: 'IPN-98421034',
-            description: 'سحب أرباح عبر انستاباي',
-            createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
-          },
-        ],
-        pagination: { total: 2, page: 1, limit: 20, totalPages: 1 },
+        transactions: [],
+        pagination: { total: 0, page: 1, limit: 20, totalPages: 0 },
       });
     }
 
@@ -335,24 +312,18 @@ router.get('/admin/overview', protect, authorize('admin'), async (req, res) => {
           expatriateStudentSessionRateUSD: STUDENT_RATE_USD,
         },
         studentsBreakdown: {
-          egyptianAttendees: 350,
-          expatriateAttendees: 120,
-          totalCompletedSessions: 47,
+          egyptianAttendees: 0,
+          expatriateAttendees: 0,
+          totalCompletedSessions: 0,
         },
-        revenue: {
-          EGP: 350 * STUDENT_RATE_EGP, // 7000 EGP
-          USD: 120 * STUDENT_RATE_USD, // 120 USD
-        },
+        revenue: { EGP: 0, USD: 0 },
         teacherDues: {
-          EGP: { totalEarned: 4500, withdrawn: 3000, pendingPayouts: 500, availableLiability: 1000 },
-          USD: { totalEarned: 80, withdrawn: 50, pendingPayouts: 10, availableLiability: 20 },
+          EGP: { totalEarned: 0, withdrawn: 0, pendingPayouts: 0, availableLiability: 0 },
+          USD: { totalEarned: 0, withdrawn: 0, pendingPayouts: 0, availableLiability: 0 },
         },
-        netIncome: {
-          EGP: (350 * STUDENT_RATE_EGP) - 4500, // 2500 EGP
-          USD: (120 * STUDENT_RATE_USD) - 80,   // 40 USD
-        },
-        pendingPayoutsCount: 2,
-        processingPayoutsCount: 1,
+        netIncome: { EGP: 0, USD: 0 },
+        pendingPayoutsCount: 0,
+        processingPayoutsCount: 0,
       });
     }
 
@@ -494,7 +465,7 @@ router.put('/admin/payouts/:id/process', protect, authorize('admin'), async (req
         payout: {
           _id: req.params.id,
           status: targetStatus,
-          referenceNumber: referenceNumber || 'MOCK-REF-12345',
+          referenceNumber: referenceNumber || '',
           receiptUrl: receiptUrl || '',
           notes: notes || '',
           processedAt: new Date().toISOString(),
