@@ -53,6 +53,26 @@ const diskStorage = multer.diskStorage({
 const publicMediaPath = (file) => file ? `/uploads/teachers/public/${path.basename(file.path)}` : null;
 const privateDocumentPath = (file) => file ? `private/teachers/${path.basename(file.path)}` : null;
 
+function directReference(value) {
+  return value?.url || value?.pathname || null;
+}
+
+function validateDirectUpload(value, purpose, owner) {
+  if (!value) return true;
+  const ref = directReference(value);
+  if (!ref || !owner) return false;
+
+  if (objectStorage.getDriver() === 'vercel-blob' && !objectStorage.isVercelBlobReference(ref)) {
+    return false;
+  }
+
+  return objectStorage.referenceMatches(ref, purpose, owner);
+}
+
+function validateDirectUploadList(values, purpose, owner) {
+  return (values || []).every((value) => validateDirectUpload(value, purpose, owner));
+}
+
 function sanitizePublicTeacher(doc) {
   const teacher = typeof doc?.toObject === 'function' ? doc.toObject() : { ...doc };
 
@@ -125,6 +145,7 @@ router.post(
       }
 
       let userId = req.user?.id;
+      let uploadOwner = req.user?.id || null;
       const parsedPersonalForVerification = personalInfo ? JSON.parse(personalInfo) : {};
 
       if (!userId) {
@@ -144,9 +165,27 @@ router.post(
           ) {
             return res.status(400).json({ error: 'Phone verification does not match this application' });
           }
+
+          uploadOwner = verification.phone;
         } catch {
           return res.status(400).json({ error: 'Phone verification is invalid or expired' });
         }
+      }
+
+      const validUploadedFiles =
+        validateDirectUpload(uploadedFiles.profilePhoto, 'teacher-public', uploadOwner) &&
+        validateDirectUpload(uploadedFiles.introductionVideo, 'teacher-public', uploadOwner) &&
+        validateDirectUpload(uploadedFiles.teachingMethodVideo, 'teacher-public', uploadOwner) &&
+        validateDirectUpload(uploadedFiles.idCard, 'teacher-private', uploadOwner) &&
+        validateDirectUpload(uploadedFiles.graduationCertificate, 'teacher-private', uploadOwner) &&
+        validateDirectUploadList(uploadedFiles.recitationVideo, 'teacher-public', uploadOwner) &&
+        validateDirectUploadList(uploadedFiles.additionalVideos, 'teacher-public', uploadOwner) &&
+        validateDirectUploadList(uploadedFiles.audioRecordings, 'teacher-public', uploadOwner) &&
+        validateDirectUploadList(uploadedFiles.tajweedCertificates, 'teacher-private', uploadOwner) &&
+        validateDirectUploadList(uploadedFiles.ijazat, 'teacher-private', uploadOwner);
+
+      if (!validUploadedFiles) {
+        return res.status(400).json({ error: 'One or more uploaded files do not belong to this application' });
       }
 
       if (!userId && email && password) {
@@ -247,7 +286,7 @@ router.post(
         return res.status(400).json({ error: 'Teacher profile already exists' });
       }
 
-      const directRef = (value) => value?.url || value?.pathname || null;
+      const directRef = directReference;
       const directPublic = (value) => {
         const ref = directRef(value);
         return ref ? objectStorage.publicProxyUrl(ref) : null;
