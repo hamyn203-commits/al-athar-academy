@@ -59,18 +59,39 @@ const verifyAccessToken = (req, res, next) => {
   }
 };
 
+function readCookie(req, name) {
+  const raw = String(req.headers.cookie || '');
+  for (const part of raw.split(';')) {
+    const [key, ...valueParts] = part.trim().split('=');
+    if (key === name) {
+      try {
+        return decodeURIComponent(valueParts.join('='));
+      } catch {
+        return valueParts.join('=');
+      }
+    }
+  }
+  return null;
+}
+
 const verifyRefreshToken = (req, res, next) => {
-  const { refreshToken } = req.body;
+  // Body support is temporary migration compatibility for sessions created
+  // before refresh tokens moved to HttpOnly cookies.
+  const refreshToken =
+    readCookie(req, 'wn_refresh') ||
+    req.body?.refreshToken ||
+    null;
 
   if (!refreshToken) {
-    return res.status(400).json({ error: 'Refresh token is required' });
+    return res.status(401).json({ error: 'Refresh session is required' });
   }
 
   try {
+    req.refreshTokenRaw = refreshToken;
     req.refreshToken = jwt.verify(refreshToken, refreshSecret());
     next();
   } catch {
-    return res.status(401).json({ error: 'Invalid or expired refresh token' });
+    return res.status(401).json({ error: 'Invalid or expired refresh session' });
   }
 };
 

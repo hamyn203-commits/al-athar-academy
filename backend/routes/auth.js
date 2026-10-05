@@ -16,6 +16,29 @@ const { sendEmail } = require('../services/notificationDispatcher');
 const isMockMode = !process.env.MONGODB_URI;
 const isDBConnected = () => mongoose.connection.readyState === 1;
 
+const REFRESH_COOKIE = 'wn_refresh';
+const REFRESH_COOKIE_MAX_AGE_SECONDS = Number(
+  process.env.REFRESH_COOKIE_MAX_AGE_SECONDS || 7 * 24 * 60 * 60
+);
+
+function setRefreshCookie(res, refreshToken) {
+  const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
+  const sameSite = process.env.REFRESH_COOKIE_SAMESITE || 'Lax';
+  res.setHeader(
+    'Set-Cookie',
+    `${REFRESH_COOKIE}=${encodeURIComponent(refreshToken)}; Path=/api/auth; HttpOnly; SameSite=${sameSite}; Max-Age=${REFRESH_COOKIE_MAX_AGE_SECONDS}${secure}`
+  );
+}
+
+function clearRefreshCookie(res) {
+  const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
+  const sameSite = process.env.REFRESH_COOKIE_SAMESITE || 'Lax';
+  res.setHeader(
+    'Set-Cookie',
+    `${REFRESH_COOKIE}=; Path=/api/auth; HttpOnly; SameSite=${sameSite}; Max-Age=0${secure}`
+  );
+}
+
 function sanitizeUserResponse(user) {
   if (!user) return null;
   const obj = typeof user.toJSON === 'function' ? user.toJSON() : { ...user };
@@ -73,6 +96,7 @@ router.post('/register', async (req, res) => {
 
       const accessToken = generateAccessToken(user);
       const refreshToken = generateRefreshToken(user);
+      setRefreshCookie(res, refreshToken);
 
       user.lastLogin = new Date();
       await user.save();
@@ -80,8 +104,7 @@ router.post('/register', async (req, res) => {
       res.status(201).json({
         message: 'Registration successful',
         user: sanitizeUserResponse(user),
-        accessToken,
-        refreshToken
+        accessToken
       });
       return;
     }
@@ -112,12 +135,12 @@ router.post('/register', async (req, res) => {
 
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
+    setRefreshCookie(res, refreshToken);
 
     res.status(201).json({
       message: 'Registration successful',
       user: sanitizeUserResponse(user),
-      accessToken,
-      refreshToken
+      accessToken
     });
   } catch (error) {
     console.error('Register error:', error);
@@ -173,6 +196,7 @@ router.post('/login', async (req, res) => {
 
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
+    setRefreshCookie(res, refreshToken);
 
     if (!isMockMode || isDBConnected()) {
       user.lastLogin = new Date();
@@ -184,8 +208,7 @@ router.post('/login', async (req, res) => {
     res.json({
       message: 'Login successful',
       user: sanitizeUserResponse(user),
-      accessToken,
-      refreshToken
+      accessToken
     });
   } catch (error) {
     console.error('Login error:', error);
@@ -209,10 +232,10 @@ router.post('/refresh', verifyRefreshToken, async (req, res) => {
 
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
+    setRefreshCookie(res, refreshToken);
 
     res.json({
-      accessToken,
-      refreshToken
+      accessToken
     });
   } catch (error) {
     console.error('Refresh error:', error);
@@ -222,17 +245,9 @@ router.post('/refresh', verifyRefreshToken, async (req, res) => {
   }
 });
 
-router.post('/logout', verifyAccessToken, async (req, res) => {
-  try {
-    res.json({ 
-      message: 'Logged out successfully' 
-    });
-  } catch (error) {
-    console.error('Logout error:', error);
-    res.status(500).json({ 
-      error: 'Logout failed' 
-    });
-  }
+router.post('/logout', async (_req, res) => {
+  clearRefreshCookie(res);
+  return res.json({ message: 'Logged out successfully' });
 });
 
 router.get('/me', verifyAccessToken, async (req, res) => {
