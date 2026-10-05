@@ -7,22 +7,8 @@ const morgan = require('morgan');
 const path = require('path');
 const mongoose = require('mongoose');
 const { connectDB } = require('./config/database');
-const objectStorage = require('./services/objectStorage');
-
-function getReadiness() {
-  const databaseConfigured = Boolean(process.env.MONGODB_URI || process.env.MONGODB_URL);
-  const authConfigured = Boolean(process.env.JWT_SECRET && process.env.JWT_REFRESH_SECRET);
-  const externalStorage = process.env.FILE_STORAGE_DRIVER === 'external';
-  const storageConfigured = !externalStorage || objectStorage.isConfigured();
-
-  return {
-    ready: databaseConfigured && authConfigured && storageConfigured,
-    databaseConfigured,
-    authConfigured,
-    storageConfigured,
-    storageDriver: objectStorage.getDriver(),
-  };
-}
+const { getConfigurationReadiness } = require('./config/readiness');
+const { version: APP_VERSION } = require('./package.json');
 
 dotenv.config({ path: path.join(__dirname, '.env') });
 
@@ -218,7 +204,7 @@ app.use('/uploads/teachers', (_req, res) => res.status(404).end());
 app.get('/', (_req, res) => {
   res.json({
     service: 'Wahy Wa Namaa Academy API',
-    version: '7.0.0',
+    version: APP_VERSION,
     status: 'ok',
     runtime: process.env.VERCEL ? 'serverless' : 'node',
     health: '/api/health',
@@ -229,15 +215,17 @@ app.get('/', (_req, res) => {
 app.get('/api', (_req, res) => res.redirect(301, '/api/health'));
 
 app.get('/api/health', (_req, res) => {
-  const readiness = getReadiness();
+  const readiness = getConfigurationReadiness();
   res.status(200).json({
     status: 'ok',
     service: 'wahy-wa-namaa-api',
-    version: '7.0.0',
+    version: APP_VERSION,
     runtime: process.env.VERCEL ? 'vercel' : 'node',
     timestamp: new Date().toISOString(),
     database: mongoose.connection.readyState === 1,
     databaseConfigured: readiness.databaseConfigured,
+    configurationReady: readiness.configurationReady,
+    missingConfiguration: readiness.missingConfiguration,
     storageDriver: readiness.storageDriver,
     storageConfigured: readiness.storageConfigured,
     features: {
@@ -250,11 +238,28 @@ app.get('/api/health', (_req, res) => {
   });
 });
 
-app.get('/api/readiness', (_req, res) => {
-  const readiness = getReadiness();
-  return res.status(readiness.ready ? 200 : 503).json({
-    status: readiness.ready ? 'ready' : 'not-ready',
-    ...readiness,
+app.get('/api/readiness', async (_req, res) => {
+  const configuration = getConfigurationReadiness();
+  let databaseConnected = mongoose.connection.readyState === 1;
+  let databaseError = null;
+
+  if (configuration.databaseConfigured && !databaseConnected) {
+    try {
+      await connectDB();
+      databaseConnected = mongoose.connection.readyState === 1;
+    } catch {
+      databaseError = 'Database connection failed';
+    }
+  }
+
+  const ready = configuration.configurationReady && databaseConnected;
+
+  return res.status(ready ? 200 : 503).json({
+    status: ready ? 'ready' : 'not-ready',
+    ready,
+    ...configuration,
+    databaseConnected,
+    ...(databaseError ? { databaseError } : {}),
     optionalFeatures: {
       ai: Boolean(process.env.OPENAI_API_KEY || process.env.GEMINI_API_KEY || process.env.AWS_BEARER_TOKEN_BEDROCK),
       email: Boolean(process.env.RESEND_API_KEY),
