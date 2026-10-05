@@ -3,55 +3,75 @@ const router = express.Router();
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const VerificationCode = require('../models/VerificationCode');
-const { sendWhatsApp, sendTelegram } = require('../services/notificationDispatcher');
+const { sendEmail } = require('../services/notificationDispatcher');
 
 const OTP_MSG = (code) => `رمز التحقق — أكاديمية وَحْيٌ وَنَمَاء: ${code}\nصالح 10 دقائق.`;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function normalizeEmail(value) {
+  return String(value || '').trim().toLowerCase();
+}
 
 router.post('/send-verification', async (req, res) => {
   try {
-    const { phone, method, whatsapp, telegram } = req.body;
-
-    if (!phone) return res.status(400).json({ error: 'Phone number is required' });
-    if (!['whatsapp', 'telegram'].includes(method)) {
-      return res.status(400).json({ error: 'Unsupported verification method' });
+    const email = normalizeEmail(req.body?.email);
+    if (!EMAIL_RE.test(email)) {
+      return res.status(400).json({ error: 'Valid email address is required' });
     }
 
     const code = crypto.randomInt(100000, 1000000).toString();
 
-    await VerificationCode.deleteMany({ phone });
+    await VerificationCode.deleteMany({ email });
     await VerificationCode.create({
-      phone,
+      email,
       code,
-      method,
+      method: 'email',
       expires: new Date(Date.now() + 10 * 60 * 1000),
-      attempts: 0
+      attempts: 0,
     });
 
-    const msg = OTP_MSG(code);
-    const result = method === 'telegram' && telegram
-      ? await sendTelegram({ chatId: telegram, text: msg })
-      : await sendWhatsApp({ phone: whatsapp || phone, text: msg });
+    const result = await sendEmail({
+      to: email,
+      subject: 'رمز التحقق — أكاديمية وحي ونماء',
+      text: OTP_MSG(code),
+      html: `<div dir="rtl" style="font-family:Arial,sans-serif;line-height:1.8">
+        <h2>أكاديمية وحي ونماء</h2>
+        <p>رمز التحقق الخاص بتسجيل المعلم:</p>
+        <p style="font-size:28px;font-weight:700;letter-spacing:6px">${code}</p>
+        <p>الرمز صالح لمدة 10 دقائق.</p>
+        <p>إذا لم تطلب هذا الرمز، تجاهل هذه الرسالة.</p>
+      </div>`,
+    });
 
-    if (!result?.sent) return res.status(502).json({ error: 'Failed to send verification code' });
+    if (!result?.sent) {
+      await VerificationCode.deleteMany({ email });
+      return res.status(503).json({
+        error: 'Email verification is temporarily unavailable',
+        code: 'EMAIL_PROVIDER_NOT_CONFIGURED',
+      });
+    }
 
     return res.json({
       success: true,
-      message: `Verification code sent via ${method}`,
-      ...(process.env.NODE_ENV !== 'production' && { code })
+      message: 'Verification code sent by email',
     });
   } catch (error) {
-    console.error('Send verification error:', error);
+    console.error('Send verification error:', error?.message || 'unknown error');
     return res.status(500).json({ error: 'Failed to send verification code' });
   }
 });
 
 router.post('/verify-code', async (req, res) => {
   try {
-    const { phone, code } = req.body;
-    if (!phone || !code) return res.status(400).json({ error: 'Phone and code are required' });
+    const email = normalizeEmail(req.body?.email);
+    const code = String(req.body?.code || '').trim();
 
-    const verification = await VerificationCode.findOne({ phone }).sort({ createdAt: -1 });
-    if (!verification) return res.status(400).json({ error: 'No verification code found for this phone' });
+    if (!EMAIL_RE.test(email) || !/^\d{6}$/.test(code)) {
+      return res.status(400).json({ error: 'Email and a 6-digit code are required' });
+    }
+
+    const verification = await VerificationCode.findOne({ email, method: 'email' }).sort({ createdAt: -1 });
+    if (!verification) return res.status(400).json({ error: 'No verification code found for this email' });
 
     if (Date.now() > verification.expires.getTime()) {
       await VerificationCode.deleteOne({ _id: verification._id });
@@ -77,18 +97,18 @@ router.post('/verify-code', async (req, res) => {
     }
 
     const verificationToken = jwt.sign(
-      { phone, purpose: 'teacher-phone-verification' },
+      { email, purpose: 'teacher-email-verification' },
       secret || 'wahy-namaa-dev-access-secret-change-me',
       { expiresIn: '30m' }
     );
 
     return res.json({
       success: true,
-      message: 'Phone verified successfully',
+      message: 'Email verified successfully',
       verificationToken,
     });
   } catch (error) {
-    console.error('Verify code error:', error);
+    console.error('Verify code error:', error?.message || 'unknown error');
     return res.status(500).json({ error: 'Verification failed' });
   }
 });
