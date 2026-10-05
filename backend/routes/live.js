@@ -47,6 +47,18 @@ async function sessionIncludesStudent(session, studentId) {
   return false;
 }
 
+function isWithinParticipantJoinWindow(session) {
+  if (!session?.scheduledAt) return false;
+
+  const scheduledAt = new Date(session.scheduledAt).getTime();
+  const durationMs = Math.max(15, Number(session.duration || 60)) * 60 * 1000;
+  const now = Date.now();
+  const opensAt = scheduledAt - 30 * 60 * 1000;
+  const closesAt = scheduledAt + durationMs + 60 * 60 * 1000;
+
+  return now >= opensAt && now <= closesAt;
+}
+
 async function getRoomAccess(liveSession, user) {
   if (!liveSession || !user) {
     return { allowed: false, isHost: false, isObserver: false, bookedSession: null };
@@ -54,7 +66,7 @@ async function getRoomAccess(liveSession, user) {
 
   if (user.role === 'admin') {
     const bookedSession = liveSession.session
-      ? await Session.findById(liveSession.session).select('student teacher circle scheduledAt status')
+      ? await Session.findById(liveSession.session).select('student teacher circle scheduledAt duration status')
       : null;
     return { allowed: true, isHost: true, isObserver: false, bookedSession };
   }
@@ -64,7 +76,7 @@ async function getRoomAccess(liveSession, user) {
   }
 
   const bookedSession = await Session.findById(liveSession.session)
-    .select('student teacher circle attendance scheduledAt status');
+    .select('student teacher circle attendance scheduledAt duration status');
 
   if (!bookedSession || bookedSession.status !== 'accepted') {
     return { allowed: false, isHost: false, isObserver: false, bookedSession };
@@ -77,7 +89,8 @@ async function getRoomAccess(liveSession, user) {
   }
 
   if (user.role === 'student') {
-    const allowed = await sessionIncludesStudent(bookedSession, user.id);
+    const assigned = await sessionIncludesStudent(bookedSession, user.id);
+    const allowed = assigned && isWithinParticipantJoinWindow(bookedSession);
     return { allowed, isHost: false, isObserver: false, bookedSession };
   }
 
@@ -87,14 +100,15 @@ async function getRoomAccess(liveSession, user) {
       return { allowed: false, isHost: false, isObserver: true, bookedSession };
     }
 
-    let allowed = false;
+    let assigned = false;
     for (const child of guardian.children || []) {
       if (await sessionIncludesStudent(bookedSession, child.student)) {
-        allowed = true;
+        assigned = true;
         break;
       }
     }
 
+    const allowed = assigned && isWithinParticipantJoinWindow(bookedSession);
     return { allowed, isHost: false, isObserver: true, bookedSession };
   }
 
@@ -170,7 +184,7 @@ router.post('/token', verifyAccessToken, async (req, res) => {
 
     const role = req.user.role;
     const canPublish = role === 'student' || role === 'teacher' || role === 'admin';
-    const participantName = String(req.body.participantName || req.user.email || role).slice(0, 80);
+    const participantName = String(req.user.email || role).slice(0, 80);
     const identity = `${role}:${req.user.id}`;
 
     const token = await createToken({ roomName, identity, participantName, canPublish });
