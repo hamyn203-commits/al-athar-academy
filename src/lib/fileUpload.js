@@ -29,10 +29,15 @@ export async function uploadFileDirect(file, purpose, options = {}) {
   if (!file) throw new Error('No file selected');
 
   const accessToken = options.accessToken || currentAccessToken();
+  const verificationToken = options.verificationToken || '';
   const phoneVerificationToken = options.phoneVerificationToken || '';
 
   let owner = '';
   if (accessToken) owner = decodeJwt(accessToken).id || '';
+  if (!owner && verificationToken) {
+    const proof = decodeJwt(verificationToken);
+    owner = proof.email || proof.phone || '';
+  }
   if (!owner && phoneVerificationToken) owner = decodeJwt(phoneVerificationToken).phone || '';
   if (!owner) throw new Error('Upload authorization is missing');
 
@@ -45,6 +50,7 @@ export async function uploadFileDirect(file, purpose, options = {}) {
     clientPayload: JSON.stringify({
       purpose,
       accessToken: accessToken || undefined,
+      verificationToken: verificationToken || undefined,
       phoneVerificationToken: phoneVerificationToken || undefined,
     }),
   });
