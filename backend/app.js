@@ -20,7 +20,7 @@ function getReadiness() {
     databaseConfigured,
     authConfigured,
     storageConfigured,
-    storageDriver: process.env.FILE_STORAGE_DRIVER || 'filesystem',
+    storageDriver: objectStorage.getDriver(),
   };
 }
 
