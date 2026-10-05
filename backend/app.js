@@ -211,7 +211,7 @@ app.use('/api', async (req, res, next) => {
 // deployments use external object storage in the migration phase.
 if (process.env.FILE_STORAGE_DRIVER !== 'external') {
   app.use('/uploads/teachers/public', express.static(path.join(__dirname, 'uploads', 'teachers', 'public')));
-  app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+  app.use('/uploads/courses', express.static(path.join(__dirname, 'uploads', 'courses')));
 }
 app.use('/uploads/teachers', (_req, res) => res.status(404).end());
 
