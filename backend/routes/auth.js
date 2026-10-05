@@ -8,6 +8,7 @@ const {
   generateRefreshToken, 
   verifyAccessToken, 
   verifyRefreshToken,
+  readRefreshTokenIfValid,
   requireRole 
 } = require('../middleware/auth');
 const { addMockUser, findMockUserByEmail, findMockUserById, updateMockUser } = require('../mockStore');
@@ -248,8 +249,28 @@ router.post('/refresh', verifyRefreshToken, async (req, res) => {
   }
 });
 
-router.post('/logout', async (_req, res) => {
+router.post('/logout', readRefreshTokenIfValid, async (req, res) => {
   clearRefreshCookie(res);
+
+  try {
+    if (req.refreshToken?.id) {
+      if (isMockMode && !isDBConnected()) {
+        const user = findMockUserById(req.refreshToken.id);
+        if (user) {
+          updateMockUser(user._id || user.id, {
+            refreshTokenVersion: Number(user.refreshTokenVersion || 0) + 1,
+          });
+        }
+      } else {
+        await User.findByIdAndUpdate(req.refreshToken.id, {
+          $inc: { refreshTokenVersion: 1 },
+        });
+      }
+    }
+  } catch (error) {
+    console.warn('Logout token revocation warning:', error.message);
+  }
+
   return res.json({ message: 'Logged out successfully' });
 });
 
