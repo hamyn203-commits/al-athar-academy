@@ -4,7 +4,7 @@ import { Module, Controller, Get } from '@nestjs/common';
 class HealthController {
   @Get()
   check() {
-    return { status: 'ok', service: 'alathar-api-v2', version: '0.1.0' };
+    return { status: 'ok', service: 'wahy-wa-namaa-api-v2', version: '0.1.0' };
   }
 }
 
