@@ -152,6 +152,28 @@ requireContains(
   /ALLOW_VERCEL_PREVIEW_ORIGINS\s*===\s*['"]true['"]/
 );
 
+// T02: teacher registration must verify the submitted email through a real delivery provider.
+requireContains(
+  'backend/routes/verification.js',
+  'teacher OTP must be delivered through email',
+  /sendEmail\(\{/
+);
+requireContains(
+  'backend/routes/verification.js',
+  'teacher verification proof must be bound to the verified email',
+  /purpose:\s*['"]teacher-email-verification['"]/
+);
+requireContains(
+  'backend/routes/teachers.js',
+  'teacher registration must match the verification email to the account email',
+  /verification\.email\s*!==\s*normalizedEmail/
+);
+requireContains(
+  'backend/services/notificationDispatcher.js',
+  'production email delivery must fail closed without a provider',
+  /NODE_ENV\s*===\s*['"]production['"][\s\S]{0,220}sent:\s*false/
+);
+
 // T02: privileged frontend routes must have a centralized role guard.
 requireContains(
   'src/App.jsx',
