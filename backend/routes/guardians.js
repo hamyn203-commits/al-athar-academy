@@ -42,15 +42,28 @@ router.post('/add-child', protect, authorize('guardian', 'admin'), (_req, res) =
 // @route   DELETE /api/guardians/remove-child/:studentId
 // @desc    Remove a child from guardian
 // @access  Private (Guardian)
-router.delete('/remove-child/:studentId', protect, authorize('guardian', 'admin'), async (req, res) => {
+router.delete('/remove-child/:studentId', protect, authorize('guardian'), async (req, res) => {
   try {
-    const guardian = await Guardian.findOne({ user: req.user.id });
+    const guardian = await Guardian.findOne({
+      user: req.user.id,
+      'children.student': req.params.studentId,
+    });
 
     if (!guardian) {
-      return res.status(404).json({ error: 'Guardian profile not found' });
+      return res.status(404).json({ error: 'Linked child not found' });
     }
 
     await guardian.removeChild(req.params.studentId);
+
+    await Promise.all([
+      User.findByIdAndUpdate(req.user.id, {
+        $pull: { children: req.params.studentId },
+      }),
+      User.updateOne(
+        { _id: req.params.studentId, guardian: req.user.id },
+        { $unset: { guardian: 1, guardianLinkCode: 1 } }
+      ),
+    ]);
 
     res.json({ message: 'Child removed successfully' });
   } catch (error) {
