@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { Assignment, AssignmentSubmission } = require('../models/Assignment');
 const Enrollment = require('../models/Enrollment');
+const Teacher = require('../models/Teacher');
+const objectStorage = require('../services/objectStorage');
 const { protect, authorize, attachTeacherProfile } = require('../middleware/auth');
 const multer = require('multer');
 const path = require('path');
@@ -33,6 +35,52 @@ const upload = multer({
     }
   }
 });
+
+function safeSubmission(doc) {
+  const value = typeof doc?.toObject === 'function' ? doc.toObject() : { ...doc };
+  if (value?.content?.file?.url) {
+    value.content.file.url = `/api/assignments/submissions/${value._id}/file`;
+  }
+  return value;
+}
+
+async function streamPrivateFile(res, req, reference) {
+  if (!reference) return res.status(404).json({ error: 'File not found' });
+
+  if (/^https?:\/\//i.test(reference)) {
+    const result = await objectStorage.getPrivateObject(reference, {
+      ifNoneMatch: req.headers['if-none-match'],
+    });
+
+    if (!result) return res.status(404).json({ error: 'File not found' });
+    if (result.statusCode === 304) return res.status(304).end();
+
+    res.setHeader('Content-Type', result.blob?.contentType || 'application/octet-stream');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Cache-Control', 'private, no-store');
+    if (result.blob?.etag) res.setHeader('ETag', result.blob.etag);
+
+    if (result.stream?.pipe) return result.stream.pipe(res);
+    const reader = result.stream?.getReader?.();
+    if (!reader) return res.status(404).json({ error: 'File not found' });
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      res.write(Buffer.from(value));
+    }
+    return res.end();
+  }
+
+  const absolute = path.resolve(reference);
+  const allowedRoot = path.resolve(process.cwd(), 'uploads', 'assignments');
+  if (!absolute.startsWith(allowedRoot + path.sep)) {
+    return res.status(404).json({ error: 'File not found' });
+  }
+
+  res.setHeader('Cache-Control', 'private, no-store');
+  return res.sendFile(absolute);
+}
 
 // @route   GET /api/assignments
 // @desc    Get all assignments for a course
@@ -67,7 +115,7 @@ router.get('/my-submissions', protect, async (req, res) => {
       })
       .sort({ submittedAt: -1 });
 
-    res.json(submissions);
+    res.json(submissions.map(safeSubmission));
   } catch (error) {
     console.error('Get my submissions error:', error);
     res.status(500).json({ error: 'Failed to fetch submissions' });
@@ -170,7 +218,7 @@ router.delete('/:id', protect, attachTeacherProfile, authorize('teacher', 'admin
 // @route   POST /api/assignments/:id/submit
 // @desc    Submit an assignment
 // @access  Private (Student)
-router.post('/:id/submit', protect, upload.single('file'), async (req, res) => {
+router.post('/:id/submit', protect, authorize('student'), upload.single('file'), async (req, res) => {
   try {
     const assignment = await Assignment.findById(req.params.id);
 
@@ -210,9 +258,19 @@ router.post('/:id/submit', protect, upload.single('file'), async (req, res) => {
       : null;
 
     if (directFile) {
+      const reference = directFile.url || directFile.pathname;
+      const validReference =
+        Boolean(reference) &&
+        objectStorage.referenceMatches(reference, 'assignment', req.user.id) &&
+        (objectStorage.getDriver() !== 'vercel-blob' || objectStorage.isVercelBlobReference(reference));
+
+      if (!validReference) {
+        return res.status(400).json({ error: 'Invalid assignment upload reference' });
+      }
+
       submissionData.content.file = {
         name: directFile.name || 'submission',
-        url: directFile.url || directFile.pathname,
+        url: reference,
         type: directFile.contentType || 'application/octet-stream',
         size: Number(directFile.size || 0)
       };
@@ -250,16 +308,53 @@ router.post('/:id/submit', protect, upload.single('file'), async (req, res) => {
   }
 });
 
+router.get('/submissions/:submissionId/file', protect, attachTeacherProfile, async (req, res) => {
+  try {
+    const submission = await AssignmentSubmission.findById(req.params.submissionId)
+      .populate('assignment');
+
+    if (!submission || !submission.content?.file?.url) {
+      return res.status(404).json({ error: 'Submission file not found' });
+    }
+
+    const isOwner = String(submission.student) === String(req.user.id);
+    const isAdmin = req.user.role === 'admin';
+    const isTeacherOwner =
+      req.user.role === 'teacher' &&
+      req.user.teacherProfile &&
+      String(submission.assignment?.instructor) === String(req.user.teacherProfile);
+
+    if (!isOwner && !isAdmin && !isTeacherOwner) {
+      return res.status(403).json({ error: 'Not authorized to access this file' });
+    }
+
+    return streamPrivateFile(res, req, submission.content.file.url);
+  } catch (error) {
+    console.error('Assignment file download failed:', error.message);
+    return res.status(500).json({ error: 'Failed to load file' });
+  }
+});
+
 // @route   GET /api/assignments/:id/submissions
 // @desc    Get all submissions for an assignment
 // @access  Private (Teacher/Admin)
-router.get('/:id/submissions', protect, authorize('teacher', 'admin'), async (req, res) => {
+router.get('/:id/submissions', protect, attachTeacherProfile, authorize('teacher', 'admin'), async (req, res) => {
   try {
+    const assignment = await Assignment.findById(req.params.id).select('instructor');
+    if (!assignment) return res.status(404).json({ error: 'Assignment not found' });
+
+    if (
+      req.user.role === 'teacher' &&
+      (!req.user.teacherProfile || String(assignment.instructor) !== String(req.user.teacherProfile))
+    ) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
     const submissions = await AssignmentSubmission.find({ assignment: req.params.id })
       .populate('student', 'name email')
       .sort({ submittedAt: -1 });
 
-    res.json(submissions);
+    res.json(submissions.map(safeSubmission));
   } catch (error) {
     console.error('Get submissions error:', error);
     res.status(500).json({ error: 'Failed to fetch submissions' });
@@ -269,7 +364,7 @@ router.get('/:id/submissions', protect, authorize('teacher', 'admin'), async (re
 // @route   PUT /api/assignments/submissions/:submissionId/grade
 // @desc    Grade a submission
 // @access  Private (Teacher/Admin)
-router.put('/submissions/:submissionId/grade', protect, authorize('teacher', 'admin'), async (req, res) => {
+router.put('/submissions/:submissionId/grade', protect, attachTeacherProfile, authorize('teacher', 'admin'), async (req, res) => {
   try {
     const { score, feedback } = req.body;
     const submission = await AssignmentSubmission.findById(req.params.submissionId)
@@ -277,6 +372,13 @@ router.put('/submissions/:submissionId/grade', protect, authorize('teacher', 'ad
 
     if (!submission) {
       return res.status(404).json({ error: 'Submission not found' });
+    }
+
+    if (
+      req.user.role === 'teacher' &&
+      (!req.user.teacherProfile || String(submission.assignment.instructor) !== String(req.user.teacherProfile))
+    ) {
+      return res.status(403).json({ error: 'Not authorized' });
     }
 
     submission.grade = {
