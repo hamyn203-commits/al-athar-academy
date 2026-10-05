@@ -93,6 +93,19 @@ const verifyRefreshToken = (req, res, next) => {
   }
 };
 
+const readRefreshTokenIfValid = (req, _res, next) => {
+  const refreshToken = readCookie(req, 'wn_refresh') || null;
+  if (!refreshToken) return next();
+
+  try {
+    req.refreshTokenRaw = refreshToken;
+    req.refreshToken = jwt.verify(refreshToken, refreshSecret());
+  } catch {
+    req.refreshToken = null;
+  }
+  return next();
+};
+
 const requireRole = (...roles) => {
   return (req, res, next) => {
     if (!req.user) {
@@ -121,6 +134,7 @@ module.exports = {
   generateRefreshToken,
   verifyAccessToken,
   verifyRefreshToken,
+  readRefreshTokenIfValid,
   requireRole,
   attachTeacherProfile,
   protect: verifyAccessToken,
