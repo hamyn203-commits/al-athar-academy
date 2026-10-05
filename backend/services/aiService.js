@@ -1,6 +1,6 @@
 const RecitationReport = require('../models/RecitationReport');
 
-const SYSTEM_QURAN = 'You are an Islamic education assistant for Al-Athar Academy. Answer in the user language with authentic sources. Be concise and practical.';
+const SYSTEM_QURAN = 'You are an Islamic education assistant for Wahy Wa Namaa Academy. Answer in the user language with authentic sources. Be concise and practical.';
 
 const LOCAL_FAQ = {
   ar: {
