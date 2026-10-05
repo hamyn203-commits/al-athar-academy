@@ -1,16 +1,16 @@
 {
-  "name": "@alathar/platform",
+  "name": "@wahy-wa-namaa/platform",
   "private": true,
   "version": "0.1.0",
-  "description": "Al-Athar Academy V2 monorepo (Next.js + NestJS)",
+  "description": "Frozen experimental V2 scaffold for Wahy Wa Namaa Academy",
   "workspaces": [
     "apps/*"
   ],
   "scripts": {
-    "dev:web": "npm run dev -w @alathar/web",
-    "dev:api": "npm run start:dev -w @alathar/api",
-    "build:web": "npm run build -w @alathar/web",
-    "build:api": "npm run build -w @alathar/api",
+    "dev:web": "npm run dev -w @wahy-wa-namaa/web",
+    "dev:api": "npm run start:dev -w @wahy-wa-namaa/api",
+    "build:web": "npm run build -w @wahy-wa-namaa/web",
+    "build:api": "npm run build -w @wahy-wa-namaa/api",
     "prisma:generate": "prisma generate --schema=prisma/schema.prisma",
     "prisma:migrate": "prisma migrate dev --schema=prisma/schema.prisma"
   },
