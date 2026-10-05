@@ -1,144 +1,62 @@
 import { useState, useEffect, useCallback, createContext, useContext } from 'react';
 import { API_BASE_URL } from '../config';
-
-function decodeTokenPayload(token) {
-  try {
-    const payload = token.split('.')[1];
-    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
-    const padded = normalized + '='.repeat((4 - (normalized.length % 4)) % 4);
-    return JSON.parse(atob(padded));
-  } catch {
-    return null;
-  }
-}
-
-function isTokenExpired(token) {
-  const payload = decodeTokenPayload(token);
-  return !payload?.exp || Date.now() >= payload.exp * 1000;
-}
-
-function readStoredUser() {
-  try {
-    const raw = localStorage.getItem('user');
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
-
-function readStoredAccessToken() {
-  return localStorage.getItem('accessToken') || localStorage.getItem('token');
-}
-
-function persistAccessToken(token) {
-  if (!token) return;
-  localStorage.setItem('accessToken', token);
-  localStorage.setItem('token', token);
-}
-
-function clearLocalSession() {
-  ['token', 'accessToken', 'refreshToken', 'user'].forEach((key) => {
-    localStorage.removeItem(key);
-  });
-}
+import api from '../lib/api';
+import {
+  getAccessToken,
+  setAccessToken,
+  clearAccessToken,
+  refreshAccessToken,
+  clearLegacyAuthStorage,
+} from '../lib/authSession';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => readStoredUser());
-  const [accessToken, setAccessToken] = useState(() => readStoredAccessToken());
+  const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const clearSessionState = useCallback(() => {
     setUser(null);
-    setAccessToken(null);
     setIsAuthenticated(false);
-    clearLocalSession();
+    clearAccessToken();
+    clearLegacyAuthStorage();
   }, []);
 
   const logout = useCallback(async () => {
-    clearSessionState();
     try {
       await fetch(`${API_BASE_URL}/api/auth/logout`, {
         method: 'POST',
         credentials: 'include',
       });
     } catch {
-      // Local session is already cleared. Server cookie will expire naturally
-      // if the network is unavailable.
+      // Clear client state even when the network is unavailable.
+    } finally {
+      clearSessionState();
     }
   }, [clearSessionState]);
-
-  const refreshAccessToken = useCallback(async (legacyRefreshToken = '') => {
-    const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(
-        legacyRefreshToken ? { refreshToken: legacyRefreshToken } : {}
-      ),
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to refresh session');
-    }
-
-    const data = await response.json();
-    if (!data.accessToken) {
-      throw new Error('Refresh response did not include an access token');
-    }
-
-    setAccessToken(data.accessToken);
-    persistAccessToken(data.accessToken);
-    localStorage.removeItem('refreshToken');
-    setIsAuthenticated(true);
-    return data.accessToken;
-  }, []);
 
   useEffect(() => {
     let cancelled = false;
 
     const bootstrap = async () => {
-      const storedUser = readStoredUser();
-      const localAccess = readStoredAccessToken();
-      const legacyRefresh = localStorage.getItem('refreshToken') || '';
-
-      if (!storedUser) {
-        clearLocalSession();
-        if (!cancelled) {
-          setUser(null);
-          setAccessToken(null);
-          setIsAuthenticated(false);
-          setIsLoading(false);
-        }
-        return;
-      }
-
-      if (!cancelled) setUser(storedUser);
+      // Remove tokens left by older versions. Authentication now restores
+      // exclusively from the HttpOnly refresh cookie.
+      clearLegacyAuthStorage();
 
       try {
-        // If a legacy refresh token exists, migrate it immediately into the
-        // HttpOnly cookie even when the current access token has not expired.
-        if (legacyRefresh || !localAccess || isTokenExpired(localAccess)) {
-          await refreshAccessToken(legacyRefresh);
-        } else if (!cancelled) {
-          setAccessToken(localAccess);
-          setIsAuthenticated(true);
-        }
-      } catch (error) {
-        const networkFailure =
-          error instanceof TypeError ||
-          error.message?.includes('fetch') ||
-          error.message?.includes('NetworkError');
+        await refreshAccessToken();
+        const data = await api.get('/api/auth/me', { auth: true });
 
-        if (networkFailure && localAccess && !isTokenExpired(localAccess)) {
-          if (!cancelled) {
-            setAccessToken(localAccess);
-            setIsAuthenticated(true);
-          }
-        } else if (!cancelled) {
-          clearSessionState();
+        if (!cancelled) {
+          setUser(data.user || null);
+          setIsAuthenticated(Boolean(data.user));
+        }
+      } catch {
+        if (!cancelled) {
+          setUser(null);
+          setIsAuthenticated(false);
+          clearAccessToken();
         }
       } finally {
         if (!cancelled) setIsLoading(false);
@@ -149,15 +67,17 @@ export function AuthProvider({ children }) {
     return () => {
       cancelled = true;
     };
-  }, [clearSessionState, refreshAccessToken]);
+  }, []);
 
   const saveAuthenticatedSession = useCallback((data) => {
-    setUser(data.user);
+    if (!data?.user || !data?.accessToken) {
+      throw new Error('Authentication response is incomplete');
+    }
+
     setAccessToken(data.accessToken);
+    setUser(data.user);
     setIsAuthenticated(true);
-    localStorage.setItem('user', JSON.stringify(data.user));
-    persistAccessToken(data.accessToken);
-    localStorage.removeItem('refreshToken');
+    clearLegacyAuthStorage();
   }, []);
 
   const login = useCallback(async (email, password) => {
@@ -200,46 +120,24 @@ export function AuthProvider({ children }) {
 
   const updateProfile = useCallback(async (updates) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
-        method: 'PATCH',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify(updates),
-      });
-
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Update failed');
-
+      const data = await api.patch('/api/auth/me', updates, { auth: true });
       setUser(data.user);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      setIsAuthenticated(Boolean(data.user));
       return { success: true, user: data.user };
     } catch (error) {
       return { success: false, error: error.message };
     }
-  }, [accessToken]);
+  }, []);
 
   const changePassword = useCallback(async (currentPassword, newPassword) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/change-password`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({ currentPassword, newPassword }),
-      });
-
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Password change failed');
+      await api.post('/api/auth/change-password', { currentPassword, newPassword }, { auth: true });
+      clearSessionState();
       return { success: true };
     } catch (error) {
       return { success: false, error: error.message };
     }
-  }, [accessToken]);
+  }, [clearSessionState]);
 
   const forgotPassword = useCallback(async (email) => {
     try {
@@ -259,9 +157,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   const authFetch = useCallback(async (url, options = {}) => {
-    if (!accessToken) throw new Error('Not authenticated');
-
-    const makeRequest = (token) => fetch(url, {
+    const makeRequest = async (token) => fetch(url, {
       ...options,
       credentials: options.credentials || 'include',
       headers: {
@@ -270,14 +166,18 @@ export function AuthProvider({ children }) {
       },
     });
 
-    let response = await makeRequest(accessToken);
+    let token = getAccessToken();
+    if (!token) token = await refreshAccessToken();
+
+    let response = await makeRequest(token);
 
     if (response.status === 401) {
-      const errorData = await response.clone().json().catch(() => ({}));
-      if (errorData.code === 'TOKEN_EXPIRED') {
+      const data = await response.clone().json().catch(() => ({}));
+
+      if (data.code === 'TOKEN_EXPIRED') {
         try {
-          const nextToken = await refreshAccessToken();
-          response = await makeRequest(nextToken);
+          token = await refreshAccessToken();
+          response = await makeRequest(token);
           return response;
         } catch {
           await logout();
@@ -290,13 +190,13 @@ export function AuthProvider({ children }) {
     }
 
     return response;
-  }, [accessToken, logout, refreshAccessToken]);
+  }, [logout]);
 
   const value = {
     user,
     isAuthenticated,
     isLoading,
-    accessToken,
+    accessToken: getAccessToken(),
     login,
     register,
     logout,
