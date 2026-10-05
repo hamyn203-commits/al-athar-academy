@@ -4,6 +4,7 @@ const Student = require('../models/Student');
 const mongoose = require('mongoose');
 const Teacher = require('../models/Teacher');
 const Session = require('../models/Session');
+const Guardian = require('../models/Guardian');
 const { protect, authorize } = require('../middleware/auth');
 
 const isDBConnected = () => mongoose.connection.readyState === 1;
@@ -30,6 +31,15 @@ router.get('/:id', protect, async (req, res) => {
 
     if (req.user.role === 'student') {
       allowed = studentUserId === String(req.user.id);
+    } else if (req.user.role === 'guardian' && studentUserId) {
+      const guardian = await Guardian.findOne({
+        user: req.user.id,
+        'children.student': studentUserId,
+      }).select('children');
+
+      allowed = Boolean(
+        guardian && guardian.hasPermission(studentUserId, 'viewProgress')
+      );
     } else if (req.user.role === 'teacher') {
       const teacher = await Teacher.findOne({ user: req.user.id }).select('_id');
       if (teacher && studentUserId) {
