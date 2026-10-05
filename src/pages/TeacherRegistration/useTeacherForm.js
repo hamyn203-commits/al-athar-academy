@@ -201,14 +201,10 @@ export function useTeacherForm() {
         },
       };
 
-      const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
-      const headers = {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      };
       const r = await fetch(apiUrl('/api/teachers/register'), {
         method: 'POST',
-        headers,
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
       const data = await r.json();
