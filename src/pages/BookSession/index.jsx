@@ -6,6 +6,7 @@ import GlobalFooter from '../../components/GlobalFooter';
 import { useI18n } from '../../i18n';
 import { localizedPath } from '../../lib/locale';
 import api from '../../lib/api';
+import { useAuth } from '../../hooks/useAuth.jsx';
 import '../../styles/session-experience.css';
 
 export default function BookSession() {
@@ -13,6 +14,7 @@ export default function BookSession() {
   const navigate = useNavigate();
   const { locale } = useI18n();
   const isAr = locale === 'ar';
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [teacher, setTeacher] = useState(null);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
@@ -23,8 +25,9 @@ export default function BookSession() {
   const [showConfirmation, setShowConfirmation] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
-    if (!token) {
+    if (authLoading) return;
+
+    if (!isAuthenticated) {
       navigate(localizedPath('/login', locale) + '?redirect=' + encodeURIComponent('/book-trial/' + teacherId));
       return;
     }
@@ -33,7 +36,7 @@ export default function BookSession() {
       .then(setTeacher)
       .catch(() => setTeacher(null))
       .finally(() => setLoading(false));
-  }, [teacherId, navigate, locale]);
+  }, [teacherId, navigate, locale, authLoading, isAuthenticated]);
 
   const dates = Array.from({ length: 14 }, (_, index) => {
     const date = new Date();
