@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /** إرسال روابط Sitemap إلى Bing IndexNow (202 = مقبول) */
-const SITE = 'https://al-athar-academy.vercel.app';
-const KEY = 'alathartayyib2026seokey01';
+const SITE = 'https://wahy-wa-namaa-academy.vercel.app';
+const KEY = 'wahywanamaa2026indexnow01';
 const LOCALES = ['ar', 'en', 'fr', 'de', 'tr', 'ur', 'id', 'ms', 'ku'];
 const PAGES = ['', '/free-trial', '/teachers', '/courses', '/blog', '/contact', '/about', '/teacher/register', '/login', '/faq'];
 
@@ -34,7 +34,7 @@ try {
     method: 'POST',
     headers: { 'Content-Type': 'application/json; charset=utf-8' },
     body: JSON.stringify({
-      host: 'al-athar-academy.vercel.app',
+      host: 'wahy-wa-namaa-academy.vercel.app',
       key: KEY,
       keyLocation: `${SITE}/${KEY}.txt`,
       urlList: urls.slice(0, 10),
