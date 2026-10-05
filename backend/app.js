@@ -7,12 +7,13 @@ const morgan = require('morgan');
 const path = require('path');
 const mongoose = require('mongoose');
 const { connectDB } = require('./config/database');
+const objectStorage = require('./services/objectStorage');
 
 function getReadiness() {
   const databaseConfigured = Boolean(process.env.MONGODB_URI);
   const authConfigured = Boolean(process.env.JWT_SECRET && process.env.JWT_REFRESH_SECRET);
   const externalStorage = process.env.FILE_STORAGE_DRIVER === 'external';
-  const storageConfigured = !externalStorage || process.env.EXTERNAL_STORAGE_READY === 'true';
+  const storageConfigured = !externalStorage || objectStorage.isConfigured();
 
   return {
     ready: databaseConfigured && authConfigured && storageConfigured,
@@ -210,6 +211,7 @@ app.use('/api/sessions/:id/translate', require('./routes/sessionTranslate'));
 app.use('/api/assessments', require('./routes/assessments'));
 app.use('/api/reviews', require('./routes/reviews'));
 app.use('/api/homework', require('./routes/homework'));
+app.use('/api/uploads', require('./routes/uploads'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/courses', require('./routes/courses'));
 app.use('/api/certificates', require('./routes/certificates'));
