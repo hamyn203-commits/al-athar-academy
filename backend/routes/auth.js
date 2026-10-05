@@ -340,6 +340,12 @@ router.post('/forgot-password', async (req, res) => {
   try {
     const { email } = req.body;
 
+    if (process.env.NODE_ENV === 'production' && !process.env.RESEND_API_KEY) {
+      return res.status(503).json({
+        error: 'Password reset email service is temporarily unavailable'
+      });
+    }
+
     if (!email) {
       return res.status(400).json({ 
         error: 'Email is required' 
@@ -375,13 +381,6 @@ router.post('/forgot-password', async (req, res) => {
             <p>إذا لم تطلب ذلك، تجاهل هذه الرسالة.</p>
           </div>
         `,
-      });
-    } else if (process.env.NODE_ENV === 'production') {
-      user.passwordResetToken = undefined;
-      user.passwordResetExpires = undefined;
-      await user.save();
-      return res.status(503).json({
-        error: 'Password reset email service is temporarily unavailable'
       });
     }
 
