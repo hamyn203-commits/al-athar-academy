@@ -10,7 +10,8 @@
     "seo:submit": "node scripts/submit-indexnow.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
-    "start": "vite preview"
+    "start": "vite preview",
+    "safety:production": "node scripts/production-safety-scan.cjs"
   },
   "dependencies": {
     "@livekit/components-react": "^2.9.21",
