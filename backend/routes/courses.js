@@ -99,23 +99,7 @@ router.get('/my-courses', protect, async (req, res) => {
     const isValidObjectId = (id) => id && mongoose.Types.ObjectId.isValid(id);
 
     if (!isDBConnected() || !isValidObjectId(req.user.id)) {
-      return res.json([
-        {
-          _id: 'mock-enroll-1',
-          course: {
-            _id: 'mock-course-1',
-            title: 'دورة إتقان التجويد العملي',
-            slug: 'mastering-tajweed',
-            image: '/images/courses/tajweed.jpg',
-            category: 'tajweed',
-            level: 'beginner',
-            instructor: { name: 'الشيخ أحمد منصور' },
-            stats: { rating: { average: 4.9, count: 45 } }
-          },
-          status: 'active',
-          overallProgress: { percentage: 40, completedLessons: 4, totalLessons: 10 }
-        }
-      ]);
+      return res.json([]);
     }
 
     const enrollments = await Enrollment.find({ student: req.user.id })
@@ -226,15 +210,14 @@ router.delete('/:id', protect, authorize('admin'), async (req, res) => {
 // @route   POST /api/courses/:id/enroll
 // @desc    Enroll in a course
 // @access  Private
-router.post('/:id/enroll', protect, async (req, res) => {
+router.post('/:id/enroll', protect, authorize('student'), async (req, res) => {
   try {
-    const course = await Course.findById(req.params.id);
+    const course = await Course.findOne({ _id: req.params.id, status: 'published' });
 
     if (!course) {
       return res.status(404).json({ error: 'Course not found' });
     }
 
-    // Check if already enrolled
     const existingEnrollment = await Enrollment.findOne({
       student: req.user.id,
       course: req.params.id
@@ -244,12 +227,18 @@ router.post('/:id/enroll', protect, async (req, res) => {
       return res.status(400).json({ error: 'Already enrolled in this course' });
     }
 
-    // Create enrollment
+    if (Number(course.price || 0) > 0) {
+      return res.status(402).json({
+        error: 'Payment is required before enrollment',
+        code: 'PAYMENT_REQUIRED'
+      });
+    }
+
     const enrollment = new Enrollment({
       student: req.user.id,
       course: req.params.id,
       payment: {
-        amount: course.price,
+        amount: 0,
         currency: course.currency,
         status: 'completed',
         paidAt: new Date()
@@ -272,15 +261,22 @@ router.post('/:id/enroll', protect, async (req, res) => {
 // @route   GET /api/courses/:id/lessons
 // @desc    Get all lessons for a course
 // @access  Private (Enrolled students)
-router.get('/:id/lessons', protect, async (req, res) => {
+router.get('/:id/lessons', protect, attachTeacherProfile, async (req, res) => {
   try {
-    const enrollment = await Enrollment.findOne({
-      student: req.user.id,
-      course: req.params.id,
-      status: { $in: ['active', 'completed'] }
-    });
+    const enrollment = req.user.role === 'student'
+      ? await Enrollment.findOne({
+          student: req.user.id,
+          course: req.params.id,
+          status: { $in: ['active', 'completed'] }
+        })
+      : null;
 
-    if (!enrollment && req.user.role !== 'admin' && req.user.role !== 'teacher') {
+    if (req.user.role === 'teacher') {
+      const course = await Course.findById(req.params.id).select('instructor');
+      if (!course || String(course.instructor) !== String(req.user.teacherProfile || '')) {
+        return res.status(403).json({ error: 'Not authorized to access this course' });
+      }
+    } else if (req.user.role !== 'admin' && !enrollment) {
       return res.status(403).json({ error: 'Not enrolled in this course' });
     }
 
