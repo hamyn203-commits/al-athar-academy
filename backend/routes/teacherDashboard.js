@@ -109,6 +109,27 @@ router.post('/tasks', protect, authorize('teacher'), async (req, res) => {
       return res.status(400).json({ error: 'studentId, type, title مطلوبة' });
     }
 
+    const relationship = await Session.findOne({
+      teacher: teacher._id,
+      student: studentId,
+      status: { $in: ['accepted', 'completed'] },
+    }).select('_id');
+
+    if (!relationship) {
+      return res.status(403).json({ error: 'لا يمكن تعيين واجب لطالب غير مرتبط بهذا المعلم' });
+    }
+
+    if (sessionId) {
+      const ownedSession = await Session.findOne({
+        _id: sessionId,
+        teacher: teacher._id,
+        student: studentId,
+      }).select('_id');
+      if (!ownedSession) {
+        return res.status(403).json({ error: 'الحصة المحددة لا تخص هذا المعلم والطالب' });
+      }
+    }
+
     const task = await TeacherTask.create({
       teacher: teacher._id,
       student: studentId,
