@@ -8,7 +8,7 @@ const path = require('path');
 const mongoose = require('mongoose');
 const { connectDB } = require('./config/database');
 const { getConfigurationReadiness } = require('./config/readiness');
-const { isTrustedOrigin } = require('./config/origins');
+const { isTrustedOrigin, requireTrustedOrigin } = require('./config/origins');
 const { version: APP_VERSION } = require('./package.json');
 
 dotenv.config({ path: path.join(__dirname, '.env') });
@@ -119,6 +119,11 @@ app.use(cors({
   },
   credentials: true,
 }));
+
+// Cookie-backed auth endpoints mutate/refresh session state. Require an
+// explicitly trusted browser Origin in production to prevent cross-site use.
+app.use('/api/auth/refresh', requireTrustedOrigin);
+app.use('/api/auth/logout', requireTrustedOrigin);
 
 app.use(express.json({ limit: '4mb' }));
 app.use(express.urlencoded({ extended: true, limit: '4mb' }));
