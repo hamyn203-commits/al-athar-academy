@@ -60,7 +60,7 @@ async function notifyOtherParticipant(session, senderId, kind) {
         ? `/teacher/dashboard?session=${session._id}`
         : `/student/dashboard?session=${session._id}`,
     },
-    priority: 'normal',
+    priority: 'medium',
     channels: chatChannels(),
   });
 }
