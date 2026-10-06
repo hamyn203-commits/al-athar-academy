@@ -13,10 +13,13 @@ import StepProgress from './StepProgress';
 import FileBox from './FileBox';
 import { STEPS, COUNTRIES, VIDEO_GUIDE } from './constants';
 import '../../styles/public-experience.css';
+import { useI18n } from '../../i18n';
+import { localizedPath } from '../../lib/locale';
 
 const inputCls = 'input-field w-full';
 
 export default function TeacherRegistration() {
+  const { locale } = useI18n();
   const [showPass, setShowPass] = useState(false);
   const f = useTeacherForm();
 
@@ -32,8 +35,8 @@ export default function TeacherRegistration() {
               سيقوم فريق الأكاديمية بمراجعة البيانات، وستصلك رسالة على <strong>{f.credentials.email}</strong> عند تحديث حالة الطلب.
             </p>
             <div className="flex flex-col gap-3">
-              <Link to="/login" className="btn-primary">تسجيل الدخول</Link>
-              <Link to="/" className="btn-secondary">العودة للرئيسية</Link>
+              <Link to={localizedPath('/login', locale)} className="btn-primary">تسجيل الدخول</Link>
+              <Link to={localizedPath('/', locale)} className="btn-secondary">العودة للرئيسية</Link>
             </div>
           </div>
         </div>
