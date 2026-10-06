@@ -27,7 +27,6 @@ test('selected SMTP provider fails closed until all SMTP credentials exist', () 
     EMAIL_PROVIDER: 'smtp',
     SMTP_USER: 'sender@example.com',
     SMTP_PASS: undefined,
-    EMAIL_FROM: 'Sender <sender@example.com>',
     RESEND_API_KEY: 'resend-present-but-not-selected',
   }, () => {
     assert.deepEqual(getEmailProviderStatus(), {
@@ -42,7 +41,6 @@ test('selected SMTP provider becomes configured with app-password credentials', 
     EMAIL_PROVIDER: 'smtp',
     SMTP_USER: 'sender@example.com',
     SMTP_PASS: 'example-app-password',
-    EMAIL_FROM: 'Sender <sender@example.com>',
     RESEND_API_KEY: undefined,
   }, () => {
     assert.deepEqual(getEmailProviderStatus(), {
