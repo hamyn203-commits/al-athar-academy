@@ -21,9 +21,10 @@
 | T04 UX/routes/locales | ✅ |
 | T05 File lifecycle E2E | ✅ |
 | T06.1 Payment integrity | ✅ |
-| T06.2 Paymob code | ✅ implementation / ⏳ merchant E2E |
-| **T07.1 Launch readiness gate** | 🟡 active |
-| T07.2 External-service closure | ⏳ |
+| T06.2 Paymob code | ✅ retained as optional future gateway |
+| T06.3 Manual payment approval | 🟡 implementation / E2E |
+| **T07.1 Launch readiness gate** | ✅ |
+| T07.2 External-service closure | 🟡 active |
 | T07.3 GO/NO-GO | ⏳ |
 
 ## Definition of public launch
