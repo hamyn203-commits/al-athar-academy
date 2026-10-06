@@ -117,6 +117,16 @@ assert.match(studentDashboard, /localizedPath\(\`\/meeting\/\$\{session\._id\}\`
 const errorBoundary = read('src/components/shared/ErrorBoundary.jsx');
 assert.match(errorBoundary, /localizedPath\(['\"]\/['\"],\s*locale\)/);
 
+const i18nProvider = read('src/i18n/index.jsx');
+assert.match(i18nProvider, /localStorage\.getItem\(['\"]academy_lang['\"]\)/);
+assert.match(i18nProvider, /localStorage\.removeItem\(['\"]academy_lang['\"]\)/);
+assert.match(i18nProvider, /RTL_LOCALES\.includes\(locale\)/);
+
+const appProvider = read('src/context/AppProvider.jsx');
+assert.match(appProvider, /locale:\s*currentLang,\s*changeLocale/);
+assert.match(appProvider, /translations\[currentLang\]\s*\|\|\s*translations\.en/);
+assert.doesNotMatch(appProvider, /localStorage\.getItem\(['\"]academy_lang['\"]\)/);
+assert.doesNotMatch(appProvider, /document\.documentElement\.(?:lang|dir)\s*=/);
 const app = read('src/App.jsx');
 assert.match(
   app,
