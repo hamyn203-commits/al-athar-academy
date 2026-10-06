@@ -69,6 +69,20 @@ test('health endpoint stays public and unknown routes fail closed', async () => 
   assert.equal(missing.body.error, 'Route not found');
 });
 
+test('launch readiness fails closed until external launch proofs exist', async () => {
+  const result = await request('/api/launch-readiness');
+
+  assert.equal(result.response.status, 503);
+  assert.equal(result.body.ready, false);
+  assert.equal(result.body.mode, 'public');
+  assert.deepEqual(result.body.requiredFeatures, ['email', 'paymob', 'livekit', 'whatsapp']);
+  assert.equal(Array.isArray(result.body.blockers), true);
+  assert.equal(result.body.blockers.length > 0, true);
+  assert.equal(JSON.stringify(result.body).includes('JWT_SECRET'), false);
+  assert.equal(JSON.stringify(result.body).includes('PAYMOB_SECRET_KEY'), false);
+  assert.equal(JSON.stringify(result.body).includes('RESEND_API_KEY'), false);
+});
+
 test('CORS rejects an untrusted browser origin', async () => {
   const result = await request('/api/health', {
     headers: { Origin: 'https://evil.example' },

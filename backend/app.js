@@ -8,6 +8,7 @@ const path = require('path');
 const mongoose = require('mongoose');
 const { connectDB } = require('./config/database');
 const { getConfigurationReadiness } = require('./config/readiness');
+const { getLaunchReadiness } = require('./config/launchReadiness');
 const { isTrustedOrigin, requireTrustedOrigin } = require('./config/origins');
 const { version: APP_VERSION } = require('./package.json');
 
@@ -166,7 +167,7 @@ app.use(process.env.NODE_ENV === 'production' ? morgan('combined') : morgan('dev
 // Ensure database connectivity before business API requests. Health remains available
 // even when the database is unavailable so deployment diagnostics still work.
 app.use('/api', async (req, res, next) => {
-  if (req.path === '/health' || req.path === '/readiness') return next();
+  if (req.path === '/health' || req.path === '/readiness' || req.path === '/launch-readiness') return next();
 
   if (!(process.env.MONGODB_URI || process.env.MONGODB_URL)) {
     if (process.env.NODE_ENV === 'production') {
@@ -265,6 +266,27 @@ app.get('/api/readiness', async (_req, res) => {
       whatsapp: Boolean(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN),
       livekit: Boolean(process.env.LIVEKIT_API_KEY && process.env.LIVEKIT_API_SECRET && process.env.LIVEKIT_URL),
     },
+  });
+});
+
+app.get('/api/launch-readiness', async (_req, res) => {
+  const configuration = getConfigurationReadiness();
+  let databaseConnected = mongoose.connection.readyState === 1;
+
+  if (configuration.databaseConfigured && !databaseConnected) {
+    try {
+      await connectDB();
+      databaseConnected = mongoose.connection.readyState === 1;
+    } catch {
+      databaseConnected = false;
+    }
+  }
+
+  const launch = getLaunchReadiness({ databaseConnected });
+
+  return res.status(launch.ready ? 200 : 503).json({
+    status: launch.ready ? 'ready' : 'not-ready',
+    ...launch,
   });
 });
 
