@@ -53,7 +53,7 @@ Important boundary:
 
 ## T05.2 — Teacher application asset lifecycle
 
-Status: IN PROGRESS
+Status: COMPLETE ✅
 
 Audit findings:
 
@@ -86,3 +86,19 @@ Acceptance gate:
 - production readiness, storage status and runtime-error smoke checks pass after deployment.
 
 A destructive production Blob purge drill remains deferred until T05's disposable production-object verification task.
+
+Verification evidence:
+- GitHub PR #18 CI run `37500770357`: frontend + backend successful.
+- Backend automated suite: 25/25 tests passed.
+- Production master SHA: `e6b4a9a741acafa58050e44d659334c8c37ec811`.
+- Frontend deployment `dpl_Cwqd72vsUWbDSDuZZZZHnwakXX4L`: READY.
+- API deployment `dpl_BtZReE4kkjGAC27S47S7xWoadq2x`: READY.
+- Teacher registration route returned HTTP 200.
+- Production `/api/readiness` returned HTTP 200 with `ready: true`.
+- Production `/api/uploads/status` reported `vercel-blob`, configured, direct upload enabled and private-by-default.
+- No frontend or API runtime errors were observed in the post-deploy smoke window.
+
+Important boundary:
+- T05.2 verifies traceable teacher asset ownership, safe purge controls, CI contracts and production deployment health.
+- No real teacher asset was purged during verification.
+- Disposable production object upload/read/delete verification remains T05.3.
