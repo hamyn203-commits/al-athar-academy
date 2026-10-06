@@ -82,3 +82,29 @@ Verification evidence:
 - Localized route smoke checks returned HTTP 200 for Arabic, English and Indonesian routes.
 - `/api/readiness` returned HTTP 200 with `ready: true`.
 - No frontend or API runtime errors were observed in the post-deploy smoke window.
+
+## T04.3 — Locale transition & localized 404 contract
+
+Status: IN PROGRESS
+
+Audit findings:
+- Language switching dropped the current query string and URL hash.
+- Invalid-locale redirects dropped query/hash state.
+- Root locale redirects did not preserve query/hash state.
+- Locale-specific 404s were rendered outside the locale layout and could use the wrong active language.
+
+Implementation:
+- Added `localizedLocation()` as the central locale-transition helper.
+- Language switching preserves pathname, query string and hash.
+- Invalid-locale recovery preserves query string and hash.
+- Initial root locale redirect preserves query string and hash.
+- Localized route trees now own their 404 fallback so not-found pages inherit the requested locale.
+- Blocking route contracts cover the new behavior.
+
+Acceptance gate:
+- `npm run test:routes` passes.
+- production safety scan passes.
+- frontend production build passes.
+- backend security/contracts and automated tests remain green.
+- GitHub PR CI passes before merge.
+- post-deploy locale-state and localized-404 smoke checks pass.

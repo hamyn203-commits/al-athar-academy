@@ -23,6 +23,12 @@ export function localizedPath(path, locale = DEFAULT_LOCALE) {
   return `/${locale}${clean}`;
 }
 
+export function localizedLocation(pathname, locale = DEFAULT_LOCALE, search = '', hash = '') {
+  const basePath = stripLocale(pathname || '/');
+  const localized = localizedPath(basePath || '/', locale);
+  return `${localized}${search || ''}${hash || ''}`;
+}
+
 export function detectBrowserLocale() {
   const lang = (navigator.language || 'ar').split('-')[0];
   return isValidLocale(lang) ? lang : DEFAULT_LOCALE;

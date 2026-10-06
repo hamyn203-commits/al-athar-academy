@@ -132,8 +132,14 @@ function AppContent() {
     <div className="min-h-screen flex flex-col">
       <Suspense fallback={<PageLoader />}>
         <Routes>
-          <Route path="/" element={<LocaleLayout />}>{pageRoutes()}</Route>
-          <Route path="/:locale" element={<LocaleLayout />}>{pageRoutes()}</Route>
+          <Route path="/" element={<LocaleLayout />}>
+            {pageRoutes()}
+            <Route path="*" element={<NotFoundPage />} />
+          </Route>
+          <Route path="/:locale" element={<LocaleLayout />}>
+            {pageRoutes()}
+            <Route path="*" element={<NotFoundPage />} />
+          </Route>
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Suspense>
