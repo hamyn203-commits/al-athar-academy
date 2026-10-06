@@ -228,6 +228,11 @@ app.get('/api/health', (_req, res) => {
       telegram: Boolean(process.env.TELEGRAM_BOT_TOKEN),
       whatsapp: Boolean(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN),
       livekit: Boolean(process.env.LIVEKIT_API_KEY && process.env.LIVEKIT_API_SECRET && process.env.LIVEKIT_URL),
+      manualPayment: process.env.MANUAL_PAYMENT_ENABLED === 'true' && Boolean(
+        process.env.MANUAL_PAYMENT_INSTAPAY
+        || process.env.MANUAL_PAYMENT_VODAFONE_CASH
+        || process.env.MANUAL_PAYMENT_BANK_DETAILS
+      ),
       paymob: process.env.PAYMOB_ENABLED === 'true' && Boolean(
         process.env.PAYMOB_SECRET_KEY
         && process.env.PAYMOB_PUBLIC_KEY
