@@ -1,7 +1,7 @@
 const Notification = require('../models/Notification');
 const User = require('../models/User');
 
-async function notifyUser(userId, { type, title, message, data = {}, priority = 'normal', channels }) {
+async function notifyUser(userId, { type, title, message, data = {}, priority = 'medium', channels }) {
   const user = await User.findById(userId).select('preferences email phone');
   const prefs = user?.preferences?.notifications || {};
 
