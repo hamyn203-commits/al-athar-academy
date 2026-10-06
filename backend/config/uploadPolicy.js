@@ -40,7 +40,7 @@ const PURPOSES = Object.freeze({
 
 const EXTENSIONS_BY_CONTENT_TYPE = Object.freeze({
   'application/pdf': ['.pdf'],
-  'image/jpeg': ['.jpg', '.jpeg'],
+  'image/jpeg': ['.jpg', '.jpeg', '.jfif'],
   'image/png': ['.png'],
   'video/mp4': ['.mp4'],
   'video/webm': ['.webm'],
