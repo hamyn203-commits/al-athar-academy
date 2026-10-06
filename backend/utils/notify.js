@@ -2,15 +2,15 @@ const Notification = require('../models/Notification');
 const User = require('../models/User');
 
 async function notifyUser(userId, { type, title, message, data = {}, priority = 'medium', channels }) {
-  const user = await User.findById(userId).select('preferences email phone');
+  const user = await User.findById(userId).select('preferences email phone pushToken telegramId');
   const prefs = user?.preferences?.notifications || {};
 
   const defaultChannels = {
     inApp: { enabled: true },
     email: { enabled: prefs.email !== false },
-    push: { enabled: prefs.push !== false },
-    telegram: { enabled: !!process.env.TELEGRAM_BOT_TOKEN },
-    sms: { enabled: !!(process.env.TWILIO_ACCOUNT_SID && user?.phone) },
+    push: { enabled: prefs.push !== false && !!user?.pushToken },
+    telegram: { enabled: !!(process.env.TELEGRAM_BOT_TOKEN && user?.telegramId) },
+    sms: { enabled: !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && user?.phone) },
   };
 
   return Notification.createAndSend(userId, {
@@ -46,13 +46,6 @@ async function notifySessionAccepted(session, studentId, meetingUrl) {
     },
     data: { session: session._id, meetingLink: meetingUrl },
     priority: 'high',
-    channels: {
-      inApp: { enabled: true },
-      email: { enabled: true },
-      push: { enabled: true },
-      telegram: { enabled: true },
-      sms: { enabled: true },
-    },
   });
 }
 
