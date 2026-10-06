@@ -10,6 +10,7 @@ const Session = require('../models/Session');
 const { protect, authorize } = require('../middleware/auth');
 const objectStorage = require('../services/objectStorage');
 const { resolveOwnedTeacherAssets } = require('../utils/teacherAssetLifecycle');
+const { sendEmail } = require('../services/notificationDispatcher');
 const multer = require('multer');
 const {
   addMockUser,
@@ -27,7 +28,7 @@ const isDBConnected = () => mongoose.connection.readyState === 1;
 
 const publicUploadDir = path.join(__dirname, '..', 'uploads', 'teachers', 'public');
 const privateUploadDir = path.join(__dirname, '..', 'uploads', 'private', 'teachers');
-const privateFields = new Set(['idCard', 'graduationCertificate', 'tajweedCertificates', 'ijazat']);
+const privateFields = new Set(['idCard', 'idCardFront', 'idCardBack', 'graduationCertificate', 'tajweedCertificates', 'ijazat']);
 
 if (process.env.FILE_STORAGE_DRIVER !== 'external') {
   for (const dir of [publicUploadDir, privateUploadDir]) {
@@ -105,9 +106,9 @@ function sanitizePublicTeacher(doc) {
 
 const upload = multer({
   storage: externalStorage ? multer.memoryStorage() : diskStorage,
-  limits: { fileSize: 50 * 1024 * 1024 },
+  limits: { fileSize: 100 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|pdf|mp4|mp3|wav/;
+    const allowedTypes = /jpeg|jpg|jfif|png|pdf|mp4|webm|mov|quicktime|mp3|wav/;
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
     const mimetype = allowedTypes.test(file.mimetype);
 
@@ -124,6 +125,8 @@ router.post(
   upload.fields([
     { name: 'profilePhoto', maxCount: 1 },
     { name: 'idCard', maxCount: 1 },
+    { name: 'idCardFront', maxCount: 1 },
+    { name: 'idCardBack', maxCount: 1 },
     { name: 'graduationCertificate', maxCount: 1 },
     { name: 'tajweedCertificates', maxCount: 5 },
     { name: 'ijazat', maxCount: 5 },
@@ -142,6 +145,16 @@ router.post(
       const uploadedFiles = req.body.uploadedFiles
         ? (typeof req.body.uploadedFiles === 'string' ? JSON.parse(req.body.uploadedFiles) : req.body.uploadedFiles)
         : {};
+      const documentAvailability = req.body.documentAvailability
+        ? (typeof req.body.documentAvailability === 'string'
+          ? JSON.parse(req.body.documentAvailability)
+          : req.body.documentAvailability)
+        : {};
+      const declaredDocuments = {
+        graduationCertificate: documentAvailability.graduationCertificate === true,
+        tajweedCertificates: documentAvailability.tajweedCertificates === true,
+        ijazat: documentAvailability.ijazat === true,
+      };
 
       const uploadedFileCount = Object.values(req.files || {}).reduce((sum, list) => sum + (Array.isArray(list) ? list.length : 0), 0);
       if (externalStorage && uploadedFileCount > 0) {
@@ -190,6 +203,8 @@ router.post(
         validateDirectUpload(uploadedFiles.introductionVideo, 'teacher-public', uploadOwner) &&
         validateDirectUpload(uploadedFiles.teachingMethodVideo, 'teacher-public', uploadOwner) &&
         validateDirectUpload(uploadedFiles.idCard, 'teacher-private', uploadOwner) &&
+        validateDirectUpload(uploadedFiles.idCardFront, 'teacher-private', uploadOwner) &&
+        validateDirectUpload(uploadedFiles.idCardBack, 'teacher-private', uploadOwner) &&
         validateDirectUpload(uploadedFiles.graduationCertificate, 'teacher-private', uploadOwner) &&
         validateDirectUploadList(uploadedFiles.recitationVideo, 'teacher-public', uploadOwner) &&
         validateDirectUploadList(uploadedFiles.additionalVideos, 'teacher-public', uploadOwner) &&
@@ -199,6 +214,82 @@ router.post(
 
       if (!validUploadedFiles) {
         return res.status(400).json({ error: 'One or more uploaded files do not belong to this application' });
+      }
+
+      const hasDirectOrLegacy = (directValue, legacyFiles) => Boolean(
+        directReference(directValue) || legacyFiles?.[0]
+      );
+      const hasDirectOrLegacyList = (directValues, legacyFiles) => Boolean(
+        (Array.isArray(directValues) && directValues.length) ||
+        (Array.isArray(legacyFiles) && legacyFiles.length)
+      );
+
+      if (!hasDirectOrLegacy(uploadedFiles.profilePhoto, req.files?.profilePhoto)) {
+        return res.status(400).json({
+          error: 'Profile photo is required',
+          code: 'TEACHER_PROFILE_PHOTO_REQUIRED',
+        });
+      }
+
+      if (!hasDirectOrLegacy(uploadedFiles.idCardFront, req.files?.idCardFront)) {
+        return res.status(400).json({
+          error: 'ID card front is required',
+          code: 'TEACHER_ID_FRONT_REQUIRED',
+        });
+      }
+
+      if (!hasDirectOrLegacy(uploadedFiles.idCardBack, req.files?.idCardBack)) {
+        return res.status(400).json({
+          error: 'ID card back is required',
+          code: 'TEACHER_ID_BACK_REQUIRED',
+        });
+      }
+
+      if (!hasDirectOrLegacyList(uploadedFiles.recitationVideo, req.files?.recitationVideo)) {
+        return res.status(400).json({
+          error: 'At least one recitation video is required',
+          code: 'TEACHER_RECITATION_VIDEO_REQUIRED',
+        });
+      }
+
+      if (
+        !['graduationCertificate', 'tajweedCertificates', 'ijazat']
+          .every((field) => typeof documentAvailability[field] === 'boolean')
+      ) {
+        return res.status(400).json({
+          error: 'Document availability declarations are required',
+          code: 'TEACHER_DOCUMENT_DECLARATION_REQUIRED',
+        });
+      }
+
+      if (
+        declaredDocuments.graduationCertificate &&
+        !hasDirectOrLegacy(uploadedFiles.graduationCertificate, req.files?.graduationCertificate)
+      ) {
+        return res.status(400).json({
+          error: 'Graduation certificate was marked available but no file was uploaded',
+          code: 'TEACHER_GRADUATION_CERTIFICATE_REQUIRED',
+        });
+      }
+
+      if (
+        declaredDocuments.tajweedCertificates &&
+        !hasDirectOrLegacyList(uploadedFiles.tajweedCertificates, req.files?.tajweedCertificates)
+      ) {
+        return res.status(400).json({
+          error: 'Tajweed certificates were marked available but no file was uploaded',
+          code: 'TEACHER_TAJWEED_CERTIFICATE_REQUIRED',
+        });
+      }
+
+      if (
+        declaredDocuments.ijazat &&
+        !hasDirectOrLegacyList(uploadedFiles.ijazat, req.files?.ijazat)
+      ) {
+        return res.status(400).json({
+          error: 'Ijazat were marked available but no file was uploaded',
+          code: 'TEACHER_IJAZA_REQUIRED',
+        });
       }
 
       if (!userId && email && password) {
@@ -276,21 +367,15 @@ router.post(
           },
           languages: JSON.parse(languages || '["arabic"]'),
           availability: JSON.parse(availability || '[]'),
-          status: 'approved',
-          isVerified: true,
+          status: 'pending',
+          isVerified: false,
         });
-
-        const { generateAccessToken, generateRefreshToken } = require('../middleware/auth');
-        const mockUser = findMockUserById(userId);
-        const accessToken = generateAccessToken(mockUser || { _id: userId, id: userId, role: 'teacher' });
-        const refreshToken = generateRefreshToken(mockUser || { _id: userId, id: userId, role: 'teacher' });
 
         return res.status(201).json({
           success: true,
-          message: 'تم إرسال طلب تسجيل المعلم بنجاح!',
+          message: 'تم إرسال طلب تسجيل المعلم بنجاح وهو الآن في انتظار موافقة الإدارة.',
+          applicationStatus: 'pending',
           teacher: mockT,
-          accessToken,
-          refreshToken,
         });
       }
 
@@ -305,15 +390,40 @@ router.post(
         return ref ? objectStorage.publicProxyUrl(ref) : null;
       };
 
+      const idCardFront =
+        directRef(uploadedFiles.idCardFront) ||
+        privateDocumentPath(req.files?.idCardFront?.[0]) ||
+        'not-provided';
+      const idCardBack =
+        directRef(uploadedFiles.idCardBack) ||
+        privateDocumentPath(req.files?.idCardBack?.[0]) ||
+        'not-provided';
+
       const documents = {
-        idCard: directRef(uploadedFiles.idCard) || privateDocumentPath(req.files?.idCard?.[0]) || 'not-provided',
-        graduationCertificate: directRef(uploadedFiles.graduationCertificate) || privateDocumentPath(req.files?.graduationCertificate?.[0]) || 'not-provided',
-        tajweedCertificates: uploadedFiles.tajweedCertificates?.map(directRef).filter(Boolean)
-          || req.files?.tajweedCertificates?.map(privateDocumentPath).filter(Boolean)
-          || [],
-        ijazat: uploadedFiles.ijazat?.map(directRef).filter(Boolean)
-          || req.files?.ijazat?.map(privateDocumentPath).filter(Boolean)
-          || [],
+        // Keep the legacy field pointed at the front side for older admin tools.
+        idCard: idCardFront,
+        idCardFront,
+        idCardBack,
+        graduationCertificateAvailable: declaredDocuments.graduationCertificate,
+        graduationCertificate: declaredDocuments.graduationCertificate
+          ? (directRef(uploadedFiles.graduationCertificate) || privateDocumentPath(req.files?.graduationCertificate?.[0]) || 'not-provided')
+          : 'not-provided',
+        tajweedCertificatesAvailable: declaredDocuments.tajweedCertificates,
+        tajweedCertificates: declaredDocuments.tajweedCertificates
+          ? (
+            uploadedFiles.tajweedCertificates?.map(directRef).filter(Boolean)
+            || req.files?.tajweedCertificates?.map(privateDocumentPath).filter(Boolean)
+            || []
+          )
+          : [],
+        ijazatAvailable: declaredDocuments.ijazat,
+        ijazat: declaredDocuments.ijazat
+          ? (
+            uploadedFiles.ijazat?.map(directRef).filter(Boolean)
+            || req.files?.ijazat?.map(privateDocumentPath).filter(Boolean)
+            || []
+          )
+          : [],
       };
 
       const directRecitations = uploadedFiles.recitationVideo || [];
@@ -377,9 +487,21 @@ router.post(
 
     await User.findByIdAndUpdate(userId, { role: 'teacher' });
 
+    if (email) {
+      sendEmail({
+        to: String(email).trim().toLowerCase(),
+        subject: 'تم استلام طلبك كمعلم — وَحْيٌ وَنَمَاء',
+        text: 'تم استلام طلبك كمعلم وهو الآن في انتظار مراجعة الإدارة. لن يتم فتح لوحة المعلم قبل اعتماد الطلب.',
+        html: '<div dir="rtl"><h2>تم استلام طلبك ✅</h2><p>طلبك كمعلم في أكاديمية وَحْيٌ وَنَمَاء أصبح الآن قيد مراجعة الإدارة.</p><p>لن يتم فتح لوحة المعلم قبل اعتماد الطلب، وسنرسل لك تحديثًا عند تغيير الحالة.</p></div>',
+      }).catch((error) => {
+        console.warn('Teacher application acknowledgement email failed:', error.message);
+      });
+    }
+
     res.status(201).json({
       success: true,
       message: 'Teacher registration submitted successfully. Awaiting admin review.',
+      applicationStatus: 'pending',
       teacher
     });
   } catch (error) {
@@ -494,17 +616,25 @@ router.put('/admin/:id/review', protect, authorize('admin'), async (req, res) =>
     'request-changes': 'under-review'
   };
 
+  if (!Object.prototype.hasOwnProperty.call(statusMap, action)) {
+    return res.status(400).json({
+      error: 'Invalid teacher review action',
+      code: 'INVALID_TEACHER_REVIEW_ACTION',
+    });
+  }
+
   if (isMockMode && !isDBConnected()) {
     return res.json({
       success: true,
       teacher: {
         _id: req.params.id,
-        status: statusMap[action] || 'approved',
+        status: statusMap[action],
         isVerified: action === 'approve',
         reviewNotes: [{ admin: req.user?.id || 'admin', note, date: new Date() }]
       }
     });
   }
+
   try {
     const teacher = await Teacher.findByIdAndUpdate(
       req.params.id,
@@ -526,9 +656,48 @@ router.put('/admin/:id/review', protect, authorize('admin'), async (req, res) =>
       return res.status(404).json({ error: 'Teacher not found' });
     }
 
-    res.json({ success: true, teacher });
+    const teacherUser = await User.findByIdAndUpdate(
+      teacher.user,
+      { $inc: { refreshTokenVersion: 1 } },
+      { new: true }
+    ).select('name email');
+
+    if (teacherUser?.email) {
+      const notification = {
+        approve: {
+          subject: 'تم قبول طلبك كمعلم — وَحْيٌ وَنَمَاء',
+          text: 'تم اعتماد طلبك كمعلم. يمكنك الآن تسجيل الدخول إلى حسابك.',
+          html: '<div dir="rtl"><h2>تم قبول طلبك ✅</h2><p>تم اعتماد طلبك كمعلم في أكاديمية وَحْيٌ وَنَمَاء.</p><p>يمكنك الآن تسجيل الدخول إلى حسابك.</p></div>',
+        },
+        'request-changes': {
+          subject: 'طلبك كمعلم يحتاج استكمال — وَحْيٌ وَنَمَاء',
+          text: `طلبك يحتاج استكمال أو تعديل قبل الاعتماد.${note ? ` ملاحظة الإدارة: ${note}` : ''}`,
+          html: `<div dir="rtl"><h2>طلبك يحتاج استكمال</h2><p>تحتاج الإدارة إلى استكمال أو تعديل بعض البيانات قبل الاعتماد.</p>${note ? `<p><strong>ملاحظة الإدارة:</strong> ${String(note).replace(/[<>&"]/g, '')}</p>` : ''}</div>`,
+        },
+        reject: {
+          subject: 'تحديث حالة طلب المعلم — وَحْيٌ وَنَمَاء',
+          text: `تعذر اعتماد طلبك كمعلم في الوقت الحالي.${note ? ` ملاحظة الإدارة: ${note}` : ''}`,
+          html: `<div dir="rtl"><h2>تحديث حالة الطلب</h2><p>تعذر اعتماد طلبك كمعلم في الوقت الحالي.</p>${note ? `<p><strong>ملاحظة الإدارة:</strong> ${String(note).replace(/[<>&"]/g, '')}</p>` : ''}</div>`,
+        },
+      }[action];
+
+      sendEmail({
+        to: teacherUser.email,
+        subject: notification.subject,
+        text: notification.text,
+        html: notification.html,
+      }).catch((error) => {
+        console.warn('Teacher review email failed:', error.message);
+      });
+    }
+
+    return res.json({
+      success: true,
+      teacher,
+      applicationStatus: teacher.status,
+    });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    return res.status(400).json({ error: error.message });
   }
 });
 
@@ -594,8 +763,13 @@ router.delete('/admin/:id/assets', protect, authorize('admin'), async (req, res)
 
     teacher.documents = {
       idCard: 'not-provided',
+      idCardFront: 'not-provided',
+      idCardBack: 'not-provided',
+      graduationCertificateAvailable: false,
       graduationCertificate: 'not-provided',
+      tajweedCertificatesAvailable: false,
       tajweedCertificates: [],
+      ijazatAvailable: false,
       ijazat: [],
     };
     teacher.media = {
@@ -628,7 +802,7 @@ router.get('/admin/:id/document/:kind{/:index}', protect, authorize('admin'), as
     if (!teacher) return res.status(404).json({ error: 'Teacher not found' });
 
     const { kind } = req.params;
-    const allowed = ['idCard', 'graduationCertificate', 'tajweedCertificates', 'ijazat'];
+    const allowed = ['idCard', 'idCardFront', 'idCardBack', 'graduationCertificate', 'tajweedCertificates', 'ijazat'];
     if (!allowed.includes(kind)) return res.status(400).json({ error: 'Invalid document type' });
 
     let stored = teacher.documents?.[kind];

@@ -6,7 +6,8 @@ import { uploadFileDirect } from '../../lib/fileUpload';
 
 const emptyFiles = () => ({
   profilePhoto: null,
-  idCard: null,
+  idCardFront: null,
+  idCardBack: null,
   graduationCertificate: null,
   tajweedCertificates: [],
   ijazat: [],
@@ -64,7 +65,8 @@ function validateSelectedFile(file, rule) {
 function validateTeacherFiles(files) {
   const checks = [
     [files.profilePhoto, FILE_RULES.publicImage],
-    [files.idCard, FILE_RULES.privateDocument],
+    [files.idCardFront, FILE_RULES.privateDocument],
+    [files.idCardBack, FILE_RULES.privateDocument],
     [files.graduationCertificate, FILE_RULES.privateDocument],
     ...((files.tajweedCertificates || []).map((file) => [file, FILE_RULES.privateDocument])),
     ...((files.ijazat || []).map((file) => [file, FILE_RULES.privateDocument])),
@@ -202,10 +204,36 @@ export function useTeacherForm() {
         if (!credentials.password || credentials.password.length < 8) return 'كلمة المرور 8+ أحرف';
         if (credentials.password !== credentials.confirmPassword) return 'كلمتا المرور غير متطابقتين';
         return null;
-      case 4:
-        if (!files.profilePhoto) return 'ارفع صورة 4×6';
+      case 4: {
+        const docs = formData.documentAvailability || {};
+        if (!files.profilePhoto) return 'ارفع صورة شخصية 4×6';
+        if (!files.idCardFront) return 'ارفع صورة وجه البطاقة الشخصية';
+        if (!files.idCardBack) return 'ارفع صورة ظهر البطاقة الشخصية';
         if (!files.recitationVideos?.length) return 'ارفع فيديو تلاوة واحد على الأقل';
+
+        if (typeof docs.graduationCertificate !== 'boolean') {
+          return 'حدد هل شهادة التخرج موجودة أم غير موجودة';
+        }
+        if (docs.graduationCertificate && !files.graduationCertificate) {
+          return 'ارفع شهادة التخرج لأنك اخترت أنها موجودة';
+        }
+
+        if (typeof docs.tajweedCertificates !== 'boolean') {
+          return 'حدد هل شهادات التجويد موجودة أم غير موجودة';
+        }
+        if (docs.tajweedCertificates && !files.tajweedCertificates?.length) {
+          return 'ارفع شهادة تجويد واحدة على الأقل';
+        }
+
+        if (typeof docs.ijazat !== 'boolean') {
+          return 'حدد هل لديك إجازات أم لا';
+        }
+        if (docs.ijazat && !files.ijazat?.length) {
+          return 'ارفع إجازة واحدة على الأقل';
+        }
+
         return validateTeacherFiles(files);
+      }
       default:
         return null;
     }
@@ -244,17 +272,25 @@ export function useTeacherForm() {
 
       const [
         profilePhoto,
-        idCard,
+        idCardFront,
+        idCardBack,
         graduationCertificate,
         tajweedCertificates,
         ijazat,
         recitationVideo,
       ] = await Promise.all([
         uploadOne(files.profilePhoto, 'teacher-public'),
-        uploadOne(files.idCard, 'teacher-private'),
-        uploadOne(files.graduationCertificate, 'teacher-private'),
-        uploadMany(files.tajweedCertificates, 'teacher-private'),
-        uploadMany(files.ijazat, 'teacher-private'),
+        uploadOne(files.idCardFront, 'teacher-private'),
+        uploadOne(files.idCardBack, 'teacher-private'),
+        formData.documentAvailability.graduationCertificate
+          ? uploadOne(files.graduationCertificate, 'teacher-private')
+          : Promise.resolve(null),
+        formData.documentAvailability.tajweedCertificates
+          ? uploadMany(files.tajweedCertificates, 'teacher-private')
+          : Promise.resolve([]),
+        formData.documentAvailability.ijazat
+          ? uploadMany(files.ijazat, 'teacher-private')
+          : Promise.resolve([]),
         uploadMany(files.recitationVideos, 'teacher-public'),
       ]);
 
@@ -283,9 +319,15 @@ export function useTeacherForm() {
         email: verifiedEmailNow,
         password: credentials.password,
         verificationToken,
+        documentAvailability: {
+          graduationCertificate: formData.documentAvailability.graduationCertificate,
+          tajweedCertificates: formData.documentAvailability.tajweedCertificates,
+          ijazat: formData.documentAvailability.ijazat,
+        },
         uploadedFiles: {
           profilePhoto,
-          idCard,
+          idCardFront,
+          idCardBack,
           graduationCertificate,
           tajweedCertificates,
           ijazat,

@@ -30,6 +30,11 @@ export const INITIAL_FORM = {
   academicInfo: {
     university: '', graduationYear: '',
   },
+  documentAvailability: {
+    graduationCertificate: null,
+    tajweedCertificates: null,
+    ijazat: null,
+  },
 };
 
 export const DRAFT_KEY = 'teacher_registration_draft';

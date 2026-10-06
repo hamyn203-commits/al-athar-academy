@@ -507,6 +507,34 @@ requireAbsent(
   /publicPurpose[\s\S]{0,300}payment-proof/
 );
 
+
+// T07.2i: teacher applicants must remain locked out until admin approval.
+requireContains(
+  'backend/routes/auth.js',
+  'teacher login must check the application approval gate before issuing tokens',
+  /user\.role\s*===\s*['"]teacher['"][\s\S]{0,900}getTeacherAccessDecision[\s\S]{0,900}generateAccessToken/
+);
+requireContains(
+  'backend/middleware/auth.js',
+  'protected teacher API access must re-check the application approval gate',
+  /req\.user\.role\s*===\s*['"]teacher['"][\s\S]{0,700}getTeacherAccessDecision/
+);
+requireContains(
+  'backend/routes/teachers.js',
+  'new teacher applications must require both sides of the identity card',
+  /TEACHER_ID_FRONT_REQUIRED[\s\S]{0,700}TEACHER_ID_BACK_REQUIRED/
+);
+requireContains(
+  'backend/routes/teachers.js',
+  'optional teacher documents must use explicit availability declarations',
+  /TEACHER_DOCUMENT_DECLARATION_REQUIRED/
+);
+requireContains(
+  'backend/routes/teachers.js',
+  'teacher review decisions must revoke outstanding refresh sessions',
+  /refreshTokenVersion:\s*1/
+);
+
 if (failures.length) {
   console.error('Security contracts failed:');
   failures.forEach((failure) => console.error(`- ${failure}`));
