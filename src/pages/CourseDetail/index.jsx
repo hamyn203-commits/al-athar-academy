@@ -56,6 +56,7 @@ export default function CourseDetail() {
       .then((data) => setPaymentConfig({
         loaded: true,
         configured: Boolean(data?.configured),
+        provider: data?.provider || null,
       }))
       .catch(() => setPaymentConfig({ loaded: true, configured: false }));
   }, []);
@@ -71,8 +72,8 @@ export default function CourseDetail() {
     if (paidCourse && paymentConfig.loaded && !paymentConfig.configured) {
       toast.error(
         isAr
-          ? 'الدفع الإلكتروني قيد الإعداد حاليًا. تواصل معنا للمساعدة.'
-          : 'Online payment is currently being configured. Contact us for help.'
+          ? 'طرق التحويل قيد الإعداد حاليًا. تواصل معنا للمساعدة.'
+          : 'Transfer methods are currently being configured. Contact us for help.'
       );
       return;
     }
@@ -80,17 +81,10 @@ export default function CourseDetail() {
     setEnrolling(true);
     try {
       if (paidCourse) {
-        const data = await api.post(
-          '/api/payments/course/' + encodeURIComponent(slug) + '/checkout',
-          { locale },
-          { auth: true }
+        navigate(
+          localizedPath('/payment/manual', locale)
+            + '?course=' + encodeURIComponent(slug)
         );
-
-        if (!data?.checkoutUrl) {
-          throw new Error(isAr ? 'تعذر فتح صفحة الدفع' : 'Unable to open payment checkout');
-        }
-
-        window.location.assign(data.checkoutUrl);
         return;
       }
 
@@ -101,7 +95,7 @@ export default function CourseDetail() {
       const message = err.code === 'PAYMENT_PROFILE_INCOMPLETE'
         ? (isAr ? 'أضف رقم هاتف صالح إلى حسابك قبل الدفع.' : 'Add a valid phone number to your account before payment.')
         : err.code === 'PAYMENT_PROVIDER_NOT_CONFIGURED'
-          ? (isAr ? 'الدفع الإلكتروني غير مفعّل بعد.' : 'Online payment is not enabled yet.')
+          ? (isAr ? 'طرق التحويل غير مفعّلة بعد.' : 'Transfer methods are not enabled yet.')
           : err.message || (isAr ? 'تعذر التسجيل' : 'Enrollment failed');
 
       toast.error(message);
@@ -228,8 +222,8 @@ export default function CourseDetail() {
                     ? (isAr ? 'جاري التحضير...' : 'Preparing...')
                     : Number(course.price) > 0
                       ? paymentConfig.loaded && !paymentConfig.configured
-                        ? (isAr ? 'الدفع الإلكتروني قيد الإعداد' : 'Online payment is being configured')
-                        : (isAr ? 'المتابعة إلى الدفع' : 'Continue to payment')
+                        ? (isAr ? 'طرق التحويل قيد الإعداد' : 'Transfer methods are being configured')
+                        : (isAr ? 'التحويل وإرسال الإثبات' : 'Transfer and submit proof')
                       : (isAr ? 'الالتحاق بالدورة' : 'Enroll in course')}
                   {!enrolling ? <ArrowIcon size={16} /> : null}
                 </button>
