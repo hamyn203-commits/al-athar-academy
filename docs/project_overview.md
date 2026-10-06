@@ -137,9 +137,17 @@ The health/readiness API reports their configured state.
 
 ## Payments
 
-Paymob checkout and signed webhook settlement code is implemented behind fail-closed configuration.
+The first-launch payment flow is manual and admin-reviewed:
 
-It is **not yet operationally verified for public launch**. Merchant credentials plus a real Test/E2E checkout, signed webhook and exactly-once fulfillment must succeed before the payment launch proof is marked verified.
+- the student transfers through a configured InstaPay, Vodafone Cash or optional bank destination;
+- the student uploads a private receipt/proof;
+- an admin independently verifies that the funds were actually received;
+- only the protected admin review endpoint can mark the payment succeeded and activate the course enrollment;
+- enrollment fulfillment is transactional and exactly-once guarded.
+
+Paymob checkout and signed webhook settlement code is retained behind fail-closed configuration as an optional future automated gateway. It is no longer a default public-launch dependency.
+
+Manual payments are **not yet operationally verified for public launch** until a real controlled transfer, proof submission, admin approval and exactly-one enrollment are demonstrated in production.
 
 ## Development
 
