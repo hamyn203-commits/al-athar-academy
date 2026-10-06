@@ -548,3 +548,24 @@ if (failures.length) {
 }
 
 console.log('Security contracts passed.');
+
+requireContains(
+  'backend/config/uploadPolicy.js',
+  'session chat voice notes must stay on a dedicated 10 MB private upload purpose',
+  /['"]session-chat-audio['"][\s\S]{0,260}roles:\s*\[['"]student['"],\s*['"]teacher['"]\][\s\S]{0,220}10\s*\*\s*1024\s*\*\s*1024/
+);
+requireContains(
+  'backend/routes/sessionTranslate.js',
+  'session voice note reads must require session membership before private object streaming',
+  /messages\/:messageId\/audio[\s\S]{0,500}canAccessSession[\s\S]{0,700}getPrivateObject/
+);
+requireContains(
+  'backend/routes/sessionTranslate.js',
+  'chat voice note references must be ownership checked before persistence',
+  /isOwnedObjectReference\([\s\S]{0,220}session-chat-audio/
+);
+requireAbsent(
+  'backend/routes/uploads.js',
+  'session chat audio must never be served by the public media proxy',
+  /publicPurpose[\s\S]{0,300}session-chat-audio/
+);
