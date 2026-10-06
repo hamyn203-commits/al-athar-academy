@@ -4,6 +4,8 @@ const objectStorage = require('../services/objectStorage');
 
 const PRIVATE_FIELDS = [
   'idCard',
+  'idCardFront',
+  'idCardBack',
   'graduationCertificate',
   'tajweedCertificates',
   'ijazat',
