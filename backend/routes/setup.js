@@ -85,6 +85,19 @@ const ensureAdminHandler = async (req, res) => {
   }
 };
 
+router.get('/admin-exists', async (_req, res) => {
+  if (process.env.VERCEL_ENV !== 'preview') {
+    return res.status(404).json({ error: 'Route not found' });
+  }
+
+  try {
+    const exists = Boolean(await User.exists({ role: 'admin' }));
+    return res.json({ adminExists: exists });
+  } catch {
+    return res.status(503).json({ error: 'Database check failed' });
+  }
+});
+
 router.post('/ensure-admin', bootstrapAllowed, ensureAdminHandler);
 router.post('/admin', bootstrapAllowed, ensureAdminHandler);
 
