@@ -6,6 +6,7 @@ const HomeworkSubmission = require('../models/HomeworkSubmission');
 const TeacherTask = require('../models/TeacherTask');
 const Teacher = require('../models/Teacher');
 const objectStorage = require('../services/objectStorage');
+const { deleteStoredReference } = require('../utils/storageLifecycle');
 const { protect, authorize } = require('../middleware/auth');
 const multer = require('multer');
 const path = require('path');
@@ -15,10 +16,11 @@ const { isMockMode } = require('../config/runtime');
 const isDBConnected = () => mongoose.connection.readyState === 1;
 
 const externalStorage = process.env.FILE_STORAGE_DRIVER === 'external';
+const HOMEWORK_UPLOAD_ROOT = path.resolve(process.cwd(), 'uploads', 'homework');
 
 const diskStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const dir = path.join(process.cwd(), 'uploads/homework');
+    const dir = HOMEWORK_UPLOAD_ROOT;
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
     cb(null, dir);
   },
@@ -205,6 +207,75 @@ router.get('/tasks/:id/file', protect, async (req, res) => {
   }
 });
 
+router.delete('/submissions/:id', protect, authorize('student', 'admin'), async (req, res) => {
+  try {
+    const submission = await HomeworkSubmission.findById(req.params.id)
+      .select('student sessionId homeworkId filePath');
+
+    if (!submission) return res.status(404).json({ error: 'Submission not found' });
+
+    if (req.user.role === 'student' && String(submission.student) !== String(req.user.id)) {
+      return res.status(403).json({ error: 'Not authorized to delete this submission' });
+    }
+
+    await deleteStoredReference({
+      reference: submission.filePath,
+      purpose: 'homework',
+      owner: submission.student,
+      localRoot: HOMEWORK_UPLOAD_ROOT,
+    });
+
+    await submission.deleteOne();
+
+    const parsed = parseSessionHomeworkId(submission.homeworkId);
+    if (parsed) {
+      const session = await Session.findOne({
+        _id: parsed.sessionId,
+        student: submission.student,
+      });
+
+      const homework = session?.teacherEvaluation?.assignedHomework?.[parsed.index];
+      if (homework) {
+        homework.status = 'pending';
+        await session.save();
+      }
+    }
+
+    return res.json({ success: true, message: 'Homework submission deleted' });
+  } catch (error) {
+    console.error('Homework submission delete failed:', error.message);
+    return res.status(500).json({ error: 'Failed to delete homework submission' });
+  }
+});
+
+router.delete('/tasks/:id/submission', protect, authorize('student', 'admin'), async (req, res) => {
+  try {
+    const task = await TeacherTask.findById(req.params.id).select('student submissionFile status');
+    if (!task) return res.status(404).json({ error: 'Task not found' });
+    if (!task.submissionFile) return res.status(404).json({ error: 'Submission file not found' });
+
+    if (req.user.role === 'student' && String(task.student) !== String(req.user.id)) {
+      return res.status(403).json({ error: 'Not authorized to delete this submission' });
+    }
+
+    await deleteStoredReference({
+      reference: task.submissionFile,
+      purpose: 'homework',
+      owner: task.student,
+      localRoot: HOMEWORK_UPLOAD_ROOT,
+    });
+
+    task.submissionFile = '';
+    task.status = 'pending';
+    await task.save();
+
+    return res.json({ success: true, message: 'Task submission deleted' });
+  } catch (error) {
+    console.error('Task submission delete failed:', error.message);
+    return res.status(500).json({ error: 'Failed to delete task submission' });
+  }
+});
+
 router.post('/:homeworkId/submit', protect, authorize('student'), upload.single('submission'), async (req, res) => {
   try {
     const { homeworkId } = req.params;
@@ -275,12 +346,23 @@ router.post('/:homeworkId/submit', protect, authorize('student'), upload.single(
     }
 
     if (mongoose.Types.ObjectId.isValid(homeworkId)) {
-      const task = await TeacherTask.findOneAndUpdate(
-        { _id: homeworkId, student: req.user.id, status: { $in: ['pending', 'submitted'] } },
-        { status: 'submitted', submissionFile: submittedFile.path },
-        { new: true },
-      );
+      const task = await TeacherTask.findOne({ _id: homeworkId, student: req.user.id });
       if (task) {
+        if (task.submissionFile) {
+          return res.status(409).json({
+            error: 'A submission already exists. Delete it before uploading a replacement.',
+            code: 'SUBMISSION_EXISTS'
+          });
+        }
+
+        if (!['pending', 'submitted'].includes(task.status)) {
+          return res.status(400).json({ error: 'This task no longer accepts submissions' });
+        }
+
+        task.status = 'submitted';
+        task.submissionFile = submittedFile.path;
+        await task.save();
+
         return res.json({ success: true, message: 'تم تسليم الواجب', task });
       }
     }
