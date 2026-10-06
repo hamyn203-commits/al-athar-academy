@@ -487,6 +487,17 @@ router.post(
 
     await User.findByIdAndUpdate(userId, { role: 'teacher' });
 
+    if (email) {
+      sendEmail({
+        to: String(email).trim().toLowerCase(),
+        subject: 'تم استلام طلبك كمعلم — وَحْيٌ وَنَمَاء',
+        text: 'تم استلام طلبك كمعلم وهو الآن في انتظار مراجعة الإدارة. لن يتم فتح لوحة المعلم قبل اعتماد الطلب.',
+        html: '<div dir="rtl"><h2>تم استلام طلبك ✅</h2><p>طلبك كمعلم في أكاديمية وَحْيٌ وَنَمَاء أصبح الآن قيد مراجعة الإدارة.</p><p>لن يتم فتح لوحة المعلم قبل اعتماد الطلب، وسنرسل لك تحديثًا عند تغيير الحالة.</p></div>',
+      }).catch((error) => {
+        console.warn('Teacher application acknowledgement email failed:', error.message);
+      });
+    }
+
     res.status(201).json({
       success: true,
       message: 'Teacher registration submitted successfully. Awaiting admin review.',
