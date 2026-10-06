@@ -34,7 +34,7 @@ Public mode requires:
 1. Core production readiness and database connectivity.
 2. A HTTPS custom academy domain (not a `.vercel.app` hostname) for `SITE_URL` and `FRONTEND_URL`.
 3. Email configured, sending domain verified and a real E2E delivery verified.
-4. Paymob configured and a real Test/E2E checkout + signed webhook verified.
+4. Manual payment configured and a real transfer → private proof → admin approval → exactly-once enrollment flow verified.
 5. LiveKit configured and a real classroom E2E verified.
 6. WhatsApp configured and a real E2E notification verified.
 
@@ -44,11 +44,11 @@ Flags are operational evidence markers. They must be changed to `true` only afte
 
 ```env
 LAUNCH_MODE=public
-LAUNCH_REQUIRED_FEATURES=email,paymob,livekit,whatsapp
+LAUNCH_REQUIRED_FEATURES=email,manual-payment,livekit,whatsapp
 
 EMAIL_DOMAIN_VERIFIED=false
 EMAIL_E2E_VERIFIED=false
-PAYMOB_E2E_VERIFIED=false
+MANUAL_PAYMENT_E2E_VERIFIED=false
 LIVEKIT_E2E_VERIFIED=false
 WHATSAPP_E2E_VERIFIED=false
 ```
@@ -94,6 +94,16 @@ Status: IN PROGRESS
 - The selected configured provider is reported without exposing any credential values.
 - Regression coverage verifies both provider paths and incomplete-config fail-closed behavior.
 
+### T07.2d — manual payment launch decision
+
+Status: IMPLEMENTED — awaiting merge/deploy/E2E 🟡
+
+- Public launch defaults now require `manual-payment` instead of `paymob`.
+- The student pays by configured InstaPay/Vodafone Cash/bank destination and uploads a private proof.
+- The admin must independently verify receipt of funds before approving.
+- Admin approval uses the same transactional enrollment settlement foundation as provider settlement.
+- Paymob stays dormant as an optional future automatic provider.
+
 ### External-service closure checklist
 
 Before a public GO decision:
@@ -101,10 +111,11 @@ Before a public GO decision:
 - [ ] Custom domain purchased, connected, HTTPS active and production URLs changed.
 - [ ] Resend sending domain verified.
 - [ ] OTP delivered to at least two external test inboxes.
-- [ ] Paymob Test checkout completed.
-- [ ] Paymob signed webhook accepted once and replay rejected/idempotent.
-- [ ] Payment status becomes succeeded only from server-side verified settlement.
-- [ ] Enrollment/fulfillment created exactly once.
+- [ ] InstaPay/Vodafone Cash (or approved bank transfer) destination configured.
+- [ ] Real controlled transfer submitted with a private proof.
+- [ ] Admin verifies the funds outside the academy, then approves the pending payment.
+- [ ] Payment becomes succeeded only from the admin review endpoint.
+- [ ] Enrollment/fulfillment is created exactly once.
 - [ ] LiveKit teacher + student + guardian/observer flow verified.
 - [ ] WhatsApp reminder reaches a real opted-in test number.
 - [ ] Student registration/login/refresh/logout smoke test passes.
@@ -120,7 +131,8 @@ Before a public GO decision:
 At creation of T07:
 
 - Email transport is configured, but Resend is restricted to the account test address until a sending domain is verified.
-- Paymob integration code is merged, but production/test merchant credentials and E2E settlement proof are not configured.
+- Paymob integration code remains available for a future automated gateway, but it is no longer a default launch requirement.
+- Manual payment destinations and a real approval E2E proof are still required before public launch.
 - WhatsApp is not configured.
 - LiveKit is not configured.
 - The academy still uses the Vercel hostname instead of a custom public domain.
