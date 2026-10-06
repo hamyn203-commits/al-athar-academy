@@ -4,7 +4,7 @@ T06 owns real payment processing, webhook verification and payment-backed fulfil
 
 ## T06.1 — Payment integrity foundation
 
-Status: IN PROGRESS
+Status: COMPLETE ✅
 
 Audit findings:
 
@@ -41,3 +41,18 @@ Acceptance gate:
 Boundary:
 
 T06.1 does not claim that card payments are live. Provider checkout creation, signature-verified webhooks and provider settlement belong to the next T06 task.
+
+Verification evidence:
+- GitHub PR #24 CI run `37507772093`: frontend + backend successful.
+- Backend automated suite: 32/32 tests passed.
+- Production master SHA: `e254b9f1d763c5dcf18ee30867428d9daabef816`.
+- Frontend deployment `dpl_7b3uBaLUExgUvaoYuXUC2Z86f3pK`: READY.
+- API deployment `dpl_EY8RmAD5y3wAziU3e9mHETuXyBvN`: READY.
+- Production `/api/readiness` returned HTTP 200 with `ready: true`.
+- Production `/api/donations/stats` returned the currency-safe confirmed-only response shape.
+- Production `/ar/donate` returned HTTP 200.
+- No frontend or API runtime errors were observed in the post-deploy smoke window.
+
+Important boundary:
+- T06.1 establishes payment truth, state and idempotency contracts only.
+- No provider checkout or automatic settlement is live yet.
