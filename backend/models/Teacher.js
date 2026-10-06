@@ -38,9 +38,15 @@ const TeacherSchema = new mongoose.Schema({
     }]
   },
   documents: {
-    idCard: { type: String, required: true },
-    graduationCertificate: { type: String, required: true },
+    // idCard is kept for backwards compatibility with legacy teacher records.
+    idCard: { type: String, default: 'not-provided' },
+    idCardFront: { type: String, default: 'not-provided' },
+    idCardBack: { type: String, default: 'not-provided' },
+    graduationCertificateAvailable: { type: Boolean, default: false },
+    graduationCertificate: { type: String, default: 'not-provided' },
+    tajweedCertificatesAvailable: { type: Boolean, default: false },
     tajweedCertificates: [String],
+    ijazatAvailable: { type: Boolean, default: false },
     ijazat: [String]
   },
   media: {
