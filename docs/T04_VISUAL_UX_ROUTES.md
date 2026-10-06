@@ -85,7 +85,7 @@ Verification evidence:
 
 ## T04.3 — Locale transition & localized 404 contract
 
-Status: IN PROGRESS
+Status: COMPLETE ✅
 
 Audit findings:
 - Language switching dropped the current query string and URL hash.
@@ -108,3 +108,24 @@ Acceptance gate:
 - backend security/contracts and automated tests remain green.
 - GitHub PR CI passes before merge.
 - post-deploy locale-state and localized-404 smoke checks pass.
+
+Verification evidence:
+- GitHub PR #14 CI run `37495243841`: frontend + backend successful.
+- Production master SHA: `88b9be5d0edb9075a87b691c20314913382506bb`.
+- Frontend deployment `dpl_5618R5AgoVLwLE6LAUaQHhur9Y72`: READY.
+- API deployment `dpl_E7QRznWCmt3MoBBVUC64qzxafYTw`: READY.
+- Production smoke checks succeeded for localized 404, localized course/login routes and API readiness.
+- `/api/readiness` returned HTTP 200 with `ready: true`.
+- No frontend or API runtime errors were observed in the post-deploy smoke window.
+- Static active-route audit found zero unmatched literal internal destinations.
+
+## T04 overall status
+
+Status: COMPLETE ✅
+
+T04 closes after:
+- T04.1 route and navigation contract
+- T04.2 internal navigation locale sweep
+- T04.3 locale transition and localized 404 contract
+
+The remaining full upload/download/delete lifecycle is intentionally owned by T05.
