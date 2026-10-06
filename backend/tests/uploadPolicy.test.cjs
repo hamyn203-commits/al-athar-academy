@@ -160,3 +160,39 @@ test('Vercel Blob references require HTTPS and the expected host suffix', () => 
     false
   );
 });
+
+
+test('teacher public video allows 100 MB and rejects anything larger', () => {
+  const allowed = validateUploadMetadata({
+    purpose: 'teacher-public',
+    role: 'teacher-registration',
+    filename: 'recitation.mp4',
+    contentType: 'video/mp4',
+    size: 100 * 1024 * 1024,
+  });
+
+  assert.equal(allowed.size, 100 * 1024 * 1024);
+
+  assert.throws(
+    () => validateUploadMetadata({
+      purpose: 'teacher-public',
+      role: 'teacher-registration',
+      filename: 'recitation.mp4',
+      contentType: 'video/mp4',
+      size: (100 * 1024 * 1024) + 1,
+    }),
+    /Invalid file size/
+  );
+});
+
+test('teacher JPEG uploads accept JFIF extension', () => {
+  const result = validateUploadMetadata({
+    purpose: 'teacher-public',
+    role: 'teacher-registration',
+    filename: 'profile.jfif',
+    contentType: 'image/jpeg',
+    size: 500_000,
+  });
+
+  assert.equal(result.extension, '.jfif');
+});

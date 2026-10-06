@@ -192,21 +192,68 @@ export default function TeacherRegistration() {
 
               {f.step === 4 && (
                 <div className="space-y-5">
-                  <FileBox id="profilePhoto" label="صورة شخصية 4×6 *" accept="image/*" file={f.files.profilePhoto}
+                  <FileBox
+                    id="profilePhoto"
+                    label="صورة شخصية 4×6 *"
+                    hint="JPG أو PNG فقط"
+                    accept=".jpg,.jpeg,.jfif,.png,image/jpeg,image/png"
+                    allowedMimeTypes={['image/jpeg', 'image/png']}
+                    allowedExtensions={['.jpg', '.jpeg', '.jfif', '.png']}
+                    maxBytes={100 * 1024 * 1024}
+                    file={f.files.profilePhoto}
                     onChange={(file) => f.setFile('profilePhoto', file)}
-                    preview={(file) => <img src={URL.createObjectURL(file)} alt="" className="h-32 rounded-lg object-cover" />} />
+                    preview={(file) => <img src={URL.createObjectURL(file)} alt="" className="h-32 rounded-lg object-cover" />}
+                  />
 
                   <div className="border-t border-slate-100 pt-4">
                     <p className="font-semibold text-slate-800 mb-3">مستندات اختيارية (تحت كل سؤال إن وُجد)</p>
                     <div className="space-y-3">
-                      <FileBox id="idCard" label="بطاقة شخصية (اختياري)" accept="image/*,application/pdf" file={f.files.idCard}
-                        onChange={(file) => f.setFile('idCard', file)} />
-                      <FileBox id="gradCert" label="شهادة التخرج (اختياري)" accept="image/*,application/pdf" file={f.files.graduationCertificate}
-                        onChange={(file) => f.setFile('graduationCertificate', file)} />
-                      <FileBox id="tajweed" label="شهادات التجويد (اختياري)" accept="image/*,application/pdf" multiple
-                        files={f.files.tajweedCertificates} onChange={(files) => f.setFile('tajweedCertificates', files)} />
-                      <FileBox id="ijazat" label="الإجازات (اختياري)" accept="image/*,application/pdf" multiple
-                        files={f.files.ijazat} onChange={(files) => f.setFile('ijazat', files)} />
+                      <FileBox
+                        id="idCard"
+                        label="بطاقة شخصية (اختياري)"
+                        hint="JPG أو PNG أو PDF"
+                        accept=".jpg,.jpeg,.jfif,.png,.pdf,image/jpeg,image/png,application/pdf"
+                        allowedMimeTypes={['image/jpeg', 'image/png', 'application/pdf']}
+                        allowedExtensions={['.jpg', '.jpeg', '.jfif', '.png', '.pdf']}
+                        maxBytes={25 * 1024 * 1024}
+                        file={f.files.idCard}
+                        onChange={(file) => f.setFile('idCard', file)}
+                      />
+                      <FileBox
+                        id="gradCert"
+                        label="شهادة التخرج (اختياري)"
+                        hint="JPG أو PNG أو PDF"
+                        accept=".jpg,.jpeg,.jfif,.png,.pdf,image/jpeg,image/png,application/pdf"
+                        allowedMimeTypes={['image/jpeg', 'image/png', 'application/pdf']}
+                        allowedExtensions={['.jpg', '.jpeg', '.jfif', '.png', '.pdf']}
+                        maxBytes={25 * 1024 * 1024}
+                        file={f.files.graduationCertificate}
+                        onChange={(file) => f.setFile('graduationCertificate', file)}
+                      />
+                      <FileBox
+                        id="tajweed"
+                        label="شهادات التجويد (اختياري)"
+                        hint="JPG أو PNG أو PDF"
+                        accept=".jpg,.jpeg,.jfif,.png,.pdf,image/jpeg,image/png,application/pdf"
+                        allowedMimeTypes={['image/jpeg', 'image/png', 'application/pdf']}
+                        allowedExtensions={['.jpg', '.jpeg', '.jfif', '.png', '.pdf']}
+                        maxBytes={25 * 1024 * 1024}
+                        multiple
+                        files={f.files.tajweedCertificates}
+                        onChange={(files) => f.setFile('tajweedCertificates', files)}
+                      />
+                      <FileBox
+                        id="ijazat"
+                        label="الإجازات (اختياري)"
+                        hint="JPG أو PNG أو PDF"
+                        accept=".jpg,.jpeg,.jfif,.png,.pdf,image/jpeg,image/png,application/pdf"
+                        allowedMimeTypes={['image/jpeg', 'image/png', 'application/pdf']}
+                        allowedExtensions={['.jpg', '.jpeg', '.jfif', '.png', '.pdf']}
+                        maxBytes={25 * 1024 * 1024}
+                        multiple
+                        files={f.files.ijazat}
+                        onChange={(files) => f.setFile('ijazat', files)}
+                      />
                     </div>
                   </div>
 
@@ -218,8 +265,18 @@ export default function TeacherRegistration() {
                     <ul className="text-sm text-slate-600 space-y-1 mb-3 bg-amber-50 border border-amber-100 rounded-lg p-3">
                       {VIDEO_GUIDE.map((t) => <li key={t}>• {t}</li>)}
                     </ul>
-                    <FileBox id="reciteVid" label="ارفع فيديو/فيديوهات التلاوة (3–5 دقائق)" accept="video/*" multiple
-                      files={f.files.recitationVideos} onChange={(files) => f.setFile('recitationVideos', files)} />
+                    <FileBox
+                      id="reciteVid"
+                      label="ارفع فيديو/فيديوهات التلاوة (3–5 دقائق)"
+                      hint="MP4 أو WebM فقط — الحد الأقصى 100 MB لكل فيديو"
+                      accept=".mp4,.webm,video/mp4,video/webm"
+                      allowedMimeTypes={['video/mp4', 'video/webm']}
+                      allowedExtensions={['.mp4', '.webm']}
+                      maxBytes={100 * 1024 * 1024}
+                      multiple
+                      files={f.files.recitationVideos}
+                      onChange={(files) => f.setFile('recitationVideos', files)}
+                    />
                   </div>
                 </div>
               )}

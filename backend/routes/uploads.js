@@ -112,7 +112,19 @@ router.post('/blob', async (req, res) => {
 
     return res.json(jsonResponse);
   } catch (error) {
-    return res.status(400).json({ error: error.message || 'Upload authorization failed' });
+    const message = error?.message || 'Upload authorization failed';
+    console.warn('Blob upload authorization rejected', {
+      reason: message,
+      contentLength: req.headers['content-length'] || null,
+    });
+
+    const status = message === 'Invalid file size' ? 413 : 400;
+    return res.status(status).json({
+      error: message,
+      code: message === 'Invalid file size'
+        ? 'UPLOAD_FILE_TOO_LARGE'
+        : 'UPLOAD_AUTHORIZATION_REJECTED',
+    });
   }
 });
 
