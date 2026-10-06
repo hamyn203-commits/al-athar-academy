@@ -32,6 +32,9 @@ jobs:
       - name: Production safety scan
         run: npm run safety:production
 
+      - name: Route navigation contracts
+        run: npm run test:routes
+
       - name: Build
         run: npm run build --ignore-scripts
 
