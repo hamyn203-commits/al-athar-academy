@@ -1,5 +1,4 @@
 const express = require('express');
-const crypto = require('crypto');
 const path = require('path');
 const jwt = require('jsonwebtoken');
 const router = express.Router();
@@ -44,67 +43,6 @@ function assertUploadPath(pathname, purpose, owner) {
     throw new Error('Invalid upload path');
   }
 }
-
-function safeEqualSecret(expected, supplied) {
-  const left = Buffer.from(String(expected || ''));
-  const right = Buffer.from(String(supplied || ''));
-  return left.length === right.length && crypto.timingSafeEqual(left, right);
-}
-
-async function executeStorageE2EProbe(res) {
-  res.setHeader('Cache-Control', 'no-store');
-
-  try {
-    const result = await storage.runDisposableLifecycleProbe();
-    console.log('Storage lifecycle probe completed', {
-      driver: result.driver,
-      created: result.created,
-      readVerified: result.readVerified,
-      deleted: result.deleted,
-      absentAfterDelete: result.absentAfterDelete,
-    });
-    return res.json({ success: true, ...result });
-  } catch (error) {
-    console.error('Storage lifecycle probe failed:', error.message);
-    return res.status(500).json({
-      success: false,
-      error: 'Storage lifecycle probe failed',
-    });
-  }
-}
-
-router.post('/_internal/storage-e2e', async (req, res) => {
-  if (process.env.NODE_ENV !== 'production') {
-    return res.status(404).json({ error: 'Route not found' });
-  }
-
-  const secret = process.env.STORAGE_E2E_SECRET;
-  const supplied = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '');
-
-  if (!secret || !safeEqualSecret(secret, supplied)) {
-    return res.status(404).json({ error: 'Route not found' });
-  }
-
-  return executeStorageE2EProbe(res);
-});
-
-router.get('/_internal/storage-e2e-once', async (req, res) => {
-  if (
-    process.env.NODE_ENV !== 'production' ||
-    process.env.STORAGE_E2E_QUERY_BRIDGE !== 'true'
-  ) {
-    return res.status(404).json({ error: 'Route not found' });
-  }
-
-  const secret = process.env.STORAGE_E2E_SECRET;
-  const supplied = String(req.query.token || '');
-
-  if (!secret || !safeEqualSecret(secret, supplied)) {
-    return res.status(404).json({ error: 'Route not found' });
-  }
-
-  return executeStorageE2EProbe(res);
-});
 
 router.get('/status', (_req, res) => {
   res.json({
