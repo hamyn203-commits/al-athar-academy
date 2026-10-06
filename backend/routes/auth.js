@@ -13,6 +13,7 @@ const {
 } = require('../middleware/auth');
 const { addMockUser, findMockUserByEmail, findMockUserById, updateMockUser } = require('../mockStore');
 const { sendEmail } = require('../services/notificationDispatcher');
+const { getTeacherAccessDecision } = require('../utils/teacherAccess');
 
 const { isMockMode } = require('../config/runtime');
 const isDBConnected = () => mongoose.connection.readyState === 1;
@@ -190,6 +191,18 @@ router.post('/login', async (req, res) => {
       });
     }
 
+    if (user.role === 'teacher') {
+      const decision = await getTeacherAccessDecision(user._id || user.id);
+      if (!decision.allowed) {
+        clearRefreshCookie(res);
+        return res.status(403).json({
+          error: decision.error,
+          code: decision.code,
+          applicationStatus: decision.status,
+        });
+      }
+    }
+
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
     setRefreshCookie(res, refreshToken);
@@ -232,6 +245,18 @@ router.post('/refresh', verifyRefreshToken, async (req, res) => {
     if (tokenVersion !== expectedVersion) {
       clearRefreshCookie(res);
       return res.status(401).json({ error: 'Refresh session has been revoked' });
+    }
+
+    if (user.role === 'teacher') {
+      const decision = await getTeacherAccessDecision(user._id || user.id);
+      if (!decision.allowed) {
+        clearRefreshCookie(res);
+        return res.status(403).json({
+          error: decision.error,
+          code: decision.code,
+          applicationStatus: decision.status,
+        });
+      }
     }
 
     const accessToken = generateAccessToken(user);
