@@ -75,7 +75,7 @@ test('launch readiness fails closed until external launch proofs exist', async (
   assert.equal(result.response.status, 503);
   assert.equal(result.body.ready, false);
   assert.equal(result.body.mode, 'public');
-  assert.deepEqual(result.body.requiredFeatures, ['email', 'paymob', 'livekit', 'whatsapp']);
+  assert.deepEqual(result.body.requiredFeatures, ['email', 'manual-payment', 'livekit', 'whatsapp']);
   assert.equal(Array.isArray(result.body.blockers), true);
   assert.equal(result.body.blockers.length > 0, true);
   assert.equal(JSON.stringify(result.body).includes('JWT_SECRET'), false);
@@ -123,13 +123,14 @@ test('minor trial requests require a guardian while adult requests remain allowe
   assert.equal(adultWithoutGuardian.response.status, 201);
 });
 
-test('payment provider config fails closed when Paymob credentials are absent', async () => {
+test('manual payment config fails closed until a transfer destination is configured', async () => {
   const result = await request('/api/payments/config');
 
   assert.equal(result.response.status, 200);
-  assert.equal(result.body.provider, 'paymob');
+  assert.equal(result.body.provider, 'manual');
   assert.equal(result.body.configured, false);
-  assert.equal(result.body.checkoutMode, 'redirect');
+  assert.equal(result.body.checkoutMode, 'manual-review');
+  assert.deepEqual(result.body.methods, []);
 });
 
 test('public donation stats do not invent paid totals in mock mode', async () => {
