@@ -94,7 +94,7 @@ function pageRoutes() {
       <Route path="student" element={<StudentLegacyRedirect />} />
       <Route path="student/dashboard" element={<ProtectedRoute roles={['student']}><StudentDashboard /></ProtectedRoute>} />
       <Route path="guardian" element={<GuardianLegacyRedirect />} />
-      <Route path="guardian/dashboard" element={<ProtectedRoute roles={['guardian']}><GuardianDashboard /></ProtectedRoute>} />
+      <Route path="guardian/dashboard" element={<ProtectedRoute roles={['guardian', 'admin']}><GuardianDashboard /></ProtectedRoute>} />
       <Route path="teacher" element={<TeacherLegacyRedirect />} />
       <Route path="teacher/register" element={<TeacherRegistration />} />
       <Route path="teacher/dashboard" element={<ProtectedRoute roles={['teacher']}><TeacherDashboard /></ProtectedRoute>} />
