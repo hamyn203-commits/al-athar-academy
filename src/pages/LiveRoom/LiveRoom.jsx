@@ -26,7 +26,8 @@ import api from '../../lib/api';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { LangSelect } from '../../components/live/SessionTranslateChat';
 import { translateText } from '../../lib/translateApi';
-import { detectBrowserLocale } from '../../lib/locale';
+import { detectBrowserLocale, localizedPath } from '../../lib/locale';
+import { useI18n } from '../../i18n';
 import SyncedMushaf from '../../components/classroom/SyncedMushaf';
 import CircleTurnManager from '../../components/classroom/CircleTurnManager';
 import { inspectMessage } from '../../components/classroom/ChatSafetyFilter';
@@ -411,6 +412,7 @@ function LiveRoomContent({ isHost, isObserver, participantName, roomId }) {
 export default function LiveRoom() {
   const { roomId } = useParams();
   const navigate = useNavigate();
+  const { locale } = useI18n();
   const { t } = useAppContext();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   
@@ -427,7 +429,7 @@ export default function LiveRoom() {
     if (authLoading) return;
 
     if (!isAuthenticated) {
-      navigate('/login');
+      navigate(localizedPath('/login', locale), { replace: true });
       return;
     }
 
@@ -450,7 +452,7 @@ export default function LiveRoom() {
     };
 
     if (roomId) fetchToken();
-  }, [roomId, participantName, authLoading, isAuthenticated, navigate]);
+  }, [roomId, participantName, authLoading, isAuthenticated, navigate, locale]);
 
   if (loading) {
     return (
@@ -468,7 +470,7 @@ export default function LiveRoom() {
         <BrandLogo size={72} variant="light" />
         <h2>{t.live.error}</h2>
         <p>{error}</p>
-        <button onClick={() => navigate('/')} className="btn-premium">
+        <button onClick={() => navigate(localizedPath('/', locale))} className="btn-premium">
           <ArrowRight size={20} />
           {t.common.backHome}
         </button>
@@ -489,7 +491,7 @@ export default function LiveRoom() {
       token={token}
       serverUrl={serverUrl}
       data-lk-theme="default"
-      onDisconnected={() => navigate('/')}
+      onDisconnected={() => navigate(localizedPath('/', locale))}
     >
       <LiveRoomContent 
         isHost={isHost} 
