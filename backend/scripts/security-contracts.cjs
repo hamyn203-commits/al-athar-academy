@@ -388,6 +388,38 @@ requireContains(
   /function\s+unwrapPublicProxyReference\s*\(/
 );
 
+// T05.3: disposable production storage probe must remain temporary, secret-protected and isolated.
+requireContains(
+  'backend/routes/uploads.js',
+  'storage e2e probe must be production-only',
+  /storage-e2e['"][\s\S]{0,260}NODE_ENV\s*!==\s*['"]production['"]/
+);
+requireContains(
+  'backend/routes/uploads.js',
+  'storage e2e probe must use the dedicated secret',
+  /STORAGE_E2E_SECRET/
+);
+requireContains(
+  'backend/routes/uploads.js',
+  'storage e2e secret must come from Authorization Bearer header',
+  /req\.headers\.authorization[\s\S]{0,120}Bearer/
+);
+requireContains(
+  'backend/routes/uploads.js',
+  'storage e2e secret comparison must use timingSafeEqual',
+  /timingSafeEqual/
+);
+requireContains(
+  'backend/services/objectStorage.js',
+  'storage e2e objects must stay under the dedicated disposable prefix',
+  /uploads\/e2e\//
+);
+requireContains(
+  'backend/services/objectStorage.js',
+  'storage e2e probe must verify deletion by checking object absence',
+  /absentAfterDelete[\s\S]{0,220}Lifecycle probe object still exists/
+);
+
 if (failures.length) {
   console.error('Security contracts failed:');
   failures.forEach((failure) => console.error(`- ${failure}`));
