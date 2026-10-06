@@ -128,3 +128,18 @@ Acceptance gate:
 - production readiness and runtime error checks remain healthy.
 - after evidence is captured, the temporary endpoint is removed and the temporary secret is disabled.
 - final production deployment confirms the internal probe route is no longer present.
+
+### Temporary one-time query bridge
+
+The available deployment fetch tooling cannot send a custom Authorization header. For the single production verification call only, T05.3 temporarily adds:
+- `GET /api/uploads/_internal/storage-e2e-once?token=...`
+- production-only behavior
+- an additional `STORAGE_E2E_QUERY_BRIDGE=true` gate
+- the same timing-safe comparison against `STORAGE_E2E_SECRET`
+- the same disposable lifecycle implementation as the Bearer-protected POST route
+
+This bridge is not a permanent API. After one successful production probe:
+1. disable `STORAGE_E2E_QUERY_BRIDGE`
+2. disable `STORAGE_E2E_SECRET`
+3. remove both temporary probe routes from the codebase
+4. deploy the cleanup and verify the internal route is gone
