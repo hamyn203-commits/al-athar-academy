@@ -47,6 +47,20 @@ checkFile(path.join(root, 'src', 'config', 'social.js'), [
   ['legacy Al-Athar social/contact identity is forbidden', /alathar/i],
 ]);
 
+const activeBrandRuntimeFiles = [
+  path.join(root, 'backend', 'routes', 'trials.js'),
+  path.join(root, 'backend', 'routes', 'lms.js'),
+  path.join(root, 'backend', 'routes', 'circles.js'),
+  path.join(root, 'backend', 'routes', 'system.js'),
+];
+
+for (const file of activeBrandRuntimeFiles) {
+  checkFile(file, [
+    ['legacy Al-Athar meeting slug is forbidden', /meet\.jit\.si\/al-athar/i],
+    ['legacy Al-Athar email domain is forbidden', /@(?:alathar|athar)\.(?:com|edu|demo|test)/i],
+  ]);
+}
+
 if (failures.length) {
   console.error('Production safety scan failed:');
   for (const failure of failures) console.error(`- ${failure}`);

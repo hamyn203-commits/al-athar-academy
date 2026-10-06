@@ -17,7 +17,7 @@ T07 therefore introduces a separate, fail-closed launch gate.
 
 ## T07.1 — Machine-readable launch gate
 
-Status: IN PROGRESS
+Status: COMPLETE ✅
 
 Endpoint:
 
@@ -54,6 +54,15 @@ WHATSAPP_E2E_VERIFIED=false
 ```
 
 For a controlled beta, `LAUNCH_MODE=closed-beta` can be used with an explicit `LAUNCH_REQUIRED_FEATURES` list. This does not convert an unverified service into a verified one; it only narrows the beta scope.
+
+### T07.1 production evidence
+
+- GitHub PR #27 CI passed.
+- Master commit `9e063af20f8cae2078aeee957c4004d6b748bd1f` deployed successfully.
+- Frontend and API production deployments reached `READY`.
+- `/api/readiness` returned HTTP 200 with `ready: true`.
+- `/api/launch-readiness` correctly returned HTTP 503 with explicit launch blockers and no secret values.
+- No frontend or API runtime errors were observed in the post-deploy verification window.
 
 ## T07.2 — Operational closure checklist
 

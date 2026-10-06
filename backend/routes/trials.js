@@ -300,7 +300,7 @@ router.put('/:id/assign', protect, authorize('admin'), async (req, res) => {
           status: 'accepted',
           scheduledAt: new Date(scheduledAt),
           duration: 30,
-          meetingLink: 'https://meet.jit.si/al-athar-trial-' + Date.now(),
+          meetingLink: 'https://meet.jit.si/wahy-namaa-trial-' + Date.now(),
           meetingProvider: meetingProvider || 'jitsi'
         };
         trial.scheduledSession = session;

@@ -330,7 +330,7 @@ router.post('/seed-demo', protect, authorize('admin'), async (req, res) => {
       if (!user) {
         user = await User.create({
           name: 'الشيخ أحمد (تجريبي)',
-          email: `demo-teacher-${Date.now()}@alathar.demo`,
+          email: `demo-teacher-${Date.now()}@wahynamaa.example`,
           password: 'Demo1234!',
           role: 'teacher',
         });
