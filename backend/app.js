@@ -9,6 +9,7 @@ const mongoose = require('mongoose');
 const { connectDB } = require('./config/database');
 const { getConfigurationReadiness } = require('./config/readiness');
 const { getLaunchReadiness } = require('./config/launchReadiness');
+const { getEmailProviderStatus } = require('./config/emailProvider');
 const { isTrustedOrigin, requireTrustedOrigin } = require('./config/origins');
 const { version: APP_VERSION } = require('./package.json');
 
@@ -224,7 +225,7 @@ app.get('/api/health', (_req, res) => {
     storageConfigured: readiness.storageConfigured,
     features: {
       ai: Boolean(process.env.OPENAI_API_KEY || process.env.GEMINI_API_KEY || process.env.AWS_BEARER_TOKEN_BEDROCK),
-      email: Boolean(process.env.RESEND_API_KEY),
+      email: getEmailProviderStatus().configured,
       telegram: Boolean(process.env.TELEGRAM_BOT_TOKEN),
       whatsapp: Boolean(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN),
       livekit: Boolean(process.env.LIVEKIT_API_KEY && process.env.LIVEKIT_API_SECRET && process.env.LIVEKIT_URL),
@@ -267,7 +268,7 @@ app.get('/api/readiness', async (_req, res) => {
     ...(databaseError ? { databaseError } : {}),
     optionalFeatures: {
       ai: Boolean(process.env.OPENAI_API_KEY || process.env.GEMINI_API_KEY || process.env.AWS_BEARER_TOKEN_BEDROCK),
-      email: Boolean(process.env.RESEND_API_KEY),
+      email: getEmailProviderStatus().configured,
       whatsapp: Boolean(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN),
       livekit: Boolean(process.env.LIVEKIT_API_KEY && process.env.LIVEKIT_API_SECRET && process.env.LIVEKIT_URL),
     },
