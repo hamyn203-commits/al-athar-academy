@@ -11,11 +11,14 @@ import EmptyState from '../../components/shared/EmptyState';
 import { useAppContext } from '../../context/AppProvider';
 import api from '../../lib/api';
 import { useAuth } from '../../hooks/useAuth.jsx';
+import { useI18n } from '../../i18n';
+import { localizedPath } from '../../lib/locale';
 import '../LiveRoom/LiveRoom.css';
 import '../../styles/session-experience.css';
 
 export default function LiveSessions() {
   const navigate = useNavigate();
+  const { locale } = useI18n();
   const { t } = useAppContext();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [sessions, setSessions] = useState([]);
@@ -44,7 +47,7 @@ export default function LiveSessions() {
     if (authLoading) return;
 
     if (!isAuthenticated) {
-      navigate('/login');
+      navigate(localizedPath('/login', locale), { replace: true });
       return;
     }
 
@@ -52,17 +55,17 @@ export default function LiveSessions() {
     api.get('/api/live/status').then(setLiveStatus).catch(() => {});
     // fetchSessions is intentionally scoped to this authenticated page mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authLoading, isAuthenticated, navigate]);
+  }, [authLoading, isAuthenticated, navigate, locale]);
 
   const copyLink = (roomId) => {
-    const link = `${window.location.origin}/live/${roomId}`;
+    const link = `${window.location.origin}${localizedPath(`/live/${roomId}`, locale)}`;
     navigator.clipboard.writeText(link);
     setCopiedId(roomId);
     setTimeout(() => setCopiedId(null), 2000);
   };
 
   const joinSession = (roomId) => {
-    navigate(`/live/${roomId}`);
+    navigate(localizedPath(`/live/${roomId}`, locale));
   };
 
   const startDemo = async () => {
