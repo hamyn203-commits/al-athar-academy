@@ -123,126 +123,6 @@ function unwrapPublicProxyReference(reference) {
   return value;
 }
 
-function createLifecycleProbeKey() {
-  return `uploads/e2e/${Date.now()}-${crypto.randomUUID()}/probe.txt`;
-}
-
-async function putPrivateObject(key, body, contentType = 'text/plain') {
-  if (!isSafeObjectPath(key) || !String(key).startsWith('uploads/e2e/')) {
-    throw new Error('Lifecycle probe object key is outside the e2e prefix');
-  }
-
-  if (getDriver() === 'vercel-blob') {
-    const { put } = await import('@vercel/blob');
-    return put(key, body, {
-      access: 'private',
-      addRandomSuffix: false,
-      allowOverwrite: false,
-      contentType,
-      token: process.env.BLOB_READ_WRITE_TOKEN,
-    });
-  }
-
-  if (getDriver() === 's3') {
-    await getS3Client().send(new PutObjectCommand({
-      Bucket: process.env.S3_BUCKET,
-      Key: key,
-      Body: body,
-      ContentType: contentType,
-    }));
-    return { pathname: key, url: key };
-  }
-
-  throw new Error('External object storage is not configured for lifecycle probing');
-}
-
-async function objectResultToBuffer(result) {
-  if (!result?.stream) return null;
-
-  if (typeof result.stream.transformToByteArray === 'function') {
-    return Buffer.from(await result.stream.transformToByteArray());
-  }
-
-  if (typeof result.stream.pipe === 'function') {
-    const chunks = [];
-    for await (const chunk of result.stream) chunks.push(Buffer.from(chunk));
-    return Buffer.concat(chunks);
-  }
-
-  const reader = result.stream.getReader?.();
-  if (!reader) return null;
-
-  const chunks = [];
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    chunks.push(Buffer.from(value));
-  }
-  return Buffer.concat(chunks);
-}
-
-async function isObjectMissing(reference) {
-  try {
-    const result = await getPrivateObject(reference);
-    return !result;
-  } catch (error) {
-    const code = String(error?.code || error?.name || '');
-    const status = Number(error?.status || error?.statusCode || error?.$metadata?.httpStatusCode || 0);
-    if (status === 404 || /NotFound|NoSuchKey/i.test(code)) return true;
-    throw error;
-  }
-}
-
-async function runDisposableLifecycleProbe() {
-  const driver = getDriver();
-  if (!['vercel-blob', 's3'].includes(driver)) {
-    throw new Error('Disposable lifecycle probe requires external object storage');
-  }
-
-  const key = createLifecycleProbeKey();
-  const payload = Buffer.from(`wahy-wa-namaa-storage-probe:${crypto.randomUUID()}`, 'utf8');
-  let reference = null;
-  let deleted = false;
-
-  try {
-    const created = await putPrivateObject(key, payload, 'text/plain');
-    reference = created?.url || created?.pathname || key;
-
-    const read = await getPrivateObject(reference);
-    if (!read) throw new Error('Lifecycle probe could not read the created object');
-
-    const received = await objectResultToBuffer(read);
-    if (!received || !received.equals(payload)) {
-      throw new Error('Lifecycle probe read content did not match uploaded content');
-    }
-
-    await deleteObject(reference);
-    deleted = true;
-
-    const absentAfterDelete = await isObjectMissing(reference);
-    if (!absentAfterDelete) {
-      throw new Error('Lifecycle probe object still exists after deletion');
-    }
-
-    return {
-      driver,
-      created: true,
-      readVerified: true,
-      deleted: true,
-      absentAfterDelete: true,
-      pathname: extractPathname(reference),
-    };
-  } finally {
-    if (reference && !deleted) {
-      try {
-        await deleteObject(reference);
-      } catch (cleanupError) {
-        console.error('Storage lifecycle probe cleanup failed:', cleanupError.message);
-      }
-    }
-  }
-}
-
 async function createUploadUrl({ key, contentType, expiresIn = 600 }) {
   if (getDriver() !== 's3') throw new Error('Presigned S3 uploads are not enabled');
   const command = new PutObjectCommand({
@@ -326,8 +206,6 @@ module.exports = {
   isOwnedObjectReference,
   publicProxyUrl,
   unwrapPublicProxyReference,
-  createLifecycleProbeKey,
-  runDisposableLifecycleProbe,
   createUploadUrl,
   getPrivateObject,
   deleteObject,

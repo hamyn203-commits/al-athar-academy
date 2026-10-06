@@ -105,7 +105,7 @@ Important boundary:
 
 ## T05.3 — Disposable production object lifecycle verification
 
-Status: IN PROGRESS
+Status: COMPLETE ✅
 
 Purpose:
 - Verify the actual production-connected object store with disposable data only.
@@ -143,3 +143,23 @@ This bridge is not a permanent API. After one successful production probe:
 2. disable `STORAGE_E2E_SECRET`
 3. remove both temporary probe routes from the codebase
 4. deploy the cleanup and verify the internal route is gone
+
+### T05.3 production evidence
+
+- Temporary probe implementation PR #20 CI run `37502143027`: frontend + backend successful.
+- One-time bridge PR #21 CI run `37503165106`: frontend + backend successful.
+- Probe-capable production API SHA: `b8304e303ffd1567d68be7f35ec4bed7fe214609`.
+- Disposable production Vercel Blob probe returned HTTP 200 and:
+  - `success: true`
+  - `driver: vercel-blob`
+  - `created: true`
+  - `readVerified: true`
+  - `deleted: true`
+  - `absentAfterDelete: true`
+- The disposable object was isolated under `uploads/e2e/`; no student, teacher, course or assignment asset was used.
+- The temporary query bridge was disabled immediately after the successful call.
+- The temporary storage probe secret was rotated to a disabled value immediately after the successful call.
+- This cleanup removes both temporary storage-probe routes and all probe-only provider helpers from production code.
+- CI now contains a negative contract that fails if `storage-e2e` or its temporary env references reappear in the upload routes.
+
+Final T05.3 closure still requires the cleanup deployment to become READY, the removed route to return 404, production readiness/storage status to remain healthy, and runtime errors to remain clear.

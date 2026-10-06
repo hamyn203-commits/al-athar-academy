@@ -388,53 +388,16 @@ requireContains(
   /function\s+unwrapPublicProxyReference\s*\(/
 );
 
-// T05.3: disposable production storage probe must remain temporary, secret-protected and isolated.
-requireContains(
+// T05.3 cleanup: temporary production verification routes must not remain in the application.
+requireAbsent(
   'backend/routes/uploads.js',
-  'storage e2e probe must be production-only',
-  /storage-e2e['"][\s\S]{0,260}NODE_ENV\s*!==\s*['"]production['"]/
+  'temporary storage lifecycle probe routes must be removed after production verification',
+  /storage-e2e/
 );
-requireContains(
+requireAbsent(
   'backend/routes/uploads.js',
-  'storage e2e probe must use the dedicated secret',
-  /STORAGE_E2E_SECRET/
-);
-requireContains(
-  'backend/routes/uploads.js',
-  'storage e2e secret must come from Authorization Bearer header',
-  /req\.headers\.authorization[\s\S]{0,120}Bearer/
-);
-requireContains(
-  'backend/routes/uploads.js',
-  'storage e2e secret comparison must use timingSafeEqual',
-  /timingSafeEqual/
-);
-requireContains(
-  'backend/services/objectStorage.js',
-  'storage e2e objects must stay under the dedicated disposable prefix',
-  /uploads\/e2e\//
-);
-requireContains(
-  'backend/services/objectStorage.js',
-  'storage e2e probe must verify deletion by checking object absence',
-  /absentAfterDelete[\s\S]{0,220}Lifecycle probe object still exists/
-);
-
-// T05.3 one-time bridge: must be explicitly enabled and use the same timing-safe disposable secret.
-requireContains(
-  'backend/routes/uploads.js',
-  'one-time storage probe bridge must require an explicit production flag',
-  /STORAGE_E2E_QUERY_BRIDGE\s*!==\s*['"]true['"]/
-);
-requireContains(
-  'backend/routes/uploads.js',
-  'one-time bridge must compare the query token with the dedicated secret',
-  /storage-e2e-once[\s\S]{0,520}req\.query\.token[\s\S]{0,240}safeEqualSecret/
-);
-requireContains(
-  'backend/routes/uploads.js',
-  'one-time bridge and bearer probe must share the same disposable lifecycle implementation',
-  /function\s+executeStorageE2EProbe\s*\([\s\S]{0,1200}runDisposableLifecycleProbe\(/
+  'temporary storage lifecycle secrets must not remain referenced by application routes',
+  /STORAGE_E2E_(?:SECRET|QUERY_BRIDGE)/
 );
 
 if (failures.length) {
