@@ -33,11 +33,13 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [loginNotice, setLoginNotice] = useState(null);
   const [formData, setFormData] = useState({ email: '', password: '' });
 
   const handleChange = (event) => {
     setFormData((current) => ({ ...current, [event.target.name]: event.target.value }));
     setError('');
+    setLoginNotice(null);
   };
 
   const handleSubmit = async (event) => {
@@ -48,6 +50,38 @@ export default function Login() {
     try {
       const result = await signIn(formData.email, formData.password);
       if (!result.success) {
+        const teacherNotices = {
+          TEACHER_APPROVAL_PENDING: {
+            title: isAr ? 'طلبك في انتظار موافقة الإدارة' : 'Your application is awaiting approval',
+            text: isAr
+              ? 'تم استلام طلبك بنجاح، ولن يتم فتح لوحة المعلم إلا بعد مراجعة الإدارة واعتماد الطلب.'
+              : 'Your application was received. Teacher access will open only after administration review and approval.',
+          },
+          TEACHER_APPLICATION_UNDER_REVIEW: {
+            title: isAr ? 'طلبك ما زال قيد المراجعة' : 'Your application is still under review',
+            text: isAr
+              ? 'الإدارة تراجع بياناتك ومستنداتك حاليًا. لا يوجد دخول إلى لوحة المعلم حتى اكتمال المراجعة.'
+              : 'Administration is reviewing your details and documents. Teacher access stays locked until the review is complete.',
+          },
+          TEACHER_APPLICATION_REJECTED: {
+            title: isAr ? 'تعذر اعتماد طلب المعلم' : 'Teacher application not approved',
+            text: isAr
+              ? 'يمكنك التواصل مع إدارة الأكاديمية لمعرفة الخطوة التالية أو إعادة التقديم عند السماح بذلك.'
+              : 'Contact academy administration for the next step or to reapply when allowed.',
+          },
+          TEACHER_ACCOUNT_SUSPENDED: {
+            title: isAr ? 'حساب المعلم موقوف' : 'Teacher account suspended',
+            text: isAr
+              ? 'تواصل مع إدارة الأكاديمية لمراجعة حالة الحساب.'
+              : 'Contact academy administration to review the account status.',
+          },
+        };
+
+        if (teacherNotices[result.code]) {
+          setLoginNotice(teacherNotices[result.code]);
+          return;
+        }
+
         throw new Error(result.error || (isAr ? 'تعذر تسجيل الدخول' : 'Unable to sign in'));
       }
 
@@ -140,6 +174,12 @@ export default function Login() {
               <p>{isAr ? 'أدخل بياناتك للعودة إلى مساحة التعلم.' : 'Enter your details to return to your learning space.'}</p>
             </div>
 
+            {loginNotice && (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-950" role="status">
+                <strong className="block mb-1">{loginNotice.title}</strong>
+                <p className="text-sm leading-6">{loginNotice.text}</p>
+              </div>
+            )}
             {error && <div className="wn-public-error" role="alert">{error}</div>}
 
             <form onSubmit={handleSubmit} className="grid gap-4">
