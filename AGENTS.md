@@ -1,27 +1,34 @@
 # Autopilot — أكاديمية وَحْيٌ وَنَمَاء
 
-> اقرأ **ROADMAP.md** أولاً. نفّذ أول بند من **V7 — المعمارية والأمان**.
+> اقرأ `ROADMAP.md` و`docs/T07_LAUNCH_READINESS.md` أولاً.
 
-## قواعد
-- لا `platform/` | `npm run build` قبل push | push → deploy تلقائي
+## قواعد ثابتة
 
-## V6.3 — الطابور النشط
+- المصدر الفعلي: root `src/` + `backend/`.
+- لا تطوير production داخل `platform/`.
+- كل تغيير على branch/PR مع CI قبل الدمج.
+- لا تعتبر service configured = service verified.
+- لا تضبط أي `*_E2E_VERIFIED=true` بدون اختبار حقيقي مسجل.
+- لا تعرض secret values في health/readiness APIs أو logs.
 
-| # | المهمة | الحالة |
-|---|--------|--------|
-| 6.3.1 | Stripe/PayPal donate live | ✅ |
-| 6.3.2 | 9 لغات UI كاملة | ✅ |
-| 6.3.3 | Analytics admin | ✅ |
-| 6.3.4 | CDN للـ uploads | ✅ |
+## الطابور النشط
 
-## V6.2 — مكتمل ✅
+| المهمة | الحالة |
+|---|---|
+| T01 Production readiness | ✅ |
+| T02 Security/auth | ✅ |
+| T03 Testing/data safeguarding | ✅ |
+| T04 UX/routes/locales | ✅ |
+| T05 File lifecycle E2E | ✅ |
+| T06.1 Payment integrity | ✅ |
+| T06.2 Paymob code | ✅ implementation / ⏳ merchant E2E |
+| **T07.1 Launch readiness gate** | 🟡 active |
+| T07.2 External-service closure | ⏳ |
+| T07.3 GO/NO-GO | ⏳ |
 
-دروس seed لكل دورة (3+ lessons)، Quiz → gamification points، شهادات PDF batch، Azure keys doc + sync script.
+## Definition of public launch
 
-## V6.1 — مكتمل ✅
+Public launch requires both:
 
-AI mic، Bedrock chain، PWA push، library 6 videos، livekit health، v6.1.0
-
-## V6.0 — مكتمل ✅
-
-Live demo، bootstrap 4 courses، landing، empty states، sitemap، admin health
+- `GET /api/readiness` → HTTP 200 + `ready: true`
+- `GET /api/launch-readiness` → HTTP 200 + `ready: true`
