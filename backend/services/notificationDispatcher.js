@@ -67,7 +67,7 @@ async function sendWhatsApp({ phone, text }) {
     return { channel: 'sms', sent: true, provider: 'twilio-whatsapp' };
   }
 
-  const waLink = `https://wa.me/${phone.replace(/\\D/g, '')}?text=${encodeURIComponent(text)}`;
+  const waLink = `https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(text)}`;
   console.log(`💬 [whatsapp] → ${phone}: ${text?.slice(0, 60)} | ${waLink}`);
   return { channel: 'sms', sent: true, provider: 'console-wa-link', link: waLink };
 }
