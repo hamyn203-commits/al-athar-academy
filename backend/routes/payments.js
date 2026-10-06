@@ -13,7 +13,10 @@ const {
   toMinorUnits,
 } = require('../utils/paymentIntegrity');
 const paymob = require('../services/paymob');
+const manualPayments = require('../config/manualPayments');
+const objectStorage = require('../services/objectStorage');
 const { processPaymobWebhook } = require('../services/paymentSettlement');
+const { processManualPaymentReview } = require('../services/manualPaymentSettlement');
 const { notifyCourseEnrollment } = require('../utils/notify');
 
 const SUPPORTED_LOCALES = new Set(['ar', 'en', 'fr', 'de', 'tr', 'ur', 'id', 'ms', 'ku']);
@@ -26,10 +29,46 @@ function cleanBaseUrl(value) {
 
 function paymentPublicConfig() {
   return {
-    provider: 'paymob',
-    configured: paymob.isConfigured(),
-    checkoutMode: 'redirect',
+    ...manualPayments.getPublicConfig(),
+    paymobAvailable: paymob.isConfigured(),
   };
+}
+
+function cleanText(value, max = 180) {
+  return String(value || '').trim().slice(0, max);
+}
+
+async function streamPrivateProof(reference, res) {
+  const pathname = objectStorage.extractPathname(reference);
+  if (!objectStorage.isSafeObjectPath(pathname) || !pathname.startsWith('uploads/payment-proof/')) {
+    return res.status(404).json({ error: 'Payment proof not found' });
+  }
+
+  if (objectStorage.getDriver() === 'vercel-blob' && !objectStorage.isVercelBlobReference(reference)) {
+    return res.status(404).json({ error: 'Payment proof not found' });
+  }
+
+  const result = await objectStorage.getPrivateObject(reference);
+  if (!result) return res.status(404).json({ error: 'Payment proof not found' });
+
+  res.setHeader('Content-Type', result.blob?.contentType || 'application/octet-stream');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Cache-Control', 'private, no-store');
+
+  if (result.stream?.pipe) {
+    result.stream.pipe(res);
+    return undefined;
+  }
+
+  const reader = result.stream?.getReader?.();
+  if (!reader) return res.status(500).end();
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    res.write(Buffer.from(value));
+  }
+  return res.end();
 }
 
 router.get('/config', (_req, res) => {
@@ -172,6 +211,225 @@ router.post('/course/:slug/checkout', protect, authorize('student'), async (req,
   }
 });
 
+router.post('/course/:slug/manual', protect, authorize('student'), async (req, res) => {
+  try {
+    if (!manualPayments.isConfigured()) {
+      return res.status(503).json({
+        error: 'Manual payment is not configured yet',
+        code: 'MANUAL_PAYMENT_NOT_CONFIGURED',
+      });
+    }
+
+    const course = await Course.findOne({
+      slug: req.params.slug,
+      status: 'published',
+    });
+
+    if (!course) return res.status(404).json({ error: 'Course not found' });
+    if (Number(course.price || 0) <= 0) {
+      return res.status(400).json({
+        error: 'This course does not require payment',
+        code: 'FREE_COURSE_USE_ENROLLMENT',
+      });
+    }
+
+    const Enrollment = require('../models/Enrollment');
+    const existingEnrollment = await Enrollment.findOne({
+      student: req.user.id,
+      course: course._id,
+    }).select('_id status');
+
+    if (existingEnrollment) {
+      return res.status(409).json({
+        error: 'Already enrolled in this course',
+        code: 'ALREADY_ENROLLED',
+      });
+    }
+
+    const existingPending = await Payment.findOne({
+      kind: 'course_enrollment',
+      provider: 'manual',
+      student: req.user.id,
+      course: course._id,
+      status: 'pending',
+    }).select('_id');
+
+    if (existingPending) {
+      return res.status(409).json({
+        error: 'A transfer is already waiting for review',
+        code: 'PAYMENT_REVIEW_PENDING',
+        paymentId: String(existingPending._id),
+      });
+    }
+
+    const method = manualPayments.getMethod(req.body?.method);
+    if (!method) {
+      return res.status(400).json({
+        error: 'Unsupported manual payment method',
+        code: 'INVALID_PAYMENT_METHOD',
+      });
+    }
+
+    const proofReference = cleanText(req.body?.proofReference, 2048);
+    if (!proofReference || !objectStorage.isOwnedObjectReference(
+      proofReference,
+      'payment-proof',
+      req.user.id
+    )) {
+      return res.status(400).json({
+        error: 'A valid owned payment proof is required',
+        code: 'INVALID_PAYMENT_PROOF',
+      });
+    }
+
+    const currency = normalizeCurrency(course.currency || 'EGP');
+    const amountMinor = toMinorUnits(course.price, currency);
+
+    const payment = await Payment.create({
+      kind: 'course_enrollment',
+      provider: 'manual',
+      idempotencyKey: `manual:${crypto.randomUUID()}`,
+      student: req.user.id,
+      course: course._id,
+      amountMinor,
+      currency,
+      status: 'pending',
+      manual: {
+        method: method.id,
+        transferReference: cleanText(req.body?.transferReference, 160) || undefined,
+        proofReference,
+        proofFilename: cleanText(req.body?.proofFilename, 180) || undefined,
+        proofContentType: cleanText(req.body?.proofContentType, 100) || undefined,
+        proofSize: Number.isFinite(Number(req.body?.proofSize))
+          ? Math.max(1, Math.min(Number(req.body.proofSize), 10 * 1024 * 1024))
+          : undefined,
+        submittedAt: new Date(),
+      },
+    });
+
+    return res.status(201).json({
+      paymentId: String(payment._id),
+      provider: 'manual',
+      status: payment.status,
+      reviewRequired: true,
+    });
+  } catch (error) {
+    console.error('Manual payment submission failed:', error.message);
+    return res.status(400).json({
+      error: 'Unable to submit manual payment',
+      code: 'MANUAL_PAYMENT_SUBMISSION_FAILED',
+    });
+  }
+});
+
+router.get('/admin/manual', protect, authorize('admin'), async (req, res) => {
+  try {
+    const requestedStatus = String(req.query.status || 'pending').trim().toLowerCase();
+    const allowedStatuses = new Set(['pending', 'succeeded', 'failed', 'all']);
+    const status = allowedStatuses.has(requestedStatus) ? requestedStatus : 'pending';
+
+    const query = {
+      provider: 'manual',
+      kind: 'course_enrollment',
+    };
+    if (status !== 'all') query.status = status;
+
+    const payments = await Payment.find(query)
+      .sort({ createdAt: -1 })
+      .limit(100)
+      .populate('student', 'name email phone whatsappPhone')
+      .populate('course', 'title slug price currency')
+      .populate('manual.reviewedBy', 'name email')
+      .select('+manual.proofReference');
+
+    return res.json({
+      payments: payments.map((payment) => ({
+        id: String(payment._id),
+        status: payment.status,
+        amountMinor: payment.amountMinor,
+        currency: payment.currency,
+        provider: payment.provider,
+        createdAt: payment.createdAt,
+        settledAt: payment.settledAt || null,
+        failedAt: payment.failedAt || null,
+        student: payment.student,
+        course: payment.course,
+        proofAvailable: Boolean(payment.manual?.proofReference),
+        manual: {
+          method: payment.manual?.method || null,
+          transferReference: payment.manual?.transferReference || null,
+          submittedAt: payment.manual?.submittedAt || null,
+          reviewedAt: payment.manual?.reviewedAt || null,
+          reviewedBy: payment.manual?.reviewedBy || null,
+          reviewAction: payment.manual?.reviewAction || null,
+          reviewNote: payment.manual?.reviewNote || '',
+        },
+      })),
+    });
+  } catch (error) {
+    console.error('Manual payment admin list failed:', error.message);
+    return res.status(400).json({ error: 'Unable to load manual payments' });
+  }
+});
+
+router.get('/admin/manual/:id/proof', protect, authorize('admin'), async (req, res) => {
+  try {
+    const payment = await Payment.findOne({
+      _id: req.params.id,
+      provider: 'manual',
+    }).select('+manual.proofReference');
+
+    if (!payment?.manual?.proofReference) {
+      return res.status(404).json({ error: 'Payment proof not found' });
+    }
+
+    return await streamPrivateProof(payment.manual.proofReference, res);
+  } catch (error) {
+    console.error('Manual payment proof read failed:', error.message);
+    return res.status(404).json({ error: 'Payment proof not found' });
+  }
+});
+
+router.patch('/admin/manual/:id/review', protect, authorize('admin'), async (req, res) => {
+  try {
+    const result = await processManualPaymentReview({
+      paymentId: req.params.id,
+      adminId: req.user.id,
+      action: req.body?.action,
+      note: req.body?.note,
+    });
+
+    if (result?.enrollmentCreated && result.studentId && result.courseId) {
+      const course = await Course.findById(result.courseId).select('title slug').lean();
+      if (course) notifyCourseEnrollment(result.studentId, course).catch(() => {});
+    }
+
+    return res.json({
+      ok: true,
+      paymentId: result.paymentId,
+      status: result.paymentStatus,
+      enrollmentCreated: result.enrollmentCreated,
+      enrollmentId: result.enrollmentId,
+    });
+  } catch (error) {
+    if (error.code === 'PAYMENT_NOT_FOUND') {
+      return res.status(404).json({ error: error.message, code: error.code });
+    }
+    if (error.code === 'PAYMENT_ALREADY_REVIEWED') {
+      return res.status(409).json({ error: error.message, code: error.code });
+    }
+    if (error.code === 'INVALID_REVIEW_ACTION') {
+      return res.status(400).json({ error: error.message, code: error.code });
+    }
+
+    console.error('Manual payment review failed:', error.message);
+    return res.status(400).json({
+      error: 'Unable to review manual payment',
+      code: error.code || 'MANUAL_PAYMENT_REVIEW_FAILED',
+    });
+  }
+});
+
 router.post('/paymob/webhook', async (req, res) => {
   try {
     if (!paymob.isConfigured()) {
@@ -233,7 +491,7 @@ router.get('/:id/status', protect, authorize('student', 'admin'), async (req, re
   try {
     const payment = await Payment.findById(req.params.id)
       .populate('course', 'slug title')
-      .select('kind provider student course amountMinor currency status createdAt updatedAt settledAt failedAt cancelledAt refundedAt');
+      .select('kind provider student course amountMinor currency status manual createdAt updatedAt settledAt failedAt cancelledAt refundedAt');
 
     if (!payment) return res.status(404).json({ error: 'Payment not found' });
 
@@ -260,6 +518,13 @@ router.get('/:id/status', protect, authorize('student', 'admin'), async (req, re
         createdAt: payment.createdAt,
         updatedAt: payment.updatedAt,
         settledAt: payment.settledAt || null,
+        manualReview: payment.provider === 'manual' ? {
+          method: payment.manual?.method || null,
+          submittedAt: payment.manual?.submittedAt || null,
+          reviewedAt: payment.manual?.reviewedAt || null,
+          reviewAction: payment.manual?.reviewAction || null,
+          reviewNote: payment.manual?.reviewNote || '',
+        } : null,
       },
     });
   } catch (error) {
