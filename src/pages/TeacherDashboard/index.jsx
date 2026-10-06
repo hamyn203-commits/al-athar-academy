@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   Calendar, Users, Star, Wallet, ClipboardList,
   BookOpen, X, Plus, Clock, BarChart3, MessageSquare, Sparkles,
@@ -24,6 +24,7 @@ const emptyEval = {
 const emptyHomework = { type: 'memorization', description: '', dueDate: '' };
 
 export default function TeacherDashboard() {
+  const [searchParams] = useSearchParams();
   const { user, ready, logout } = useRequireAuth(['teacher']);
   const toast = useToast();
   const [tab, setTab] = useState('account');
@@ -88,6 +89,14 @@ export default function TeacherDashboard() {
   }, [toast]);
 
   useEffect(() => { if (ready) load(); }, [ready, load]);
+
+  useEffect(() => {
+    const requestedSessionId = searchParams.get('session');
+    if (!requestedSessionId) return;
+    const found = [...trials, ...pendingRegular, ...sessions]
+      .find((item) => String(item._id) === String(requestedSessionId));
+    if (found) setChatSession(found);
+  }, [searchParams, trials, pendingRegular, sessions]);
 
   useEffect(() => {
     if (!ready) return;
