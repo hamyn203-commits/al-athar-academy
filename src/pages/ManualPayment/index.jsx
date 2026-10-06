@@ -137,7 +137,11 @@ export default function ManualPayment() {
                 <label className="block">
                   <span className="text-sm font-semibold">{isAr ? 'طريقة التحويل' : 'Transfer method'}</span>
                   <select value={method} onChange={(event) => setMethod(event.target.value)} className="mt-2 w-full border rounded-xl px-3 py-3">
-                    {config.methods.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+                    {config.methods.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {isAr && item.id === 'mobile_wallet' ? 'محفظة إلكترونية' : item.label}
+                      </option>
+                    ))}
                   </select>
                 </label>
 
