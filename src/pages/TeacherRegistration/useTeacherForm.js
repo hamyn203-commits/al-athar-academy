@@ -16,6 +16,68 @@ const emptyFiles = () => ({
 const normalizeEmail = (value) => String(value || '').trim().toLowerCase();
 const emailLooksValid = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizeEmail(value));
 
+const MB = 1024 * 1024;
+const FILE_RULES = {
+  publicImage: {
+    types: ['image/jpeg', 'image/png'],
+    extensions: ['.jpg', '.jpeg', '.jfif', '.png'],
+    maxBytes: 100 * MB,
+    label: 'الصورة الشخصية',
+  },
+  privateDocument: {
+    types: ['image/jpeg', 'image/png', 'application/pdf'],
+    extensions: ['.jpg', '.jpeg', '.jfif', '.png', '.pdf'],
+    maxBytes: 25 * MB,
+    label: 'المستند',
+  },
+  recitationVideo: {
+    types: ['video/mp4', 'video/webm'],
+    extensions: ['.mp4', '.webm'],
+    maxBytes: 100 * MB,
+    label: 'فيديو التلاوة',
+  },
+};
+
+function fileExtension(name = '') {
+  const value = String(name || '');
+  const index = value.lastIndexOf('.');
+  return index >= 0 ? value.slice(index).toLowerCase() : '';
+}
+
+function validateSelectedFile(file, rule) {
+  if (!file) return null;
+  if (!Number.isFinite(Number(file.size)) || Number(file.size) <= 0) {
+    return `${rule.label}: الملف فارغ أو غير صالح`;
+  }
+  if (Number(file.size) > rule.maxBytes) {
+    return `${rule.label}: الحد الأقصى ${Math.round(rule.maxBytes / MB)} MB لكل ملف`;
+  }
+  if (!rule.types.includes(String(file.type || '').toLowerCase())) {
+    return `${rule.label}: نوع الملف غير مدعوم`;
+  }
+  if (!rule.extensions.includes(fileExtension(file.name))) {
+    return `${rule.label}: امتداد الملف غير مدعوم`;
+  }
+  return null;
+}
+
+function validateTeacherFiles(files) {
+  const checks = [
+    [files.profilePhoto, FILE_RULES.publicImage],
+    [files.idCard, FILE_RULES.privateDocument],
+    [files.graduationCertificate, FILE_RULES.privateDocument],
+    ...((files.tajweedCertificates || []).map((file) => [file, FILE_RULES.privateDocument])),
+    ...((files.ijazat || []).map((file) => [file, FILE_RULES.privateDocument])),
+    ...((files.recitationVideos || []).map((file) => [file, FILE_RULES.recitationVideo])),
+  ];
+
+  for (const [file, rule] of checks) {
+    const error = validateSelectedFile(file, rule);
+    if (error) return error;
+  }
+  return null;
+}
+
 export function useTeacherForm() {
   const toast = useToast();
   const [step, setStep] = useState(1);
@@ -143,7 +205,7 @@ export function useTeacherForm() {
       case 4:
         if (!files.profilePhoto) return 'ارفع صورة 4×6';
         if (!files.recitationVideos?.length) return 'ارفع فيديو تلاوة واحد على الأقل';
-        return null;
+        return validateTeacherFiles(files);
       default:
         return null;
     }
