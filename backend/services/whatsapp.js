@@ -99,7 +99,17 @@ async function sendRawWhatsAppMessage(toPhone, messageText) {
     }
   }
 
-  // 3. Safe Mock Logger (Never crashes the server)
+  // 3. Never simulate successful delivery in production.
+  if (process.env.NODE_ENV === 'production') {
+    console.warn('⚠️ [WhatsApp] Delivery unavailable: no configured provider succeeded');
+    return {
+      success: false,
+      provider: 'unavailable',
+      reason: 'WhatsApp provider is not configured or delivery failed'
+    };
+  }
+
+  // Development-only preview logger.
   const previewLink = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(messageText)}`;
   console.log('----------------------------------------');
   console.log(`📱 [WhatsApp Mock Logger] To: +${cleanPhone}`);

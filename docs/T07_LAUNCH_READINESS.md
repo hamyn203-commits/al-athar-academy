@@ -66,7 +66,26 @@ For a controlled beta, `LAUNCH_MODE=closed-beta` can be used with an explicit `L
 
 ## T07.2 — Operational closure checklist
 
-Status: PENDING
+Status: IN PROGRESS
+
+### T07.2a — runtime brand cleanup
+
+Status: COMPLETE ✅
+
+- Removed legacy Al-Athar meeting/email identities from active backend runtime paths.
+- Added production safety regression checks so those identities cannot reappear.
+- PR #28 passed frontend/backend CI and was merged.
+
+### T07.2b — communication delivery truth
+
+Status: IN PROGRESS
+
+- Production WhatsApp/Telegram/Push fallbacks must never report simulated console output as real delivery.
+- Notification records must mark unavailable providers as failed rather than sent.
+- Undelivered teacher OTP records must be removed when the email provider rejects delivery.
+- Regression tests cover the fail-closed behavior.
+
+### External-service closure checklist
 
 Before a public GO decision:
 
