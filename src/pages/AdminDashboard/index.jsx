@@ -283,6 +283,14 @@ export default function AdminDashboard() {
                   </div>
                 </div>
               )}
+              <div className="wn-dashboard-surface mb-6 flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <h3 className="font-bold flex items-center gap-2"><DollarSign size={18} /> مراجعة مدفوعات الطلاب</h3>
+                  <p className="text-sm text-gray-500 mt-1">راجع تحويلات InstaPay وVodafone Cash ثم فعّل الاشتراك بعد التأكد من وصول المبلغ.</p>
+                </div>
+                <button onClick={() => navigate('payments')} className="wn-btn wn-btn--primary">فتح مراجعة المدفوعات</button>
+              </div>
+
               <div className="bg-white rounded-xl shadow-sm border p-6">
                 <h3 className="font-bold mb-4">معلمون قيد المراجعة ({pending.length})</h3>
                 {pending.length === 0 ? <Empty text="لا طلبات جديدة" /> : pending.map((t) => (
