@@ -30,10 +30,14 @@ export default function TeacherRegistration() {
         <div className="wn-teacher-register-shell min-h-screen flex items-center justify-center p-4" dir="rtl">
           <div className="wn-teacher-register-card max-w-lg w-full text-center p-10">
             <CheckCircle2 className="mx-auto text-emerald-600 mb-4" size={64} />
-            <h1 className="text-2xl font-bold text-slate-900 mb-2">تم إرسال طلبك! 🎉</h1>
-            <p className="text-slate-600 mb-6">
-              سيقوم فريق الأكاديمية بمراجعة البيانات، وستصلك رسالة على <strong>{f.credentials.email}</strong> عند تحديث حالة الطلب.
-            </p>
+            <h1 className="text-2xl font-bold text-slate-900 mb-2">تم استلام طلبك ✅</h1>
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900 mb-6">
+              <p className="font-bold mb-1">طلبك الآن في انتظار موافقة الإدارة</p>
+              <p className="text-sm">
+                لن تتمكن من دخول لوحة المعلم قبل اعتماد الطلب. سنرسل تحديث الحالة إلى
+                {' '}<strong>{f.credentials.email}</strong>.
+              </p>
+            </div>
             <div className="flex flex-col gap-3">
               <Link to={localizedPath('/login', locale)} className="btn-primary">تسجيل الدخول</Link>
               <Link to={localizedPath('/', locale)} className="btn-secondary">العودة للرئيسية</Link>
@@ -207,34 +211,75 @@ export default function TeacherRegistration() {
                   />
 
                   <div className="border-t border-slate-100 pt-4">
-                    <p className="font-semibold text-slate-800 mb-3">مستندات اختيارية (تحت كل سؤال إن وُجد)</p>
-                    <div className="space-y-3">
+                    <p className="font-semibold text-slate-800 mb-1">إثبات الهوية *</p>
+                    <p className="text-sm text-slate-500 mb-3">وجه البطاقة وظهر البطاقة مطلوبان لإكمال الطلب.</p>
+                    <div className="grid md:grid-cols-2 gap-3">
                       <FileBox
-                        id="idCard"
-                        label="بطاقة شخصية (اختياري)"
-                        hint="JPG أو PNG أو PDF"
-                        accept=".jpg,.jpeg,.jfif,.png,.pdf,image/jpeg,image/png,application/pdf"
-                        allowedMimeTypes={['image/jpeg', 'image/png', 'application/pdf']}
-                        allowedExtensions={['.jpg', '.jpeg', '.jfif', '.png', '.pdf']}
+                        id="idCardFront"
+                        label="وجه البطاقة الشخصية *"
+                        hint="JPG أو PNG فقط"
+                        accept=".jpg,.jpeg,.jfif,.png,image/jpeg,image/png"
+                        allowedMimeTypes={['image/jpeg', 'image/png']}
+                        allowedExtensions={['.jpg', '.jpeg', '.jfif', '.png']}
                         maxBytes={25 * 1024 * 1024}
-                        file={f.files.idCard}
-                        onChange={(file) => f.setFile('idCard', file)}
+                        captureKind="image"
+                        file={f.files.idCardFront}
+                        onChange={(file) => f.setFile('idCardFront', file)}
                       />
                       <FileBox
+                        id="idCardBack"
+                        label="ظهر البطاقة الشخصية *"
+                        hint="JPG أو PNG فقط"
+                        accept=".jpg,.jpeg,.jfif,.png,image/jpeg,image/png"
+                        allowedMimeTypes={['image/jpeg', 'image/png']}
+                        allowedExtensions={['.jpg', '.jpeg', '.jfif', '.png']}
+                        maxBytes={25 * 1024 * 1024}
+                        captureKind="image"
+                        file={f.files.idCardBack}
+                        onChange={(file) => f.setFile('idCardBack', file)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="border-t border-slate-100 pt-4 space-y-4">
+                    <p className="font-semibold text-slate-800">المستندات الإضافية</p>
+
+                    <AvailabilityChoice
+                      label="هل شهادة التخرج موجودة؟"
+                      value={f.formData.documentAvailability?.graduationCertificate}
+                      onChange={(value) => {
+                        f.update('documentAvailability', 'graduationCertificate', value);
+                        if (!value) f.setFile('graduationCertificate', null);
+                      }}
+                    />
+                    {f.formData.documentAvailability?.graduationCertificate === true && (
+                      <FileBox
                         id="gradCert"
-                        label="شهادة التخرج (اختياري)"
-                        hint="JPG أو PNG أو PDF"
+                        label="شهادة التخرج *"
+                        hint="بما أنك اخترت «موجود»، رفع الشهادة أصبح إجباريًا"
                         accept=".jpg,.jpeg,.jfif,.png,.pdf,image/jpeg,image/png,application/pdf"
                         allowedMimeTypes={['image/jpeg', 'image/png', 'application/pdf']}
                         allowedExtensions={['.jpg', '.jpeg', '.jfif', '.png', '.pdf']}
                         maxBytes={25 * 1024 * 1024}
+                        captureKind="image"
                         file={f.files.graduationCertificate}
                         onChange={(file) => f.setFile('graduationCertificate', file)}
                       />
+                    )}
+
+                    <AvailabilityChoice
+                      label="هل لديك شهادات تجويد؟"
+                      value={f.formData.documentAvailability?.tajweedCertificates}
+                      onChange={(value) => {
+                        f.update('documentAvailability', 'tajweedCertificates', value);
+                        if (!value) f.setFile('tajweedCertificates', []);
+                      }}
+                    />
+                    {f.formData.documentAvailability?.tajweedCertificates === true && (
                       <FileBox
                         id="tajweed"
-                        label="شهادات التجويد (اختياري)"
-                        hint="JPG أو PNG أو PDF"
+                        label="شهادات التجويد *"
+                        hint="ارفع شهادة واحدة على الأقل"
                         accept=".jpg,.jpeg,.jfif,.png,.pdf,image/jpeg,image/png,application/pdf"
                         allowedMimeTypes={['image/jpeg', 'image/png', 'application/pdf']}
                         allowedExtensions={['.jpg', '.jpeg', '.jfif', '.png', '.pdf']}
@@ -243,10 +288,21 @@ export default function TeacherRegistration() {
                         files={f.files.tajweedCertificates}
                         onChange={(files) => f.setFile('tajweedCertificates', files)}
                       />
+                    )}
+
+                    <AvailabilityChoice
+                      label="هل لديك إجازات؟"
+                      value={f.formData.documentAvailability?.ijazat}
+                      onChange={(value) => {
+                        f.update('documentAvailability', 'ijazat', value);
+                        if (!value) f.setFile('ijazat', []);
+                      }}
+                    />
+                    {f.formData.documentAvailability?.ijazat === true && (
                       <FileBox
                         id="ijazat"
-                        label="الإجازات (اختياري)"
-                        hint="JPG أو PNG أو PDF"
+                        label="الإجازات *"
+                        hint="ارفع إجازة واحدة على الأقل"
                         accept=".jpg,.jpeg,.jfif,.png,.pdf,image/jpeg,image/png,application/pdf"
                         allowedMimeTypes={['image/jpeg', 'image/png', 'application/pdf']}
                         allowedExtensions={['.jpg', '.jpeg', '.jfif', '.png', '.pdf']}
@@ -255,7 +311,7 @@ export default function TeacherRegistration() {
                         files={f.files.ijazat}
                         onChange={(files) => f.setFile('ijazat', files)}
                       />
-                    </div>
+                    )}
                   </div>
 
                   <div className="border-t border-slate-100 pt-4">
@@ -300,6 +356,17 @@ export default function TeacherRegistration() {
                     <ReviewBlock title="الحساب" items={[f.credentials.email]} />
                     <ReviewBlock title="الملفات" items={[
                       f.files.profilePhoto ? '✓ صورة 4×6' : '✗ صورة',
+                      f.files.idCardFront ? '✓ وجه البطاقة' : '✗ وجه البطاقة',
+                      f.files.idCardBack ? '✓ ظهر البطاقة' : '✗ ظهر البطاقة',
+                      f.formData.documentAvailability?.graduationCertificate
+                        ? (f.files.graduationCertificate ? '✓ شهادة التخرج' : '✗ شهادة التخرج')
+                        : '— شهادة التخرج: غير موجودة',
+                      f.formData.documentAvailability?.tajweedCertificates
+                        ? `✓ شهادات تجويد: ${f.files.tajweedCertificates?.length || 0}`
+                        : '— شهادات التجويد: غير موجودة',
+                      f.formData.documentAvailability?.ijazat
+                        ? `✓ الإجازات: ${f.files.ijazat?.length || 0}`
+                        : '— الإجازات: غير موجودة',
                       f.files.recitationVideos?.length ? `✓ ${f.files.recitationVideos.length} فيديو تلاوة` : '✗ فيديو',
                     ]} />
                   </div>
@@ -341,6 +408,38 @@ export default function TeacherRegistration() {
       </div>
       <GlobalFooter />
     </>
+  );
+}
+
+function AvailabilityChoice({ label, value, onChange }) {
+  return (
+    <div className="rounded-xl border border-slate-200 p-4 bg-slate-50/60">
+      <p className="font-medium text-slate-800 mb-3">{label} *</p>
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          onClick={() => onChange(true)}
+          className={`rounded-lg border px-4 py-2 text-sm font-semibold transition ${
+            value === true
+              ? 'border-emerald-600 bg-emerald-600 text-white'
+              : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-300'
+          }`}
+        >
+          موجود
+        </button>
+        <button
+          type="button"
+          onClick={() => onChange(false)}
+          className={`rounded-lg border px-4 py-2 text-sm font-semibold transition ${
+            value === false
+              ? 'border-slate-700 bg-slate-700 text-white'
+              : 'border-slate-200 bg-white text-slate-700 hover:border-slate-400'
+          }`}
+        >
+          غير موجود
+        </button>
+      </div>
+    </div>
   );
 }
 
