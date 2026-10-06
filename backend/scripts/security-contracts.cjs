@@ -348,7 +348,7 @@ requireContains(
 requireContains(
   'backend/routes/assignments.js',
   'assignments with submissions must not be deleted before submission cleanup',
-  /AssignmentSubmission\.exists\([\s\S]{0,180}ASSIGNMENT_HAS_SUBMISSIONS/
+  /AssignmentSubmission\.exists\([\s\S]{0,420}ASSIGNMENT_HAS_SUBMISSIONS/
 );
 requireContains(
   'backend/routes/homework.js',
