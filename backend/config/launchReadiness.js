@@ -56,12 +56,19 @@ function getFeatureProofs() {
         && hasValue('LIVEKIT_URL'),
       e2eVerified: isTrue('LIVEKIT_E2E_VERIFIED'),
     },
-    whatsapp: {
-      configured: hasValue('TWILIO_ACCOUNT_SID')
+    whatsapp: (() => {
+      const metaCloudConfigured = (hasValue('WHATSAPP_CLOUD_TOKEN') || hasValue('WHATSAPP_TOKEN'))
+        && hasValue('WHATSAPP_PHONE_NUMBER_ID');
+      const twilioConfigured = hasValue('TWILIO_ACCOUNT_SID')
         && hasValue('TWILIO_AUTH_TOKEN')
-        && hasValue('TWILIO_WHATSAPP_FROM'),
-      e2eVerified: isTrue('WHATSAPP_E2E_VERIFIED'),
-    },
+        && hasValue('TWILIO_WHATSAPP_FROM');
+
+      return {
+        configured: metaCloudConfigured || twilioConfigured,
+        provider: metaCloudConfigured ? 'meta-cloud' : (twilioConfigured ? 'twilio' : null),
+        e2eVerified: isTrue('WHATSAPP_E2E_VERIFIED'),
+      };
+    })(),
   };
 }
 

@@ -78,12 +78,21 @@ Status: COMPLETE ✅
 
 ### T07.2b — communication delivery truth
 
+Status: COMPLETE ✅
+
+- Production WhatsApp/Telegram/Push fallbacks never report simulated console output as real delivery.
+- Notification records mark unavailable providers as failed rather than sent.
+- Undelivered teacher OTP records are removed when the email provider rejects delivery.
+- Regression tests cover the fail-closed behavior.
+- PR #29 CI passed; master commit `0c96239fbb81b8e6942490597c315116ee0874f9` deployed with frontend and API both READY.
+
+### T07.2c — WhatsApp provider alignment
+
 Status: IN PROGRESS
 
-- Production WhatsApp/Telegram/Push fallbacks must never report simulated console output as real delivery.
-- Notification records must mark unavailable providers as failed rather than sent.
-- Undelivered teacher OTP records must be removed when the email provider rejects delivery.
-- Regression tests cover the fail-closed behavior.
+- Launch readiness accepts either Meta WhatsApp Cloud API or Twilio WhatsApp.
+- The selected configured provider is reported without exposing any credential values.
+- Regression coverage verifies both provider paths and incomplete-config fail-closed behavior.
 
 ### External-service closure checklist
 
