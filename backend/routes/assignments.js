@@ -4,11 +4,13 @@ const { Assignment, AssignmentSubmission } = require('../models/Assignment');
 const Enrollment = require('../models/Enrollment');
 const Teacher = require('../models/Teacher');
 const objectStorage = require('../services/objectStorage');
+const { deleteStoredReference } = require('../utils/storageLifecycle');
 const { protect, authorize, attachTeacherProfile } = require('../middleware/auth');
 const multer = require('multer');
 const path = require('path');
 
 const externalStorage = process.env.FILE_STORAGE_DRIVER === 'external';
+const ASSIGNMENT_UPLOAD_ROOT = path.resolve(process.cwd(), 'uploads', 'assignments');
 
 const diskStorage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -244,6 +246,14 @@ router.delete('/:id', protect, attachTeacherProfile, authorize('teacher', 'admin
       return res.status(403).json({ error: 'Not authorized' });
     }
 
+    const hasSubmissions = await AssignmentSubmission.exists({ assignment: assignment._id });
+    if (hasSubmissions) {
+      return res.status(409).json({
+        error: 'Delete assignment submissions before deleting the assignment',
+        code: 'ASSIGNMENT_HAS_SUBMISSIONS'
+      });
+    }
+
     await assignment.deleteOne();
 
     res.json({ message: 'Assignment deleted successfully' });
@@ -370,6 +380,42 @@ router.get('/submissions/:submissionId/file', protect, attachTeacherProfile, asy
   } catch (error) {
     console.error('Assignment file download failed:', error.message);
     return res.status(500).json({ error: 'Failed to load file' });
+  }
+});
+
+router.delete('/submissions/:submissionId', protect, authorize('student', 'admin'), async (req, res) => {
+  try {
+    const submission = await AssignmentSubmission.findById(req.params.submissionId)
+      .select('assignment student content.file');
+
+    if (!submission) return res.status(404).json({ error: 'Submission not found' });
+
+    if (req.user.role === 'student' && String(submission.student) !== String(req.user.id)) {
+      return res.status(403).json({ error: 'Not authorized to delete this submission' });
+    }
+
+    const reference = submission.content?.file?.url;
+    if (reference) {
+      await deleteStoredReference({
+        reference,
+        purpose: 'assignment',
+        owner: submission.student,
+        localRoot: ASSIGNMENT_UPLOAD_ROOT,
+      });
+    }
+
+    const assignmentId = submission.assignment;
+    await submission.deleteOne();
+
+    await Assignment.updateOne(
+      { _id: assignmentId, 'stats.submissions': { $gt: 0 } },
+      { $inc: { 'stats.submissions': -1 } }
+    );
+
+    return res.json({ success: true, message: 'Assignment submission deleted' });
+  } catch (error) {
+    console.error('Assignment submission delete failed:', error.message);
+    return res.status(500).json({ error: 'Failed to delete assignment submission' });
   }
 });
 
