@@ -13,7 +13,7 @@ const PAYMENT_STATUSES = Object.freeze([
 ]);
 
 const ALLOWED_TRANSITIONS = Object.freeze({
-  created: new Set(['pending', 'cancelled']),
+  created: new Set(['pending', 'failed', 'cancelled']),
   pending: new Set(['succeeded', 'failed', 'cancelled']),
   succeeded: new Set(['refunded']),
   failed: new Set([]),
