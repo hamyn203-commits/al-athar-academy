@@ -145,6 +145,13 @@ async function getPrivateObject(reference, options = {}) {
   return null;
 }
 
+function isOwnedObjectReference(reference, purpose, owner, driver = getDriver()) {
+  if (!referenceMatches(reference, purpose, owner)) return false;
+  if (driver === 'vercel-blob') return isVercelBlobReference(reference);
+  if (driver === 's3') return true;
+  return false;
+}
+
 async function deleteObject(reference) {
   if (getDriver() === 'vercel-blob') {
     const { del } = await import('@vercel/blob');
@@ -157,7 +164,18 @@ async function deleteObject(reference) {
       Bucket: process.env.S3_BUCKET,
       Key: extractPathname(reference),
     }));
+    return;
   }
+
+  throw new Error('External object storage is not configured for deletion');
+}
+
+async function deleteOwnedObject(reference, purpose, owner) {
+  if (!isOwnedObjectReference(reference, purpose, owner)) {
+    throw new Error('Object reference does not belong to this owner and purpose');
+  }
+
+  await deleteObject(reference);
 }
 
 module.exports = {
@@ -169,8 +187,10 @@ module.exports = {
   isSafeObjectPath,
   referenceMatches,
   isVercelBlobReference,
+  isOwnedObjectReference,
   publicProxyUrl,
   createUploadUrl,
   getPrivateObject,
   deleteObject,
+  deleteOwnedObject,
 };
