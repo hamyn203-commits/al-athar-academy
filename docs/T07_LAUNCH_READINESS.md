@@ -99,7 +99,7 @@ Status: IN PROGRESS
 Status: IMPLEMENTED — awaiting merge/deploy/E2E 🟡
 
 - Public launch defaults now require `manual-payment` instead of `paymob`.
-- The student pays by configured InstaPay/Vodafone Cash/bank destination and uploads a private proof.
+- The student pays by configured InstaPay/mobile wallet/bank destination and uploads a private proof.
 - The admin must independently verify receipt of funds before approving.
 - Admin approval uses the same transactional enrollment settlement foundation as provider settlement.
 - Paymob stays dormant as an optional future automatic provider.
@@ -111,7 +111,7 @@ Before a public GO decision:
 - [ ] Custom domain purchased, connected, HTTPS active and production URLs changed.
 - [ ] Resend sending domain verified.
 - [ ] OTP delivered to at least two external test inboxes.
-- [ ] InstaPay/Vodafone Cash (or approved bank transfer) destination configured.
+- [ ] InstaPay/mobile wallet (or approved bank transfer) destination configured.
 - [ ] Real controlled transfer submitted with a private proof.
 - [ ] Admin verifies the funds outside the academy, then approves the pending payment.
 - [ ] Payment becomes succeeded only from the admin review endpoint.
