@@ -51,6 +51,29 @@ export function isSafeInternalRedirect(value) {
   }
 }
 
+export function localizeInternalHref(value, locale = DEFAULT_LOCALE) {
+  if (typeof value !== 'string') return value;
+
+  const target = value.trim();
+  if (!target.startsWith('/') || target.startsWith('//') || target.includes('\\')) {
+    return target;
+  }
+
+  try {
+    const parsed = new URL(target, INTERNAL_BASE_ORIGIN);
+    if (parsed.origin !== INTERNAL_BASE_ORIGIN) return target;
+
+    const activeLocale = normalizeNavigationLocale(locale);
+    const pathname = getLocaleFromPath(parsed.pathname)
+      ? parsed.pathname
+      : localizedPath(parsed.pathname || '/', activeLocale);
+
+    return `${pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return target;
+  }
+}
+
 export function postAuthDestination({
   redirect,
   role,
@@ -62,10 +85,5 @@ export function postAuthDestination({
     return dashboardPathForRole(role, activeLocale);
   }
 
-  const parsed = new URL(redirect.trim(), INTERNAL_BASE_ORIGIN);
-  const pathname = getLocaleFromPath(parsed.pathname)
-    ? parsed.pathname
-    : localizedPath(parsed.pathname || '/', activeLocale);
-
-  return `${pathname}${parsed.search}${parsed.hash}`;
+  return localizeInternalHref(redirect, activeLocale);
 }

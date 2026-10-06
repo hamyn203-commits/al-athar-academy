@@ -1,5 +1,11 @@
 import { Component } from 'react';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
+import {
+  DEFAULT_LOCALE,
+  getLocaleFromPath,
+  isValidLocale,
+  localizedPath,
+} from '../../lib/locale';
 
 export default class ErrorBoundary extends Component {
   constructor(props) {
@@ -34,7 +40,10 @@ export default class ErrorBoundary extends Component {
 
   handleGoHome = () => {
     this.setState({ hasError: false, error: null, errorInfo: null });
-    window.location.href = '/';
+    const pathLocale = getLocaleFromPath(window.location.pathname);
+    const storedLocale = window.localStorage?.getItem('locale');
+    const locale = pathLocale || (isValidLocale(storedLocale) ? storedLocale : DEFAULT_LOCALE);
+    window.location.href = localizedPath('/', locale);
   };
 
   render() {

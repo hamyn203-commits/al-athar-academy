@@ -7,6 +7,7 @@ import {
 import { useI18n } from '../i18n';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { api } from '../lib/api';
+import { localizedPath } from '../lib/locale';
 
 const QUICK_QUESTIONS = [
   { id: 'pricing', label: '💰 ما هي الأسعار والباقات؟' },
@@ -192,7 +193,7 @@ export default function QuranChatWidget() {
                         type="button"
                         onClick={() => {
                           setOpen(false);
-                          navigate('/free-trial');
+                          navigate(localizedPath('/free-trial', locale));
                         }}
                         className="w-full py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition shadow flex items-center justify-center gap-1.5"
                       >
@@ -208,7 +209,7 @@ export default function QuranChatWidget() {
                         type="button"
                         onClick={() => {
                           setOpen(false);
-                          navigate('/contact');
+                          navigate(localizedPath('/contact', locale));
                         }}
                         className="w-full py-2 px-3 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-lg transition shadow flex items-center justify-center gap-1.5"
                       >
@@ -274,4 +275,3 @@ export default function QuranChatWidget() {
     </>
   );
 }
-

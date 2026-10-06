@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Bell, CheckCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
+import { useI18n } from '../i18n';
+import { localizeInternalHref } from '../lib/navigation';
 
 function pickText(obj, locale = 'ar') {
   if (!obj) return '';
@@ -10,6 +12,7 @@ function pickText(obj, locale = 'ar') {
 }
 
 export default function NotificationBell() {
+  const { locale } = useI18n();
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
@@ -66,7 +69,9 @@ export default function NotificationBell() {
   };
 
   const getNotificationLink = (notification) => {
-    if (notification.data?.meetingLink) return notification.data.meetingLink;
+    if (notification.data?.meetingLink) {
+      return localizeInternalHref(notification.data.meetingLink, locale);
+    }
     const links = {
       'session-request': '/teacher/dashboard',
       'session-accepted': '/student/dashboard',
@@ -74,7 +79,7 @@ export default function NotificationBell() {
       'course-enrollment': '/student/dashboard',
       'certificate-issued': '/student/dashboard',
     };
-    return links[notification.type] || '/notifications';
+    return localizeInternalHref(links[notification.type] || '/notifications', locale);
   };
 
   const isExternal = (url) => url?.startsWith('http');
@@ -181,7 +186,7 @@ export default function NotificationBell() {
             {notifications.length > 0 && (
               <div className="border-t p-3 bg-gray-50">
                 <Link
-                  to="/notifications"
+                  to={localizeInternalHref('/notifications', locale)}
                   onClick={() => setIsOpen(false)}
                   className="block text-center text-sm text-emerald-600 hover:text-emerald-700 font-semibold"
                 >

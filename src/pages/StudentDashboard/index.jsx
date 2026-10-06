@@ -14,6 +14,8 @@ import api from '../../lib/api';
 import { uploadFileDirect } from '../../lib/fileUpload';
 import { TASK_TYPES } from '../TeacherRegistration/constants';
 import { useI18n } from '../../i18n';
+import { localizedPath } from '../../lib/locale';
+import { localizeInternalHref } from '../../lib/navigation';
 
 const emptyReview = { rating: 5, comment: '', wouldContinue: true };
 const emptyBook = { date: '', time: '', notes: '' };
@@ -72,6 +74,7 @@ export default function StudentDashboard() {
   const navigate = useNavigate();
   const { user, ready, logout } = useRequireAuth(['student']);
   const { locale } = useI18n();
+  const lp = (path) => localizedPath(path, locale);
   const toast = useToast();
   const { stats: gameStats, badges } = useGamificationApi();
 
@@ -467,11 +470,11 @@ export default function StudentDashboard() {
                   <div className="border rounded-xl p-5">
                     <h3 className="font-bold text-sm mb-2 flex items-center gap-2"><BookOpen size={16} /> {locale === 'id' ? 'Kursus Saya' : locale === 'ar' ? 'دوراتي' : 'My Courses'} ({courses.length})</h3>
                     {courses.length === 0 ? (
-                      <Link to="/courses" className="text-sm text-emerald-600 hover:underline">{locale === 'id' ? 'Cari Kursus' : locale === 'ar' ? 'تصفح الدورات' : 'Browse Courses'}</Link>
+                      <Link to={lp('/courses')} className="text-sm text-emerald-600 hover:underline">{locale === 'id' ? 'Cari Kursus' : locale === 'ar' ? 'تصفح الدورات' : 'Browse Courses'}</Link>
                     ) : courses.slice(0, 3).map((e) => (
                       <div key={e._id} className="flex justify-between items-center text-sm py-1.5 border-b last:border-0">
                         <span>{locale === 'id' ? (e.course?.title?.id || e.course?.title?.en) : (e.course?.title?.ar || 'دورة')}</span>
-                        <button onClick={() => navigate(`/courses/${e.course?.slug}/learn`)} className="text-emerald-600 text-xs">{locale === 'id' ? 'Lanjutkan' : locale === 'ar' ? 'متابعة' : 'Continue'}</button>
+                        <button onClick={() => navigate(lp(`/courses/${e.course?.slug}/learn`))} className="text-emerald-600 text-xs">{locale === 'id' ? 'Lanjutkan' : locale === 'ar' ? 'متابعة' : 'Continue'}</button>
                       </div>
                     ))}
                   </div>
@@ -480,7 +483,7 @@ export default function StudentDashboard() {
                 <div>
                   <div className="flex justify-between items-center mb-3">
                     <h3 className="font-bold flex items-center gap-2"><Users size={18} /> {locale === 'id' ? 'Guru Saya' : locale === 'ar' ? 'معلموي' : 'My Tutors'} ({teachers.length})</h3>
-                    <Link to="/teachers" className="text-sm text-emerald-600 hover:underline">{locale === 'id' ? 'Cari Guru' : locale === 'ar' ? 'ابحث عن معلم' : 'Find a Tutor'}</Link>
+                    <Link to={lp('/teachers')} className="text-sm text-emerald-600 hover:underline">{locale === 'id' ? 'Cari Guru' : locale === 'ar' ? 'ابحث عن معلم' : 'Find a Tutor'}</Link>
                   </div>
                   {teachers.length === 0 ? (
                     <p className="text-center text-gray-500 py-6">{locale === 'id' ? 'Pesan sesi uji coba gratis dari halaman guru' : locale === 'ar' ? 'احجز حصة تجريبية من صفحة المعلمين' : 'Book a trial session from the teachers page'}</p>
@@ -491,7 +494,7 @@ export default function StudentDashboard() {
                         <p className="text-xs text-gray-500">{t.country} — {t.sessionCount} {locale === 'id' ? 'sesi' : locale === 'ar' ? 'حصة' : 'sessions'} — ⭐ {t.rating?.toFixed?.(1) || '0'}</p>
                       </div>
                       <div className="flex gap-2">
-                        <button onClick={() => navigate(`/teachers/${t._id}`)} className="px-3 py-1.5 border rounded-lg text-sm">{locale === 'id' ? 'Profil' : locale === 'ar' ? 'الملف' : 'Profile'}</button>
+                        <button onClick={() => navigate(lp(`/teachers/${t._id}`))} className="px-3 py-1.5 border rounded-lg text-sm">{locale === 'id' ? 'Profil' : locale === 'ar' ? 'الملف' : 'Profile'}</button>
                         {t.canBookRegular && (
                           <button onClick={() => openBook(t)} className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-sm">{locale === 'id' ? 'Pesan Sesi' : locale === 'ar' ? 'حجز حصة' : 'Book Session'}</button>
                         )}
@@ -508,7 +511,7 @@ export default function StudentDashboard() {
                 {trials.length === 0 ? (
                   <div className="text-center py-8">
                     <p className="text-gray-500 mb-3">{locale === 'id' ? 'Tidak ada permintaan uji coba' : locale === 'ar' ? 'لا طلبات تجريبية' : 'No trial requests'}</p>
-                    <Link to="/teachers" className="btn-primary inline-block text-sm">{locale === 'id' ? 'Pesan Sesi Uji Coba' : locale === 'ar' ? 'احجز تجريبية' : 'Book a Trial'}</Link>
+                    <Link to={lp('/teachers')} className="btn-primary inline-block text-sm">{locale === 'id' ? 'Pesan Sesi Uji Coba' : locale === 'ar' ? 'احجز تجريبية' : 'Book a Trial'}</Link>
                   </div>
                 ) : trials.map((s) => (
                   <SessionCard key={s._id} session={s} onReview={openReview} hasReviewed={hasReviewed(s._id)} />
@@ -595,7 +598,7 @@ export default function StudentDashboard() {
                   <div className="text-center py-8">
                     <Award className="mx-auto text-gray-300 mb-3" size={48} />
                     <p className="text-gray-500">{locale === 'id' ? 'Belum ada sertifikat' : locale === 'ar' ? 'لا شهادات بعد' : 'No certificates yet'}</p>
-                    <RouterLink to="/courses" className="text-sm text-emerald-600 hover:underline mt-2 inline-block">{locale === 'id' ? 'Mulai Belajar' : locale === 'ar' ? 'ابدأ دورة' : 'Start a Course'}</RouterLink>
+                    <RouterLink to={lp('/courses')} className="text-sm text-emerald-600 hover:underline mt-2 inline-block">{locale === 'id' ? 'Mulai Belajar' : locale === 'ar' ? 'ابدأ دورة' : 'Start a Course'}</RouterLink>
                   </div>
                 ) : certificates.map((c) => (
                   <div key={c._id} className="border rounded-lg p-4 flex flex-wrap justify-between items-center gap-3">
@@ -603,7 +606,7 @@ export default function StudentDashboard() {
                       <h3 className="font-bold">{locale === 'id' ? (c.course?.title?.id || c.course?.title?.en) : (c.course?.title?.ar || c.course?.title?.en || 'شهادة')}</h3>
                       <p className="text-xs text-gray-500">{c.issuedAt ? new Date(c.issuedAt).toLocaleDateString(locale === 'id' ? 'id-ID' : 'ar-EG') : ''}</p>
                     </div>
-                    <RouterLink to={`/verify-certificate/${c.certificateId || c._id}`}
+                    <RouterLink to={lp(`/verify-certificate/${c.certificateId || c._id}`)}
                       className="btn-primary text-sm px-4 py-2">
                       {locale === 'id' ? 'Lihat / Unduh' : locale === 'ar' ? 'عرض / تحميل' : 'View / Download'}
                     </RouterLink>
@@ -643,7 +646,7 @@ export default function StudentDashboard() {
                   <p className="text-3xl font-bold text-emerald-700">{gameStats?.points?.total || 0}</p>
                   <p className="text-sm text-slate-600">{locale === 'id' ? 'poin' : locale === 'ar' ? 'نقطة' : 'points'} — {locale === 'id' ? `Level ${gameStats?.points?.level || 1}` : locale === 'ar' ? `المستوى ${gameStats?.points?.level || 1}` : `Level ${gameStats?.points?.level || 1}`}</p>
                   <p className="text-sm mt-1">{locale === 'id' ? `Streak harian ${gameStats?.streaks?.current || 0} hari` : locale === 'ar' ? `سلسلة ${gameStats?.streaks?.current || 0} يوم` : `Streak ${gameStats?.streaks?.current || 0} days`}</p>
-                  <Link to="/leaderboard" className="inline-block mt-3 text-sm text-emerald-700 font-medium hover:underline">{locale === 'id' ? '🏆 Papan Peringkat' : locale === 'ar' ? '🏆 لوحة المتصدرين' : '🏆 Leaderboard'}</Link>
+                  <Link to={lp('/leaderboard')} className="inline-block mt-3 text-sm text-emerald-700 font-medium hover:underline">{locale === 'id' ? '🏆 Papan Peringkat' : locale === 'ar' ? '🏆 لوحة المتصدرين' : '🏆 Leaderboard'}</Link>
                 </div>
                 <h3 className="font-bold text-sm">{locale === 'id' ? 'Lencana' : locale === 'ar' ? 'الأوسمة' : 'Badges'}</h3>
                 {(badges.unlocked || []).length === 0 ? (
@@ -677,7 +680,7 @@ export default function StudentDashboard() {
                       </p>
                     </div>
                     <Link
-                      to="/programs/kids"
+                      to={lp('/programs/kids')}
                       className="shrink-0 px-5 py-2.5 rounded-xl font-bold text-xs bg-amber-600 text-white shadow-md hover:bg-amber-700 transition"
                     >
                       {locale === 'ar' ? 'استعراض المسابقة والتسجيل' : 'View Contest & Register'}
@@ -974,11 +977,11 @@ function SessionCard({ session, onReview, hasReviewed }) {
         )}
         {session.meetingLink && session.status === 'accepted' && (
           <div className="flex flex-wrap gap-2 mt-2">
-            <a href={session.meetingLink} target="_blank" rel="noreferrer"
+            <a href={localizeInternalHref(session.meetingLink, locale)} target="_blank" rel="noreferrer"
               className="text-sm text-emerald-600 font-semibold hover:underline">
               {locale === 'id' ? 'Masuk Kelas' : locale === 'ar' ? 'انضم للحصة' : 'Join Session'}
             </a>
-            <Link to={`/meeting/${session._id}`}
+            <Link to={localizedPath(`/meeting/${session._id}`, locale)}
               className="text-sm text-purple-600 font-semibold hover:underline flex items-center gap-1">
               🌐 {locale === 'id' ? 'Dengan Terjemahan' : locale === 'ar' ? 'مع ترجمة' : 'With Translation'}
             </Link>
