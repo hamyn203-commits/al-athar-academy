@@ -313,6 +313,12 @@ requireContains(
   'guardian child overview must redact grades by permission',
   /latestEvaluation:\s*permissions\.viewGrades\s*\?/
 );
+
+requireAbsent(
+  'backend/routes/guardian.js',
+  'guardian session payload must not expose teacher phone numbers now that communication is moving in-platform',
+  /teacherPhone|teacher:\s*\{[\s\S]{0,160}phone:/
+);
 requireContains(
   'backend/routes/guardians.js',
   'stored guardian reports must be filtered using current permissions',
