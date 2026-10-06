@@ -102,3 +102,29 @@ Important boundary:
 - T05.2 verifies traceable teacher asset ownership, safe purge controls, CI contracts and production deployment health.
 - No real teacher asset was purged during verification.
 - Disposable production object upload/read/delete verification remains T05.3.
+
+## T05.3 — Disposable production object lifecycle verification
+
+Status: IN PROGRESS
+
+Purpose:
+- Verify the actual production-connected object store with disposable data only.
+- Exercise create → authenticated private read → content verification → delete → absence verification.
+- Never touch a real student, teacher, course or assignment asset.
+
+Temporary verification mechanism:
+- `POST /api/uploads/_internal/storage-e2e`.
+- Production-only.
+- Requires dedicated `STORAGE_E2E_SECRET` through `Authorization: Bearer ...`.
+- Secret comparison uses timing-safe equality.
+- Probe objects are restricted to `uploads/e2e/`.
+- Cleanup is attempted in `finally` if the lifecycle fails before normal deletion.
+- Response never returns storage credentials.
+
+Acceptance gate:
+- route/safety/build/backend tests pass before merge.
+- production API deployment contains the temporary secret.
+- probe reports create/read/delete/absence all successful against the production Vercel Blob store.
+- production readiness and runtime error checks remain healthy.
+- after evidence is captured, the temporary endpoint is removed and the temporary secret is disabled.
+- final production deployment confirms the internal probe route is no longer present.
