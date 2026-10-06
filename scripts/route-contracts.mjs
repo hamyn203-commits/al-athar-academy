@@ -7,6 +7,7 @@ import {
   dashboardPathForRole,
   homePathForLocale,
   isSafeInternalRedirect,
+  localizeInternalHref,
   loginPathForLocale,
   postAuthDestination,
 } from '../src/lib/navigation.js';
@@ -21,6 +22,11 @@ assert.equal(dashboardPathForRole('unknown', 'en'), '/en');
 
 assert.equal(loginPathForLocale('en'), '/en/login');
 assert.equal(homePathForLocale('ar'), '/ar');
+
+assert.equal(localizeInternalHref('/courses?track=hifz#plans', 'en'), '/en/courses?track=hifz#plans');
+assert.equal(localizeInternalHref('/ar/courses', 'en'), '/ar/courses');
+assert.equal(localizeInternalHref('https://example.com/course', 'en'), 'https://example.com/course');
+assert.equal(localizeInternalHref('//example.com/course', 'en'), '//example.com/course');
 
 assert.equal(isSafeInternalRedirect('/ar/live/room-1?from=dashboard'), true);
 assert.equal(isSafeInternalRedirect('/courses'), true);
@@ -78,6 +84,38 @@ assert.match(requireAuth, /location\.pathname/);
 
 const protectedRoute = read('src/components\/auth\/ProtectedRoute.jsx'.replaceAll('\\/', '/'));
 assert.match(protectedRoute, /dashboardPathForRole/);
+
+const localeSensitiveNavigationFiles = [
+  'src/components/NotificationBell.jsx',
+  'src/components/QuranChatWidget.jsx',
+  'src/components/shared/ErrorBoundary.jsx',
+  'src/pages/AIHub/index.jsx',
+  'src/pages/LiveRoom/LiveRoom.jsx',
+  'src/pages/LiveSessions/LiveSessions.jsx',
+  'src/pages/StudentDashboard/index.jsx',
+  'src/pages/TeacherRegistration/index.jsx',
+];
+
+for (const relativePath of localeSensitiveNavigationFiles) {
+  const source = read(relativePath);
+  assert.doesNotMatch(source, /navigate\(\s*['\"`]\//, relativePath + ' must not use a hard-coded absolute navigate() target');
+  assert.doesNotMatch(source, /\bto\s*=\s*['\"]\//, relativePath + ' must not use a hard-coded absolute Link target');
+  assert.doesNotMatch(source, /window\.location\.href\s*=\s*['\"]\//, relativePath + ' must not hard-code browser recovery navigation');
+}
+
+const notifications = read('src/components/NotificationBell.jsx');
+assert.match(notifications, /localizeInternalHref\(notification\.data\?\.meetingLink,\s*locale\)/);
+assert.match(notifications, /localizeInternalHref\(links\[notification\.type\]/);
+
+const liveSessions = read('src/pages/LiveSessions/LiveSessions.jsx');
+assert.match(liveSessions, /localizedPath\(\`\/live\/\$\{roomId\}\`,\s*locale\)/);
+
+const studentDashboard = read('src/pages/StudentDashboard/index.jsx');
+assert.match(studentDashboard, /localizeInternalHref\(session\.meetingLink,\s*locale\)/);
+assert.match(studentDashboard, /localizedPath\(\`\/meeting\/\$\{session\._id\}\`,\s*locale\)/);
+
+const errorBoundary = read('src/components/shared/ErrorBoundary.jsx');
+assert.match(errorBoundary, /localizedPath\(['\"]\/['\"],\s*locale\)/);
 
 const app = read('src/App.jsx');
 assert.match(
