@@ -4,7 +4,7 @@ T05 owns the full upload / authorized-download / delete lifecycle for object-bac
 
 ## T05.1 — Student submission lifecycle
 
-Status: IN PROGRESS
+Status: COMPLETE ✅
 
 Audit findings:
 
@@ -36,3 +36,17 @@ Acceptance gate:
 - production readiness and runtime-error smoke checks pass after deployment.
 
 Later T05 tasks will cover the remaining teacher-document/public-media lifecycle and production object-store E2E verification without mixing payment work from T06.
+
+Verification evidence:
+- GitHub PR #16 CI run `37496967129`: frontend + backend successful.
+- Backend automated suite: 19/19 tests passed.
+- Production master SHA: `417a915fbd572ae52503320c32278b8bf9d68efe`.
+- Frontend deployment `dpl_DTmrivR6Wsr4AQnKiPDahvCqw8Cb`: READY.
+- API deployment `dpl_5MZqaz8P5FYxmZkpSbkJPyxU9mdx`: READY.
+- Production `/api/readiness` returned HTTP 200 with `ready: true`.
+- Production `/api/uploads/status` reported `vercel-blob`, configured, direct upload enabled and private-by-default.
+- No frontend or API runtime errors were observed in the post-deploy smoke window.
+
+Important boundary:
+- T05.1 verifies ownership-bound deletion logic, local deletion behavior, CI contracts and production deployment health.
+- A destructive production Blob delete drill was not performed in this task; production object-store lifecycle verification remains a later T05 task with disposable test data.
