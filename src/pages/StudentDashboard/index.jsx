@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Calendar, CheckCircle, FileText, Star, Trophy, BookOpen,
   Upload, Clock, Users, X, Award, Video, Gift, Copy,
@@ -17,6 +17,7 @@ import { useI18n } from '../../i18n';
 import { localizedPath } from '../../lib/locale';
 import { localizeInternalHref } from '../../lib/navigation';
 import StudentTeacherMarketplace from './TeacherMarketplace';
+import SessionChatModal from '../../components/session/SessionChatModal';
 
 const emptyReview = { rating: 5, comment: '', wouldContinue: true };
 const emptyBook = { date: '', time: '', notes: '' };
@@ -73,6 +74,7 @@ const getHwStatus = (status, locale) => {
 
 export default function StudentDashboard() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, ready, logout } = useRequireAuth(['student']);
   const { locale } = useI18n();
   const lp = (path) => localizedPath(path, locale);
@@ -99,6 +101,7 @@ export default function StudentDashboard() {
   const [reviewForm, setReviewForm] = useState(emptyReview);
   const [bookModal, setBookModal] = useState(null);
   const [bookForm, setBookForm] = useState(emptyBook);
+  const [chatSession, setChatSession] = useState(null);
   const [booking, setBooking] = useState(false);
 
   // In-Browser Voice Recording Studio
@@ -146,6 +149,13 @@ export default function StudentDashboard() {
   }, [locale, toast]);
 
   useEffect(() => { if (ready) load(); }, [ready, load]);
+
+  useEffect(() => {
+    const requestedSessionId = searchParams.get('session');
+    if (!requestedSessionId) return;
+    const found = [...trials, ...sessions].find((item) => String(item._id) === String(requestedSessionId));
+    if (found) setChatSession(found);
+  }, [searchParams, trials, sessions]);
 
   useEffect(() => {
     if (!ready) return;
@@ -523,7 +533,7 @@ export default function StudentDashboard() {
                     <Link to={lp('/teachers')} className="btn-primary inline-block text-sm">{locale === 'id' ? 'Pesan Sesi Uji Coba' : locale === 'ar' ? 'احجز تجريبية' : 'Book a Trial'}</Link>
                   </div>
                 ) : trials.map((s) => (
-                  <SessionCard key={s._id} session={s} onReview={openReview} hasReviewed={hasReviewed(s._id)} />
+                  <SessionCard key={s._id} session={s} onReview={openReview} hasReviewed={hasReviewed(s._id)} onChat={setChatSession} />
                 ))}
               </div>
             )}
@@ -534,7 +544,7 @@ export default function StudentDashboard() {
                 {sessions.length === 0 ? (
                   <p className="text-center text-gray-500 py-8">{locale === 'id' ? 'Tidak ada sesi reguler — Selesaikan kelas uji coba terlebih dahulu, lalu pesan dari menu akun' : locale === 'ar' ? 'لا حصص منتظمة — أكمل تجريبية ثم احجز من «حسابي»' : 'No regular sessions — complete a trial first, then book from your account tab'}</p>
                 ) : sessions.map((s) => (
-                  <SessionCard key={s._id} session={s} onReview={openReview} hasReviewed={hasReviewed(s._id)} />
+                  <SessionCard key={s._id} session={s} onReview={openReview} hasReviewed={hasReviewed(s._id)} onChat={setChatSession} />
                 ))}
               </div>
             )}
@@ -816,6 +826,14 @@ export default function StudentDashboard() {
         </>
       )}
 
+      {chatSession && (
+        <SessionChatModal
+          session={chatSession}
+          locale={locale}
+          onClose={() => setChatSession(null)}
+        />
+      )}
+
       {reviewModal && (
         <Modal title={locale === 'id' ? `Evaluasi ${reviewModal.teacher?.user?.name || 'Guru'}` : locale === 'ar' ? `تقييم ${reviewModal.teacher?.user?.name || 'المعلم'}` : `Rate ${reviewModal.teacher?.user?.name || 'Tutor'}`} onClose={() => setReviewModal(null)}>
           <div className="space-y-4">
@@ -958,7 +976,7 @@ export default function StudentDashboard() {
   );
 }
 
-function SessionCard({ session, onReview, hasReviewed }) {
+function SessionCard({ session, onReview, hasReviewed, onChat }) {
   const { locale } = useI18n();
   const teacherName = session.teacher?.user?.name || session.teacher?.personalInfo?.fullName || (locale === 'id' ? 'Guru' : locale === 'ar' ? 'المعلم' : 'Tutor');
   const isTrial = session.type === 'trial';
@@ -997,11 +1015,22 @@ function SessionCard({ session, onReview, hasReviewed }) {
           </div>
         )}
       </div>
-      {session.status === 'completed' && !hasReviewed && (
-        <button onClick={() => onReview(session)} className="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm">
-          {locale === 'id' ? 'Beri Nilai Guru' : locale === 'ar' ? 'قيّم المعلم' : 'Rate Teacher'}
-        </button>
-      )}
+      <div className="flex flex-wrap gap-2">
+        {!['rejected', 'cancelled'].includes(session.status) && (
+          <button
+            type="button"
+            onClick={() => onChat?.(session)}
+            className="px-4 py-2 border border-emerald-200 text-emerald-700 rounded-lg text-sm font-semibold hover:bg-emerald-50"
+          >
+            {locale === 'id' ? 'Chat' : locale === 'ar' ? 'محادثة' : 'Chat'}
+          </button>
+        )}
+        {session.status === 'completed' && !hasReviewed && (
+          <button onClick={() => onReview(session)} className="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm">
+            {locale === 'id' ? 'Beri Nilai Guru' : locale === 'ar' ? 'قيّم المعلم' : 'Rate Teacher'}
+          </button>
+        )}
+      </div>
     </div>
   );
 }

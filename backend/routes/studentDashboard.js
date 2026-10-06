@@ -2,7 +2,9 @@ const express = require('express');
 const mongoose = require('mongoose');
 const router = express.Router();
 const Session = require('../models/Session');
+const Teacher = require('../models/Teacher');
 const TeacherTask = require('../models/TeacherTask');
+const StudentTutorPreference = require('../models/StudentTutorPreference');
 const User = require('../models/User');
 const { protect, authorize } = require('../middleware/auth');
 const { findMockUserById } = require('../mockStore');
@@ -132,6 +134,195 @@ router.get('/stats', protect, authorize('student'), async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+const MATCH_GOALS = new Set([
+  'children',
+  'adults',
+  'women',
+  'non-arabic',
+  'tajweed',
+  'ijaza',
+  'arabic-language',
+]);
+
+function normalizeMatchingInput(input = {}) {
+  const goals = Array.isArray(input.goals)
+    ? [...new Set(input.goals.map((value) => String(value || '').trim()).filter((value) => MATCH_GOALS.has(value)))].slice(0, 5)
+    : [];
+
+  const preferredGender = ['any', 'male', 'female'].includes(input.preferredGender)
+    ? input.preferredGender
+    : 'any';
+
+  const language = String(input.language || '').trim().toLowerCase().slice(0, 30);
+
+  return { goals, preferredGender, language };
+}
+
+function scoreTutorMatch(teacher, matching) {
+  let score = 35;
+  const reasons = [];
+
+  const rating = Number(teacher.rating?.average || 0);
+  score += Math.min(20, Math.max(0, (rating / 5) * 20));
+  if (rating >= 4.5) reasons.push('تقييم مرتفع');
+
+  const experience = Number(teacher.quranInfo?.teachingExperience || 0);
+  score += Math.min(10, Math.max(0, experience));
+  if (experience >= 5) reasons.push('خبرة قوية');
+
+  const teacherSpecs = Array.isArray(teacher.quranInfo?.specializations)
+    ? teacher.quranInfo.specializations
+    : [];
+  if (matching.goals.length) {
+    const overlap = matching.goals.filter((goal) => teacherSpecs.includes(goal));
+    if (overlap.length) {
+      score += 25;
+      reasons.push('التخصص مناسب لهدفك');
+    }
+  }
+
+  if (matching.preferredGender !== 'any') {
+    if (teacher.personalInfo?.gender === matching.preferredGender) {
+      score += 10;
+      reasons.push('الاختيار المفضل');
+    } else {
+      score -= 20;
+    }
+  }
+
+  if (matching.language) {
+    const languages = Array.isArray(teacher.languages)
+      ? teacher.languages.map((value) => String(value).toLowerCase())
+      : [];
+    if (languages.includes(matching.language)) {
+      score += 10;
+      reasons.push('اللغة مناسبة');
+    } else {
+      score -= 10;
+    }
+  }
+
+  return {
+    score: Math.max(0, Math.min(100, Math.round(score))),
+    reasons: reasons.slice(0, 3),
+  };
+}
+
+router.get('/tutor-preferences', protect, authorize('student'), async (req, res) => {
+  try {
+    if (!isDBConnected() || !isValidObjectId(req.user.id)) {
+      if (!isMockMode) return res.status(503).json({ error: 'Student preferences are temporarily unavailable' });
+      return res.json({
+        favoriteTeachers: [],
+        matching: { goals: [], preferredGender: 'any', language: '' },
+      });
+    }
+
+    const preference = await StudentTutorPreference.findOne({ student: req.user.id }).lean();
+    return res.json({
+      favoriteTeachers: (preference?.favoriteTeachers || []).map(String),
+      matching: preference?.matching || { goals: [], preferredGender: 'any', language: '' },
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+router.put('/tutor-preferences', protect, authorize('student'), async (req, res) => {
+  try {
+    if (!isDBConnected() || !isValidObjectId(req.user.id)) {
+      return res.status(503).json({ error: 'Student preferences are temporarily unavailable' });
+    }
+
+    const matching = normalizeMatchingInput(req.body?.matching || req.body || {});
+    const preference = await StudentTutorPreference.findOneAndUpdate(
+      { student: req.user.id },
+      { $set: { matching }, $setOnInsert: { student: req.user.id } },
+      { upsert: true, new: true }
+    ).lean();
+
+    return res.json({
+      success: true,
+      favoriteTeachers: (preference.favoriteTeachers || []).map(String),
+      matching: preference.matching,
+    });
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+});
+
+router.post('/favorites/:teacherId', protect, authorize('student'), async (req, res) => {
+  try {
+    const { teacherId } = req.params;
+    if (!isDBConnected() || !isValidObjectId(req.user.id) || !isValidObjectId(teacherId)) {
+      return res.status(400).json({ error: 'Invalid favorite tutor request' });
+    }
+
+    const teacher = await Teacher.findOne({
+      _id: teacherId,
+      status: 'approved',
+      isVerified: true,
+    }).select('_id');
+
+    if (!teacher) {
+      return res.status(404).json({ error: 'Tutor is not available' });
+    }
+
+    const favorite = req.body?.favorite !== false;
+    const update = favorite
+      ? { $addToSet: { favoriteTeachers: teacher._id }, $setOnInsert: { student: req.user.id } }
+      : { $pull: { favoriteTeachers: teacher._id }, $setOnInsert: { student: req.user.id } };
+
+    const preference = await StudentTutorPreference.findOneAndUpdate(
+      { student: req.user.id },
+      update,
+      { upsert: true, new: true }
+    ).lean();
+
+    return res.json({
+      success: true,
+      favorite,
+      favoriteTeachers: (preference.favoriteTeachers || []).map(String),
+    });
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+});
+
+router.get('/matches', protect, authorize('student'), async (req, res) => {
+  try {
+    if (!isDBConnected() || !isValidObjectId(req.user.id)) {
+      if (!isMockMode) return res.status(503).json({ error: 'Tutor matching is temporarily unavailable' });
+      return res.json({ matches: [] });
+    }
+
+    const preference = await StudentTutorPreference.findOne({ student: req.user.id }).lean();
+    const matching = normalizeMatchingInput(preference?.matching || {});
+
+    const teachers = await Teacher.find({
+      status: 'approved',
+      isVerified: true,
+    })
+      .select('personalInfo.gender quranInfo.specializations quranInfo.teachingExperience languages rating.average')
+      .lean();
+
+    const matches = teachers
+      .map((teacher) => {
+        const result = scoreTutorMatch(teacher, matching);
+        return {
+          teacherId: String(teacher._id),
+          matchScore: result.score,
+          reasons: result.reasons,
+        };
+      })
+      .sort((a, b) => b.matchScore - a.matchScore);
+
+    return res.json({ matches });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
   }
 });
 

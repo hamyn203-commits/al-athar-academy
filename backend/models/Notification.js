@@ -24,6 +24,8 @@ const NotificationSchema = new mongoose.Schema({
       'session-completed',
       'session-reminder',
       'session-cancelled',
+      'session-rescheduled',
+      'session-chat-message',
       'homework-assigned',
       'homework-submitted',
       'review-received',

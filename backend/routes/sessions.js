@@ -191,6 +191,11 @@ router.get('/my-sessions', protect, async (req, res) => {
 router.put('/:id/respond', protect, authorize('teacher'), async (req, res) => {
   try {
     const { action, rescheduledDate, reason } = req.body;
+
+    if (!['accept', 'reject', 'reschedule'].includes(action)) {
+      return res.status(400).json({ error: 'Invalid session response action' });
+    }
+
     const teacher = await Teacher.findOne({ user: req.user.id });
 
     if (!teacher) {
@@ -214,17 +219,44 @@ router.put('/:id/respond', protect, authorize('teacher'), async (req, res) => {
       session.status = 'rejected';
       session.cancellationReason = reason;
     } else if (action === 'reschedule') {
+      const proposedDate = new Date(rescheduledDate);
+      if (!rescheduledDate || Number.isNaN(proposedDate.getTime()) || proposedDate <= new Date()) {
+        return res.status(400).json({ error: 'A valid future reschedule date is required' });
+      }
+
+      const source = session.toObject();
+      delete source._id;
+      delete source.createdAt;
+      delete source.updatedAt;
+      delete source.meetingLink;
+      delete source.recordingUrl;
+
       const newSession = await Session.create({
-        ...session.toObject(),
-        _id: undefined,
-        scheduledAt: new Date(rescheduledDate),
+        ...source,
+        scheduledAt: proposedDate,
         status: 'pending',
-        rescheduledFrom: session._id
+        rescheduledFrom: session._id,
+        cancellationReason: undefined,
       });
       
       session.status = 'cancelled';
       session.cancellationReason = 'Rescheduled';
       await session.save();
+
+      try {
+        await notifyUser(session.student, {
+          type: 'session-rescheduled',
+          title: { ar: 'اقتراح موعد جديد للحصة', en: 'New session time proposed' },
+          message: {
+            ar: `اقترح المعلم موعدًا جديدًا: ${proposedDate.toLocaleString('ar-EG')}`,
+            en: `Your tutor proposed a new time: ${proposedDate.toLocaleString('en-US')}`,
+          },
+          data: { session: newSession._id },
+          priority: 'high',
+        });
+      } catch (e) {
+        console.warn('Session reschedule notification:', e.message);
+      }
 
       return res.json({ success: true, session: newSession });
     }

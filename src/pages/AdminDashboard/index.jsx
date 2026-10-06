@@ -11,6 +11,7 @@ import { useRequireAuth } from '../../hooks/useRequireAuth';
 import { useToast } from '../../context/ToastProvider';
 import api from '../../lib/api';
 import { uploadFileDirect } from '../../lib/fileUpload';
+import TeacherReviewQueue from './TeacherReviewQueue';
 
 const STATUS_LABEL = { new: 'جديدة', read: 'مقروءة', replied: 'تم الرد', closed: 'مغلقة' };
 const STATUS_COLOR = { new: 'bg-blue-100 text-blue-700', read: 'bg-gray-100', replied: 'bg-green-100 text-green-700', closed: 'bg-gray-200' };
@@ -51,17 +52,33 @@ export default function AdminDashboard() {
   const [courseProgramFilter, setCourseProgramFilter] = useState('all');
   const [health, setHealth] = useState(null);
 
+  const loadPendingTeachers = useCallback(async () => {
+    const result = await api.get('/api/admin/teachers/pending', { auth: true });
+    setPending(Array.isArray(result) ? result : (result.teachers || []));
+  }, []);
+
   const loadCore = useCallback(async () => {
-    const [st, pend, appr, h] = await Promise.all([
+    const [statsResult, pendingResult, approvedResult, healthResult] = await Promise.allSettled([
       api.get('/api/admin/stats', { auth: true }),
-      api.get('/api/teachers/admin/pending', { auth: true }),
+      api.get('/api/admin/teachers/pending', { auth: true }),
       api.get('/api/admin/teachers/approved', { auth: true }),
-      api.get('/api/health').catch(() => null),
+      api.get('/api/health'),
     ]);
-    setStats(st);
-    setPending(Array.isArray(pend) ? pend : []);
-    setApproved(Array.isArray(appr) ? appr : []);
-    setHealth(h);
+
+    if (statsResult.status === 'fulfilled') setStats(statsResult.value || {});
+    if (pendingResult.status === 'fulfilled') {
+      const value = pendingResult.value;
+      setPending(Array.isArray(value) ? value : (value?.teachers || []));
+    }
+    if (approvedResult.status === 'fulfilled') {
+      const value = approvedResult.value;
+      setApproved(Array.isArray(value) ? value : (value?.teachers || []));
+    }
+    if (healthResult.status === 'fulfilled') setHealth(healthResult.value);
+
+    if (pendingResult.status === 'rejected') {
+      throw new Error('تعذر تحميل طلبات المعلمين المعلقة');
+    }
   }, []);
 
   const loadMessages = useCallback(async () => {
@@ -265,7 +282,7 @@ export default function AdminDashboard() {
   const tabs = [
     { id: 'overview', label: 'نظرة عامة' },
     { id: 'messages', label: `الرسائل (${messages.filter(m => m.status === 'new').length || '…'})` },
-    { id: 'teachers', label: 'المعلمون' },
+    { id: 'teachers', label: `المعلمون (${pending.length})` },
     { id: 'withdrawals', label: `السحوبات (${withdrawals.filter(w => w.status === 'pending').length || '…'})` },
     { id: 'courses', label: 'الدورات' },
     { id: 'blog', label: 'المدونة' },
@@ -326,83 +343,15 @@ export default function AdminDashboard() {
                 <button onClick={() => navigate('payments')} className="wn-btn wn-btn--primary">فتح مراجعة المدفوعات</button>
               </div>
 
-              <div className="bg-white rounded-xl shadow-sm border p-6">
-                <h3 className="font-bold mb-4">معلمون قيد المراجعة ({pending.length})</h3>
-                {pending.length === 0 ? <Empty text="لا طلبات جديدة" /> : pending.map((t) => (
-                  <div key={t._id} className="border rounded-lg p-4 mb-4">
-                    <div className="flex flex-wrap justify-between items-start gap-4">
-                      <div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h4 className="font-bold">{t.user?.name || t.personalInfo?.fullName}</h4>
-                          <span className="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-800">
-                            {t.status === 'under-review' ? 'يحتاج استكمال' : 'قيد المراجعة'}
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-500 mt-1">{t.personalInfo?.country} — {t.personalInfo?.phone}</p>
-                        <p className="text-xs text-gray-400 mt-1">{t.user?.email}</p>
-                      </div>
-
-                      <div className="flex flex-wrap gap-2">
-                        <button onClick={() => review(t._id, 'approve')} className="px-3 py-2 bg-green-100 text-green-700 rounded-lg text-sm flex items-center gap-1">
-                          <CheckCircle size={16} /> قبول
-                        </button>
-                        <button onClick={() => review(t._id, 'request-changes')} className="px-3 py-2 bg-amber-100 text-amber-800 rounded-lg text-sm flex items-center gap-1">
-                          <Edit3 size={16} /> طلب استكمال
-                        </button>
-                        <button onClick={() => review(t._id, 'reject', 'مرفوض')} className="px-3 py-2 bg-red-100 text-red-700 rounded-lg text-sm flex items-center gap-1">
-                          <XCircle size={16} /> رفض
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 border-t pt-3">
-                      <p className="text-xs font-semibold text-slate-600 mb-2">ملفات المراجعة</p>
-                      <div className="flex flex-wrap gap-2">
-                        {t.media?.profilePhoto && (
-                          <button onClick={() => openTeacherMedia(t.media.profilePhoto)} className="px-3 py-1.5 bg-slate-100 rounded-lg text-xs flex items-center gap-1">
-                            <Eye size={14} /> الصورة الشخصية
-                          </button>
-                        )}
-                        {t.media?.recitationVideo && (
-                          <button onClick={() => openTeacherMedia(t.media.recitationVideo)} className="px-3 py-1.5 bg-slate-100 rounded-lg text-xs flex items-center gap-1">
-                            <Video size={14} /> فيديو التلاوة
-                          </button>
-                        )}
-                        {t.documents?.idCardFront && t.documents.idCardFront !== 'not-provided' && (
-                          <button onClick={() => openTeacherDocument(t._id, 'idCardFront')} className="px-3 py-1.5 bg-slate-100 rounded-lg text-xs flex items-center gap-1">
-                            <Eye size={14} /> وجه البطاقة
-                          </button>
-                        )}
-                        {t.documents?.idCardBack && t.documents.idCardBack !== 'not-provided' && (
-                          <button onClick={() => openTeacherDocument(t._id, 'idCardBack')} className="px-3 py-1.5 bg-slate-100 rounded-lg text-xs flex items-center gap-1">
-                            <Eye size={14} /> ظهر البطاقة
-                          </button>
-                        )}
-                        {t.documents?.graduationCertificateAvailable && (
-                          <button onClick={() => openTeacherDocument(t._id, 'graduationCertificate')} className="px-3 py-1.5 bg-slate-100 rounded-lg text-xs flex items-center gap-1">
-                            <Eye size={14} /> شهادة التخرج
-                          </button>
-                        )}
-                        {(t.documents?.tajweedCertificates || []).map((_, index) => (
-                          <button key={`tajweed-${t._id}-${index}`} onClick={() => openTeacherDocument(t._id, 'tajweedCertificates', index)} className="px-3 py-1.5 bg-slate-100 rounded-lg text-xs flex items-center gap-1">
-                            <Eye size={14} /> تجويد {index + 1}
-                          </button>
-                        ))}
-                        {(t.documents?.ijazat || []).map((_, index) => (
-                          <button key={`ijaza-${t._id}-${index}`} onClick={() => openTeacherDocument(t._id, 'ijazat', index)} className="px-3 py-1.5 bg-slate-100 rounded-lg text-xs flex items-center gap-1">
-                            <Eye size={14} /> إجازة {index + 1}
-                          </button>
-                        ))}
-                      </div>
-                      <div className="mt-2 text-xs text-slate-500 flex flex-wrap gap-x-4 gap-y-1">
-                        <span>شهادة التخرج: {t.documents?.graduationCertificateAvailable ? 'موجودة' : 'غير موجودة'}</span>
-                        <span>شهادات التجويد: {t.documents?.tajweedCertificatesAvailable ? 'موجودة' : 'غير موجودة'}</span>
-                        <span>الإجازات: {t.documents?.ijazatAvailable ? 'موجودة' : 'غير موجودة'}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <TeacherReviewQueue
+                teachers={pending}
+                loading={loading}
+                onRefresh={loadPendingTeachers}
+                onReview={review}
+                onOpenDocument={openTeacherDocument}
+                onOpenMedia={openTeacherMedia}
+                compact
+              />
             </>
           )}
 
@@ -447,7 +396,17 @@ export default function AdminDashboard() {
           )}
 
           {tab === 'teachers' && (
-            <div className="grid lg:grid-cols-2 gap-6">
+            <div className="space-y-6">
+              <TeacherReviewQueue
+                teachers={pending}
+                loading={loading}
+                onRefresh={loadPendingTeachers}
+                onReview={review}
+                onOpenDocument={openTeacherDocument}
+                onOpenMedia={openTeacherMedia}
+              />
+
+              <div className="grid lg:grid-cols-2 gap-6">
               <form onSubmit={addTeacher} className="wn-dashboard-surface space-y-3">
                 <h3 className="font-bold flex items-center gap-2"><Plus size={18} /> إضافة معلم جديد</h3>
                 {['name', 'email', 'password', 'phone'].map((f) => (
@@ -473,6 +432,7 @@ export default function AdminDashboard() {
                     <button onClick={() => navigate(`/teachers/${t._id}`)} className="text-emerald-600 text-sm">عرض</button>
                   </div>
                 ))}
+              </div>
               </div>
             </div>
           )}
