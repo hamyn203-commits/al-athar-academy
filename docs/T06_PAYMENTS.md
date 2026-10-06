@@ -110,7 +110,7 @@ Status: IMPLEMENTED — awaiting production E2E verification 🟡
 
 Launch decision:
 - The first public payment flow uses manual bank/mobile-wallet transfers rather than requiring Paymob.
-- Supported launch destinations are configured through environment variables for InstaPay, Vodafone Cash and optional bank transfer.
+- Supported launch destinations are configured through environment variables for InstaPay, mobile wallet and optional bank transfer.
 - Paymob code remains available as a future automatic gateway but is not a default public-launch dependency.
 
 Implementation:
@@ -130,7 +130,7 @@ Production configuration:
 - `MANUAL_PAYMENT_RECIPIENT_NAME`
 - at least one of:
   - `MANUAL_PAYMENT_INSTAPAY`
-  - `MANUAL_PAYMENT_VODAFONE_CASH`
+  - `MANUAL_PAYMENT_MOBILE_WALLET`
   - `MANUAL_PAYMENT_BANK_DETAILS`
 
 Launch evidence:
