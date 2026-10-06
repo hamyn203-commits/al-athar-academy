@@ -26,3 +26,18 @@ Exit criteria:
 ## Next T03 work
 
 After T03.1 is merged, continue with the remaining T03 data/safeguarding review. Do not mix later roadmap owners such as full upload/download/delete E2E, payments, SEO, or release/domain work into this task.
+
+## T03.2 Upload / data security hardening
+
+Implemented on this branch:
+
+- Central upload policy shared by Vercel Blob and S3 presigning.
+- MIME type must match the filename extension.
+- Vercel direct-upload tokens are limited to the single validated MIME type.
+- Upload metadata is validated before a direct-upload token is issued.
+- Role, purpose, file size and filename checks are centralized.
+- Unsafe object-storage paths are rejected.
+- Vercel Blob references require HTTPS.
+- Unit tests cover valid and spoofed upload metadata plus object-path ownership rules.
+
+This task intentionally does not implement full upload/download/delete E2E; that remains with its later roadmap owner.
