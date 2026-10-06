@@ -200,6 +200,7 @@ export default function TeacherRegistration() {
                     allowedMimeTypes={['image/jpeg', 'image/png']}
                     allowedExtensions={['.jpg', '.jpeg', '.jfif', '.png']}
                     maxBytes={100 * 1024 * 1024}
+                    captureKind="image"
                     file={f.files.profilePhoto}
                     onChange={(file) => f.setFile('profilePhoto', file)}
                     preview={(file) => <img src={URL.createObjectURL(file)} alt="" className="h-32 rounded-lg object-cover" />}
@@ -268,11 +269,12 @@ export default function TeacherRegistration() {
                     <FileBox
                       id="reciteVid"
                       label="ارفع فيديو/فيديوهات التلاوة (3–5 دقائق)"
-                      hint="MP4 أو WebM فقط — الحد الأقصى 100 MB لكل فيديو"
-                      accept=".mp4,.webm,video/mp4,video/webm"
-                      allowedMimeTypes={['video/mp4', 'video/webm']}
-                      allowedExtensions={['.mp4', '.webm']}
+                      hint="MP4 أو WebM أو MOV — الحد الأقصى 100 MB لكل فيديو"
+                      accept=".mp4,.webm,.mov,video/mp4,video/webm,video/quicktime"
+                      allowedMimeTypes={['video/mp4', 'video/webm', 'video/quicktime']}
+                      allowedExtensions={['.mp4', '.webm', '.mov']}
                       maxBytes={100 * 1024 * 1024}
+                      captureKind="video"
                       multiple
                       files={f.files.recitationVideos}
                       onChange={(files) => f.setFile('recitationVideos', files)}
