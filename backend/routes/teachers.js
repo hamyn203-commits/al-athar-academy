@@ -605,17 +605,25 @@ router.put('/admin/:id/review', protect, authorize('admin'), async (req, res) =>
     'request-changes': 'under-review'
   };
 
+  if (!Object.prototype.hasOwnProperty.call(statusMap, action)) {
+    return res.status(400).json({
+      error: 'Invalid teacher review action',
+      code: 'INVALID_TEACHER_REVIEW_ACTION',
+    });
+  }
+
   if (isMockMode && !isDBConnected()) {
     return res.json({
       success: true,
       teacher: {
         _id: req.params.id,
-        status: statusMap[action] || 'approved',
+        status: statusMap[action],
         isVerified: action === 'approve',
         reviewNotes: [{ admin: req.user?.id || 'admin', note, date: new Date() }]
       }
     });
   }
+
   try {
     const teacher = await Teacher.findByIdAndUpdate(
       req.params.id,
@@ -637,9 +645,48 @@ router.put('/admin/:id/review', protect, authorize('admin'), async (req, res) =>
       return res.status(404).json({ error: 'Teacher not found' });
     }
 
-    res.json({ success: true, teacher });
+    const teacherUser = await User.findByIdAndUpdate(
+      teacher.user,
+      { $inc: { refreshTokenVersion: 1 } },
+      { new: true }
+    ).select('name email');
+
+    if (teacherUser?.email) {
+      const notification = {
+        approve: {
+          subject: 'تم قبول طلبك كمعلم — وَحْيٌ وَنَمَاء',
+          text: 'تم اعتماد طلبك كمعلم. يمكنك الآن تسجيل الدخول إلى حسابك.',
+          html: '<div dir="rtl"><h2>تم قبول طلبك ✅</h2><p>تم اعتماد طلبك كمعلم في أكاديمية وَحْيٌ وَنَمَاء.</p><p>يمكنك الآن تسجيل الدخول إلى حسابك.</p></div>',
+        },
+        'request-changes': {
+          subject: 'طلبك كمعلم يحتاج استكمال — وَحْيٌ وَنَمَاء',
+          text: `طلبك يحتاج استكمال أو تعديل قبل الاعتماد.${note ? ` ملاحظة الإدارة: ${note}` : ''}`,
+          html: `<div dir="rtl"><h2>طلبك يحتاج استكمال</h2><p>تحتاج الإدارة إلى استكمال أو تعديل بعض البيانات قبل الاعتماد.</p>${note ? `<p><strong>ملاحظة الإدارة:</strong> ${String(note).replace(/[<>&"]/g, '')}</p>` : ''}</div>`,
+        },
+        reject: {
+          subject: 'تحديث حالة طلب المعلم — وَحْيٌ وَنَمَاء',
+          text: `تعذر اعتماد طلبك كمعلم في الوقت الحالي.${note ? ` ملاحظة الإدارة: ${note}` : ''}`,
+          html: `<div dir="rtl"><h2>تحديث حالة الطلب</h2><p>تعذر اعتماد طلبك كمعلم في الوقت الحالي.</p>${note ? `<p><strong>ملاحظة الإدارة:</strong> ${String(note).replace(/[<>&"]/g, '')}</p>` : ''}</div>`,
+        },
+      }[action];
+
+      sendEmail({
+        to: teacherUser.email,
+        subject: notification.subject,
+        text: notification.text,
+        html: notification.html,
+      }).catch((error) => {
+        console.warn('Teacher review email failed:', error.message);
+      });
+    }
+
+    return res.json({
+      success: true,
+      teacher,
+      applicationStatus: teacher.status,
+    });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    return res.status(400).json({ error: error.message });
   }
 });
 
