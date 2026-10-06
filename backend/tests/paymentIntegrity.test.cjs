@@ -26,6 +26,7 @@ test('payment amounts are normalized to integer minor units', () => {
 
 test('payment state machine allows only monotonic settlement transitions', () => {
   assert.equal(canTransitionPayment('created', 'pending'), true);
+  assert.equal(canTransitionPayment('created', 'failed'), true);
   assert.equal(canTransitionPayment('pending', 'succeeded'), true);
   assert.equal(canTransitionPayment('pending', 'failed'), true);
   assert.equal(canTransitionPayment('succeeded', 'refunded'), true);
