@@ -56,4 +56,10 @@ Implemented on this branch:
 - Public trial requests for students under 18 require a guardian name.
 - Automated tests cover minor trial gating and permission-based report redaction.
 
+Verification evidence before merge:
+- all backend JavaScript syntax checks passed
+- security regression contracts passed
+- automated suite: 15/15 tests passed
+- frontend production build completed successfully
+
 This task strengthens existing guardian-child ownership controls without changing the later full file E2E, payment, SEO or release/domain roadmap owners.
