@@ -30,18 +30,28 @@ router.post('/send-verification', async (req, res) => {
       attempts: 0,
     });
 
-    const result = await sendEmail({
-      to: email,
-      subject: 'رمز التحقق — أكاديمية وحي ونماء',
-      text: OTP_MSG(code),
-      html: `<div dir="rtl" style="font-family:Arial,sans-serif;line-height:1.8">
-        <h2>أكاديمية وحي ونماء</h2>
-        <p>رمز التحقق الخاص بتسجيل المعلم:</p>
-        <p style="font-size:28px;font-weight:700;letter-spacing:6px">${code}</p>
-        <p>الرمز صالح لمدة 10 دقائق.</p>
-        <p>إذا لم تطلب هذا الرمز، تجاهل هذه الرسالة.</p>
-      </div>`,
-    });
+    let result;
+    try {
+      result = await sendEmail({
+        to: email,
+        subject: 'رمز التحقق — أكاديمية وحي ونماء',
+        text: OTP_MSG(code),
+        html: `<div dir="rtl" style="font-family:Arial,sans-serif;line-height:1.8">
+          <h2>أكاديمية وحي ونماء</h2>
+          <p>رمز التحقق الخاص بتسجيل المعلم:</p>
+          <p style="font-size:28px;font-weight:700;letter-spacing:6px">${code}</p>
+          <p>الرمز صالح لمدة 10 دقائق.</p>
+          <p>إذا لم تطلب هذا الرمز، تجاهل هذه الرسالة.</p>
+        </div>`,
+      });
+    } catch (deliveryError) {
+      await VerificationCode.deleteMany({ email }).catch(() => {});
+      console.error('Verification email delivery error:', deliveryError?.message || 'unknown error');
+      return res.status(503).json({
+        error: 'Email verification is temporarily unavailable',
+        code: 'EMAIL_DELIVERY_FAILED',
+      });
+    }
 
     if (!result?.sent) {
       await VerificationCode.deleteMany({ email });
