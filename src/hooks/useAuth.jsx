@@ -90,12 +90,19 @@ export function AuthProvider({ children }) {
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Login failed');
+      if (!response.ok) {
+        return {
+          success: false,
+          error: data.error || 'Login failed',
+          code: data.code || null,
+          applicationStatus: data.applicationStatus || null,
+        };
+      }
 
       saveAuthenticatedSession(data);
       return { success: true, user: data.user };
     } catch (error) {
-      return { success: false, error: error.message };
+      return { success: false, error: error.message, code: null, applicationStatus: null };
     }
   }, [saveAuthenticatedSession]);
 
