@@ -85,6 +85,14 @@ Status: IN PROGRESS
 - Undelivered teacher OTP records must be removed when the email provider rejects delivery.
 - Regression tests cover the fail-closed behavior.
 
+### T07.2c — WhatsApp provider alignment
+
+Status: IN PROGRESS
+
+- Launch readiness accepts either Meta WhatsApp Cloud API or Twilio WhatsApp.
+- The selected configured provider is reported without exposing any credential values.
+- Regression coverage verifies both provider paths and incomplete-config fail-closed behavior.
+
 ### External-service closure checklist
 
 Before a public GO decision:
