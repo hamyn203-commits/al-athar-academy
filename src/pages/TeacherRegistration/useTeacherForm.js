@@ -31,8 +31,8 @@ const FILE_RULES = {
     label: 'المستند',
   },
   recitationVideo: {
-    types: ['video/mp4', 'video/webm'],
-    extensions: ['.mp4', '.webm'],
+    types: ['video/mp4', 'video/webm', 'video/quicktime'],
+    extensions: ['.mp4', '.webm', '.mov'],
     maxBytes: 100 * MB,
     label: 'فيديو التلاوة',
   },

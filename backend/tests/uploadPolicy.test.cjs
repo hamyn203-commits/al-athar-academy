@@ -196,3 +196,28 @@ test('teacher JPEG uploads accept JFIF extension', () => {
 
   assert.equal(result.extension, '.jfif');
 });
+
+
+test('teacher camera uploads accept iPhone QuickTime MOV within the 100 MB cap', () => {
+  const result = validateUploadMetadata({
+    purpose: 'teacher-public',
+    role: 'teacher-registration',
+    filename: 'camera-video.mov',
+    contentType: 'video/quicktime',
+    size: 80 * 1024 * 1024,
+  });
+
+  assert.equal(result.extension, '.mov');
+  assert.equal(result.contentType, 'video/quicktime');
+
+  assert.throws(
+    () => validateUploadMetadata({
+      purpose: 'teacher-public',
+      role: 'teacher-registration',
+      filename: 'camera-video.mov',
+      contentType: 'video/quicktime',
+      size: (100 * 1024 * 1024) + 1,
+    }),
+    /Invalid file size/
+  );
+});
