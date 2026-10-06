@@ -545,9 +545,7 @@ router.get('/', async (req, res) => {
     if (minExperience) filter['quranInfo.teachingExperience'] = { $gte: parseInt(minExperience) };
 
     if (search && String(search).trim()) {
-      const escaped = String(search).trim().replace(/[.*+?^$(){}|[\]\\]/g, '\\    if (minExperience) filter['quranInfo.teachingExperience'] = { $gte: parseInt(minExperience) };
-
-    const skip =');
+      const escaped = String(search).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const regex = new RegExp(escaped, 'i');
       filter.$or = [
         { 'personalInfo.fullName': regex },
@@ -556,7 +554,6 @@ router.get('/', async (req, res) => {
         { languages: regex },
       ];
     }
-
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const SORT_MAP = {
       rating: 'rating.average',
