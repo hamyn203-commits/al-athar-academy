@@ -275,6 +275,28 @@ if (originProbe.status !== 0) {
   failures.push('backend/config/origins.js: production trusted-origin policy is not fail-closed');
 }
 
+// T03: direct uploads must keep metadata validation and single-MIME token scope.
+requireContains(
+  'backend/routes/uploads.js',
+  'direct uploads must validate filename, MIME, size and role through the shared policy',
+  /validateUploadMetadata\s*\(/
+);
+requireContains(
+  'backend/routes/uploads.js',
+  'Vercel direct-upload token must be restricted to the validated MIME type',
+  /allowedContentTypes\s*:\s*\[metadata\.contentType\]/
+);
+requireContains(
+  'src/lib/fileUpload.js',
+  'client upload payload must include filename, content type and size for server validation',
+  /filename\s*:\s*file\.name[\s\S]{0,180}contentType\s*:\s*file\.type[\s\S]{0,180}size\s*:\s*file\.size/
+);
+requireContains(
+  'backend/services/objectStorage.js',
+  'object storage references must reject unsafe paths before ownership checks',
+  /if\s*\(!isSafeObjectPath\(pathname\)\)\s*return\s*false/
+);
+
 if (failures.length) {
   console.error('Security contracts failed:');
   failures.forEach((failure) => console.error(`- ${failure}`));
