@@ -123,11 +123,46 @@ export default function AdminDashboard() {
   if (!ready) return null;
 
   const review = async (id, action, note = '') => {
+    let reviewNote = note;
+
+    if (action === 'request-changes' && !reviewNote) {
+      reviewNote = window.prompt('اكتب المطلوب من المعلم استكماله أو تعديله:', '') ?? '';
+      if (!reviewNote.trim()) return;
+    }
+
     try {
-      await api.put(`/api/teachers/admin/${id}/review`, { action, note }, { auth: true });
-      toast.success(action === 'approve' ? 'تم قبول المعلم' : 'تم الرفض');
+      await api.put(`/api/teachers/admin/${id}/review`, { action, note: reviewNote }, { auth: true });
+      const labels = {
+        approve: 'تم قبول المعلم وفتح الحساب',
+        reject: 'تم رفض الطلب',
+        'request-changes': 'تم إرسال طلب الاستكمال للمعلم',
+      };
+      toast.success(labels[action] || 'تم تحديث الطلب');
       load();
-    } catch { toast.error('فشلت العملية'); }
+    } catch (error) {
+      toast.error(error.message || 'فشلت العملية');
+    }
+  };
+
+  const openTeacherDocument = async (teacherId, kind, index) => {
+    try {
+      const suffix = Number.isInteger(index) ? `/${index}` : '';
+      const response = await api.request(
+        `/api/teachers/admin/${teacherId}/document/${kind}${suffix}`,
+        { auth: true, json: false, method: 'GET' }
+      );
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank', 'noopener,noreferrer');
+      window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (error) {
+      toast.error(error.message || 'تعذر فتح المستند');
+    }
+  };
+
+  const openTeacherMedia = (reference) => {
+    if (!reference) return toast.error('الملف غير متاح');
+    window.open(reference, '_blank', 'noopener,noreferrer');
   };
 
   const sendReply = async (id) => {
@@ -294,15 +329,76 @@ export default function AdminDashboard() {
               <div className="bg-white rounded-xl shadow-sm border p-6">
                 <h3 className="font-bold mb-4">معلمون قيد المراجعة ({pending.length})</h3>
                 {pending.length === 0 ? <Empty text="لا طلبات جديدة" /> : pending.map((t) => (
-                  <div key={t._id} className="border rounded-lg p-4 mb-3 flex justify-between items-start gap-4">
-                    <div>
-                      <h4 className="font-bold">{t.user?.name || t.personalInfo?.fullName}</h4>
-                      <p className="text-sm text-gray-500">{t.personalInfo?.country} — {t.personalInfo?.phone}</p>
+                  <div key={t._id} className="border rounded-lg p-4 mb-4">
+                    <div className="flex flex-wrap justify-between items-start gap-4">
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className="font-bold">{t.user?.name || t.personalInfo?.fullName}</h4>
+                          <span className="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-800">
+                            {t.status === 'under-review' ? 'يحتاج استكمال' : 'قيد المراجعة'}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-500 mt-1">{t.personalInfo?.country} — {t.personalInfo?.phone}</p>
+                        <p className="text-xs text-gray-400 mt-1">{t.user?.email}</p>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        <button onClick={() => review(t._id, 'approve')} className="px-3 py-2 bg-green-100 text-green-700 rounded-lg text-sm flex items-center gap-1">
+                          <CheckCircle size={16} /> قبول
+                        </button>
+                        <button onClick={() => review(t._id, 'request-changes')} className="px-3 py-2 bg-amber-100 text-amber-800 rounded-lg text-sm flex items-center gap-1">
+                          <Edit3 size={16} /> طلب استكمال
+                        </button>
+                        <button onClick={() => review(t._id, 'reject', 'مرفوض')} className="px-3 py-2 bg-red-100 text-red-700 rounded-lg text-sm flex items-center gap-1">
+                          <XCircle size={16} /> رفض
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex gap-2">
-                      <button onClick={() => navigate(`/teachers/${t._id}`)} className="p-2 bg-gray-100 rounded-lg"><Eye size={18} /></button>
-                      <button onClick={() => review(t._id, 'approve')} className="p-2 bg-green-100 text-green-700 rounded-lg"><CheckCircle size={18} /></button>
-                      <button onClick={() => review(t._id, 'reject', 'مرفوض')} className="p-2 bg-red-100 text-red-700 rounded-lg"><XCircle size={18} /></button>
+
+                    <div className="mt-4 border-t pt-3">
+                      <p className="text-xs font-semibold text-slate-600 mb-2">ملفات المراجعة</p>
+                      <div className="flex flex-wrap gap-2">
+                        {t.media?.profilePhoto && (
+                          <button onClick={() => openTeacherMedia(t.media.profilePhoto)} className="px-3 py-1.5 bg-slate-100 rounded-lg text-xs flex items-center gap-1">
+                            <Eye size={14} /> الصورة الشخصية
+                          </button>
+                        )}
+                        {t.media?.recitationVideo && (
+                          <button onClick={() => openTeacherMedia(t.media.recitationVideo)} className="px-3 py-1.5 bg-slate-100 rounded-lg text-xs flex items-center gap-1">
+                            <Video size={14} /> فيديو التلاوة
+                          </button>
+                        )}
+                        {t.documents?.idCardFront && t.documents.idCardFront !== 'not-provided' && (
+                          <button onClick={() => openTeacherDocument(t._id, 'idCardFront')} className="px-3 py-1.5 bg-slate-100 rounded-lg text-xs flex items-center gap-1">
+                            <Eye size={14} /> وجه البطاقة
+                          </button>
+                        )}
+                        {t.documents?.idCardBack && t.documents.idCardBack !== 'not-provided' && (
+                          <button onClick={() => openTeacherDocument(t._id, 'idCardBack')} className="px-3 py-1.5 bg-slate-100 rounded-lg text-xs flex items-center gap-1">
+                            <Eye size={14} /> ظهر البطاقة
+                          </button>
+                        )}
+                        {t.documents?.graduationCertificateAvailable && (
+                          <button onClick={() => openTeacherDocument(t._id, 'graduationCertificate')} className="px-3 py-1.5 bg-slate-100 rounded-lg text-xs flex items-center gap-1">
+                            <Eye size={14} /> شهادة التخرج
+                          </button>
+                        )}
+                        {(t.documents?.tajweedCertificates || []).map((_, index) => (
+                          <button key={`tajweed-${t._id}-${index}`} onClick={() => openTeacherDocument(t._id, 'tajweedCertificates', index)} className="px-3 py-1.5 bg-slate-100 rounded-lg text-xs flex items-center gap-1">
+                            <Eye size={14} /> تجويد {index + 1}
+                          </button>
+                        ))}
+                        {(t.documents?.ijazat || []).map((_, index) => (
+                          <button key={`ijaza-${t._id}-${index}`} onClick={() => openTeacherDocument(t._id, 'ijazat', index)} className="px-3 py-1.5 bg-slate-100 rounded-lg text-xs flex items-center gap-1">
+                            <Eye size={14} /> إجازة {index + 1}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="mt-2 text-xs text-slate-500 flex flex-wrap gap-x-4 gap-y-1">
+                        <span>شهادة التخرج: {t.documents?.graduationCertificateAvailable ? 'موجودة' : 'غير موجودة'}</span>
+                        <span>شهادات التجويد: {t.documents?.tajweedCertificatesAvailable ? 'موجودة' : 'غير موجودة'}</span>
+                        <span>الإجازات: {t.documents?.ijazatAvailable ? 'موجودة' : 'غير موجودة'}</span>
+                      </div>
                     </div>
                   </div>
                 ))}
