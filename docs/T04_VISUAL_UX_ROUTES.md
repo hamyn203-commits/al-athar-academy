@@ -45,7 +45,7 @@ Later T04 work will be driven by the remaining visual/UX route audit. Full file 
 
 ## T04.2 — Internal navigation locale sweep
 
-Status: IN PROGRESS
+Status: COMPLETE ✅
 
 Audit scope:
 - active production components and pages only
@@ -73,3 +73,12 @@ Acceptance gate:
 - backend security/contracts and automated tests remain green.
 - GitHub PR CI passes before merge.
 - post-deploy localized route smoke checks pass.
+
+Verification evidence:
+- GitHub PR #12 CI run `37490977491`: frontend + backend successful.
+- Production master SHA: `d7ed00b85dd26ed300854c3f5ca0f6d885213e6b`.
+- Frontend deployment `dpl_Gsc3TjaLmfDzoJtxQrV6uub3cxUa`: READY.
+- API deployment `dpl_EL1KaJSXHUgkg8tJoeNLTL64yA1V`: READY.
+- Localized route smoke checks returned HTTP 200 for Arabic, English and Indonesian routes.
+- `/api/readiness` returned HTTP 200 with `ready: true`.
+- No frontend or API runtime errors were observed in the post-deploy smoke window.
