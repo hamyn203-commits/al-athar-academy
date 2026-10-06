@@ -6,7 +6,7 @@ function hasValue(name) {
 
 function getEmailProviderStatus() {
   const requested = String(process.env.EMAIL_PROVIDER || '').trim().toLowerCase();
-  const smtpReady = hasValue('SMTP_USER') && hasValue('SMTP_PASS') && hasValue('EMAIL_FROM');
+  const smtpReady = hasValue('SMTP_USER') && hasValue('SMTP_PASS');
   const resendReady = hasValue('RESEND_API_KEY') && hasValue('EMAIL_FROM');
 
   if (requested === 'smtp') return { provider: 'smtp', configured: smtpReady };
