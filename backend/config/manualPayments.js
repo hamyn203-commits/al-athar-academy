@@ -2,7 +2,7 @@
 
 const METHOD_DEFINITIONS = Object.freeze([
   { id: 'instapay', label: 'InstaPay', env: 'MANUAL_PAYMENT_INSTAPAY' },
-  { id: 'vodafone_cash', label: 'Vodafone Cash', env: 'MANUAL_PAYMENT_VODAFONE_CASH' },
+  { id: 'mobile_wallet', label: 'Mobile Wallet', env: 'MANUAL_PAYMENT_MOBILE_WALLET' },
   { id: 'bank_transfer', label: 'Bank transfer', env: 'MANUAL_PAYMENT_BANK_DETAILS' },
 ]);
 
