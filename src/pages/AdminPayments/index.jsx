@@ -1,0 +1,141 @@
+import { useCallback, useEffect, useState } from 'react';
+import { ArrowRight, CheckCircle, Eye, RefreshCw, XCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import DashboardLayout from '../../components/dashboard/DashboardLayout';
+import { useRequireAuth } from '../../hooks/useRequireAuth';
+import { useToast } from '../../context/ToastProvider';
+import api from '../../lib/api';
+
+function amount(payment) {
+  return (Number(payment.amountMinor || 0) / 100).toFixed(2) + ' ' + payment.currency;
+}
+
+export default function AdminPayments() {
+  const { user, ready, logout } = useRequireAuth(['admin']);
+  const navigate = useNavigate();
+  const toast = useToast();
+  const [filter, setFilter] = useState('pending');
+  const [payments, setPayments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [working, setWorking] = useState('');
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const result = await api.get('/api/payments/admin/manual?status=' + encodeURIComponent(filter), { auth: true });
+      setPayments(result.payments || []);
+    } catch (error) {
+      toast.error(error.message || 'تعذر تحميل المدفوعات');
+    } finally {
+      setLoading(false);
+    }
+  }, [filter, toast]);
+
+  useEffect(() => {
+    if (ready) load();
+  }, [ready, load]);
+
+  const review = async (payment, action) => {
+    const note = action === 'reject'
+      ? window.prompt('سبب الرفض (اختياري):', '') ?? null
+      : '';
+    if (note === null) return;
+
+    setWorking(payment.id);
+    try {
+      await api.patch('/api/payments/admin/manual/' + payment.id + '/review', { action, note }, { auth: true });
+      toast.success(action === 'approve' ? 'تم تأكيد الدفع وتفعيل الاشتراك' : 'تم رفض إثبات الدفع');
+      await load();
+    } catch (error) {
+      toast.error(error.message || 'فشلت المراجعة');
+    } finally {
+      setWorking('');
+    }
+  };
+
+  const openProof = async (payment) => {
+    try {
+      const response = await api.request('/api/payments/admin/manual/' + payment.id + '/proof', {
+        auth: true,
+        json: false,
+        method: 'GET',
+      });
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank', 'noopener,noreferrer');
+      window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (error) {
+      toast.error(error.message || 'تعذر فتح الإثبات');
+    }
+  };
+
+  if (!ready) return null;
+
+  return (
+    <DashboardLayout title="مراجعة المدفوعات اليدوية" user={user} onLogout={logout}>
+      <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
+        <button onClick={() => navigate('..')} className="wn-btn wn-btn--secondary">
+          <ArrowRight size={16} /> لوحة الإدارة
+        </button>
+        <div className="flex gap-2">
+          <select value={filter} onChange={(event) => setFilter(event.target.value)} className="border rounded-lg px-3 py-2 text-sm">
+            <option value="pending">قيد المراجعة</option>
+            <option value="succeeded">مقبولة</option>
+            <option value="failed">مرفوضة</option>
+            <option value="all">الكل</option>
+          </select>
+          <button onClick={load} className="wn-btn wn-btn--secondary" disabled={loading}><RefreshCw size={16} /></button>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-20"><div className="spinner spinner-lg" /></div>
+      ) : payments.length === 0 ? (
+        <div className="wn-dashboard-surface text-center text-gray-500 py-12">لا توجد عمليات في هذه الحالة.</div>
+      ) : (
+        <div className="space-y-4">
+          {payments.map((payment) => (
+            <div key={payment.id} className="wn-dashboard-surface">
+              <div className="flex flex-wrap justify-between gap-4">
+                <div className="space-y-1">
+                  <h3 className="font-bold">{payment.student?.name || 'طالب'}</h3>
+                  <p className="text-sm text-gray-500">{payment.student?.email}</p>
+                  <p className="text-sm">{payment.course?.title?.ar || payment.course?.title?.en || payment.course?.slug}</p>
+                  <p className="text-xl font-bold text-emerald-700">{amount(payment)}</p>
+                  <p className="text-sm">الطريقة: <strong>{payment.manual?.method || '-'}</strong></p>
+                  {payment.manual?.transferReference ? <p className="text-sm">مرجع العملية: <strong>{payment.manual.transferReference}</strong></p> : null}
+                  <p className="text-xs text-gray-400">{new Date(payment.createdAt).toLocaleString('ar-EG')}</p>
+                  {payment.manual?.reviewNote ? <p className="text-xs text-gray-500">ملاحظة المراجعة: {payment.manual.reviewNote}</p> : null}
+                </div>
+
+                <div className="flex flex-col items-end gap-2">
+                  <span className={
+                    'text-xs px-3 py-1 rounded-full ' +
+                    (payment.status === 'succeeded'
+                      ? 'bg-green-100 text-green-700'
+                      : payment.status === 'failed'
+                        ? 'bg-red-100 text-red-700'
+                        : 'bg-yellow-100 text-yellow-700')
+                  }>
+                    {payment.status === 'succeeded' ? 'مقبول' : payment.status === 'failed' ? 'مرفوض' : 'قيد المراجعة'}
+                  </span>
+
+                  {payment.proofAvailable ? (
+                    <button onClick={() => openProof(payment)} className="wn-btn wn-btn--secondary"><Eye size={16} /> عرض الإثبات</button>
+                  ) : null}
+
+                  {payment.status === 'pending' ? (
+                    <div className="flex gap-2">
+                      <button disabled={working === payment.id} onClick={() => review(payment, 'approve')} className="wn-btn wn-btn--primary"><CheckCircle size={16} /> قبول</button>
+                      <button disabled={working === payment.id} onClick={() => review(payment, 'reject')} className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold flex items-center gap-2"><XCircle size={16} /> رفض</button>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </DashboardLayout>
+  );
+}
