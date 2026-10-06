@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useI18n } from '../i18n';
-import { stripLocale, localizedPath } from '../lib/locale';
+import { localizedLocation } from '../lib/locale';
 import { Globe, ChevronDown } from 'lucide-react';
 
 const languages = [
@@ -26,8 +26,7 @@ export default function LanguageSwitcher() {
 
   const handleLanguageChange = (langCode) => {
     changeLocale(langCode);
-    const path = stripLocale(location.pathname);
-    navigate(localizedPath(path, langCode));
+    navigate(localizedLocation(location.pathname, langCode, location.search, location.hash));
     setIsOpen(false);
   };
 
