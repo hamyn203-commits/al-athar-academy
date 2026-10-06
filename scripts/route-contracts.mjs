@@ -104,7 +104,7 @@ for (const relativePath of localeSensitiveNavigationFiles) {
 }
 
 const notifications = read('src/components/NotificationBell.jsx');
-assert.match(notifications, /localizeInternalHref\(notification\.data\?\.meetingLink,\s*locale\)/);
+assert.match(notifications, /localizeInternalHref\(notification\.data\.meetingLink,\s*locale\)/);
 assert.match(notifications, /localizeInternalHref\(links\[notification\.type\]/);
 
 const liveSessions = read('src/pages/LiveSessions/LiveSessions.jsx');
