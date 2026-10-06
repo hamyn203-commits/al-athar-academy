@@ -11,7 +11,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "start": "vite preview",
-    "safety:production": "node scripts/production-safety-scan.cjs"
+    "safety:production": "node scripts/production-safety-scan.cjs",
+    "test:routes": "node scripts/route-contracts.mjs"
   },
   "dependencies": {
     "@livekit/components-react": "^2.9.21",
