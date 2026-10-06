@@ -356,6 +356,38 @@ requireContains(
   /task\.submissionFile[\s\S]{0,220}SUBMISSION_EXISTS/
 );
 
+// T05: teacher asset cleanup must be traceable, explicit and fail closed.
+requireContains(
+  'backend/models/Teacher.js',
+  'teacher storage owner metadata must stay hidden from normal queries',
+  /storageOwner:\s*\{[\s\S]{0,120}select:\s*false/
+);
+requireContains(
+  'backend/routes/teachers.js',
+  'new teacher applications must persist the verified upload owner',
+  /storageOwner:\s*externalStorage\s*&&\s*uploadOwner/
+);
+requireContains(
+  'backend/routes/teachers.js',
+  'teacher asset purge must be admin-only',
+  /router\.delete\(['"]\/admin\/:id\/assets['"],\s*protect,\s*authorize\(['"]admin['"]\)/
+);
+requireContains(
+  'backend/routes/teachers.js',
+  'teacher asset purge must be limited to rejected or suspended records',
+  /\[['"]rejected['"],\s*['"]suspended['"]\]\.includes\(teacher\.status\)/
+);
+requireContains(
+  'backend/routes/teachers.js',
+  'teacher asset purge must resolve ownership before deleting provider objects',
+  /resolveOwnedTeacherAssets\([\s\S]{0,1200}deleteOwnedObject\(asset\.reference,\s*asset\.purpose,\s*asset\.owner\)/
+);
+requireContains(
+  'backend/services/objectStorage.js',
+  'public media proxy references must be unwrapped before provider lifecycle operations',
+  /function\s+unwrapPublicProxyReference\s*\(/
+);
+
 if (failures.length) {
   console.error('Security contracts failed:');
   failures.forEach((failure) => console.error(`- ${failure}`));

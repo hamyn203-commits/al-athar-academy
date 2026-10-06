@@ -90,7 +90,9 @@ const TeacherSchema = new mongoose.Schema({
     enum: ['arabic', 'english', 'french', 'german', 'turkish', 'urdu', 'indonesian', 'malay']
   }],
   isVerified: { type: Boolean, default: false },
-  isFeatured: { type: Boolean, default: false }
+  isFeatured: { type: Boolean, default: false },
+  storageOwner: { type: String, trim: true, select: false },
+  assetsPurgedAt: { type: Date }
 }, { timestamps: true });
 
 TeacherSchema.index({ user: 1 });
