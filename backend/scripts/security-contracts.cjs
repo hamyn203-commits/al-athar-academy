@@ -193,7 +193,7 @@ requireContains(
 requireContains(
   'src/App.jsx',
   'guardian dashboard must be guarded centrally',
-  /path=["']guardian\/dashboard["'][\s\S]{0,180}ProtectedRoute\s+roles=\{\[['"]guardian['"]\]\}/
+  /path=["']guardian\/dashboard["'][\s\S]{0,180}ProtectedRoute\s+roles=\{\[['"]guardian['"],\s*['"]admin['"]\]\}/
 );
 
 // T02: public circles must not expose member/contact PII and guardian joins need ownership.
