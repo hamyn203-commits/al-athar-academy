@@ -53,7 +53,7 @@ async function ensureDemoTeacher() {
 
   const user = await User.create({
     name: 'الشيخ أحمد محمد',
-    email: `teacher-demo-${Date.now()}@alathar.edu`,
+    email: `teacher-demo-${Date.now()}@wahynamaa.example`,
     password: 'DemoTeacher2024!',
     role: 'teacher',
   });
