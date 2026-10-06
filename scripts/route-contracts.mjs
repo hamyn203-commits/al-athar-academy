@@ -1,0 +1,88 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+import {
+  dashboardPathForRole,
+  homePathForLocale,
+  isSafeInternalRedirect,
+  loginPathForLocale,
+  postAuthDestination,
+} from '../src/lib/navigation.js';
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+
+assert.equal(dashboardPathForRole('student', 'en'), '/en/student/dashboard');
+assert.equal(dashboardPathForRole('teacher', 'ar'), '/ar/teacher/dashboard');
+assert.equal(dashboardPathForRole('guardian', 'fr'), '/fr/guardian/dashboard');
+assert.equal(dashboardPathForRole('admin', 'de'), '/de/admin');
+assert.equal(dashboardPathForRole('unknown', 'en'), '/en');
+
+assert.equal(loginPathForLocale('en'), '/en/login');
+assert.equal(homePathForLocale('ar'), '/ar');
+
+assert.equal(isSafeInternalRedirect('/ar/live/room-1?from=dashboard'), true);
+assert.equal(isSafeInternalRedirect('/courses'), true);
+assert.equal(isSafeInternalRedirect('https://evil.example'), false);
+assert.equal(isSafeInternalRedirect('//evil.example/path'), false);
+assert.equal(isSafeInternalRedirect('/\\evil.example'), false);
+
+assert.equal(
+  postAuthDestination({
+    redirect: '/courses?track=hifz#plans',
+    role: 'student',
+    locale: 'en',
+  }),
+  '/en/courses?track=hifz#plans'
+);
+
+assert.equal(
+  postAuthDestination({
+    redirect: '/ar/live/room-1?from=dashboard',
+    role: 'student',
+    locale: 'en',
+  }),
+  '/ar/live/room-1?from=dashboard'
+);
+
+assert.equal(
+  postAuthDestination({
+    redirect: 'https://evil.example/phish',
+    role: 'guardian',
+    locale: 'en',
+  }),
+  '/en/guardian/dashboard'
+);
+
+function read(relativePath) {
+  return fs.readFileSync(path.join(root, relativePath), 'utf8');
+}
+
+const login = read('src/pages/Login/index.jsx');
+assert.match(login, /postAuthDestination\s*\(/);
+assert.match(login, /searchParams\.get\(['"]redirect['"]\)/);
+
+const register = read('src/pages/Register/index.jsx');
+assert.match(register, /dashboardPathForRole\s*\(/);
+assert.match(register, /localizedPath\(['"]\/login['"]/);
+
+const redirects = read('src/components/DashboardRedirect.jsx');
+assert.match(redirects, /dashboardPathForRole/);
+assert.match(redirects, /loginPathForLocale/);
+
+const requireAuth = read('src/hooks/useRequireAuth.js');
+assert.match(requireAuth, /loginPathForLocale/);
+assert.match(requireAuth, /dashboardPathForRole/);
+assert.match(requireAuth, /location\.pathname/);
+
+const protectedRoute = read('src/components\/auth\/ProtectedRoute.jsx'.replaceAll('\\/', '/'));
+assert.match(protectedRoute, /dashboardPathForRole/);
+
+const app = read('src/App.jsx');
+assert.match(
+  app,
+  /path=["']guardian\/dashboard["'][\s\S]{0,180}roles=\{\[['"]guardian['"],\s*['"]admin['"]\]\}/
+);
+
+console.log('Route navigation contracts passed.');
