@@ -33,6 +33,9 @@ async function sendTelegram({ chatId, text }) {
   if (!chatId) throw new Error('Telegram chat ID required');
   const token = process.env.TELEGRAM_BOT_TOKEN;
   if (!token) {
+    if (process.env.NODE_ENV === 'production') {
+      return { channel: 'telegram', sent: false, provider: 'not-configured' };
+    }
     console.log(`📱 [telegram] → ${chatId}: ${text?.slice(0, 80)}`);
     return { channel: 'telegram', sent: true, provider: 'console' };
   }
@@ -54,7 +57,10 @@ async function sendWhatsApp({ phone, text }) {
   const from = process.env.TWILIO_WHATSAPP_FROM;
 
   if (sid && authToken && from) {
-    const body = new URLSearchParams({ From: from, To: `whatsapp:${phone}`, Body: text });
+    const digits = String(phone).replace(/\D/g, '');
+    if (!digits) throw new Error('Valid WhatsApp phone required');
+    const normalizedFrom = from.startsWith('whatsapp:') ? from : `whatsapp:${from}`;
+    const body = new URLSearchParams({ From: normalizedFrom, To: `whatsapp:+${digits}`, Body: text });
     const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
       method: 'POST',
       headers: {
@@ -65,6 +71,10 @@ async function sendWhatsApp({ phone, text }) {
     });
     if (!res.ok) throw new Error(await res.text());
     return { channel: 'sms', sent: true, provider: 'twilio-whatsapp' };
+  }
+
+  if (process.env.NODE_ENV === 'production') {
+    return { channel: 'sms', sent: false, provider: 'not-configured' };
   }
 
   const waLink = `https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(text)}`;
@@ -91,6 +101,10 @@ async function sendPush({ token, title, body, data = {} }) {
     });
     if (!res.ok) throw new Error(await res.text());
     return { channel: 'push', sent: true, provider: 'fcm' };
+  }
+
+  if (process.env.NODE_ENV === 'production') {
+    return { channel: 'push', sent: false, provider: 'not-configured' };
   }
 
   console.log(`🔔 [push] → ${token.slice(0, 12)}…: ${title}`);
