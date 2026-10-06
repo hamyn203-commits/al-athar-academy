@@ -212,11 +212,12 @@ NotificationSchema.methods.sendEmail = async function() {
   const user = await User.findById(this.user);
   if (!user?.email) throw new Error('User email not found');
 
-  await dispatcher.sendEmail({
+  const result = await dispatcher.sendEmail({
     to: user.email,
     subject: this.title.en || this.title.ar,
     text: this.message.en || this.message.ar,
   });
+  if (!result?.sent) throw new Error(`Email delivery unavailable (${result?.provider || 'unknown'})`);
   return true;
 };
 
@@ -225,12 +226,13 @@ NotificationSchema.methods.sendPush = async function() {
   const user = await User.findById(this.user);
   if (!user?.pushToken) throw new Error('User push token not found');
 
-  await dispatcher.sendPush({
+  const result = await dispatcher.sendPush({
     token: user.pushToken,
     title: this.title.ar || this.title.en,
     body: this.message.ar || this.message.en,
     data: { notificationId: String(this._id), type: this.type },
   });
+  if (!result?.sent) throw new Error(`Push delivery unavailable (${result?.provider || 'unknown'})`);
   return true;
 };
 
@@ -239,10 +241,11 @@ NotificationSchema.methods.sendTelegram = async function() {
   const user = await User.findById(this.user);
   if (!user?.telegramId) throw new Error('User telegram ID not found');
 
-  await dispatcher.sendTelegram({
+  const result = await dispatcher.sendTelegram({
     chatId: user.telegramId,
     text: `<b>${this.title.ar || this.title.en}</b>\n${this.message.ar || this.message.en}`,
   });
+  if (!result?.sent) throw new Error(`Telegram delivery unavailable (${result?.provider || 'unknown'})`);
   return true;
 };
 
@@ -251,10 +254,11 @@ NotificationSchema.methods.sendSMS = async function() {
   const user = await User.findById(this.user);
   if (!user?.phone) throw new Error('User phone not found');
 
-  await dispatcher.sendWhatsApp({
+  const result = await dispatcher.sendWhatsApp({
     phone: user.phone,
     text: `${this.title.ar || this.title.en}\n${this.message.ar || this.message.en}`,
   });
+  if (!result?.sent) throw new Error(`WhatsApp delivery unavailable (${result?.provider || 'unknown'})`);
   return true;
 };
 
