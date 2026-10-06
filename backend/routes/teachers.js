@@ -9,6 +9,7 @@ const User = require('../models/User');
 const Session = require('../models/Session');
 const { protect, authorize } = require('../middleware/auth');
 const objectStorage = require('../services/objectStorage');
+const { resolveOwnedTeacherAssets } = require('../utils/teacherAssetLifecycle');
 const multer = require('multer');
 const {
   addMockUser,
@@ -370,6 +371,7 @@ router.post(
       availability: JSON.parse(availability || '[]'),
       documents,
       media,
+      storageOwner: externalStorage && uploadOwner ? String(uploadOwner) : undefined,
       hourlyRate: 50,
     });
 
@@ -527,6 +529,96 @@ router.put('/admin/:id/review', protect, authorize('admin'), async (req, res) =>
     res.json({ success: true, teacher });
   } catch (error) {
     res.status(400).json({ error: error.message });
+  }
+});
+
+router.delete('/admin/:id/assets', protect, authorize('admin'), async (req, res) => {
+  try {
+    const teacher = await Teacher.findById(req.params.id)
+      .select('+storageOwner documents media status user isVerified assetsPurgedAt')
+      .populate('user', 'email');
+
+    if (!teacher) {
+      return res.status(404).json({ error: 'Teacher not found' });
+    }
+
+    if (!['rejected', 'suspended'].includes(teacher.status)) {
+      return res.status(409).json({
+        error: 'Teacher assets can only be purged for rejected or suspended records',
+        code: 'TEACHER_ASSET_PURGE_NOT_ALLOWED'
+      });
+    }
+
+    if (teacher.assetsPurgedAt) {
+      return res.status(409).json({
+        error: 'Teacher assets were already purged',
+        code: 'TEACHER_ASSETS_ALREADY_PURGED'
+      });
+    }
+
+    let lifecycle;
+    try {
+      lifecycle = resolveOwnedTeacherAssets({
+        teacher,
+        user: teacher.user,
+      });
+    } catch (error) {
+      if (error.code === 'ASSET_OWNERSHIP_UNRESOLVED') {
+        return res.status(409).json({
+          error: 'One or more teacher assets cannot be proven to belong to this application',
+          code: error.code,
+          field: error.asset?.field,
+        });
+      }
+      throw error;
+    }
+
+    const localAssets = lifecycle.skipped.filter((asset) => ![
+      'not-provided',
+      '/default-teacher.png',
+    ].includes(asset.reference));
+
+    if (localAssets.length) {
+      return res.status(409).json({
+        error: 'Legacy local teacher assets require manual cleanup before this record can be purged',
+        code: 'LEGACY_LOCAL_ASSETS_REQUIRE_MANUAL_CLEANUP',
+        fields: localAssets.map((asset) => asset.field),
+      });
+    }
+
+    await Promise.all(
+      lifecycle.resolved.map((asset) => (
+        objectStorage.deleteOwnedObject(asset.reference, asset.purpose, asset.owner)
+      ))
+    );
+
+    teacher.documents = {
+      idCard: 'not-provided',
+      graduationCertificate: 'not-provided',
+      tajweedCertificates: [],
+      ijazat: [],
+    };
+    teacher.media = {
+      profilePhoto: '/default-teacher.png',
+      introductionVideo: '/default-teacher.png',
+      recitationVideo: '/default-teacher.png',
+      teachingMethodVideo: '/default-teacher.png',
+      additionalVideos: [],
+      audioRecordings: [],
+    };
+    teacher.assetsPurgedAt = new Date();
+    teacher.storageOwner = undefined;
+    teacher.isVerified = false;
+    await teacher.save();
+
+    return res.json({
+      success: true,
+      deletedAssets: lifecycle.resolved.length,
+      assetsPurgedAt: teacher.assetsPurgedAt,
+    });
+  } catch (error) {
+    console.error('Teacher asset purge failed:', error.message);
+    return res.status(500).json({ error: 'Failed to purge teacher assets' });
   }
 });
 
