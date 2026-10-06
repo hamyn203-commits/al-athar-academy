@@ -11,23 +11,25 @@ import ku from './ku';
 
 const I18nContext = createContext();
 
-import { detectBrowserLocale } from '../lib/locale';
+import { detectBrowserLocale, RTL_LOCALES } from '../lib/locale';
 
 const translations = { ar, en, fr, de, tr, ur, id, ms, ku };
 
-// اللغات التي تكتب من اليمين لليسار
-const rtlLanguages = ['ar', 'ur', 'ku'];
-
-export function I18nProvider({ children }) {
+ export function I18nProvider({ children }) {
   const [locale, setLocale] = useState(() => {
     const saved = localStorage.getItem('locale');
     if (saved && translations[saved]) return saved;
+
+    const legacySaved = localStorage.getItem('academy_lang');
+    if (legacySaved && translations[legacySaved]) return legacySaved;
+
     return detectBrowserLocale();
   });
 
   useEffect(() => {
     localStorage.setItem('locale', locale);
-    document.documentElement.dir = rtlLanguages.includes(locale) ? 'rtl' : 'ltr';
+    localStorage.removeItem('academy_lang');
+    document.documentElement.dir = RTL_LOCALES.includes(locale) ? 'rtl' : 'ltr';
     document.documentElement.lang = locale;
   }, [locale]);
 
@@ -39,7 +41,7 @@ export function I18nProvider({ children }) {
     }
   };
 
-  const isRTL = rtlLanguages.includes(locale);
+  const isRTL = RTL_LOCALES.includes(locale);
 
   return (
     <I18nContext.Provider value={{ locale, t, changeLocale, isRTL }}>
