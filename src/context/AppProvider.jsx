@@ -1,6 +1,8 @@
 import { createContext, useState, useEffect, useContext } from 'react';
 import { API_BASE_URL } from '../config';
 import { translations, languages } from '../data/translations';
+import { useI18n } from '../i18n';
+import { isValidLocale, RTL_LOCALES } from '../lib/locale';
 
 const AppContext = createContext();
 
@@ -27,28 +29,24 @@ const defaultGamification = {
 };
 
 export function AppProvider({ children }) {
-  // LANGUAGE STATE
-  const [currentLang, setCurrentLang] = useState(() => {
-    const saved = localStorage.getItem('academy_lang');
-    return saved && languages[saved] ? saved : 'ar';
-  });
+  // LANGUAGE STATE — derive from I18nProvider only.
+  // The legacy dictionary is retained for older Live UI copy until those keys are migrated.
+  const { locale: currentLang, changeLocale } = useI18n();
 
-  const changeLanguage = (lang) => {
-    if (languages[lang]) {
-      setCurrentLang(lang);
-      localStorage.setItem('academy_lang', lang);
-      document.documentElement.lang = lang;
-      document.documentElement.dir = languages[lang].dir;
+  const changeLanguage = (nextLocale) => {
+    if (isValidLocale(nextLocale)) {
+      changeLocale(nextLocale);
     }
   };
 
-  const t = translations[currentLang];
-  const lang = languages[currentLang];
+  const t = translations[currentLang] || translations.en || translations.ar;
+  const lang = languages[currentLang] || {
+    code: currentLang,
+    name: currentLang.toUpperCase(),
+    dir: RTL_LOCALES.includes(currentLang) ? 'rtl' : 'ltr',
+    flag: '🌐',
+  };
 
-  useEffect(() => {
-    document.documentElement.lang = currentLang;
-    document.documentElement.dir = languages[currentLang].dir;
-  }, [currentLang]);
 
   // DYNAMIC DATA PERSISTENCE (localStorage)
   const [studentsData, setStudentsData] = useState([]);
