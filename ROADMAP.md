@@ -1,65 +1,44 @@
 # Roadmap — أكاديمية وَحْيٌ وَنَمَاء
 
-> **الحالي:** v6.3 live | **الهدف:** V7 منصة عالمية كاملة
+> **Production:** v6.3 runtime | **Hardening track:** T01 → T07 | **Current:** T07 Launch Readiness
 
-## ✅ منجز (V4 → v6.1)
+## المسار التنفيذي الحالي
 
-| الموجة | المحتوى |
-|--------|---------|
-| V4.0–4.2 | أسواق، donate، women، library، careers، programs |
-| V4.3 | PWA، admin growth، leaderboard، Bedrock |
-| V4.4–4.5 | referral، mobile `/app`، kids games، live API |
-| V6.0 | Live UI، bootstrap، landing، empty states، sitemap |
-| **V6.1** | AI mic + Bedrock chain، PWA push، library seed، livekit health |
-
----
-
-## ✅ V6.1 — AI & Live (مكتمل)
-
-| # | المهمة | الحالة |
-|---|--------|--------|
-| 6.1.1 | AI Hub — تسجيل مباشر + offline FAQ | ✅ |
-| 6.1.2 | Bedrock → OpenAI → Gemini chain | ✅ |
-| 6.1.3 | LiveKit في `/api/health` | ✅ |
-| 6.1.4 | PWA push notifications | ✅ |
-| 6.1.5 | Library videos seed (6 فيديو) | ✅ |
-
----
-
-## 📅 V6.2 — LMS & محتوى (الآن)
-
-- [x] دروس كاملة لكل دورة seed
-- [x] اختبارات gamification مربوطة بنقاط
-- [x] شهادات PDF batch
-- [x] تفعيل مفاتيح Azure (Bedrock, Resend, LiveKit)
-
----
-
-## 📅 V6.3 — Scale
-
-- [x] Stripe/PayPal donate live
-- [x] 9 لغات UI كاملة
-- [x] Analytics admin
-- [x] CDN للـ uploads
-
----
-
-## 📅 V7 — خطة الريادة العالمية (Master Plan)
-
-| المرحلة | المحتوى والهدف | الحالة |
+| المرحلة | النطاق | الحالة |
 |---|---|---|
-| **V7.1: Data Architecture** | نماذج الحلقات الجماعية (10 طلاب)، الحصص التجريبية، والربط العائلي | ⏳ قيد البدء |
-| **V7.2: Scheduling & WhatsApp** | حجز الحصص التجريبية، تذكير قبل 24س وقبل 30د، واعتذار قبل 6س | ⏳ مخطط |
-| **V7.3: Smart Classroom** | المصحف المتزامن، تنظيم الدور والمايكات، وضع مراقبة المشرف/ولي الأمر، وفلتر الأمان | ⏳ مخطط |
-| **V7.4: Guardian Hub & Reports** | بوابة ولي الأمر وإرسال بطاقة التقرير التلقائية على الواتساب فور انتهاء الحصة | ⏳ مخطط |
-| **V7.5: Tracks & Gamification** | المسارات الثلاثة (تحفيظ، إجازة وتجويد، وتأسيس أطفال) + مكتبة المناهج + عالم الأبطال | ⏳ مخطط |
-| **V7.6: Billing & Teacher Ledger** | باقات الحلقات الاقتصادية ($1 / 20 ج) وسحب أرباح المعلمين عبر InstaPay/Vodafone Cash | ⏳ مخطط |
-| **V7.7: Lean AI & Support** | شات بوت خدمة العملاء والرد التلقائي على الاستفسارات ومولد التقارير | ⏳ مخطط |
+| **T01** | Production runtime, database, environment, storage and backup readiness | ✅ مكتمل |
+| **T02** | Authentication, authorization, route guards and teacher email OTP | ✅ مكتمل |
+| **T03** | Integration tests, upload/data hardening and guardian safeguarding | ✅ مكتمل |
+| **T04** | Visual/UX routes, locale-safe navigation and localized recovery | ✅ مكتمل |
+| **T05** | Private file lifecycle and production object-store E2E | ✅ مكتمل |
+| **T06.1** | Payment truth, integer money, state transitions and webhook idempotency | ✅ مكتمل |
+| **T06.2** | Paymob checkout + signed settlement implementation | 🟡 الكود مكتمل، ينتظر merchant credentials + E2E verification |
+| **T07.1** | Machine-readable public launch gate | 🟡 قيد التنفيذ |
+| **T07.2** | Domain, Email, Paymob, LiveKit, WhatsApp and critical user-flow closure | ⏳ بعد T07.1 |
+| **T07.3** | Final production smoke, runtime error scan and GO/NO-GO | ⏳ بعد T07.2 |
 
----
+## بوابة الإطلاق العام
+
+لا يعتبر المشروع جاهزًا للإطلاق التجاري لمجرد أن `/api/readiness` يعيد `ready: true`.
+
+الإطلاق العام يحتاج أيضًا نجاح `/api/launch-readiness`، والذي يثبت:
+
+- Custom production domain
+- Resend verified sending domain + real OTP delivery
+- Paymob real Test/E2E checkout + signed webhook settlement
+- LiveKit real classroom E2E
+- WhatsApp real notification E2E
+
+راجع `docs/T07_LAUNCH_READINESS.md`.
+
+## خارطة المنتج V7
+
+خصائص المنتج الموثقة في `ACADEMY_PLAN.md` تظل مرجع المتطلبات الوظيفية. مسار T01–T07 هو مسار **production hardening and launch verification** ولا يلغي خارطة المنتج.
 
 ## Autopilot rules
 
-1. نفّذ بنداً تلو الآخر من مراحل V7
-2. `npm run build` واختبار الكود قبل commit
-3. تحديث الحالة هنا وفي `AGENTS.md` باستمرار
+1. لا تعتبر وجود API key دليلًا على نجاح خدمة خارجية.
+2. نفّذ كل تطوير على branch/PR مع CI ناجح قبل الدمج.
+3. لا تغيّر production verification flags إلى `true` إلا بعد اختبار E2E حقيقي.
+4. `npm run build` + backend tests + security gates قبل الدمج.
+5. حدّث `ROADMAP.md` و`AGENTS.md` مع كل إغلاق مرحلة.
