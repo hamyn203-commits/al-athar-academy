@@ -8,7 +8,6 @@ import {
   homePathForLocale,
   isSafeInternalRedirect,
   localizeInternalHref,
-  localizedLocation,
   loginPathForLocale,
   postAuthDestination,
 } from '../src/lib/navigation.js';
