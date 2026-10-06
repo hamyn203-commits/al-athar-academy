@@ -1,9 +1,18 @@
 import { useCallback, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from './useAuth.jsx';
+import { useI18n } from '../i18n';
+import {
+  dashboardPathForRole,
+  loginPathForLocale,
+} from '../lib/navigation';
 
 export function useRequireAuth(allowedRoles = []) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { locale: paramLocale } = useParams();
+  const { locale: uiLocale } = useI18n();
+  const activeLocale = paramLocale || uiLocale;
   const { user, isAuthenticated, isLoading, logout: authLogout } = useAuth();
   const allowedRolesKey = allowedRoles.join(',');
 
@@ -20,19 +29,35 @@ export function useRequireAuth(allowedRoles = []) {
     if (isLoading) return;
 
     if (!isAuthenticated || !user) {
-      navigate('/login', { replace: true });
+      const redirect = encodeURIComponent(
+        `${location.pathname}${location.search}${location.hash}`
+      );
+      navigate(
+        `${loginPathForLocale(activeLocale)}?redirect=${redirect}`,
+        { replace: true }
+      );
       return;
     }
 
     if (!roleAllowed) {
-      navigate('/', { replace: true });
+      navigate(dashboardPathForRole(user.role, activeLocale), { replace: true });
     }
-  }, [isLoading, isAuthenticated, user, roleAllowed, navigate]);
+  }, [
+    isLoading,
+    isAuthenticated,
+    user,
+    roleAllowed,
+    navigate,
+    location.pathname,
+    location.search,
+    location.hash,
+    activeLocale,
+  ]);
 
   const logout = useCallback(() => {
     void authLogout();
-    navigate('/login', { replace: true });
-  }, [authLogout, navigate]);
+    navigate(loginPathForLocale(activeLocale), { replace: true });
+  }, [authLogout, navigate, activeLocale]);
 
   return {
     user: roleAllowed ? user : null,
