@@ -520,6 +520,7 @@ router.get('/', async (req, res) => {
       currency,
       minRating,
       minExperience,
+      search,
       sortBy = 'rating.average',
       sortOrder = 'desc',
       page = 1,
@@ -543,11 +544,25 @@ router.get('/', async (req, res) => {
     if (minRating) filter['rating.average'] = { $gte: parseFloat(minRating) };
     if (minExperience) filter['quranInfo.teachingExperience'] = { $gte: parseInt(minExperience) };
 
+    if (search && String(search).trim()) {
+      const escaped = String(search).trim().replace(/[.*+?^$(){}|[\]\\]/g, '\\    if (minExperience) filter['quranInfo.teachingExperience'] = { $gte: parseInt(minExperience) };
+
+    const skip =');
+      const regex = new RegExp(escaped, 'i');
+      filter.$or = [
+        { 'personalInfo.fullName': regex },
+        { 'academicInfo.specialization': regex },
+        { 'quranInfo.specializations': regex },
+        { languages: regex },
+      ];
+    }
+
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const SORT_MAP = {
       rating: 'rating.average',
       experience: 'quranInfo.teachingExperience',
       price: 'hourlyRate',
+      students: 'stats.totalStudents',
       newest: 'createdAt',
     };
     const sortField = SORT_MAP[sortBy] || sortBy;
