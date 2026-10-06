@@ -68,23 +68,68 @@ router.post('/', async (req, res) => {
 
 router.get('/stats', async (req, res) => {
   try {
-    const [totals, byCategory] = await Promise.all([
+    if (isMockMode || !isDBConnected()) {
+      return res.json({
+        totalDonors: 0,
+        totalsByCurrency: {},
+        byCategory: {},
+      });
+    }
+
+    const [totalsByCurrencyRows, byCategoryRows] = await Promise.all([
       Donation.aggregate([
-        { $match: { status: { $in: ['pledged', 'confirmed'] } } },
-        { $group: { _id: null, total: { $sum: '$amount' }, count: { $sum: 1 } } },
+        { $match: { status: 'confirmed' } },
+        {
+          $group: {
+            _id: '$currency',
+            total: { $sum: '$amount' },
+            count: { $sum: 1 },
+          },
+        },
       ]),
       Donation.aggregate([
-        { $match: { status: { $in: ['pledged', 'confirmed'] } } },
-        { $group: { _id: '$category', total: { $sum: '$amount' }, count: { $sum: 1 } } },
+        { $match: { status: 'confirmed' } },
+        {
+          $group: {
+            _id: { category: '$category', currency: '$currency' },
+            total: { $sum: '$amount' },
+            count: { $sum: 1 },
+          },
+        },
       ]),
     ]);
-    res.json({
-      totalAmount: totals[0]?.total || 0,
-      totalDonors: totals[0]?.count || 0,
-      byCategory: byCategory.reduce((acc, c) => ({ ...acc, [c._id]: { total: c.total, count: c.count } }), {}),
+
+    const totalsByCurrency = totalsByCurrencyRows.reduce((acc, row) => {
+      acc[row._id] = { total: row.total, count: row.count };
+      return acc;
+    }, {});
+
+    const byCategory = byCategoryRows.reduce((acc, row) => {
+      const category = row._id.category;
+      const currency = row._id.currency;
+
+      if (!acc[category]) {
+        acc[category] = { currencies: {}, count: 0 };
+      }
+
+      acc[category].currencies[currency] = {
+        total: row.total,
+        count: row.count,
+      };
+      acc[category].count += row.count;
+      return acc;
+    }, {});
+
+    const totalDonors = Object.values(totalsByCurrency)
+      .reduce((sum, item) => sum + item.count, 0);
+
+    return res.json({
+      totalDonors,
+      totalsByCurrency,
+      byCategory,
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 });
 
