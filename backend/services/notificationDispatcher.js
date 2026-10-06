@@ -1,12 +1,51 @@
+const { getEmailProviderStatus } = require('../config/emailProvider');
+
+let smtpTransporter = null;
+
+function getSmtpTransporter() {
+  if (smtpTransporter) return smtpTransporter;
+
+  const nodemailer = require('nodemailer');
+  const port = Number(process.env.SMTP_PORT || 465);
+  const secure = String(process.env.SMTP_SECURE || '').trim()
+    ? String(process.env.SMTP_SECURE).trim().toLowerCase() === 'true'
+    : port === 465;
+
+  smtpTransporter = nodemailer.createTransport({
+    host: String(process.env.SMTP_HOST || 'smtp.gmail.com').trim(),
+    port: Number.isFinite(port) && port > 0 ? port : 465,
+    secure,
+    auth: {
+      user: String(process.env.SMTP_USER || '').trim(),
+      pass: String(process.env.SMTP_PASS || '').replace(/\s+/g, ''),
+    },
+  });
+
+  return smtpTransporter;
+}
+
 async function sendEmail({ to, subject, html, text }) {
   if (!to) throw new Error('Email recipient required');
 
-  const resendKey = process.env.RESEND_API_KEY;
-  if (resendKey) {
+  const emailProvider = getEmailProviderStatus();
+
+  if (emailProvider.provider === 'smtp' && emailProvider.configured) {
+    const transporter = getSmtpTransporter();
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM || `Wahy Wa Namaa <${process.env.SMTP_USER}>`,
+      to,
+      subject,
+      text: text || subject,
+      html: html || `<p>${text || subject}</p>`,
+    });
+    return { channel: 'email', sent: true, provider: 'smtp' };
+  }
+
+  if (emailProvider.provider === 'resend' && emailProvider.configured) {
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${resendKey}`,
+        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -21,8 +60,8 @@ async function sendEmail({ to, subject, html, text }) {
   }
 
   if (process.env.NODE_ENV === 'production') {
-    console.warn('Email delivery requested but the provider is not configured');
-    return { channel: 'email', sent: false, provider: 'not-configured' };
+    console.warn('Email delivery requested but the selected provider is not configured');
+    return { channel: 'email', sent: false, provider: emailProvider.provider || 'not-configured' };
   }
 
   console.log(`📧 [email preview] → ${to}: ${subject}`);

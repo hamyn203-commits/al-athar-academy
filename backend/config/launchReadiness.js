@@ -1,6 +1,7 @@
 'use strict';
 
 const { getConfigurationReadiness } = require('./readiness');
+const { getEmailProviderStatus } = require('./emailProvider');
 
 const DEFAULT_PUBLIC_FEATURES = ['email', 'manual-payment', 'livekit', 'whatsapp'];
 
@@ -37,11 +38,15 @@ function getRequiredFeatures(mode) {
 
 function getFeatureProofs() {
   return {
-    email: {
-      configured: hasValue('RESEND_API_KEY') && hasValue('EMAIL_FROM'),
-      domainVerified: isTrue('EMAIL_DOMAIN_VERIFIED'),
-      e2eVerified: isTrue('EMAIL_E2E_VERIFIED'),
-    },
+    email: (() => {
+      const emailProvider = getEmailProviderStatus();
+      return {
+        configured: emailProvider.configured,
+        provider: emailProvider.provider,
+        domainVerified: isTrue('EMAIL_DOMAIN_VERIFIED'),
+        e2eVerified: isTrue('EMAIL_E2E_VERIFIED'),
+      };
+    })(),
     paymob: {
       configured: process.env.PAYMOB_ENABLED === 'true'
         && hasValue('PAYMOB_SECRET_KEY')
