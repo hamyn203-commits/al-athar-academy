@@ -76,7 +76,7 @@ const MOCK_CIRCLES = [
     status: 'active',
     teacher: {
       personalInfo: { fullName: 'الشيخ أحمد محمود' },
-      user: { name: 'الشيخ أحمد محمود', email: 'ahmed@alathar.com' }
+      user: { name: 'الشيخ أحمد محمود', email: 'ahmed@wahynamaa.example' }
     },
     schedule: {
       days: ['Monday', 'Wednesday'],
@@ -99,7 +99,7 @@ const MOCK_CIRCLES = [
     status: 'active',
     teacher: {
       personalInfo: { fullName: 'الشيخة فاطمة الزهراء' },
-      user: { name: 'الشيخة فاطمة الزهراء', email: 'fatima@alathar.com' }
+      user: { name: 'الشيخة فاطمة الزهراء', email: 'fatima@wahynamaa.example' }
     },
     schedule: {
       days: ['Sunday', 'Tuesday'],
@@ -270,7 +270,7 @@ router.post('/', protect, authorize('admin', 'teacher'), async (req, res) => {
         status: 'forming',
         teacher: {
           personalInfo: { fullName: 'الشيخ أحمد محمود' },
-          user: { name: 'الشيخ أحمد محمود', email: 'ahmed@alathar.com' }
+          user: { name: 'الشيخ أحمد محمود', email: 'ahmed@wahynamaa.example' }
         },
         schedule: Array.isArray(schedule) ? schedule : [],
         timezone: timezone || 'Africa/Cairo',
