@@ -2,7 +2,7 @@
 
 const { getConfigurationReadiness } = require('./readiness');
 
-const DEFAULT_PUBLIC_FEATURES = ['email', 'paymob', 'livekit', 'whatsapp'];
+const DEFAULT_PUBLIC_FEATURES = ['email', 'manual-payment', 'livekit', 'whatsapp'];
 
 function hasValue(name) {
   return Boolean(String(process.env[name] || '').trim());
@@ -49,6 +49,15 @@ function getFeatureProofs() {
         && hasValue('PAYMOB_HMAC_SECRET')
         && (hasValue('PAYMOB_INTEGRATION_IDS') || hasValue('PAYMOB_INTEGRATION_ID_CARD')),
       e2eVerified: isTrue('PAYMOB_E2E_VERIFIED'),
+    },
+    'manual-payment': {
+      configured: process.env.MANUAL_PAYMENT_ENABLED === 'true'
+        && (
+          hasValue('MANUAL_PAYMENT_INSTAPAY')
+          || hasValue('MANUAL_PAYMENT_VODAFONE_CASH')
+          || hasValue('MANUAL_PAYMENT_BANK_DETAILS')
+        ),
+      e2eVerified: isTrue('MANUAL_PAYMENT_E2E_VERIFIED'),
     },
     livekit: {
       configured: hasValue('LIVEKIT_API_KEY')
