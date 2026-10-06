@@ -420,6 +420,23 @@ requireContains(
   /absentAfterDelete[\s\S]{0,220}Lifecycle probe object still exists/
 );
 
+// T05.3 one-time bridge: must be explicitly enabled and use the same timing-safe disposable secret.
+requireContains(
+  'backend/routes/uploads.js',
+  'one-time storage probe bridge must require an explicit production flag',
+  /STORAGE_E2E_QUERY_BRIDGE\s*!==\s*['"]true['"]/
+);
+requireContains(
+  'backend/routes/uploads.js',
+  'one-time bridge must compare the query token with the dedicated secret',
+  /storage-e2e-once[\s\S]{0,520}req\.query\.token[\s\S]{0,240}safeEqualSecret/
+);
+requireContains(
+  'backend/routes/uploads.js',
+  'one-time bridge and bearer probe must share the same disposable lifecycle implementation',
+  /function\s+executeStorageE2EProbe\s*\([\s\S]{0,1200}runDisposableLifecycleProbe\(/
+);
+
 if (failures.length) {
   console.error('Security contracts failed:');
   failures.forEach((failure) => console.error(`- ${failure}`));

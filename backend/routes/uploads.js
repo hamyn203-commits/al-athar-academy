@@ -51,18 +51,7 @@ function safeEqualSecret(expected, supplied) {
   return left.length === right.length && crypto.timingSafeEqual(left, right);
 }
 
-router.post('/_internal/storage-e2e', async (req, res) => {
-  if (process.env.NODE_ENV !== 'production') {
-    return res.status(404).json({ error: 'Route not found' });
-  }
-
-  const secret = process.env.STORAGE_E2E_SECRET;
-  const supplied = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '');
-
-  if (!secret || !safeEqualSecret(secret, supplied)) {
-    return res.status(404).json({ error: 'Route not found' });
-  }
-
+async function executeStorageE2EProbe(res) {
   res.setHeader('Cache-Control', 'no-store');
 
   try {
@@ -82,6 +71,39 @@ router.post('/_internal/storage-e2e', async (req, res) => {
       error: 'Storage lifecycle probe failed',
     });
   }
+}
+
+router.post('/_internal/storage-e2e', async (req, res) => {
+  if (process.env.NODE_ENV !== 'production') {
+    return res.status(404).json({ error: 'Route not found' });
+  }
+
+  const secret = process.env.STORAGE_E2E_SECRET;
+  const supplied = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+
+  if (!secret || !safeEqualSecret(secret, supplied)) {
+    return res.status(404).json({ error: 'Route not found' });
+  }
+
+  return executeStorageE2EProbe(res);
+});
+
+router.get('/_internal/storage-e2e-once', async (req, res) => {
+  if (
+    process.env.NODE_ENV !== 'production' ||
+    process.env.STORAGE_E2E_QUERY_BRIDGE !== 'true'
+  ) {
+    return res.status(404).json({ error: 'Route not found' });
+  }
+
+  const secret = process.env.STORAGE_E2E_SECRET;
+  const supplied = String(req.query.token || '');
+
+  if (!secret || !safeEqualSecret(secret, supplied)) {
+    return res.status(404).json({ error: 'Route not found' });
+  }
+
+  return executeStorageE2EProbe(res);
 });
 
 router.get('/status', (_req, res) => {
