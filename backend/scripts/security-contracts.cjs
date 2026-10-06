@@ -329,6 +329,33 @@ requireContains(
   /parsedAge\s*<\s*18[\s\S]{0,160}cleanGuardianName\.length\s*<\s*2/
 );
 
+// T05: submission deletion must remain business-record and owner scoped.
+requireContains(
+  'backend/services/objectStorage.js',
+  'external object deletion must verify purpose and owner first',
+  /deleteOwnedObject\([\s\S]{0,220}isOwnedObjectReference/
+);
+requireContains(
+  'backend/routes/homework.js',
+  'homework submission deletion must pass the original student owner to lifecycle cleanup',
+  /deleteStoredReference\([\s\S]{0,220}purpose:\s*['"]homework['"][\s\S]{0,160}owner:\s*submission\.student/
+);
+requireContains(
+  'backend/routes/assignments.js',
+  'assignment submission deletion must pass the original student owner to lifecycle cleanup',
+  /deleteStoredReference\([\s\S]{0,220}purpose:\s*['"]assignment['"][\s\S]{0,160}owner:\s*submission\.student/
+);
+requireContains(
+  'backend/routes/assignments.js',
+  'assignments with submissions must not be deleted before submission cleanup',
+  /AssignmentSubmission\.exists\([\s\S]{0,180}ASSIGNMENT_HAS_SUBMISSIONS/
+);
+requireContains(
+  'backend/routes/homework.js',
+  'task submissions must not be overwritten while an old file reference exists',
+  /task\.submissionFile[\s\S]{0,220}SUBMISSION_EXISTS/
+);
+
 if (failures.length) {
   console.error('Security contracts failed:');
   failures.forEach((failure) => console.error(`- ${failure}`));
