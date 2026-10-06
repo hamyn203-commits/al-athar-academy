@@ -45,7 +45,7 @@ Later T04 work will be driven by the remaining visual/UX route audit. Full file 
 
 ## T04.2 — Internal navigation locale sweep
 
-Status: IN PROGRESS
+Status: COMPLETE ✅
 
 Audit scope:
 - active production components and pages only
@@ -73,3 +73,38 @@ Acceptance gate:
 - backend security/contracts and automated tests remain green.
 - GitHub PR CI passes before merge.
 - post-deploy localized route smoke checks pass.
+
+Verification evidence:
+- GitHub CI run `37490977491`: frontend + backend successful.
+- Production master SHA: `d7ed00b85dd26ed300854c3f5ca0f6d885213e6b`.
+- Frontend and API deployments reached READY.
+- `/en/live`, `/en/ai`, `/en/student/dashboard` and `/ar/teacher/register` returned HTTP 200.
+- `/api/readiness` returned HTTP 200 with `ready: true`.
+- No frontend or API runtime errors were observed in the post-deploy smoke window.
+
+## T04.3 — Single locale source of truth
+
+Status: IN PROGRESS
+
+Audit finding:
+- `I18nProvider` owns the route-aware locale and writes document `lang/dir`.
+- `AppProvider` separately owned `currentLang`, persisted `academy_lang`, and also wrote document `lang/dir`.
+- Live pages consume `AppProvider.t`, so the two language states could disagree with the active `/:locale` route.
+
+Implementation:
+- `I18nProvider.locale` is the only runtime locale state.
+- `AppProvider` derives `currentLang` and its legacy Live dictionary from `I18nProvider`.
+- Unsupported legacy dictionary locales fall back to English copy while retaining the correct route locale/direction.
+- Existing `academy_lang` preferences are migrated once when no `locale` value exists.
+- The legacy `academy_lang` key is removed after migration.
+- RTL detection uses the central `RTL_LOCALES` definition.
+- Only `I18nProvider` writes document `lang/dir`.
+- Route-contract CI locks these invariants.
+
+Acceptance gate:
+- route contracts pass.
+- production safety scan passes.
+- frontend production build passes.
+- backend security/contracts and automated tests remain green.
+- GitHub PR CI passes before merge.
+- post-deploy localized route smoke checks and runtime-error checks pass.
