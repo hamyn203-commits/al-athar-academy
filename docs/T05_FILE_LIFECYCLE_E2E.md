@@ -162,4 +162,22 @@ This bridge is not a permanent API. After one successful production probe:
 - This cleanup removes both temporary storage-probe routes and all probe-only provider helpers from production code.
 - CI now contains a negative contract that fails if `storage-e2e` or its temporary env references reappear in the upload routes.
 
-Final T05.3 closure still requires the cleanup deployment to become READY, the removed route to return 404, production readiness/storage status to remain healthy, and runtime errors to remain clear.
+Final T05.3 closure evidence:
+- Cleanup frontend deployment `dpl_FVsNqnH9M1t93dDNXFw8By2EfRPn` on SHA `dae876ab7d4099782f99c81e8af2164e19756e11`: READY.
+- Cleanup API deployment `dpl_D4LjiE69MT9s28kDNkW16Q15Z7jH` on the same SHA: READY.
+- Removed POST probe route returned HTTP 404.
+- Removed one-time bridge route returned HTTP 404.
+- Production `/api/readiness` returned HTTP 200 with `ready: true`.
+- Production `/api/uploads/status` returned `vercel-blob`, configured, direct upload enabled and private-by-default.
+- No frontend or API runtime errors were observed in the final cleanup smoke window.
+
+## T05 overall status
+
+Status: COMPLETE ✅
+
+T05 closes after:
+- T05.1 student submission lifecycle
+- T05.2 teacher application asset lifecycle
+- T05.3 disposable production object lifecycle verification and cleanup
+
+No temporary storage-probe route remains in production.
