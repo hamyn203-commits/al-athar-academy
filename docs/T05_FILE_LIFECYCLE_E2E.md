@@ -50,3 +50,39 @@ Verification evidence:
 Important boundary:
 - T05.1 verifies ownership-bound deletion logic, local deletion behavior, CI contracts and production deployment health.
 - A destructive production Blob delete drill was not performed in this task; production object-store lifecycle verification remains a later T05 task with disposable test data.
+
+## T05.2 — Teacher application asset lifecycle
+
+Status: IN PROGRESS
+
+Audit findings:
+
+- Teacher-registration uploads can be owned by the verified email before the User record exists.
+- The Teacher record did not persist that storage owner explicitly.
+- Public teacher media stores application proxy URLs instead of the raw Vercel Blob reference.
+- Rejecting a teacher changes review state but intentionally keeps the application record for audit/review.
+- Automatic deletion on rejection would therefore mix retention policy with review state and is not enabled.
+
+Implementation:
+
+- New applications persist hidden `storageOwner` metadata.
+- Public media proxy URLs can be safely unwrapped to the provider reference.
+- Teacher asset collection deduplicates reused fallback media references.
+- Legacy records can prove ownership through the linked User id/email when `storageOwner` is absent.
+- Admin-only `DELETE /api/teachers/admin/:id/assets` is available only for `rejected` or `suspended` records.
+- All external assets must prove purpose + owner before any provider deletion begins.
+- Unresolved ownership fails closed with `ASSET_OWNERSHIP_UNRESOLVED`.
+- Legacy local assets block automated purge and require manual cleanup.
+- Successful purge retains the teacher audit record, replaces required file fields with safe placeholders, clears `storageOwner`, disables verification and records `assetsPurgedAt`.
+- Rejection itself does not automatically purge assets.
+
+Acceptance gate:
+
+- teacher asset lifecycle tests pass.
+- existing storage lifecycle tests remain green.
+- security regression contracts pass.
+- frontend route/safety/build gates remain green.
+- GitHub PR CI passes before merge.
+- production readiness, storage status and runtime-error smoke checks pass after deployment.
+
+A destructive production Blob purge drill remains deferred until T05's disposable production-object verification task.
