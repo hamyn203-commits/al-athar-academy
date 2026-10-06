@@ -134,6 +134,13 @@ assert.match(studentDashboard, /localizedPath\(\`\/meeting\/\$\{session\._id\}\`
 const errorBoundary = read('src/components/shared/ErrorBoundary.jsx');
 assert.match(errorBoundary, /localizedPath\(['\"]\/['\"],\s*locale\)/);
 
+const paymentReturn = read('src/pages/PaymentReturn/index.jsx');
+assert.match(paymentReturn, /\/api\/payments\/'\s*\+\s*encodeURIComponent\(paymentId\)\s*\+\s*'\/status/);
+assert.doesNotMatch(paymentReturn, /params\.get\(['"]success['"]\)/);
+
+const courseDetail = read('src/pages/CourseDetail/index.jsx');
+assert.match(courseDetail, /\/api\/payments\/course\/'\s*\+\s*encodeURIComponent\(slug\)\s*\+\s*'\/checkout/);
+
 const app = read('src/App.jsx');
 assert.match(
   app,
@@ -142,6 +149,10 @@ assert.match(
 assert.match(
   app,
   /path=["']\/:locale["'][\s\S]{0,260}path=["']\*["'][\s\S]{0,120}<NotFoundPage\s*\/>/
+);
+assert.match(
+  app,
+  /path=["']payment\/return["'][\s\S]{0,180}<ProtectedRoute\s+roles=\{\[['"]student['"],\s*['"]admin['"]\]\}/
 );
 
 console.log('Route navigation contracts passed.');
