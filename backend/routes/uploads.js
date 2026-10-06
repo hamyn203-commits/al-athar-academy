@@ -158,6 +158,10 @@ router.get('/public', async (req, res) => {
     if (!reference) return res.status(400).json({ error: 'Missing file reference' });
 
     const pathname = storage.extractPathname(reference);
+    if (!storage.isSafeObjectPath(pathname)) {
+      return res.status(400).json({ error: 'Invalid media reference' });
+    }
+
     const publicPurpose =
       pathname.startsWith('uploads/teacher-public/') ||
       pathname.startsWith('uploads/course-media/');
