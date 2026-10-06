@@ -49,6 +49,9 @@ export async function uploadFileDirect(file, purpose, options = {}) {
     multipart: file.size > 5 * 1024 * 1024,
     clientPayload: JSON.stringify({
       purpose,
+      filename: file.name,
+      contentType: file.type,
+      size: file.size,
       accessToken: accessToken || undefined,
       verificationToken: verificationToken || undefined,
       phoneVerificationToken: phoneVerificationToken || undefined,
