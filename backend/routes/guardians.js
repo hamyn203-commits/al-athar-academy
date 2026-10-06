@@ -7,6 +7,11 @@ const Enrollment = require('../models/Enrollment');
 const Session = require('../models/Session');
 const TeacherTask = require('../models/TeacherTask');
 const { protect, authorize } = require('../middleware/auth');
+const {
+  findChildAccess,
+  hasChildPermission,
+  filterReportForPermissions,
+} = require('../utils/guardianSafeguarding');
 
 // @route   GET /api/guardians/my-children
 // @desc    Get all children for the current guardian
@@ -84,7 +89,31 @@ router.put('/permissions/:studentId', protect, authorize('guardian', 'admin'), a
       return res.status(404).json({ error: 'Guardian profile not found' });
     }
 
-    await guardian.updatePermissions(req.params.studentId, permissions);
+    if (!permissions || typeof permissions !== 'object' || Array.isArray(permissions)) {
+      return res.status(400).json({ error: 'Permissions object is required' });
+    }
+
+    const allowedPermissionKeys = new Set([
+      'viewProgress',
+      'viewGrades',
+      'viewAttendance',
+      'receiveNotifications',
+      'approveEnrollments',
+    ]);
+    const normalizedPermissions = {};
+
+    for (const [key, value] of Object.entries(permissions)) {
+      if (!allowedPermissionKeys.has(key) || typeof value !== 'boolean') {
+        return res.status(400).json({ error: 'Invalid guardian permission value' });
+      }
+      normalizedPermissions[key] = value;
+    }
+
+    if (!Object.keys(normalizedPermissions).length) {
+      return res.status(400).json({ error: 'At least one permission is required' });
+    }
+
+    await guardian.updatePermissions(req.params.studentId, normalizedPermissions);
 
     res.json(guardian);
   } catch (error) {
@@ -104,7 +133,7 @@ router.get('/child/:studentId/progress', protect, authorize('guardian', 'admin')
       return res.status(404).json({ error: 'Guardian profile not found' });
     }
 
-    if (!guardian.hasPermission(req.params.studentId, 'viewProgress')) {
+    if (!hasChildPermission(guardian, req.params.studentId, 'viewProgress')) {
       return res.status(403).json({ error: 'Permission denied' });
     }
 
@@ -134,7 +163,7 @@ router.get('/child/:studentId/enrollments', protect, authorize('guardian', 'admi
       return res.status(404).json({ error: 'Guardian profile not found' });
     }
 
-    if (!guardian.hasPermission(req.params.studentId, 'viewProgress')) {
+    if (!hasChildPermission(guardian, req.params.studentId, 'viewProgress')) {
       return res.status(403).json({ error: 'Permission denied' });
     }
 
@@ -163,7 +192,7 @@ router.get('/child/:studentId/achievements', protect, authorize('guardian', 'adm
       return res.status(404).json({ error: 'Guardian profile not found' });
     }
 
-    if (!guardian.hasPermission(req.params.studentId, 'viewProgress')) {
+    if (!hasChildPermission(guardian, req.params.studentId, 'viewProgress')) {
       return res.status(403).json({ error: 'Permission denied' });
     }
 
@@ -196,15 +225,15 @@ router.post('/report/:studentId', protect, authorize('guardian', 'admin'), async
       return res.status(404).json({ error: 'Guardian profile not found' });
     }
 
-    if (!guardian.hasPermission(req.params.studentId, 'viewProgress')) {
+    const access = findChildAccess(guardian, req.params.studentId);
+    if (!access?.permissions.viewProgress) {
       return res.status(403).json({ error: 'Permission denied' });
     }
 
     await guardian.generateReport(req.params.studentId, type);
 
     const latestReport = guardian.reports[guardian.reports.length - 1];
-
-    res.status(201).json(latestReport);
+    res.status(201).json(filterReportForPermissions(latestReport, access.permissions));
   } catch (error) {
     console.error('Generate report error:', error);
     res.status(400).json({ error: error.message });
@@ -223,7 +252,25 @@ router.get('/reports', protect, authorize('guardian', 'admin'), async (req, res)
       return res.status(404).json({ error: 'Guardian profile not found' });
     }
 
-    res.json(guardian.reports.sort((a, b) => b.generatedAt - a.generatedAt));
+    const visibleReports = guardian.reports
+      .map((report) => {
+        const childId = report.childId?._id || report.childId;
+        const access = findChildAccess(guardian, childId);
+        if (!access) return null;
+
+        const hasAnyReportPermission =
+          access.permissions.viewProgress ||
+          access.permissions.viewGrades ||
+          access.permissions.viewAttendance;
+
+        return hasAnyReportPermission
+          ? filterReportForPermissions(report, access.permissions)
+          : null;
+      })
+      .filter(Boolean)
+      .sort((a, b) => new Date(b.generatedAt) - new Date(a.generatedAt));
+
+    res.json(visibleReports);
   } catch (error) {
     console.error('Get reports error:', error);
     res.status(500).json({ error: 'Failed to fetch reports' });
@@ -268,7 +315,9 @@ router.get('/child/:studentId/weekly-summary', protect, authorize('guardian', 'a
   try {
     const guardian = await Guardian.findOne({ user: req.user.id });
     if (!guardian) return res.status(404).json({ error: 'Guardian profile not found' });
-    if (!guardian.hasPermission(req.params.studentId, 'viewProgress')) {
+
+    const access = findChildAccess(guardian, req.params.studentId);
+    if (!access || (!access.permissions.viewProgress && !access.permissions.viewAttendance)) {
       return res.status(403).json({ error: 'Permission denied' });
     }
 
@@ -277,19 +326,35 @@ router.get('/child/:studentId/weekly-summary', protect, authorize('guardian', 'a
     const studentId = req.params.studentId;
 
     const [completed, missed, homeworkPending, homeworkDone, recentSessions] = await Promise.all([
-      Session.countDocuments({ student: studentId, status: 'completed', updatedAt: { $gte: weekAgo } }),
-      Session.countDocuments({ student: studentId, status: { $in: ['no-show', 'cancelled'] }, updatedAt: { $gte: weekAgo } }),
-      TeacherTask.countDocuments({ student: studentId, status: 'pending' }),
-      TeacherTask.countDocuments({ student: studentId, status: { $in: ['submitted', 'done'] }, updatedAt: { $gte: weekAgo } }),
-      Session.find({ student: studentId, status: 'completed', updatedAt: { $gte: weekAgo } })
-        .populate({ path: 'teacher', populate: { path: 'user', select: 'name' } })
-        .sort({ scheduledAt: -1 })
-        .limit(10),
+      access.permissions.viewAttendance
+        ? Session.countDocuments({ student: studentId, status: 'completed', updatedAt: { $gte: weekAgo } })
+        : Promise.resolve(null),
+      access.permissions.viewAttendance
+        ? Session.countDocuments({ student: studentId, status: { $in: ['no-show', 'cancelled'] }, updatedAt: { $gte: weekAgo } })
+        : Promise.resolve(null),
+      access.permissions.viewProgress
+        ? TeacherTask.countDocuments({ student: studentId, status: 'pending' })
+        : Promise.resolve(null),
+      access.permissions.viewProgress
+        ? TeacherTask.countDocuments({ student: studentId, status: { $in: ['submitted', 'done'] }, updatedAt: { $gte: weekAgo } })
+        : Promise.resolve(null),
+      access.permissions.viewAttendance
+        ? Session.find({ student: studentId, status: 'completed', updatedAt: { $gte: weekAgo } })
+            .populate({ path: 'teacher', populate: { path: 'user', select: 'name' } })
+            .sort({ scheduledAt: -1 })
+            .limit(10)
+        : Promise.resolve([]),
     ]);
 
     res.json({
-      week: { completed, missed, homeworkPending, homeworkDone },
+      week: {
+        completed,
+        missed,
+        homeworkPending,
+        homeworkDone,
+      },
       recentSessions,
+      permissions: access.permissions,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -313,30 +378,37 @@ router.get('/dashboard', protect, authorize('guardian', 'admin'), async (req, re
 
     const childrenData = await Promise.all(
       guardian.children.map(async (child) => {
-        const progress = await Progress.find({ student: child.student._id })
-          .populate('course', 'title');
+        const studentId = child.student?._id || child.student;
+        const access = findChildAccess(guardian, studentId);
+        const canViewProgress = Boolean(access?.permissions.viewProgress);
 
-        const enrollments = await Enrollment.find({ 
-          student: child.student._id, 
-          status: 'active' 
-        }).countDocuments();
+        const progress = canViewProgress
+          ? await Progress.find({ student: studentId }).populate('course', 'title')
+          : [];
+
+        const enrollments = canViewProgress
+          ? await Enrollment.find({ student: studentId, status: 'active' }).countDocuments()
+          : null;
 
         const totalProgress = progress.reduce((sum, p) => sum + p.overallProgress.percentage, 0);
         const avgProgress = progress.length > 0 ? totalProgress / progress.length : 0;
 
-        const recentAchievements = progress.flatMap(p => p.milestones)
-          .sort((a, b) => b.achievedAt - a.achievedAt)
-          .slice(0, 5);
+        const recentAchievements = canViewProgress
+          ? progress.flatMap(p => p.milestones)
+              .sort((a, b) => b.achievedAt - a.achievedAt)
+              .slice(0, 5)
+          : [];
 
         return {
           student: child.student,
           relationship: child.relationship,
-          stats: {
+          permissions: access?.permissions || null,
+          stats: canViewProgress ? {
             enrolledCourses: enrollments,
             averageProgress: avgProgress,
             totalAchievements: progress.reduce((sum, p) => sum + p.milestones.length, 0),
             currentStreak: Math.max(...progress.map(p => p.streak.current), 0)
-          },
+          } : null,
           recentAchievements
         };
       })
