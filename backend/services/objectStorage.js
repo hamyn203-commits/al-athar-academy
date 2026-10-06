@@ -107,6 +107,22 @@ function publicProxyUrl(reference) {
   return reference;
 }
 
+function unwrapPublicProxyReference(reference) {
+  const value = String(reference || '').trim();
+  if (!value) return '';
+
+  try {
+    const parsed = new URL(value, 'https://wahy.invalid');
+    if (parsed.pathname.endsWith('/api/uploads/public')) {
+      return parsed.searchParams.get('ref') || value;
+    }
+  } catch {
+    // Keep the original reference for downstream validation.
+  }
+
+  return value;
+}
+
 async function createUploadUrl({ key, contentType, expiresIn = 600 }) {
   if (getDriver() !== 's3') throw new Error('Presigned S3 uploads are not enabled');
   const command = new PutObjectCommand({
@@ -189,6 +205,7 @@ module.exports = {
   isVercelBlobReference,
   isOwnedObjectReference,
   publicProxyUrl,
+  unwrapPublicProxyReference,
   createUploadUrl,
   getPrivateObject,
   deleteObject,
