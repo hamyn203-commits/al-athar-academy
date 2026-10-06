@@ -37,7 +37,9 @@ function chatChannels() {
 async function notifyOtherParticipant(session, senderId, kind) {
   let targetUserId = null;
 
-  if (String(session.student?._id || session.student) === String(senderId)) {
+  const senderIsStudent = String(session.student?._id || session.student) === String(senderId);
+
+  if (senderIsStudent) {
     targetUserId = session.teacher?.user?._id || session.teacher?.user || null;
   } else if (session.teacher?.user) {
     targetUserId = session.student?._id || session.student || null;
@@ -54,7 +56,9 @@ async function notifyOtherParticipant(session, senderId, kind) {
     },
     data: {
       session: session._id,
-      actionUrl: `/student/dashboard?session=${session._id}`,
+      actionUrl: senderIsStudent
+        ? `/teacher/dashboard?session=${session._id}`
+        : `/student/dashboard?session=${session._id}`,
     },
     priority: 'normal',
     channels: chatChannels(),
