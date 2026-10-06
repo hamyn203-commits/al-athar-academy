@@ -401,7 +401,11 @@ router.get('/upcoming-sessions', protect, authorize('guardian', 'admin'), async 
       scheduledAt: { $gte: threshold },
       status: { $in: ['pending', 'accepted'] }
     })
-    .populate('teacher', 'personalInfo')
+    .populate({
+      path: 'teacher',
+      select: 'personalInfo.fullName media.profilePhoto user',
+      populate: { path: 'user', select: 'name avatar' }
+    })
     .populate('circle', 'name level schedule capacity')
     .sort({ scheduledAt: 1 })
     .limit(10)
@@ -427,8 +431,10 @@ router.get('/upcoming-sessions', protect, authorize('guardian', 'admin'), async 
       // Check RSVP / attendance status
       const att = sess.attendance?.find(a => child && a.student && a.student.toString() === child._id.toString());
       
-      const teacherName = sess.teacher?.personalInfo?.fullName || 'معلم الأكاديمية';
-      const teacherPhone = sess.teacher?.personalInfo?.whatsapp || sess.teacher?.personalInfo?.phone || '';
+      const teacherName =
+        sess.teacher?.user?.name ||
+        sess.teacher?.personalInfo?.fullName ||
+        'معلم الأكاديمية';
 
       const diffMs = new Date(sess.scheduledAt).getTime() - now.getTime();
       const diffHours = diffMs / (1000 * 60 * 60);
@@ -445,8 +451,9 @@ router.get('/upcoming-sessions', protect, authorize('guardian', 'admin'), async 
         circleName: sess.circle?.name || (sess.type === 'trial' ? 'حصة تجريبية مجانية' : 'حلقة فردية'),
         child: child ? { id: child._id, name: child.name } : null,
         teacher: {
+          id: sess.teacher?._id || null,
           name: teacherName,
-          phone: teacherPhone
+          avatar: sess.teacher?.media?.profilePhoto || sess.teacher?.user?.avatar || null
         },
         rsvp: child && attendancePermissionByChild.get(String(child._id))
           ? (att ? att.status : 'pending')
