@@ -54,7 +54,7 @@ function getFeatureProofs() {
       configured: process.env.MANUAL_PAYMENT_ENABLED === 'true'
         && (
           hasValue('MANUAL_PAYMENT_INSTAPAY')
-          || hasValue('MANUAL_PAYMENT_VODAFONE_CASH')
+          || hasValue('MANUAL_PAYMENT_MOBILE_WALLET')
           || hasValue('MANUAL_PAYMENT_BANK_DETAILS')
         ),
       e2eVerified: isTrue('MANUAL_PAYMENT_E2E_VERIFIED'),
