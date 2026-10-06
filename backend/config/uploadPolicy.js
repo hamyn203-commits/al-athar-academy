@@ -28,7 +28,7 @@ const PURPOSES = Object.freeze({
   },
   'teacher-public': {
     roles: ['teacher', 'admin', 'teacher-registration'],
-    types: ['image/jpeg', 'image/png', 'video/mp4', 'video/webm', 'audio/mpeg', 'audio/wav'],
+    types: ['image/jpeg', 'image/png', 'video/mp4', 'video/webm', 'video/quicktime', 'audio/mpeg', 'audio/wav'],
     maxBytes: 100 * 1024 * 1024,
   },
   'teacher-private': {
@@ -44,6 +44,7 @@ const EXTENSIONS_BY_CONTENT_TYPE = Object.freeze({
   'image/png': ['.png'],
   'video/mp4': ['.mp4'],
   'video/webm': ['.webm'],
+  'video/quicktime': ['.mov'],
   'audio/mpeg': ['.mp3', '.mpeg', '.mpga'],
   'audio/wav': ['.wav'],
   'audio/ogg': ['.ogg', '.oga'],
