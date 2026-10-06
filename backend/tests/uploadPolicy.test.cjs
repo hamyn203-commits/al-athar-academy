@@ -221,3 +221,38 @@ test('teacher camera uploads accept iPhone QuickTime MOV within the 100 MB cap',
     /Invalid file size/
   );
 });
+
+
+test('session chat voice notes are private student/teacher uploads capped at 10 MB', () => {
+  const allowed = validateUploadMetadata({
+    purpose: 'session-chat-audio',
+    role: 'student',
+    filename: 'voice.webm',
+    contentType: 'audio/webm',
+    size: 10 * 1024 * 1024,
+  });
+
+  assert.equal(allowed.size, 10 * 1024 * 1024);
+
+  assert.throws(
+    () => validateUploadMetadata({
+      purpose: 'session-chat-audio',
+      role: 'teacher',
+      filename: 'voice.webm',
+      contentType: 'audio/webm',
+      size: (10 * 1024 * 1024) + 1,
+    }),
+    /Invalid file size/
+  );
+
+  assert.throws(
+    () => validateUploadMetadata({
+      purpose: 'session-chat-audio',
+      role: 'admin',
+      filename: 'voice.webm',
+      contentType: 'audio/webm',
+      size: 1_000,
+    }),
+    /Not allowed/
+  );
+});
