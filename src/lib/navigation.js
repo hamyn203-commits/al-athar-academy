@@ -3,7 +3,7 @@ import {
   getLocaleFromPath,
   isValidLocale,
   localizedPath,
-} from './locale';
+} from './locale.js';
 
 const INTERNAL_BASE_ORIGIN = 'https://wahy.local';
 
