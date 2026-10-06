@@ -4,39 +4,7 @@ const jwt = require('jsonwebtoken');
 const router = express.Router();
 const { protect } = require('../middleware/auth');
 const storage = require('../services/objectStorage');
-
-const PURPOSES = {
-  homework: {
-    roles: ['student'],
-    types: ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/webm', 'audio/mp4', 'audio/aac', 'audio/x-m4a'],
-    maxBytes: 20 * 1024 * 1024,
-  },
-  'recitation-audio': {
-    roles: ['student', 'teacher'],
-    types: ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/webm', 'audio/mp4', 'audio/aac', 'audio/x-m4a'],
-    maxBytes: 25 * 1024 * 1024,
-  },
-  assignment: {
-    roles: ['student'],
-    types: ['application/pdf', 'image/jpeg', 'image/png', 'audio/mpeg', 'audio/wav', 'video/mp4', 'video/webm'],
-    maxBytes: 50 * 1024 * 1024,
-  },
-  'course-media': {
-    roles: ['teacher', 'admin'],
-    types: ['image/jpeg', 'image/png', 'application/pdf', 'video/mp4', 'video/webm'],
-    maxBytes: 200 * 1024 * 1024,
-  },
-  'teacher-public': {
-    roles: ['teacher', 'admin', 'teacher-registration'],
-    types: ['image/jpeg', 'image/png', 'video/mp4', 'video/webm', 'audio/mpeg', 'audio/wav'],
-    maxBytes: 100 * 1024 * 1024,
-  },
-  'teacher-private': {
-    roles: ['teacher', 'admin', 'teacher-registration'],
-    types: ['image/jpeg', 'image/png', 'application/pdf'],
-    maxBytes: 25 * 1024 * 1024,
-  },
-};
+const { PURPOSES, validateUploadMetadata } = require('../config/uploadPolicy');
 
 function verifyClientIdentity(payload = {}) {
   const secret = process.env.JWT_SECRET || 'wahy-namaa-dev-access-secret-change-me';
@@ -105,19 +73,25 @@ router.post('/blob', async (req, res) => {
       request,
       onBeforeGenerateToken: async (pathname, clientPayload) => {
         const payload = JSON.parse(clientPayload || '{}');
-        const rule = PURPOSES[payload.purpose];
-        if (!rule) throw new Error('Unsupported upload purpose');
-
         const identity = verifyClientIdentity(payload);
-        if (!rule.roles.includes(identity.role)) {
-          throw new Error('Not allowed for this upload purpose');
-        }
+        const metadata = validateUploadMetadata({
+          purpose: payload.purpose,
+          role: identity.role,
+          filename: payload.filename,
+          contentType: payload.contentType,
+          size: payload.size,
+        });
 
         assertUploadPath(pathname, payload.purpose, identity.owner);
 
+        const pathnameExtension = path.posix.extname(String(pathname || '')).toLowerCase();
+        if (pathnameExtension !== metadata.extension) {
+          throw new Error('Upload path does not match file extension');
+        }
+
         return {
-          allowedContentTypes: rule.types,
-          maximumSizeInBytes: rule.maxBytes,
+          allowedContentTypes: [metadata.contentType],
+          maximumSizeInBytes: metadata.rule.maxBytes,
           addRandomSuffix: true,
           tokenPayload: JSON.stringify({
             purpose: payload.purpose,
@@ -148,32 +122,32 @@ router.post('/presign', protect, async (req, res) => {
   }
 
   const { purpose, filename, contentType, size } = req.body || {};
-  const rule = PURPOSES[purpose];
 
-  if (!rule) return res.status(400).json({ error: 'Unsupported upload purpose' });
-  if (!rule.roles.includes(req.user.role)) return res.status(403).json({ error: 'Not allowed' });
-  if (!filename || !contentType) return res.status(400).json({ error: 'filename and contentType are required' });
-  if (!rule.types.includes(String(contentType).toLowerCase())) return res.status(400).json({ error: 'File type is not allowed' });
-
-  const numericSize = Number(size || 0);
-  if (!Number.isFinite(numericSize) || numericSize <= 0 || numericSize > rule.maxBytes) {
-    return res.status(400).json({ error: 'Invalid file size' });
+  let metadata;
+  try {
+    metadata = validateUploadMetadata({
+      purpose,
+      role: req.user.role,
+      filename,
+      contentType,
+      size,
+    });
+  } catch (error) {
+    const status = error.message === 'Not allowed for this upload purpose' ? 403 : 400;
+    return res.status(status).json({ error: error.message });
   }
-
-  const ext = path.extname(filename).toLowerCase();
-  if (!ext || ext.length > 10) return res.status(400).json({ error: 'Invalid filename' });
 
   const key = storage.createObjectKey(
     `uploads/${purpose}/${storage.sanitizeSegment(req.user.id)}`,
     filename
   );
-  const uploadUrl = await storage.createUploadUrl({ key, contentType });
+  const uploadUrl = await storage.createUploadUrl({ key, contentType: metadata.contentType });
 
   return res.json({
     key,
     uploadUrl,
     method: 'PUT',
-    headers: { 'Content-Type': contentType },
+    headers: { 'Content-Type': metadata.contentType },
     expiresIn: 600,
   });
 });
