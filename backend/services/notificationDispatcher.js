@@ -32,7 +32,7 @@ async function sendEmail({ to, subject, html, text }) {
   if (emailProvider.provider === 'smtp' && emailProvider.configured) {
     const transporter = getSmtpTransporter();
     await transporter.sendMail({
-      from: process.env.EMAIL_FROM || process.env.SMTP_USER,
+      from: process.env.SMTP_FROM || `Wahy Wa Namaa <${process.env.SMTP_USER}>`,
       to,
       subject,
       text: text || subject,
