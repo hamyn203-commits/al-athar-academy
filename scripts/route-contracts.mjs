@@ -8,9 +8,11 @@ import {
   homePathForLocale,
   isSafeInternalRedirect,
   localizeInternalHref,
+  localizedLocation,
   loginPathForLocale,
   postAuthDestination,
 } from '../src/lib/navigation.js';
+import { localizedLocation } from '../src/lib/locale.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -27,6 +29,15 @@ assert.equal(localizeInternalHref('/courses?track=hifz#plans', 'en'), '/en/cours
 assert.equal(localizeInternalHref('/ar/courses', 'en'), '/ar/courses');
 assert.equal(localizeInternalHref('https://example.com/course', 'en'), 'https://example.com/course');
 assert.equal(localizeInternalHref('//example.com/course', 'en'), '//example.com/course');
+
+assert.equal(
+  localizedLocation('/en/courses', 'fr', '?track=hifz', '#plans'),
+  '/fr/courses?track=hifz#plans'
+);
+assert.equal(
+  localizedLocation('/courses', 'de', '?page=2', ''),
+  '/de/courses?page=2'
+);
 
 assert.equal(isSafeInternalRedirect('/ar/live/room-1?from=dashboard'), true);
 assert.equal(isSafeInternalRedirect('/courses'), true);
@@ -85,6 +96,13 @@ assert.match(requireAuth, /location\.pathname/);
 const protectedRoute = read('src/components\/auth\/ProtectedRoute.jsx'.replaceAll('\\/', '/'));
 assert.match(protectedRoute, /dashboardPathForRole/);
 
+const languageSwitcher = read('src/components/LanguageSwitcher.jsx');
+assert.match(languageSwitcher, /localizedLocation\(location\.pathname,\s*langCode,\s*location\.search,\s*location\.hash\)/);
+
+const localeLayout = read('src/components/LocaleLayout.jsx');
+assert.match(localeLayout, /localizedLocation\(correctedPath,\s*DEFAULT_LOCALE,\s*location\.search,\s*location\.hash\)/);
+assert.match(localeLayout, /location\.search[\s\S]{0,100}location\.hash/);
+
 const localeSensitiveNavigationFiles = [
   'src/components/NotificationBell.jsx',
   'src/components/QuranChatWidget.jsx',
@@ -121,6 +139,10 @@ const app = read('src/App.jsx');
 assert.match(
   app,
   /path=["']guardian\/dashboard["'][\s\S]{0,180}roles=\{\[['"]guardian['"],\s*['"]admin['"]\]\}/
+);
+assert.match(
+  app,
+  /path=["']\/:locale["'][\s\S]{0,260}path=["']\*["'][\s\S]{0,120}<NotFoundPage\s*\/>/
 );
 
 console.log('Route navigation contracts passed.');
