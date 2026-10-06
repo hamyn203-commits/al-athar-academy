@@ -102,3 +102,36 @@ Acceptance gate:
 
 Boundary:
 T06.2 code can be merged safely before merchant credentials exist because `PAYMOB_ENABLED` defaults to false. It must not be described as live payment until the Paymob Test transaction and webhook are verified.
+
+
+## T06.3 — Manual transfer and admin-reviewed settlement
+
+Status: IMPLEMENTED — awaiting production E2E verification 🟡
+
+Launch decision:
+- The first public payment flow uses manual bank/mobile-wallet transfers rather than requiring Paymob.
+- Supported launch destinations are configured through environment variables for InstaPay, Vodafone Cash and optional bank transfer.
+- Paymob code remains available as a future automatic gateway but is not a default public-launch dependency.
+
+Implementation:
+- Paid course price and currency still come only from the server-side published Course record.
+- Student transfer proofs are uploaded through the private object-storage path with the dedicated `payment-proof` purpose.
+- A student can submit one pending manual payment per paid course at a time.
+- Proof ownership is verified server-side before a Payment record is created.
+- Manual Payment records store the transfer method, optional transfer reference, private proof reference and review audit fields.
+- Only admins can list manual payment submissions, read private proofs, approve or reject them.
+- Approval moves `pending -> succeeded` and creates Enrollment/Progress/course statistics inside a MongoDB transaction.
+- Rejection moves `pending -> failed` and does not grant course access.
+- Repeated or concurrent review attempts fail closed after the payment leaves `pending`.
+- The receipt image itself is never treated as settlement proof; the admin must verify actual receipt of funds outside the academy before approval.
+
+Production configuration:
+- `MANUAL_PAYMENT_ENABLED=true`
+- `MANUAL_PAYMENT_RECIPIENT_NAME`
+- at least one of:
+  - `MANUAL_PAYMENT_INSTAPAY`
+  - `MANUAL_PAYMENT_VODAFONE_CASH`
+  - `MANUAL_PAYMENT_BANK_DETAILS`
+
+Launch evidence:
+- Keep `MANUAL_PAYMENT_E2E_VERIFIED=false` until a real controlled transfer is submitted, reviewed by an admin, and exactly one enrollment is created.

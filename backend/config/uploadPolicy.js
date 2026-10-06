@@ -16,6 +16,11 @@ const PURPOSES = Object.freeze({
     types: ['application/pdf', 'image/jpeg', 'image/png', 'audio/mpeg', 'audio/wav', 'video/mp4', 'video/webm'],
     maxBytes: 50 * 1024 * 1024,
   },
+  'payment-proof': {
+    roles: ['student'],
+    types: ['application/pdf', 'image/jpeg', 'image/png'],
+    maxBytes: 10 * 1024 * 1024,
+  },
   'course-media': {
     roles: ['teacher', 'admin'],
     types: ['image/jpeg', 'image/png', 'application/pdf', 'video/mp4', 'video/webm'],

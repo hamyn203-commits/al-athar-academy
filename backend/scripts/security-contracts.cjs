@@ -474,6 +474,39 @@ requireContains(
   /PAYMENT_REQUIRED/
 );
 
+
+// T07.2d: manual transfer approval must remain private, admin-only and transactional.
+requireContains(
+  'backend/config/uploadPolicy.js',
+  'payment proofs must be restricted to student private upload policy',
+  /['"]payment-proof['"]:\s*\{[\s\S]{0,180}roles:\s*\[['"]student['"]\]/
+);
+requireContains(
+  'backend/routes/payments.js',
+  'manual payment submission must verify proof ownership',
+  /isOwnedObjectReference\([\s\S]{0,220}['"]payment-proof['"][\s\S]{0,160}req\.user\.id/
+);
+requireContains(
+  'backend/routes/payments.js',
+  'manual payment review must be admin-only',
+  /router\.patch\(['"]\/admin\/manual\/:id\/review['"],\s*protect,\s*authorize\(['"]admin['"]\)/
+);
+requireContains(
+  'backend/services/manualPaymentSettlement.js',
+  'manual payment approval must execute in a Mongo transaction',
+  /session\.withTransaction\(/
+);
+requireContains(
+  'backend/services/manualPaymentSettlement.js',
+  'manual payment approval must create enrollment through the settlement service',
+  /normalizedAction\s*===\s*['"]approve['"][\s\S]{0,900}createEnrollmentForSettledPayment/
+);
+requireAbsent(
+  'backend/routes/uploads.js',
+  'payment proofs must never be included in the public media proxy',
+  /publicPurpose[\s\S]{0,300}payment-proof/
+);
+
 if (failures.length) {
   console.error('Security contracts failed:');
   failures.forEach((failure) => console.error(`- ${failure}`));

@@ -39,6 +39,52 @@ const PaymentSchema = new mongoose.Schema({
     sparse: true,
     index: true,
   },
+  manual: {
+    method: {
+      type: String,
+      enum: ['instapay', 'vodafone_cash', 'bank_transfer'],
+    },
+    transferReference: {
+      type: String,
+      trim: true,
+      maxlength: 160,
+    },
+    proofReference: {
+      type: String,
+      trim: true,
+      maxlength: 2048,
+      select: false,
+    },
+    proofFilename: {
+      type: String,
+      trim: true,
+      maxlength: 180,
+    },
+    proofContentType: {
+      type: String,
+      trim: true,
+      maxlength: 100,
+    },
+    proofSize: {
+      type: Number,
+      min: 1,
+    },
+    submittedAt: Date,
+    reviewedAt: Date,
+    reviewedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
+    reviewAction: {
+      type: String,
+      enum: ['approve', 'reject'],
+    },
+    reviewNote: {
+      type: String,
+      trim: true,
+      maxlength: 500,
+    },
+  },
   student: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -93,6 +139,7 @@ PaymentSchema.index(
   { unique: true, sparse: true }
 );
 PaymentSchema.index({ student: 1, course: 1, status: 1 });
+PaymentSchema.index({ provider: 1, status: 1, createdAt: -1 });
 PaymentSchema.index({ donation: 1, status: 1 });
 
 PaymentSchema.pre('validate', function paymentRelationValidation(next) {

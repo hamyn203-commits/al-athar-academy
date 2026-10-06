@@ -47,6 +47,8 @@ const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const AIHub = lazy(() => import('./pages/AIHub'));
 const Donate = lazy(() => import('./pages/Donate'));
 const PaymentReturn = lazy(() => import('./pages/PaymentReturn'));
+const ManualPayment = lazy(() => import('./pages/ManualPayment'));
+const AdminPayments = lazy(() => import('./pages/AdminPayments'));
 const WomenPortal = lazy(() => import('./pages/Women'));
 const VideoLibrary = lazy(() => import('./pages/Library'));
 const Careers = lazy(() => import('./pages/Careers'));
@@ -108,12 +110,14 @@ function pageRoutes() {
       <Route path="markets" element={<MarketsIndex />} />
       <Route path="markets/:slug" element={<MarketDetail />} />
       <Route path="admin" element={<ProtectedRoute roles={['admin']}><AdminDashboard /></ProtectedRoute>} />
+      <Route path="admin/payments" element={<ProtectedRoute roles={['admin']}><AdminPayments /></ProtectedRoute>} />
       <Route path="live" element={<ProtectedRoute><LiveSessions /></ProtectedRoute>} />
       <Route path="live/:roomId" element={<ProtectedRoute><LiveRoom /></ProtectedRoute>} />
       <Route path="meeting/:sessionId" element={<ProtectedRoute><MeetingRoom /></ProtectedRoute>} />
       <Route path="ai" element={<AIHub />} />
       <Route path="donate" element={<Donate />} />
       <Route path="payment/return" element={<ProtectedRoute roles={['student', 'admin']}><PaymentReturn /></ProtectedRoute>} />
+      <Route path="payment/manual" element={<ProtectedRoute roles={['student']}><ManualPayment /></ProtectedRoute>} />
       <Route path="women" element={<WomenPortal />} />
       <Route path="library" element={<VideoLibrary />} />
       <Route path="careers" element={<Careers />} />
