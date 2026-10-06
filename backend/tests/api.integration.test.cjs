@@ -109,6 +109,15 @@ test('minor trial requests require a guardian while adult requests remain allowe
   assert.equal(adultWithoutGuardian.response.status, 201);
 });
 
+test('payment provider config fails closed when Paymob credentials are absent', async () => {
+  const result = await request('/api/payments/config');
+
+  assert.equal(result.response.status, 200);
+  assert.equal(result.body.provider, 'paymob');
+  assert.equal(result.body.configured, false);
+  assert.equal(result.body.checkoutMode, 'redirect');
+});
+
 test('public donation stats do not invent paid totals in mock mode', async () => {
   const result = await request('/api/donations/stats');
 

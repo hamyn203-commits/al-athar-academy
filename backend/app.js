@@ -227,6 +227,12 @@ app.get('/api/health', (_req, res) => {
       telegram: Boolean(process.env.TELEGRAM_BOT_TOKEN),
       whatsapp: Boolean(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN),
       livekit: Boolean(process.env.LIVEKIT_API_KEY && process.env.LIVEKIT_API_SECRET && process.env.LIVEKIT_URL),
+      paymob: process.env.PAYMOB_ENABLED === 'true' && Boolean(
+        process.env.PAYMOB_SECRET_KEY
+        && process.env.PAYMOB_PUBLIC_KEY
+        && process.env.PAYMOB_HMAC_SECRET
+        && (process.env.PAYMOB_INTEGRATION_IDS || process.env.PAYMOB_INTEGRATION_ID_CARD)
+      ),
     },
   });
 });
@@ -298,6 +304,7 @@ app.use('/api/lms', require('./routes/lms'));
 app.use('/api/meetings', require('./routes/meetings'));
 app.use('/api/referrals', require('./routes/referrals'));
 app.use('/api/donations', require('./routes/donations'));
+app.use('/api/payments', require('./routes/payments'));
 app.use('/api/videos', require('./routes/videos'));
 app.use('/api/careers', require('./routes/careers'));
 app.use('/api/women', require('./routes/women'));

@@ -21,6 +21,16 @@ const PaymentSchema = new mongoose.Schema({
     trim: true,
     maxlength: 256,
   },
+  providerOrderId: {
+    type: String,
+    trim: true,
+    maxlength: 256,
+  },
+  providerTransactionId: {
+    type: String,
+    trim: true,
+    maxlength: 256,
+  },
   idempotencyKey: {
     type: String,
     trim: true,

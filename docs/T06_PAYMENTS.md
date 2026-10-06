@@ -56,3 +56,49 @@ Verification evidence:
 Important boundary:
 - T06.1 establishes payment truth, state and idempotency contracts only.
 - No provider checkout or automatic settlement is live yet.
+
+## T06.2 — Paymob checkout and verified settlement
+
+Status: IN PROGRESS
+
+Provider decision:
+- Paymob is the primary Egypt payment provider for the first real gateway integration.
+- Unified Checkout redirect is used so card/payment credentials stay on Paymob-hosted pages.
+- The implementation remains disabled until merchant Test credentials and Integration IDs are configured.
+
+Implementation:
+- Added a Paymob Intention API client using `Authorization: Token <secret>`.
+- Paymob regional API hosts are allowlisted and HTTPS-only.
+- Checkout amount and currency come exclusively from the published Course record.
+- Each checkout creates an internal Payment record before creating a Paymob Intention.
+- Internal Payment id is sent as `special_reference` for callback correlation.
+- Unified Checkout URL is generated server-side from Paymob Public Key + returned client secret.
+- Transaction callbacks verify the documented 20-field HMAC-SHA512 signature before any state change.
+- Webhook events are persisted with provider + event id replay protection and SHA-256 payload hashes.
+- Payment state, Enrollment fulfillment, Progress creation and course enrollment stats are committed inside a MongoDB transaction.
+- Success, failure, void/cancel and refund callbacks update server-side payment state.
+- Refunds disable the related course Enrollment.
+- The browser redirect is UX-only and cannot mark a payment as successful.
+- A protected payment-return page polls the academy payment-status endpoint.
+- Free courses continue to use the existing free enrollment path.
+- Paid direct LMS enrollment remains blocked with `PAYMENT_REQUIRED`.
+- Public provider configuration exposes only whether Paymob is configured; no payment secret is exposed.
+
+Required production configuration before enabling test payments:
+- `PAYMOB_ENABLED=true`
+- `PAYMOB_BASE_URL=https://accept.paymob.com`
+- `PAYMOB_SECRET_KEY`
+- `PAYMOB_PUBLIC_KEY`
+- `PAYMOB_HMAC_SECRET`
+- `PAYMOB_INTEGRATION_IDS` (comma-separated online Integration IDs)
+
+Acceptance gate:
+- Paymob HMAC / intention unit tests pass.
+- payment integrity and existing backend tests remain green.
+- frontend route, safety and production build checks pass.
+- GitHub PR CI passes before merge.
+- production deploy remains fail-closed while Paymob credentials are absent.
+- after merchant Test credentials are configured, a Paymob Test checkout + signed webhook must be verified before T06.2 is marked COMPLETE.
+
+Boundary:
+T06.2 code can be merged safely before merchant credentials exist because `PAYMOB_ENABLED` defaults to false. It must not be described as live payment until the Paymob Test transaction and webhook are verified.

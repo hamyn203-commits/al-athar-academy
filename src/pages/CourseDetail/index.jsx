@@ -30,6 +30,7 @@ export default function CourseDetail() {
   const [enrollment, setEnrollment] = useState(null);
   const [loading, setLoading] = useState(true);
   const [enrolling, setEnrolling] = useState(false);
+  const [paymentConfig, setPaymentConfig] = useState({ loaded: false, configured: false });
 
   useEffect(() => {
     api.get('/api/courses/' + slug)
@@ -50,19 +51,60 @@ export default function CourseDetail() {
       .finally(() => setLoading(false));
   }, [slug, authLoading, isAuthenticated]);
 
+  useEffect(() => {
+    api.get('/api/payments/config')
+      .then((data) => setPaymentConfig({
+        loaded: true,
+        configured: Boolean(data?.configured),
+      }))
+      .catch(() => setPaymentConfig({ loaded: true, configured: false }));
+  }, []);
+
   const handleEnroll = async () => {
     if (!isAuthenticated) {
       navigate(localizedPath('/login', locale));
       return;
     }
 
+    const paidCourse = Number(course?.price || 0) > 0;
+
+    if (paidCourse && paymentConfig.loaded && !paymentConfig.configured) {
+      toast.error(
+        isAr
+          ? 'الدفع الإلكتروني قيد الإعداد حاليًا. تواصل معنا للمساعدة.'
+          : 'Online payment is currently being configured. Contact us for help.'
+      );
+      return;
+    }
+
     setEnrolling(true);
     try {
+      if (paidCourse) {
+        const data = await api.post(
+          '/api/payments/course/' + encodeURIComponent(slug) + '/checkout',
+          { locale },
+          { auth: true }
+        );
+
+        if (!data?.checkoutUrl) {
+          throw new Error(isAr ? 'تعذر فتح صفحة الدفع' : 'Unable to open payment checkout');
+        }
+
+        window.location.assign(data.checkoutUrl);
+        return;
+      }
+
       const data = await api.post('/api/lms/course/' + slug + '/enroll', {}, { auth: true });
       setEnrollment(data.enrollment);
       toast.success(isAr ? 'تم التسجيل بنجاح' : 'Enrollment completed');
     } catch (err) {
-      toast.error(err.message || (isAr ? 'تعذر التسجيل' : 'Enrollment failed'));
+      const message = err.code === 'PAYMENT_PROFILE_INCOMPLETE'
+        ? (isAr ? 'أضف رقم هاتف صالح إلى حسابك قبل الدفع.' : 'Add a valid phone number to your account before payment.')
+        : err.code === 'PAYMENT_PROVIDER_NOT_CONFIGURED'
+          ? (isAr ? 'الدفع الإلكتروني غير مفعّل بعد.' : 'Online payment is not enabled yet.')
+          : err.message || (isAr ? 'تعذر التسجيل' : 'Enrollment failed');
+
+      toast.error(message);
     } finally {
       setEnrolling(false);
     }
@@ -177,8 +219,18 @@ export default function CourseDetail() {
                   {progress > 0 ? (isAr ? 'متابعة التعلم' : 'Continue learning') : (isAr ? 'ابدأ التعلم' : 'Start learning')}
                 </button>
               ) : (
-                <button onClick={handleEnroll} disabled={enrolling} className="wn-btn wn-btn--primary wn-btn--block wn-btn--lg disabled:opacity-60">
-                  {enrolling ? (isAr ? 'جاري التسجيل...' : 'Enrolling...') : (isAr ? 'الالتحاق بالدورة' : 'Enroll in course')}
+                <button
+                  onClick={handleEnroll}
+                  disabled={enrolling || (Number(course.price) > 0 && paymentConfig.loaded && !paymentConfig.configured)}
+                  className="wn-btn wn-btn--primary wn-btn--block wn-btn--lg disabled:opacity-60"
+                >
+                  {enrolling
+                    ? (isAr ? 'جاري التحضير...' : 'Preparing...')
+                    : Number(course.price) > 0
+                      ? paymentConfig.loaded && !paymentConfig.configured
+                        ? (isAr ? 'الدفع الإلكتروني قيد الإعداد' : 'Online payment is being configured')
+                        : (isAr ? 'المتابعة إلى الدفع' : 'Continue to payment')
+                      : (isAr ? 'الالتحاق بالدورة' : 'Enroll in course')}
                   {!enrolling ? <ArrowIcon size={16} /> : null}
                 </button>
               )}

@@ -46,6 +46,7 @@ const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const AIHub = lazy(() => import('./pages/AIHub'));
 const Donate = lazy(() => import('./pages/Donate'));
+const PaymentReturn = lazy(() => import('./pages/PaymentReturn'));
 const WomenPortal = lazy(() => import('./pages/Women'));
 const VideoLibrary = lazy(() => import('./pages/Library'));
 const Careers = lazy(() => import('./pages/Careers'));
@@ -112,6 +113,7 @@ function pageRoutes() {
       <Route path="meeting/:sessionId" element={<ProtectedRoute><MeetingRoom /></ProtectedRoute>} />
       <Route path="ai" element={<AIHub />} />
       <Route path="donate" element={<Donate />} />
+      <Route path="payment/return" element={<ProtectedRoute roles={['student', 'admin']}><PaymentReturn /></ProtectedRoute>} />
       <Route path="women" element={<WomenPortal />} />
       <Route path="library" element={<VideoLibrary />} />
       <Route path="careers" element={<Careers />} />

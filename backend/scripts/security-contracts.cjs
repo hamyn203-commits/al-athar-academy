@@ -432,6 +432,48 @@ requireContains(
   /PAYMENT_REQUIRED/
 );
 
+// T06.2: Paymob checkout and webhook settlement must remain fail-closed.
+requireContains(
+  'backend/routes/payments.js',
+  'paid course checkout must derive the amount from the server-side course price',
+  /toMinorUnits\(course\.price,\s*currency\)/
+);
+requireAbsent(
+  'backend/routes/payments.js',
+  'paid checkout must never trust a client-supplied payment amount',
+  /toMinorUnits\(req\.body|amountMinor:\s*req\.body|amount:\s*req\.body/
+);
+requireContains(
+  'backend/routes/payments.js',
+  'Paymob transaction HMAC must be verified before settlement processing',
+  /verifyTransactionPostHmac\(obj,\s*receivedHmac\)[\s\S]{0,1800}processPaymobWebhook\(/
+);
+requireContains(
+  'backend/services/paymentSettlement.js',
+  'payment fulfillment must execute inside a Mongo transaction',
+  /session\.withTransaction\(/
+);
+requireContains(
+  'backend/services/paymentSettlement.js',
+  'successful provider settlement must create course enrollment through the settlement service',
+  /classification\s*===\s*['"]succeeded['"][\s\S]{0,900}createEnrollmentForSettledPayment/
+);
+requireAbsent(
+  'backend/routes/payments.js',
+  'browser redirect/query parameters must not mark a payment succeeded',
+  /req\.query\.(?:success|pending|amount_cents|merchant_order_id)[\s\S]{0,300}(?:succeeded|settledAt|Enrollment)/
+);
+requireContains(
+  'backend/services/paymob.js',
+  'Paymob webhook verification must use HMAC-SHA512',
+  /createHmac\(['"]sha512['"]/
+);
+requireContains(
+  'backend/routes/lms.js',
+  'direct paid LMS enrollment must remain blocked outside the settlement path',
+  /PAYMENT_REQUIRED/
+);
+
 if (failures.length) {
   console.error('Security contracts failed:');
   failures.forEach((failure) => console.error(`- ${failure}`));
