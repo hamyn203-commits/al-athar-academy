@@ -16,6 +16,7 @@ import { TASK_TYPES } from '../TeacherRegistration/constants';
 import { useI18n } from '../../i18n';
 import { localizedPath } from '../../lib/locale';
 import { localizeInternalHref } from '../../lib/navigation';
+import StudentTeacherMarketplace from './TeacherMarketplace';
 
 const emptyReview = { rating: 5, comment: '', wouldContinue: true };
 const emptyBook = { date: '', time: '', notes: '' };
@@ -78,13 +79,14 @@ export default function StudentDashboard() {
   const toast = useToast();
   const { stats: gameStats, badges } = useGamificationApi();
 
-  const [tab, setTab] = useState('account');
+  const [tab, setTab] = useState('discover');
   const [profile, setProfile] = useState(null);
   const [stats, setStats] = useState({});
   const [trials, setTrials] = useState([]);
   const [sessions, setSessions] = useState([]);
   const [homework, setHomework] = useState([]);
   const [teachers, setTeachers] = useState([]);
+  const [discoverTeachers, setDiscoverTeachers] = useState([]);
   const [evaluations, setEvaluations] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [courses, setCourses] = useState([]);
@@ -112,7 +114,7 @@ export default function StudentDashboard() {
 
   const load = useCallback(async () => {
     try {
-      const [prof, st, tr, sess, hw, tch, ev, rev, enrollments, ref] = await Promise.all([
+      const [prof, st, tr, sess, hw, tch, ev, rev, enrollments, ref, discovery] = await Promise.all([
         api.get('/api/students/dashboard/profile', { auth: true }),
         api.get('/api/students/dashboard/stats', { auth: true }),
         api.get('/api/sessions/my-sessions?type=trial&limit=50', { auth: true }),
@@ -123,6 +125,7 @@ export default function StudentDashboard() {
         api.get('/api/reviews/student', { auth: true }),
         api.get('/api/courses/my-courses', { auth: true }).catch(() => []),
         api.get('/api/referrals/my', { auth: true }).catch(() => ({ code: '', stats: {}, referrals: [] })),
+        api.get('/api/teachers?limit=8&sortBy=rating&sortOrder=desc').catch(() => ({ teachers: [] })),
       ]);
       setProfile(prof);
       setStats(st);
@@ -130,6 +133,7 @@ export default function StudentDashboard() {
       setSessions(sess.sessions || []);
       setHomework(hw.homework || []);
       setTeachers(tch.teachers || []);
+      setDiscoverTeachers(discovery.teachers || []);
       setEvaluations(ev.evaluations || []);
       setReviews(Array.isArray(rev) ? rev : rev.reviews || []);
       setCourses(Array.isArray(enrollments) ? enrollments : []);
@@ -361,6 +365,7 @@ export default function StudentDashboard() {
   const hasReviewed = (sessionId) => reviews.some((r) => r.session === sessionId || r.session?._id === sessionId);
 
   const tabs = [
+    { id: 'discover', label: locale === 'id' ? 'Cari Guru' : locale === 'ar' ? 'اكتشف معلمك' : 'Find a Tutor' },
     { id: 'account', label: locale === 'id' ? 'Akun Saya' : locale === 'ar' ? 'حسابي' : 'My Account' },
     { id: 'trials', label: locale === 'id' ? `Uji Coba (${pendingTrials.length + upcomingTrials.length})` : locale === 'ar' ? `تجريبية (${pendingTrials.length + upcomingTrials.length})` : `Trials (${pendingTrials.length + upcomingTrials.length})` },
     { id: 'sessions', label: locale === 'id' ? `Sesi Saya (${upcomingSessions.length + pendingSessions.length})` : locale === 'ar' ? `حصصي (${upcomingSessions.length + pendingSessions.length})` : `My Sessions (${upcomingSessions.length + pendingSessions.length})` },
@@ -438,6 +443,10 @@ export default function StudentDashboard() {
 
           <div className="wn-dashboard-surface">
             <TabBar tabs={tabs} active={tab} onChange={setTab} />
+
+            {tab === 'discover' && (
+              <StudentTeacherMarketplace teachers={discoverTeachers} locale={locale} />
+            )}
 
             {tab === 'account' && (
               <div className="space-y-6">
