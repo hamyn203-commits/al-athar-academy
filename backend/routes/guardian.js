@@ -9,6 +9,7 @@ const GroupCircle = require('../models/GroupCircle');
 const LiveSession = require('../models/LiveSession');
 const Progress = require('../models/Progress');
 const { protect, authorize } = require('../middleware/auth');
+const { findChildAccess, hasChildPermission } = require('../utils/guardianSafeguarding');
 
 
 const isDBConnected = () => mongoose.connection.readyState === 1;
@@ -63,10 +64,21 @@ router.get('/children', protect, authorize('guardian', 'admin'), async (req, res
 
       const studentId = studentUser._id;
 
-      // 1. Fetch Student profile (gamification, points, level, etc.)
-      const studentProfile = await Student.findOne({ user: studentId }).lean();
+      const access = findChildAccess(guardian, studentId);
+      const permissions = access?.permissions || {
+        viewProgress: false,
+        viewGrades: false,
+        viewAttendance: false,
+        receiveNotifications: false,
+        approveEnrollments: false,
+      };
 
-      // 2. Fetch Group Circle details if enrolled
+      // Query only the data this guardian is currently allowed to view.
+      const studentProfile = permissions.viewProgress
+        ? await Student.findOne({ user: studentId }).lean()
+        : null;
+
+      // Circle membership is needed for scheduling context and does not expose grades.
       let circleInfo = null;
       if (studentUser.circle) {
         circleInfo = await GroupCircle.findById(studentUser.circle)
@@ -74,69 +86,72 @@ router.get('/children', protect, authorize('guardian', 'admin'), async (req, res
           .lean();
       }
 
-      // 3. Fetch all sessions for this student to compute attendance rate
-      const sessions = await Session.find({
-        $or: [
-          { student: studentId },
-          { 'attendance.student': studentId }
-        ],
-        status: { $in: ['completed', 'accepted'] }
-      }).select('scheduledAt status attendance studentReports').lean();
-
       let totalSessions = 0;
       let attendedSessions = 0;
       let excusedSessions = 0;
       let absentSessions = 0;
 
-      sessions.forEach(sess => {
-        totalSessions++;
-        const att = sess.attendance?.find(a => a.student && a.student.toString() === studentId.toString());
-        if (att) {
-          if (att.status === 'attended') attendedSessions++;
-          else if (att.status === 'excused') excusedSessions++;
-          else if (att.status === 'absent') absentSessions++;
-          else attendedSessions++; // Default if completed
-        } else if (sess.status === 'completed') {
-          attendedSessions++;
-        }
-      });
+      if (permissions.viewAttendance) {
+        const sessions = await Session.find({
+          $or: [
+            { student: studentId },
+            { 'attendance.student': studentId }
+          ],
+          status: { $in: ['completed', 'accepted'] }
+        }).select('scheduledAt status attendance').lean();
 
-      const attendanceRate = totalSessions > 0
+        sessions.forEach((sess) => {
+          totalSessions += 1;
+          const att = sess.attendance?.find(
+            (entry) => entry.student && entry.student.toString() === studentId.toString()
+          );
+          if (att) {
+            if (att.status === 'attended') attendedSessions += 1;
+            else if (att.status === 'excused') excusedSessions += 1;
+            else if (att.status === 'absent') absentSessions += 1;
+            else attendedSessions += 1;
+          } else if (sess.status === 'completed') {
+            attendedSessions += 1;
+          }
+        });
+      }
+
+      const attendanceRate = permissions.viewAttendance && totalSessions > 0
         ? Math.round((attendedSessions / totalSessions) * 100)
         : null;
 
-      // 4. Fetch latest evaluation report across sessions
-      const sessionWithReport = await Session.findOne({
-        $or: [
-          { student: studentId },
-          { 'studentReports.student': studentId }
-        ],
-        'studentReports.0': { $exists: true }
-      }).sort({ scheduledAt: -1 }).lean();
-
       let latestReport = null;
-      if (sessionWithReport && sessionWithReport.studentReports) {
-        const rep = sessionWithReport.studentReports.find(
-          r => r.student && r.student.toString() === studentId.toString()
-        );
-        if (rep) {
-          latestReport = {
-            memorizationScore: rep.memorizationScore,
-            tajweedScore: rep.tajweedScore,
-            surahRecited: rep.surahRecited,
-            fromAyah: rep.fromAyah,
-            toAyah: rep.toAyah,
-            nextHomework: rep.nextHomework,
-            notes: rep.notes,
-            date: sessionWithReport.scheduledAt
-          };
+      if (permissions.viewGrades) {
+        const sessionWithReport = await Session.findOne({
+          $or: [
+            { student: studentId },
+            { 'studentReports.student': studentId }
+          ],
+          'studentReports.0': { $exists: true }
+        }).sort({ scheduledAt: -1 }).lean();
+
+        if (sessionWithReport?.studentReports) {
+          const rep = sessionWithReport.studentReports.find(
+            (entry) => entry.student && entry.student.toString() === studentId.toString()
+          );
+          if (rep) {
+            latestReport = {
+              memorizationScore: rep.memorizationScore,
+              tajweedScore: rep.tajweedScore,
+              surahRecited: rep.surahRecited,
+              fromAyah: rep.fromAyah,
+              toAyah: rep.toAyah,
+              nextHomework: rep.nextHomework,
+              notes: rep.notes,
+              date: sessionWithReport.scheduledAt
+            };
+          }
         }
       }
 
-      // 5. Course progress summary if any
-      const progressList = await Progress.find({ student: studentId })
-        .populate('course', 'title')
-        .lean();
+      const progressList = permissions.viewProgress
+        ? await Progress.find({ student: studentId }).populate('course', 'title').lean()
+        : [];
 
       return {
         studentId: studentUser._id,
@@ -145,27 +160,27 @@ router.get('/children', protect, authorize('guardian', 'admin'), async (req, res
         phone: studentUser.phone,
         avatar: studentUser.avatar,
         relationship: childItem.relationship,
-        permissions: childItem.permissions,
+        permissions,
         circle: circleInfo,
-        studentProfile: {
+        studentProfile: permissions.viewProgress ? {
           plan: studentProfile?.plan || 'حفظ القرآن الكريم',
           currentSurah: studentProfile?.currentSurah || 'سورة الفاتحة',
           points: studentProfile?.points || 0,
           streak: studentProfile?.streak || 0,
           level: studentProfile?.level || studentUser.currentLevel || 'مبتدئ'
-        },
-        attendance: {
+        } : null,
+        attendance: permissions.viewAttendance ? {
           rate: attendanceRate,
           total: totalSessions,
           attended: attendedSessions,
           excused: excusedSessions,
           absent: absentSessions
-        },
-        latestEvaluation: latestReport,
-        coursesProgress: progressList.map(p => ({
+        } : null,
+        latestEvaluation: permissions.viewGrades ? latestReport : null,
+        coursesProgress: permissions.viewProgress ? progressList.map(p => ({
           courseTitle: p.course?.title,
           percentage: p.overallProgress?.percentage || 0
-        }))
+        })) : []
       };
     }));
 
@@ -266,19 +281,19 @@ router.get('/reports/:studentId', protect, authorize('guardian', 'admin'), async
       return res.status(503).json({ error: 'Guardian reports are temporarily unavailable' });
     }
 
-    // Verify guardian has authority over this child (unless admin)
+    // Reports contain grades/evaluations, so linked-child membership alone is not enough.
     if (req.user.role !== 'admin') {
       const guardian = await Guardian.findOne({
         user: req.user.id,
         'children.student': studentId
       });
 
-      if (!guardian) {
-        return res.status(403).json({ error: 'غير مصرح بالاطلاع على تقارير هذا الطالب' });
+      if (!guardian || !hasChildPermission(guardian, studentId, 'viewGrades')) {
+        return res.status(403).json({ error: 'غير مصرح بالاطلاع على تقييمات هذا الطالب' });
       }
     }
 
-    const studentUser = await User.findById(studentId).select('name email phone');
+    const studentUser = await User.findById(studentId).select('name email');
     if (!studentUser) {
       return res.status(404).json({ error: 'الطالب غير موجود' });
     }
@@ -361,6 +376,14 @@ router.get('/upcoming-sessions', protect, authorize('guardian', 'admin'), async 
       return res.json({ success: true, sessions: [] });
     }
 
+    const attendancePermissionByChild = new Map(
+      childIds.map((childId) => {
+        const access = guardian ? findChildAccess(guardian, childId) : null;
+        // Legacy User.children links predate granular permissions; preserve access until migrated.
+        return [String(childId), access ? access.permissions.viewAttendance : true];
+      })
+    );
+
     // Also find any circles where children are enrolled
     const childrenUsers = await User.find({ _id: { $in: childIds } }).select('_id name circle');
     const circleIds = childrenUsers.map(c => c.circle).filter(Boolean);
@@ -425,7 +448,9 @@ router.get('/upcoming-sessions', protect, authorize('guardian', 'admin'), async 
           name: teacherName,
           phone: teacherPhone
         },
-        rsvp: att ? att.status : 'pending', // 'confirmed', 'excused', 'attended', 'pending'
+        rsvp: child && attendancePermissionByChild.get(String(child._id))
+          ? (att ? att.status : 'pending')
+          : null,
         canExcuseWithCompensation: diffHours >= 6,
         hoursUntilSession: Math.round(diffHours * 10) / 10
       };
@@ -439,5 +464,4 @@ router.get('/upcoming-sessions', protect, authorize('guardian', 'admin'), async 
 });
 
 module.exports = router;
-
 

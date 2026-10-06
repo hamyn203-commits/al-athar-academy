@@ -94,6 +94,13 @@ router.post('/', publicTrialLimiter, async (req, res) => {
       return res.status(400).json({ error: 'يجب أن يكون عمر الطالب بين 4 سنوات و 100 سنة' });
     }
 
+    const cleanGuardianName = String(guardianName || '').trim();
+    if (parsedAge < 18 && cleanGuardianName.length < 2) {
+      return res.status(400).json({
+        error: 'اسم ولي الأمر مطلوب للطلاب أقل من 18 سنة'
+      });
+    }
+
     const incomingTrack = preferredTrack || req.body.track || 'memorization';
     const trackMap = {
       'memorization': 'memorization',
@@ -112,7 +119,7 @@ router.post('/', publicTrialLimiter, async (req, res) => {
       const mockObj = {
         _id: mockTrialId,
         studentName: studentName.trim(),
-        guardianName: guardianName ? guardianName.trim() : '',
+        guardianName: cleanGuardianName,
         whatsappPhone: cleanWhatsApp,
         age: parsedAge,
         gender,
@@ -131,7 +138,7 @@ router.post('/', publicTrialLimiter, async (req, res) => {
 
     const trial = new TrialRequest({
       studentName: studentName.trim(),
-      guardianName: guardianName ? guardianName.trim() : '',
+      guardianName: cleanGuardianName,
       whatsappPhone: cleanWhatsApp,
       phone: phone ? normalizePhone(phone) : cleanWhatsApp,
       email: email ? String(email).toLowerCase().trim() : '',

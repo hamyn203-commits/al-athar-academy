@@ -41,3 +41,25 @@ Implemented on this branch:
 - Unit tests cover valid and spoofed upload metadata plus object-path ownership rules.
 
 This task intentionally does not implement full upload/download/delete E2E; that remains with its later roadmap owner.
+
+## T03.3 Safeguarding and guardian permission enforcement
+
+Implemented on this branch:
+
+- Guardian child overviews query and expose progress, attendance and grades only when the corresponding permission is enabled.
+- Historical guardian reports are redacted at read time using the current permissions.
+- Grade/evaluation history requires the linked child's `viewGrades` permission.
+- Weekly summaries separate progress data from attendance data.
+- Guardian dashboard progress metrics are hidden when `viewProgress` is disabled.
+- Attendance RSVP state is hidden when `viewAttendance` is disabled.
+- Guardian permission updates accept only known boolean fields.
+- Public trial requests for students under 18 require a guardian name.
+- Automated tests cover minor trial gating and permission-based report redaction.
+
+Verification evidence before merge:
+- all backend JavaScript syntax checks passed
+- security regression contracts passed
+- automated suite: 15/15 tests passed
+- frontend production build completed successfully
+
+This task strengthens existing guardian-child ownership controls without changing the later full file E2E, payment, SEO or release/domain roadmap owners.

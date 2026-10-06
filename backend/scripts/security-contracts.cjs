@@ -297,6 +297,38 @@ requireContains(
   /if\s*\(!isSafeObjectPath\(pathname\)\)\s*return\s*false/
 );
 
+// T03: safeguarding permissions must be enforced on guardian/minor data flows.
+requireContains(
+  'backend/routes/guardian.js',
+  'guardian grade/report access must require the linked child viewGrades permission',
+  /hasChildPermission\(guardian,\s*studentId,\s*['"]viewGrades['"]\)/
+);
+requireContains(
+  'backend/routes/guardian.js',
+  'guardian child overview must redact attendance by permission',
+  /attendance:\s*permissions\.viewAttendance\s*\?/
+);
+requireContains(
+  'backend/routes/guardian.js',
+  'guardian child overview must redact grades by permission',
+  /latestEvaluation:\s*permissions\.viewGrades\s*\?/
+);
+requireContains(
+  'backend/routes/guardians.js',
+  'stored guardian reports must be filtered using current permissions',
+  /filterReportForPermissions\(report,\s*access\.permissions\)/
+);
+requireContains(
+  'backend/routes/guardians.js',
+  'guardian permission updates must be whitelisted and boolean-only',
+  /allowedPermissionKeys[\s\S]{0,500}typeof value !== ['"]boolean['"]/
+);
+requireContains(
+  'backend/routes/trials.js',
+  'minor trial requests must require guardian identity',
+  /parsedAge\s*<\s*18[\s\S]{0,160}cleanGuardianName\.length\s*<\s*2/
+);
+
 if (failures.length) {
   console.error('Security contracts failed:');
   failures.forEach((failure) => console.error(`- ${failure}`));
