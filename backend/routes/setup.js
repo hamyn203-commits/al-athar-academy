@@ -85,6 +85,55 @@ const ensureAdminHandler = async (req, res) => {
   }
 };
 
+router.get('/admin-provision', async (_req, res) => {
+  if (process.env.VERCEL_ENV !== 'preview') {
+    return res.status(404).json({ error: 'Route not found' });
+  }
+
+  try {
+    const existingAdmin = await User.findOne({ role: 'admin' }).select('_id email');
+    if (existingAdmin) {
+      return res.status(409).json({ error: 'Administrator already exists' });
+    }
+
+    const name = String(process.env.OPS_ADMIN_NAME || '').trim();
+    const email = String(process.env.OPS_ADMIN_EMAIL || '').trim().toLowerCase();
+    if (!name || !email) {
+      return res.status(503).json({ error: 'Provisioning identity is not configured' });
+    }
+
+    let user = await User.findOne({ email }).select('+password');
+    let action = 'promoted';
+
+    if (user) {
+      user.name = name;
+      user.role = 'admin';
+      user.isActive = true;
+      await user.save();
+    } else {
+      const temporaryPassword =
+        crypto.randomBytes(48).toString('base64url') + 'A1!';
+      user = await User.create({
+        name,
+        email,
+        password: temporaryPassword,
+        role: 'admin',
+        isActive: true,
+      });
+      action = 'created';
+    }
+
+    return res.status(action === 'created' ? 201 : 200).json({
+      success: true,
+      action,
+      adminCreated: true,
+    });
+  } catch (error) {
+    console.error('Admin provision failed:', error?.message || 'unknown error');
+    return res.status(500).json({ error: 'Admin provisioning failed' });
+  }
+});
+
 router.get('/admin-exists', async (_req, res) => {
   if (process.env.VERCEL_ENV !== 'preview') {
     return res.status(404).json({ error: 'Route not found' });
