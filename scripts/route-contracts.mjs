@@ -139,7 +139,15 @@ assert.match(paymentReturn, /\/api\/payments\/'\s*\+\s*encodeURIComponent\(payme
 assert.doesNotMatch(paymentReturn, /params\.get\(['"]success['"]\)/);
 
 const courseDetail = read('src/pages/CourseDetail/index.jsx');
-assert.match(courseDetail, /\/api\/payments\/course\/'\s*\+\s*encodeURIComponent\(slug\)\s*\+\s*'\/checkout/);
+assert.match(courseDetail, /localizedPath\(['"]\/payment\/manual['"],\s*locale\)/);
+
+const manualPayment = read('src/pages/ManualPayment/index.jsx');
+assert.match(manualPayment, /uploadFileDirect\(proof,\s*['"]payment-proof['"]\)/);
+assert.match(manualPayment, /\/api\/payments\/course\/'\s*\+\s*encodeURIComponent\(slug\)\s*\+\s*'\/manual/);
+
+const adminPayments = read('src/pages/AdminPayments/index.jsx');
+assert.match(adminPayments, /\/api\/payments\/admin\/manual/);
+assert.match(adminPayments, /\/review/);
 
 const app = read('src/App.jsx');
 assert.match(
@@ -153,6 +161,14 @@ assert.match(
 assert.match(
   app,
   /path=["']payment\/return["'][\s\S]{0,180}<ProtectedRoute\s+roles=\{\[['"]student['"],\s*['"]admin['"]\]\}/
+);
+assert.match(
+  app,
+  /path=["']payment\/manual["'][\s\S]{0,180}<ProtectedRoute\s+roles=\{\[['"]student['"]\]\}/
+);
+assert.match(
+  app,
+  /path=["']admin\/payments["'][\s\S]{0,180}<ProtectedRoute\s+roles=\{\[['"]admin['"]\]\}/
 );
 
 console.log('Route navigation contracts passed.');
