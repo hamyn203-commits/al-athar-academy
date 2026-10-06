@@ -78,6 +78,37 @@ test('CORS rejects an untrusted browser origin', async () => {
   assert.equal(result.body.error, 'Origin not allowed');
 });
 
+test('minor trial requests require a guardian while adult requests remain allowed', async () => {
+  const baseTrial = {
+    studentName: 'Safeguarding Student',
+    whatsappPhone: '+201000000001',
+    gender: 'male',
+    preferredTrack: 'memorization',
+  };
+
+  const minorWithoutGuardian = await request('/api/trials', jsonOptions('POST', {
+    ...baseTrial,
+    age: 12,
+  }));
+  assert.equal(minorWithoutGuardian.response.status, 400);
+  assert.match(minorWithoutGuardian.body.error, /ولي الأمر/);
+
+  const minorWithGuardian = await request('/api/trials', jsonOptions('POST', {
+    ...baseTrial,
+    age: 12,
+    guardianName: 'Responsible Guardian',
+  }));
+  assert.equal(minorWithGuardian.response.status, 201);
+  assert.equal(minorWithGuardian.body.trial.guardianName, 'Responsible Guardian');
+
+  const adultWithoutGuardian = await request('/api/trials', jsonOptions('POST', {
+    ...baseTrial,
+    studentName: 'Adult Student',
+    age: 22,
+  }));
+  assert.equal(adultWithoutGuardian.response.status, 201);
+});
+
 test('public registration cannot create a privileged role', async () => {
   const result = await request('/api/auth/register', jsonOptions('POST', {
     name: 'Privilege Escalation Attempt',
