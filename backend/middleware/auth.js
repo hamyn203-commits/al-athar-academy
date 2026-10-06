@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const { getTeacherAccessDecision } = require('../utils/teacherAccess');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
@@ -58,7 +59,7 @@ const generateRefreshToken = (user) => {
   );
 };
 
-const verifyAccessToken = (req, res, next) => {
+const verifyAccessToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -69,13 +70,33 @@ const verifyAccessToken = (req, res, next) => {
 
   try {
     req.user = jwt.verify(token, accessSecret());
-    next();
   } catch (error) {
     if (error.name === 'TokenExpiredError') {
       return res.status(401).json({ error: 'Token expired', code: 'TOKEN_EXPIRED' });
     }
     return res.status(401).json({ error: 'Invalid token' });
   }
+
+  if (req.user.role === 'teacher') {
+    try {
+      const decision = await getTeacherAccessDecision(req.user.id);
+      if (!decision.allowed) {
+        return res.status(403).json({
+          error: decision.error,
+          code: decision.code,
+          applicationStatus: decision.status,
+        });
+      }
+    } catch (error) {
+      console.error('Teacher approval gate failed:', error.message);
+      return res.status(503).json({
+        error: 'Teacher access verification is temporarily unavailable',
+        code: 'TEACHER_ACCESS_CHECK_UNAVAILABLE',
+      });
+    }
+  }
+
+  return next();
 };
 
 function readCookie(req, name) {
