@@ -1,6 +1,6 @@
 # وَحْيٌ وَنَمَاء — Project Overview
 
-Last updated: 2026-10-05
+Last updated: 2026-10-06
 
 ## Production architecture
 
@@ -29,7 +29,8 @@ Production URLs:
 
 - Frontend: `https://wahy-wa-namaa-academy.vercel.app`
 - API: `https://wahy-wa-namaa-api.vercel.app`
-- Readiness: `/api/readiness`
+- Runtime readiness: `/api/readiness`
+- Commercial launch readiness: `/api/launch-readiness`
 
 Azure is retired from the active runtime. The old Azure material is retained only as historical rollback documentation and must not be treated as the production deployment path.
 
@@ -103,7 +104,7 @@ Production must fail closed rather than returning demo users, fake metrics, fake
 5. backend dependency installation
 6. backend syntax checks
 
-Production verification and scheduled health-check workflows probe the live frontend and API readiness endpoints.
+Production verification and scheduled health-check workflows probe the live frontend and API readiness endpoints. A separate manual `Launch Readiness` workflow checks the stricter commercial launch gate.
 
 ## Public contact configuration
 
@@ -136,9 +137,9 @@ The health/readiness API reports their configured state.
 
 ## Payments
 
-There is currently **no production card payment gateway**. The old mock checkout UI and public mock confirmation flow were removed.
+Paymob checkout and signed webhook settlement code is implemented behind fail-closed configuration.
 
-A real payment provider must be integrated and tested before any paid enrollment/donation flow is presented as automatic payment.
+It is **not yet operationally verified for public launch**. Merchant credentials plus a real Test/E2E checkout, signed webhook and exactly-once fulfillment must succeed before the payment launch proof is marked verified.
 
 ## Development
 
@@ -168,6 +169,7 @@ A production change is considered ready only when:
 - production safety scan succeeds,
 - latest Vercel deployments are READY,
 - `/api/readiness` returns HTTP 200 with `ready: true`,
+- for public commercial launch, `/api/launch-readiness` also returns HTTP 200 with `ready: true`,
 - critical user flows are smoke-tested.
 
 Do not infer that optional integrations are operational only because their UI exists.
