@@ -10,6 +10,7 @@ const Session = require('../models/Session');
 const { protect, authorize } = require('../middleware/auth');
 const objectStorage = require('../services/objectStorage');
 const { resolveOwnedTeacherAssets } = require('../utils/teacherAssetLifecycle');
+const { sendEmail } = require('../services/notificationDispatcher');
 const multer = require('multer');
 const {
   addMockUser,
@@ -27,7 +28,7 @@ const isDBConnected = () => mongoose.connection.readyState === 1;
 
 const publicUploadDir = path.join(__dirname, '..', 'uploads', 'teachers', 'public');
 const privateUploadDir = path.join(__dirname, '..', 'uploads', 'private', 'teachers');
-const privateFields = new Set(['idCard', 'graduationCertificate', 'tajweedCertificates', 'ijazat']);
+const privateFields = new Set(['idCard', 'idCardFront', 'idCardBack', 'graduationCertificate', 'tajweedCertificates', 'ijazat']);
 
 if (process.env.FILE_STORAGE_DRIVER !== 'external') {
   for (const dir of [publicUploadDir, privateUploadDir]) {
@@ -124,6 +125,8 @@ router.post(
   upload.fields([
     { name: 'profilePhoto', maxCount: 1 },
     { name: 'idCard', maxCount: 1 },
+    { name: 'idCardFront', maxCount: 1 },
+    { name: 'idCardBack', maxCount: 1 },
     { name: 'graduationCertificate', maxCount: 1 },
     { name: 'tajweedCertificates', maxCount: 5 },
     { name: 'ijazat', maxCount: 5 },
@@ -142,6 +145,16 @@ router.post(
       const uploadedFiles = req.body.uploadedFiles
         ? (typeof req.body.uploadedFiles === 'string' ? JSON.parse(req.body.uploadedFiles) : req.body.uploadedFiles)
         : {};
+      const documentAvailability = req.body.documentAvailability
+        ? (typeof req.body.documentAvailability === 'string'
+          ? JSON.parse(req.body.documentAvailability)
+          : req.body.documentAvailability)
+        : {};
+      const declaredDocuments = {
+        graduationCertificate: documentAvailability.graduationCertificate === true,
+        tajweedCertificates: documentAvailability.tajweedCertificates === true,
+        ijazat: documentAvailability.ijazat === true,
+      };
 
       const uploadedFileCount = Object.values(req.files || {}).reduce((sum, list) => sum + (Array.isArray(list) ? list.length : 0), 0);
       if (externalStorage && uploadedFileCount > 0) {
@@ -190,6 +203,8 @@ router.post(
         validateDirectUpload(uploadedFiles.introductionVideo, 'teacher-public', uploadOwner) &&
         validateDirectUpload(uploadedFiles.teachingMethodVideo, 'teacher-public', uploadOwner) &&
         validateDirectUpload(uploadedFiles.idCard, 'teacher-private', uploadOwner) &&
+        validateDirectUpload(uploadedFiles.idCardFront, 'teacher-private', uploadOwner) &&
+        validateDirectUpload(uploadedFiles.idCardBack, 'teacher-private', uploadOwner) &&
         validateDirectUpload(uploadedFiles.graduationCertificate, 'teacher-private', uploadOwner) &&
         validateDirectUploadList(uploadedFiles.recitationVideo, 'teacher-public', uploadOwner) &&
         validateDirectUploadList(uploadedFiles.additionalVideos, 'teacher-public', uploadOwner) &&
@@ -199,6 +214,82 @@ router.post(
 
       if (!validUploadedFiles) {
         return res.status(400).json({ error: 'One or more uploaded files do not belong to this application' });
+      }
+
+      const hasDirectOrLegacy = (directValue, legacyFiles) => Boolean(
+        directReference(directValue) || legacyFiles?.[0]
+      );
+      const hasDirectOrLegacyList = (directValues, legacyFiles) => Boolean(
+        (Array.isArray(directValues) && directValues.length) ||
+        (Array.isArray(legacyFiles) && legacyFiles.length)
+      );
+
+      if (!hasDirectOrLegacy(uploadedFiles.profilePhoto, req.files?.profilePhoto)) {
+        return res.status(400).json({
+          error: 'Profile photo is required',
+          code: 'TEACHER_PROFILE_PHOTO_REQUIRED',
+        });
+      }
+
+      if (!hasDirectOrLegacy(uploadedFiles.idCardFront, req.files?.idCardFront)) {
+        return res.status(400).json({
+          error: 'ID card front is required',
+          code: 'TEACHER_ID_FRONT_REQUIRED',
+        });
+      }
+
+      if (!hasDirectOrLegacy(uploadedFiles.idCardBack, req.files?.idCardBack)) {
+        return res.status(400).json({
+          error: 'ID card back is required',
+          code: 'TEACHER_ID_BACK_REQUIRED',
+        });
+      }
+
+      if (!hasDirectOrLegacyList(uploadedFiles.recitationVideo, req.files?.recitationVideo)) {
+        return res.status(400).json({
+          error: 'At least one recitation video is required',
+          code: 'TEACHER_RECITATION_VIDEO_REQUIRED',
+        });
+      }
+
+      if (
+        !['graduationCertificate', 'tajweedCertificates', 'ijazat']
+          .every((field) => typeof documentAvailability[field] === 'boolean')
+      ) {
+        return res.status(400).json({
+          error: 'Document availability declarations are required',
+          code: 'TEACHER_DOCUMENT_DECLARATION_REQUIRED',
+        });
+      }
+
+      if (
+        declaredDocuments.graduationCertificate &&
+        !hasDirectOrLegacy(uploadedFiles.graduationCertificate, req.files?.graduationCertificate)
+      ) {
+        return res.status(400).json({
+          error: 'Graduation certificate was marked available but no file was uploaded',
+          code: 'TEACHER_GRADUATION_CERTIFICATE_REQUIRED',
+        });
+      }
+
+      if (
+        declaredDocuments.tajweedCertificates &&
+        !hasDirectOrLegacyList(uploadedFiles.tajweedCertificates, req.files?.tajweedCertificates)
+      ) {
+        return res.status(400).json({
+          error: 'Tajweed certificates were marked available but no file was uploaded',
+          code: 'TEACHER_TAJWEED_CERTIFICATE_REQUIRED',
+        });
+      }
+
+      if (
+        declaredDocuments.ijazat &&
+        !hasDirectOrLegacyList(uploadedFiles.ijazat, req.files?.ijazat)
+      ) {
+        return res.status(400).json({
+          error: 'Ijazat were marked available but no file was uploaded',
+          code: 'TEACHER_IJAZA_REQUIRED',
+        });
       }
 
       if (!userId && email && password) {
@@ -276,21 +367,15 @@ router.post(
           },
           languages: JSON.parse(languages || '["arabic"]'),
           availability: JSON.parse(availability || '[]'),
-          status: 'approved',
-          isVerified: true,
+          status: 'pending',
+          isVerified: false,
         });
-
-        const { generateAccessToken, generateRefreshToken } = require('../middleware/auth');
-        const mockUser = findMockUserById(userId);
-        const accessToken = generateAccessToken(mockUser || { _id: userId, id: userId, role: 'teacher' });
-        const refreshToken = generateRefreshToken(mockUser || { _id: userId, id: userId, role: 'teacher' });
 
         return res.status(201).json({
           success: true,
-          message: 'تم إرسال طلب تسجيل المعلم بنجاح!',
+          message: 'تم إرسال طلب تسجيل المعلم بنجاح وهو الآن في انتظار موافقة الإدارة.',
+          applicationStatus: 'pending',
           teacher: mockT,
-          accessToken,
-          refreshToken,
         });
       }
 
@@ -305,15 +390,40 @@ router.post(
         return ref ? objectStorage.publicProxyUrl(ref) : null;
       };
 
+      const idCardFront =
+        directRef(uploadedFiles.idCardFront) ||
+        privateDocumentPath(req.files?.idCardFront?.[0]) ||
+        'not-provided';
+      const idCardBack =
+        directRef(uploadedFiles.idCardBack) ||
+        privateDocumentPath(req.files?.idCardBack?.[0]) ||
+        'not-provided';
+
       const documents = {
-        idCard: directRef(uploadedFiles.idCard) || privateDocumentPath(req.files?.idCard?.[0]) || 'not-provided',
-        graduationCertificate: directRef(uploadedFiles.graduationCertificate) || privateDocumentPath(req.files?.graduationCertificate?.[0]) || 'not-provided',
-        tajweedCertificates: uploadedFiles.tajweedCertificates?.map(directRef).filter(Boolean)
-          || req.files?.tajweedCertificates?.map(privateDocumentPath).filter(Boolean)
-          || [],
-        ijazat: uploadedFiles.ijazat?.map(directRef).filter(Boolean)
-          || req.files?.ijazat?.map(privateDocumentPath).filter(Boolean)
-          || [],
+        // Keep the legacy field pointed at the front side for older admin tools.
+        idCard: idCardFront,
+        idCardFront,
+        idCardBack,
+        graduationCertificateAvailable: declaredDocuments.graduationCertificate,
+        graduationCertificate: declaredDocuments.graduationCertificate
+          ? (directRef(uploadedFiles.graduationCertificate) || privateDocumentPath(req.files?.graduationCertificate?.[0]) || 'not-provided')
+          : 'not-provided',
+        tajweedCertificatesAvailable: declaredDocuments.tajweedCertificates,
+        tajweedCertificates: declaredDocuments.tajweedCertificates
+          ? (
+            uploadedFiles.tajweedCertificates?.map(directRef).filter(Boolean)
+            || req.files?.tajweedCertificates?.map(privateDocumentPath).filter(Boolean)
+            || []
+          )
+          : [],
+        ijazatAvailable: declaredDocuments.ijazat,
+        ijazat: declaredDocuments.ijazat
+          ? (
+            uploadedFiles.ijazat?.map(directRef).filter(Boolean)
+            || req.files?.ijazat?.map(privateDocumentPath).filter(Boolean)
+            || []
+          )
+          : [],
       };
 
       const directRecitations = uploadedFiles.recitationVideo || [];
@@ -380,6 +490,7 @@ router.post(
     res.status(201).json({
       success: true,
       message: 'Teacher registration submitted successfully. Awaiting admin review.',
+      applicationStatus: 'pending',
       teacher
     });
   } catch (error) {
@@ -594,8 +705,13 @@ router.delete('/admin/:id/assets', protect, authorize('admin'), async (req, res)
 
     teacher.documents = {
       idCard: 'not-provided',
+      idCardFront: 'not-provided',
+      idCardBack: 'not-provided',
+      graduationCertificateAvailable: false,
       graduationCertificate: 'not-provided',
+      tajweedCertificatesAvailable: false,
       tajweedCertificates: [],
+      ijazatAvailable: false,
       ijazat: [],
     };
     teacher.media = {
@@ -628,7 +744,7 @@ router.get('/admin/:id/document/:kind{/:index}', protect, authorize('admin'), as
     if (!teacher) return res.status(404).json({ error: 'Teacher not found' });
 
     const { kind } = req.params;
-    const allowed = ['idCard', 'graduationCertificate', 'tajweedCertificates', 'ijazat'];
+    const allowed = ['idCard', 'idCardFront', 'idCardBack', 'graduationCertificate', 'tajweedCertificates', 'ijazat'];
     if (!allowed.includes(kind)) return res.status(400).json({ error: 'Invalid document type' });
 
     let stored = teacher.documents?.[kind];
