@@ -7,6 +7,9 @@ import '../../styles/public-experience.css';
 import { api } from '../../lib/api';
 import { useAuth } from '../../hooks/useAuth';
 import { useAudioRecorder } from '../../hooks/useAudioRecorder';
+import { useI18n } from '../../i18n';
+import { localizedPath } from '../../lib/locale';
+import { loginPathForLocale } from '../../lib/navigation';
 
 const TABS = [
   { id: 'quran', label: 'مساعد القرآن', icon: BookOpen },
@@ -26,6 +29,7 @@ const REC_LABELS = {
 
 export default function AIHub() {
   const navigate = useNavigate();
+  const { locale } = useI18n();
   const { isAuthenticated } = useAuth();
   const [tab, setTab] = useState('quran');
   const [loading, setLoading] = useState(false);
@@ -46,14 +50,18 @@ export default function AIHub() {
 
   useEffect(() => {
     if (!isAuthenticated) {
-      navigate('/login?redirect=/ai');
+      const target = localizedPath('/ai', locale);
+      navigate(
+        `${loginPathForLocale(locale)}?redirect=${encodeURIComponent(target)}`,
+        { replace: true }
+      );
       return;
     }
     api.get('/api/ai/status', { auth: true }).then(setAiStatus).catch(() => {});
     api.get('/api/ai/recitation-reports', { auth: true })
       .then((d) => setReports(d.reports || []))
       .catch(() => {});
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, locale]);
 
   const askQuran = async (e) => {
     e.preventDefault();
