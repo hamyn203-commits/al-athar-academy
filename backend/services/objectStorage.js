@@ -66,15 +66,29 @@ function extractPathname(reference) {
   }
 }
 
+function isSafeObjectPath(pathname) {
+  const value = String(pathname || '');
+  if (!value || value.includes('\\') || /[\u0000-\u001f\u007f]/.test(value)) return false;
+
+  const segments = value.split('/');
+  return segments.length >= 2 && segments.every((segment) => (
+    segment &&
+    segment !== '.' &&
+    segment !== '..'
+  ));
+}
+
 function referenceMatches(reference, purpose, owner) {
   const pathname = extractPathname(reference);
+  if (!isSafeObjectPath(pathname)) return false;
   const expected = `uploads/${sanitizeSegment(purpose)}/${sanitizeSegment(owner)}/`;
   return pathname.startsWith(expected);
 }
 
 function isVercelBlobReference(reference) {
   try {
-    return new URL(reference).hostname.endsWith('.blob.vercel-storage.com');
+    const parsed = new URL(reference);
+    return parsed.protocol === 'https:' && parsed.hostname.endsWith('.blob.vercel-storage.com');
   } catch {
     return false;
   }
@@ -152,6 +166,7 @@ module.exports = {
   sanitizeSegment,
   createObjectKey,
   extractPathname,
+  isSafeObjectPath,
   referenceMatches,
   isVercelBlobReference,
   publicProxyUrl,
