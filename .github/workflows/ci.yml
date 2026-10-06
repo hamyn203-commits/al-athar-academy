@@ -63,3 +63,7 @@ jobs:
       - name: Security regression gate
         working-directory: backend
         run: npm run test:security
+
+      - name: Integration test gate
+        working-directory: backend
+        run: npm test
