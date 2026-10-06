@@ -13,6 +13,9 @@ const emptyFiles = () => ({
   recitationVideos: [],
 });
 
+const normalizeEmail = (value) => String(value || '').trim().toLowerCase();
+const emailLooksValid = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizeEmail(value));
+
 export function useTeacherForm() {
   const toast = useToast();
   const [step, setStep] = useState(1);
@@ -23,9 +26,9 @@ export function useTeacherForm() {
   const [files, setFiles] = useState(emptyFiles);
   const [verificationCode, setVerificationCode] = useState('');
   const [isCodeSent, setIsCodeSent] = useState(false);
-  const [phoneVerified, setPhoneVerified] = useState(false);
-  const [phoneVerificationToken, setPhoneVerificationToken] = useState('');
-  const [verificationMethod, setVerificationMethod] = useState('');
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [verifiedEmail, setVerifiedEmail] = useState('');
+  const [verificationToken, setVerificationToken] = useState('');
   const [fieldError, setFieldError] = useState('');
 
   useEffect(() => {
@@ -36,7 +39,7 @@ export function useTeacherForm() {
       if (d.formData) setFormData(d.formData);
       if (d.credentials) setCredentials((p) => ({ ...p, email: d.credentials.email || '' }));
       if (d.step) setStep(d.step);
-      // Phone verification proof is intentionally not restored from localStorage.
+      // Verification proof is intentionally never restored from localStorage.
     } catch { /* ignore */ }
   }, []);
 
@@ -58,44 +61,59 @@ export function useTeacherForm() {
 
   const setFile = (field, file) => setFiles((p) => ({ ...p, [field]: file }));
 
+  const resetVerification = () => {
+    setVerificationCode('');
+    setIsCodeSent(false);
+    setEmailVerified(false);
+    setVerifiedEmail('');
+    setVerificationToken('');
+  };
+
   const sendCode = async () => {
-    if (!formData.personalInfo.phone) return toast.error('أدخل رقم الهاتف أولاً');
-    if (!verificationMethod) return toast.error('اختر واتساب أو تليجرام');
+    const email = normalizeEmail(credentials.email);
+    if (!emailLooksValid(email)) return toast.error('أدخل بريدًا إلكترونيًا صحيحًا أولاً');
+
+    resetVerification();
+
     try {
       const r = await fetch(apiUrl('/api/auth/send-verification'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phone: formData.personalInfo.phone,
-          method: verificationMethod,
-          whatsapp: formData.personalInfo.whatsapp || formData.personalInfo.phone,
-          telegram: formData.personalInfo.telegram,
-        }),
+        body: JSON.stringify({ email }),
       });
       const data = await r.json();
-      if (!r.ok) throw new Error(data.error || 'فشل الإرسال');
+      if (!r.ok) throw new Error(data.error || 'فشل إرسال كود التحقق');
       setIsCodeSent(true);
-      toast.success(`تم إرسال الكود عبر ${verificationMethod === 'whatsapp' ? 'واتساب' : 'تليجرام'}`);
-    } catch (e) { toast.error(e.message); }
+      toast.success('تم إرسال كود التحقق إلى بريدك الإلكتروني');
+    } catch (e) {
+      toast.error(e.message);
+    }
   };
 
   const verifyCode = async () => {
-    if (verificationCode.length !== 6) return toast.error('الكود 6 أرقام');
+    const email = normalizeEmail(credentials.email);
+    if (!emailLooksValid(email)) return toast.error('أدخل بريدًا إلكترونيًا صحيحًا');
+    if (verificationCode.length !== 6) return toast.error('الكود مكوّن من 6 أرقام');
+
     try {
       const r = await fetch(apiUrl('/api/auth/verify-code'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: formData.personalInfo.phone, code: verificationCode }),
+        body: JSON.stringify({ email, code: verificationCode }),
       });
       const data = await r.json();
       if (!r.ok) throw new Error(data.error || 'كود غير صحيح');
-      setPhoneVerified(true);
-      setPhoneVerificationToken(data.verificationToken || '');
-      toast.success('تم التحقق من الهاتف');
-      setStep(3);
-    } catch (e) { toast.error(e.message); }
-  };
+      if (!data.verificationToken) throw new Error('تعذر إنشاء إثبات التحقق');
 
+      setEmailVerified(true);
+      setVerifiedEmail(email);
+      setVerificationToken(data.verificationToken);
+      toast.success('تم تأكيد البريد الإلكتروني');
+      setStep(3);
+    } catch (e) {
+      toast.error(e.message);
+    }
+  };
 
   const validate = (s) => {
     const p = formData.personalInfo;
@@ -110,11 +128,15 @@ export function useTeacherForm() {
         if (!p.country) return 'اختر الدولة';
         if (!p.phone?.trim()) return 'رقم الهاتف مطلوب';
         return null;
-      case 2:
-        if (!phoneVerified || !phoneVerificationToken) return 'يجب التحقق من الهاتف أولاً';
+      case 2: {
+        const email = normalizeEmail(credentials.email);
+        if (!emailLooksValid(email)) return 'أدخل بريدًا إلكترونيًا صحيحًا';
+        if (!emailVerified || !verificationToken || verifiedEmail !== email) {
+          return 'يجب تأكيد البريد الإلكتروني أولاً';
+        }
         return null;
+      }
       case 3:
-        if (!credentials.email?.trim()) return 'البريد مطلوب';
         if (!credentials.password || credentials.password.length < 8) return 'كلمة المرور 8+ أحرف';
         if (credentials.password !== credentials.confirmPassword) return 'كلمتا المرور غير متطابقتين';
         return null;
@@ -139,15 +161,23 @@ export function useTeacherForm() {
   const submit = async () => {
     const err = validate(4);
     if (err) { toast.error(err); return; }
+
+    const verifiedEmailNow = normalizeEmail(credentials.email);
+    if (!emailVerified || !verificationToken || verifiedEmail !== verifiedEmailNow) {
+      toast.error('يجب إعادة تأكيد البريد الإلكتروني');
+      setStep(2);
+      return;
+    }
+
     setSubmitting(true);
     const city = pCity(formData.personalInfo.address);
 
     try {
       const uploadOne = (file, purpose) => file
-        ? uploadFileDirect(file, purpose, { phoneVerificationToken })
+        ? uploadFileDirect(file, purpose, { verificationToken })
         : Promise.resolve(null);
       const uploadMany = (items, purpose) => Promise.all(
-        (items || []).map((file) => uploadFileDirect(file, purpose, { phoneVerificationToken }))
+        (items || []).map((file) => uploadFileDirect(file, purpose, { verificationToken }))
       );
 
       const [
@@ -188,9 +218,9 @@ export function useTeacherForm() {
         }),
         languages: JSON.stringify(['arabic']),
         availability: JSON.stringify([]),
-        email: credentials.email,
+        email: verifiedEmailNow,
         password: credentials.password,
-        phoneVerificationToken,
+        verificationToken,
         uploadedFiles: {
           profilePhoto,
           idCard,
@@ -222,10 +252,9 @@ export function useTeacherForm() {
   return {
     step, setStep, submitted, submitting, credentials, setCredentials,
     formData, files, setFile, update,
-    verificationCode, setVerificationCode, isCodeSent, phoneVerified,
-    verificationMethod, setVerificationMethod, fieldError,
-    sendCode, verifyCode, next, prev, submit,
-    setIsCodeSent,
+    verificationCode, setVerificationCode, isCodeSent, emailVerified,
+    verifiedEmail, fieldError,
+    sendCode, verifyCode, resetVerification, next, prev, submit,
   };
 }
 

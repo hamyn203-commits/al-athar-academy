@@ -20,7 +20,12 @@ async function sendEmail({ to, subject, html, text }) {
     return { channel: 'email', sent: true, provider: 'resend' };
   }
 
-  console.log(`📧 [email] → ${to}: ${subject}`);
+  if (process.env.NODE_ENV === 'production') {
+    console.warn('Email delivery requested but the provider is not configured');
+    return { channel: 'email', sent: false, provider: 'not-configured' };
+  }
+
+  console.log(`📧 [email preview] → ${to}: ${subject}`);
   return { channel: 'email', sent: true, provider: 'console' };
 }
 

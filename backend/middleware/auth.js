@@ -6,12 +6,28 @@ const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
 const DEFAULT_JWT_SECRET = 'wahy-namaa-dev-access-secret-change-me';
 const DEFAULT_REFRESH_SECRET = 'wahy-namaa-dev-refresh-secret-change-me';
 
-if (process.env.NODE_ENV === 'production') {
-  const invalidAccess = !JWT_SECRET || JWT_SECRET === 'change-me-in-production';
-  const invalidRefresh = !JWT_REFRESH_SECRET || JWT_REFRESH_SECRET === 'change-me-in-production';
+function isWeakProductionSecret(value) {
+  const secret = String(value || '');
+  if (secret.length < 32) return true;
 
-  if (invalidAccess || invalidRefresh) {
-    console.error('❌ FATAL: JWT_SECRET and JWT_REFRESH_SECRET must both be strong production secrets.');
+  const normalized = secret.toLowerCase();
+  return [
+    'change-me',
+    'changeme',
+    'example',
+    'dev-access',
+    'dev-refresh',
+    'development-secret',
+  ].some((marker) => normalized.includes(marker));
+}
+
+if (process.env.NODE_ENV === 'production') {
+  const invalidAccess = isWeakProductionSecret(JWT_SECRET);
+  const invalidRefresh = isWeakProductionSecret(JWT_REFRESH_SECRET);
+  const sameSecret = Boolean(JWT_SECRET && JWT_REFRESH_SECRET && JWT_SECRET === JWT_REFRESH_SECRET);
+
+  if (invalidAccess || invalidRefresh || sameSecret) {
+    console.error('❌ FATAL: JWT access/refresh secrets must be unique, non-placeholder values of at least 32 characters.');
     process.exit(1);
   }
 }

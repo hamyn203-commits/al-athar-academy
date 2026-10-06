@@ -1,9 +1,9 @@
-import { User, Phone, Lock, Video, CheckCircle } from 'lucide-react';
+import { User, Mail, Lock, Video, CheckCircle } from 'lucide-react';
 
 export const STEPS = [
   { id: 1, title: 'بياناتك', fullTitle: 'البيانات الشخصية', icon: User },
-  { id: 2, title: 'تحقق', fullTitle: 'تأكيد رقم الهاتف', icon: Phone },
-  { id: 3, title: 'حسابك', fullTitle: 'البريد وكلمة المرور', icon: Lock },
+  { id: 2, title: 'تحقق', fullTitle: 'تأكيد البريد الإلكتروني', icon: Mail },
+  { id: 3, title: 'حسابك', fullTitle: 'إنشاء كلمة المرور', icon: Lock },
   { id: 4, title: 'صورة وفيديو', fullTitle: 'الصورة وفيديو التلاوة', icon: Video },
   { id: 5, title: 'إرسال', fullTitle: 'المراجعة والإرسال', icon: CheckCircle },
 ];

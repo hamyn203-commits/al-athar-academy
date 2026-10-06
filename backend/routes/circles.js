@@ -4,10 +4,62 @@ const mongoose = require('mongoose');
 const GroupCircle = require('../models/GroupCircle');
 const User = require('../models/User');
 const Teacher = require('../models/Teacher');
+const Guardian = require('../models/Guardian');
 const { protect, authorize } = require('../middleware/auth');
 
 const { isMockMode } = require('../config/runtime');
 const isDBConnected = () => mongoose.connection.readyState === 1;
+
+function sanitizePublicCircle(circle) {
+  const value = typeof circle?.toObject === 'function' ? circle.toObject() : { ...circle };
+  const studentCount = Array.isArray(value.students) ? value.students.length : 0;
+  const capacity = Number(value.capacity || 10);
+  const teacher = value.teacher && typeof value.teacher === 'object'
+    ? {
+        _id: value.teacher._id,
+        personalInfo: value.teacher.personalInfo ? {
+          fullName: value.teacher.personalInfo.fullName,
+          gender: value.teacher.personalInfo.gender,
+          country: value.teacher.personalInfo.country,
+          city: value.teacher.personalInfo.city,
+        } : undefined,
+        academicInfo: value.teacher.academicInfo ? {
+          university: value.teacher.academicInfo.university,
+          qualification: value.teacher.academicInfo.qualification,
+          specialization: value.teacher.academicInfo.specialization,
+        } : undefined,
+        quranInfo: value.teacher.quranInfo,
+        media: value.teacher.media,
+        rating: value.teacher.rating,
+        user: value.teacher.user && typeof value.teacher.user === 'object'
+          ? {
+              _id: value.teacher.user._id,
+              name: value.teacher.user.name,
+              avatar: value.teacher.user.avatar,
+            }
+          : value.teacher.user,
+      }
+    : value.teacher;
+
+  return {
+    _id: value._id,
+    name: value.name,
+    track: value.track,
+    level: value.level,
+    gender: value.gender,
+    targetAgeGroup: value.targetAgeGroup,
+    capacity,
+    schedule: value.schedule,
+    timezone: value.timezone,
+    status: value.status,
+    pricePerSession: value.pricePerSession,
+    currentSurah: value.currentSurah,
+    teacher,
+    currentCount: studentCount,
+    availableSeats: Math.max(0, capacity - studentCount),
+    isFull: studentCount >= capacity || value.status === 'full',
+  };
+}
 
 const MOCK_CIRCLES = [
   {
@@ -73,7 +125,7 @@ router.get('/', async (req, res) => {
     if (gender && gender !== 'all') filtered = filtered.filter(c => c.gender === gender || c.gender === 'all');
     return res.json({
       success: true,
-      circles: filtered,
+      circles: filtered.map(sanitizePublicCircle),
       pagination: {
         page: pageNum,
         limit: limitNum,
@@ -103,9 +155,8 @@ router.get('/', async (req, res) => {
         .populate({
           path: 'teacher',
           select: 'personalInfo academicInfo quranInfo media rating status user',
-          populate: { path: 'user', select: 'name avatar email' }
+          populate: { path: 'user', select: 'name avatar' }
         })
-        .populate('students', 'name avatar gender age currentLevel')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limitNum)
@@ -113,16 +164,7 @@ router.get('/', async (req, res) => {
       GroupCircle.countDocuments(filter)
     ]);
 
-    const enrichedCircles = circles.map((circle) => {
-      const studentCount = circle.students ? circle.students.length : 0;
-      const capacity = circle.capacity || 10;
-      return {
-        ...circle,
-        currentCount: studentCount,
-        availableSeats: Math.max(0, capacity - studentCount),
-        isFull: studentCount >= capacity || circle.status === 'full'
-      };
-    });
+    const enrichedCircles = circles.map(sanitizePublicCircle);
 
     res.json({
       success: true,
@@ -147,7 +189,7 @@ router.get('/:id', async (req, res) => {
     const found = MOCK_CIRCLES.find(c => c._id === req.params.id) || MOCK_CIRCLES[0];
     return res.json({
       success: true,
-      circle: found,
+      circle: sanitizePublicCircle(found),
       stats: {
         currentCount: found.currentCount,
         capacity: found.capacity,
@@ -161,25 +203,23 @@ router.get('/:id', async (req, res) => {
       .populate({
         path: 'teacher',
         select: 'personalInfo academicInfo quranInfo media rating status user',
-        populate: { path: 'user', select: 'name avatar email phone' }
-      })
-      .populate('students', 'name avatar gender age currentLevel email');
+        populate: { path: 'user', select: 'name avatar' }
+      });
 
     if (!circle) {
       return res.status(404).json({ error: 'الحلقة غير موجودة' });
     }
 
-    const studentCount = circle.students ? circle.students.length : 0;
-    const capacity = circle.capacity || 10;
+    const publicCircle = sanitizePublicCircle(circle);
 
     res.json({
       success: true,
-      circle,
+      circle: publicCircle,
       stats: {
-        currentCount: studentCount,
-        capacity,
-        availableSeats: Math.max(0, capacity - studentCount),
-        isFull: studentCount >= capacity || circle.status === 'full'
+        currentCount: publicCircle.currentCount,
+        capacity: publicCircle.capacity,
+        availableSeats: publicCircle.availableSeats,
+        isFull: publicCircle.isFull
       }
     });
   } catch (error) {
@@ -309,8 +349,29 @@ router.post('/', protect, authorize('admin', 'teacher'), async (req, res) => {
 // @route   POST /api/circles/:id/join
 // @desc    Join circle for students (Strict validation: capacity <= 10, gender match, no duplicate, updates User.circle)
 // @access  Protected
-router.post('/:id/join', protect, async (req, res) => {
+router.post('/:id/join', protect, authorize('student', 'guardian', 'admin'), async (req, res) => {
   try {
+    let studentId;
+
+    if (req.user.role === 'student') {
+      studentId = req.user.id;
+    } else {
+      studentId = String(req.body.studentId || '').trim();
+      if (!studentId) {
+        return res.status(400).json({ error: 'معرف الطالب مطلوب' });
+      }
+
+      if (req.user.role === 'guardian') {
+        const linkedGuardian = await Guardian.exists({
+          user: req.user.id,
+          'children.student': studentId,
+        });
+        if (!linkedGuardian) {
+          return res.status(403).json({ error: 'غير مصرح بإضافة هذا الطالب إلى الحلقة' });
+        }
+      }
+    }
+
     const circle = await GroupCircle.findById(req.params.id);
     if (!circle) {
       return res.status(404).json({ error: 'الحلقة غير موجودة' });
@@ -332,13 +393,8 @@ router.post('/:id/join', protect, async (req, res) => {
       });
     }
 
-    let studentId = req.user.id;
-    if (req.user.role === 'guardian' && req.body.studentId) {
-      studentId = req.body.studentId;
-    }
-
     const studentUser = await User.findById(studentId);
-    if (!studentUser) {
+    if (!studentUser || studentUser.role !== 'student') {
       return res.status(404).json({ error: 'حساب الطالب غير موجود' });
     }
 

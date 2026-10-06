@@ -76,7 +76,7 @@ export default function TeacherRegistration() {
                 <div className="space-y-4">
                   <div className="flex gap-2 p-3 bg-blue-50 border border-blue-100 rounded-xl text-sm text-blue-800">
                     <Info size={18} className="shrink-0 mt-0.5" />
-                    <span>أدخل بياناتك الأساسية — سيتم تأكيد الهاتف في الخطوة التالية</span>
+                    <span>أدخل بياناتك الأساسية — سيتم تأكيد البريد الإلكتروني في الخطوة التالية</span>
                   </div>
                   <div className="grid md:grid-cols-2 gap-4">
                     <Field label="الاسم الكامل *">
@@ -110,7 +110,7 @@ export default function TeacherRegistration() {
                         value={f.formData.personalInfo.phone}
                         onChange={(e) => f.update('personalInfo', 'phone', e.target.value)} />
                     </Field>
-                    <Field label="واتساب (للتحقق)">
+                    <Field label="واتساب (اختياري للتواصل)">
                       <input type="tel" dir="ltr" className={inputCls} placeholder="نفس الرقم أو مختلف"
                         value={f.formData.personalInfo.whatsapp}
                         onChange={(e) => f.update('personalInfo', 'whatsapp', e.target.value)} />
@@ -125,32 +125,38 @@ export default function TeacherRegistration() {
 
               {f.step === 2 && (
                 <div className="space-y-5">
-                  <p className="text-slate-600 text-sm">
-                    اختر طريقة استلام كود التحقق على <strong dir="ltr">{f.formData.personalInfo.phone}</strong>
-                    — مجاني عبر واتساب أو تليجرام
-                  </p>
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    {['whatsapp', 'telegram'].map((m) => (
-                      <button key={m} type="button" onClick={() => f.setVerificationMethod(m)}
-                        className={`p-5 rounded-xl border-2 text-center transition ${
-                          f.verificationMethod === m ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200 hover:border-emerald-200'
-                        }`}>
-                        <span className="text-3xl">{m === 'whatsapp' ? '💬' : '✈️'}</span>
-                        <p className="font-bold mt-2">{m === 'whatsapp' ? 'واتساب' : 'تليجرام'}</p>
-                      </button>
-                    ))}
+                  <div className="flex gap-2 p-3 bg-blue-50 border border-blue-100 rounded-xl text-sm text-blue-800">
+                    <Mail size={18} className="shrink-0 mt-0.5" />
+                    <span>سنرسل كود تحقق من 6 أرقام إلى بريدك الإلكتروني. الكود صالح لمدة 10 دقائق.</span>
                   </div>
+                  <Field label="البريد الإلكتروني *">
+                    <div className="relative">
+                      <Mail className="absolute right-3 top-3 text-slate-400" size={18} />
+                      <input
+                        type="email"
+                        dir="ltr"
+                        className={`${inputCls} pr-10`}
+                        value={f.credentials.email}
+                        disabled={f.isCodeSent}
+                        onChange={(e) => f.setCredentials((p) => ({ ...p, email: e.target.value }))}
+                        placeholder="name@example.com"
+                      />
+                    </div>
+                  </Field>
                   {!f.isCodeSent ? (
-                    <button type="button" onClick={f.sendCode} disabled={!f.verificationMethod}
-                      className="btn-primary w-full disabled:opacity-50">إرسال كود التحقق</button>
+                    <button type="button" onClick={f.sendCode}
+                      className="btn-primary w-full">إرسال كود التحقق إلى البريد</button>
                   ) : (
                     <div className="space-y-3">
+                      <p className="text-sm text-slate-600 text-center">
+                        تم إرسال الكود إلى <strong dir="ltr">{f.credentials.email}</strong>
+                      </p>
                       <input className={`${inputCls} text-center text-2xl tracking-[0.5em]`} placeholder="000000"
-                        maxLength={6} value={f.verificationCode}
+                        inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={f.verificationCode}
                         onChange={(e) => f.setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))} />
-                      <button type="button" onClick={f.verifyCode} className="btn-primary w-full">تحقق</button>
-                      <button type="button" onClick={() => { f.setIsCodeSent(false); f.setVerificationCode(''); }}
-                        className="text-sm text-slate-500 w-full">إعادة الإرسال</button>
+                      <button type="button" onClick={f.verifyCode} className="btn-primary w-full">تأكيد البريد</button>
+                      <button type="button" onClick={f.resetVerification}
+                        className="text-sm text-slate-500 w-full">تغيير البريد أو إعادة الإرسال</button>
                     </div>
                   )}
                 </div>
@@ -159,16 +165,9 @@ export default function TeacherRegistration() {
               {f.step === 3 && (
                 <div className="space-y-4">
                   <div className="flex gap-2 p-3 bg-emerald-50 border border-emerald-100 rounded-xl text-sm text-emerald-800">
-                    <Mail size={18} className="shrink-0" />
-                    <span>البريد لاستلام رسائل الموافقة والحصص والإشعارات</span>
+                    <CheckCircle2 size={18} className="shrink-0" />
+                    <span>تم تأكيد البريد <strong dir="ltr">{f.verifiedEmail}</strong> وسيُستخدم للحساب والإشعارات.</span>
                   </div>
-                  <Field label="البريد الإلكتروني *">
-                    <div className="relative">
-                      <Mail className="absolute right-3 top-3 text-slate-400" size={18} />
-                      <input type="email" dir="ltr" className={`${inputCls} pr-10`} value={f.credentials.email}
-                        onChange={(e) => f.setCredentials((p) => ({ ...p, email: e.target.value }))} />
-                    </div>
-                  </Field>
                   <Field label="كلمة المرور *">
                     <div className="relative">
                       <Lock className="absolute right-3 top-3 text-slate-400" size={18} />
