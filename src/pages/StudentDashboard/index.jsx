@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Calendar, CheckCircle, FileText, Star, Trophy, BookOpen,
   Upload, Clock, Users, X, Award, Video, Gift, Copy,
@@ -74,6 +74,7 @@ const getHwStatus = (status, locale) => {
 
 export default function StudentDashboard() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, ready, logout } = useRequireAuth(['student']);
   const { locale } = useI18n();
   const lp = (path) => localizedPath(path, locale);
@@ -148,6 +149,13 @@ export default function StudentDashboard() {
   }, [locale, toast]);
 
   useEffect(() => { if (ready) load(); }, [ready, load]);
+
+  useEffect(() => {
+    const requestedSessionId = searchParams.get('session');
+    if (!requestedSessionId) return;
+    const found = [...trials, ...sessions].find((item) => String(item._id) === String(requestedSessionId));
+    if (found) setChatSession(found);
+  }, [searchParams, trials, sessions]);
 
   useEffect(() => {
     if (!ready) return;
