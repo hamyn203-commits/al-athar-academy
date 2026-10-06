@@ -10,7 +10,8 @@
     "check": "node -c app.js && node -c server.js && node -c api/index.js && node -c routes/cron.js",
     "smoke": "node scripts/smoke.mjs",
     "test:security": "node scripts/security-contracts.cjs",
-    "check:env": "node scripts/production-env-check.cjs"
+    "check:env": "node scripts/production-env-check.cjs",
+    "test": "node --test"
   },
   "engines": {
     "node": "22.x"
