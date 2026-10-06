@@ -42,7 +42,7 @@ const PaymentSchema = new mongoose.Schema({
   manual: {
     method: {
       type: String,
-      enum: ['instapay', 'vodafone_cash', 'bank_transfer'],
+      enum: ['instapay', 'mobile_wallet', 'bank_transfer'],
     },
     transferReference: {
       type: String,
