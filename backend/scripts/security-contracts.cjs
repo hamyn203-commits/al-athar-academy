@@ -400,6 +400,38 @@ requireAbsent(
   /STORAGE_E2E_(?:SECRET|QUERY_BRIDGE)/
 );
 
+// T06: payment truth and webhook idempotency contracts.
+requireContains(
+  'backend/models/Payment.js',
+  'payment records must store integer minor units',
+  /amountMinor:[\s\S]{0,220}Number\.isSafeInteger/
+);
+requireContains(
+  'backend/models/PaymentWebhookEvent.js',
+  'provider webhook event ids must be unique per provider',
+  /PaymentWebhookEventSchema\.index\([\s\S]{0,180}provider:\s*1[\s\S]{0,80}eventId:\s*1[\s\S]{0,80}unique:\s*true/
+);
+requireContains(
+  'backend/routes/donations.js',
+  'public contribution totals must include confirmed donations only',
+  /\$match:\s*\{\s*status:\s*['"]confirmed['"]\s*\}/
+);
+requireAbsent(
+  'backend/routes/donations.js',
+  'public contribution totals must not mix pledged donations with confirmed funds',
+  /status:\s*\{\s*\$in:\s*\[['"]pledged['"],\s*['"]confirmed['"]\]/
+);
+requireContains(
+  'backend/routes/courses.js',
+  'paid course enrollment must remain blocked until the real payment flow settles',
+  /PAYMENT_REQUIRED/
+);
+requireContains(
+  'backend/routes/lms.js',
+  'paid LMS enrollment must remain blocked until the real payment flow settles',
+  /PAYMENT_REQUIRED/
+);
+
 if (failures.length) {
   console.error('Security contracts failed:');
   failures.forEach((failure) => console.error(`- ${failure}`));

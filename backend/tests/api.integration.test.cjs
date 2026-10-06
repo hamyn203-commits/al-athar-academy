@@ -109,6 +109,16 @@ test('minor trial requests require a guardian while adult requests remain allowe
   assert.equal(adultWithoutGuardian.response.status, 201);
 });
 
+test('public donation stats do not invent paid totals in mock mode', async () => {
+  const result = await request('/api/donations/stats');
+
+  assert.equal(result.response.status, 200);
+  assert.equal(result.body.totalDonors, 0);
+  assert.deepEqual(result.body.totalsByCurrency, {});
+  assert.deepEqual(result.body.byCategory, {});
+  assert.equal(result.body.totalAmount, undefined);
+});
+
 test('public registration cannot create a privileged role', async () => {
   const result = await request('/api/auth/register', jsonOptions('POST', {
     name: 'Privilege Escalation Attempt',

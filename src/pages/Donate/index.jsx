@@ -17,7 +17,7 @@ const CATEGORIES=[
 export default function Donate(){
   const {locale}=useI18n();
   const isAr=locale==='ar';
-  const [stats,setStats]=useState({totalAmount:0,totalDonors:0});
+  const [stats,setStats]=useState({totalDonors:0,totalsByCurrency:{},byCategory:{}});
   const [config,setConfig]=useState({paymentEnabled:false,stripeUrl:'',paypalUrl:''});
   const [form,setForm]=useState({name:'',email:'',phone:'',amount:100,currency:'USD',category:'general',message:'',isAnonymous:false});
   const [method,setMethod]=useState('manual');
