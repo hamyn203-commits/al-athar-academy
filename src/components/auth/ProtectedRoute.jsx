@@ -1,5 +1,10 @@
 import { Navigate, useLocation, useParams } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth.jsx';
+import { useI18n } from '../../i18n';
+import {
+  dashboardPathForRole,
+  loginPathForLocale,
+} from '../../lib/navigation';
 import BrandLogo from '../BrandLogo';
 
 function GuardLoader() {
@@ -16,22 +21,20 @@ function GuardLoader() {
 
 export default function ProtectedRoute({ children, roles = [] }) {
   const { user, isAuthenticated, isLoading } = useAuth();
+  const { locale: uiLocale } = useI18n();
   const location = useLocation();
-  const { locale } = useParams();
+  const { locale: paramLocale } = useParams();
+  const activeLocale = paramLocale || uiLocale;
 
   if (isLoading) return <GuardLoader />;
 
-  const localePrefix = locale ? `/${locale}` : '';
-  const loginPath = `${localePrefix}/login` || '/login';
-  const homePath = localePrefix || '/';
-
   if (!isAuthenticated || !user) {
-    const redirect = encodeURIComponent(`${location.pathname}${location.search}`);
-    return <Navigate to={`${loginPath}?redirect=${redirect}`} replace />;
+    const redirect = encodeURIComponent(`${location.pathname}${location.search}${location.hash}`);
+    return <Navigate to={`${loginPathForLocale(activeLocale)}?redirect=${redirect}`} replace />;
   }
 
   if (roles.length && !roles.includes(user.role)) {
-    return <Navigate to={homePath} replace />;
+    return <Navigate to={dashboardPathForRole(user.role, activeLocale)} replace />;
   }
 
   return children;

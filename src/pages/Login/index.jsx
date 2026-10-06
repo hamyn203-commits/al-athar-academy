@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   User,
@@ -17,11 +17,13 @@ import {
 import BrandLogo from '../../components/BrandLogo';
 import { useI18n } from '../../i18n';
 import { localizedPath } from '../../lib/locale';
+import { postAuthDestination } from '../../lib/navigation';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import '../../styles/public-experience.css';
 
 export default function Login() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { login: signIn } = useAuth();
   const { locale } = useI18n();
   const isAr = locale === 'ar';
@@ -49,14 +51,14 @@ export default function Login() {
         throw new Error(result.error || (isAr ? 'تعذر تسجيل الدخول' : 'Unable to sign in'));
       }
 
-      const roleRoutes = {
-        admin: '/admin',
-        teacher: '/teacher/dashboard',
-        guardian: '/guardian/dashboard',
-        student: '/student/dashboard',
-      };
-
-      navigate(roleRoutes[result.user?.role] || '/student/dashboard');
+      navigate(
+        postAuthDestination({
+          redirect: searchParams.get('redirect'),
+          role: result.user?.role,
+          locale,
+        }),
+        { replace: true }
+      );
     } catch (err) {
       setError(err.message || (isAr ? 'تعذر تسجيل الدخول' : 'Unable to sign in'));
     } finally {

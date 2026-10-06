@@ -9,6 +9,8 @@ import BrandLogo from '../../components/BrandLogo';
 import { useI18n } from '../../i18n';
 import { useMarket } from '../../context/MarketProvider';
 import { useAuth } from '../../hooks/useAuth.jsx';
+import { localizedPath } from '../../lib/locale';
+import { dashboardPathForRole } from '../../lib/navigation';
 import '../../styles/public-experience.css';
 
 export default function Register() {
@@ -84,11 +86,10 @@ export default function Register() {
         throw new Error(result.error || (locale === 'ar' ? 'فشل إنشاء الحساب' : 'Registration failed'));
       }
 
-      if (result.user?.role === 'guardian') {
-        navigate('/guardian/dashboard');
-      } else {
-        navigate('/student/dashboard');
-      }
+      navigate(
+        dashboardPathForRole(result.user?.role, locale),
+        { replace: true }
+      );
     } catch (err) {
       setError(err.message);
     } finally {
@@ -519,14 +520,14 @@ export default function Register() {
               {locale === 'ar' ? 'لديك حساب بالفعل؟' : 'Already have an account?'}
             </p>
             <button
-              onClick={() => navigate('/login')}
+              onClick={() => navigate(localizedPath('/login', locale))}
               className="inline-flex items-center gap-2 rounded-xl border border-[var(--athar-gold)]/40 bg-white px-8 py-2.5 text-xs font-bold text-[var(--athar-gold-muted)] hover:bg-[var(--athar-gold-50)] transition"
             >
               {locale === 'ar' ? 'تسجيل الدخول' : 'Sign In'}
             </button>
             <div className="mt-4">
               <button
-                onClick={() => navigate('/')}
+                onClick={() => navigate(localizedPath('/', locale))}
                 className="text-xs text-[var(--athar-gold-muted)] hover:text-[var(--athar-gold)] hover:underline"
               >
                 {locale === 'ar' ? 'العودة للصفحة الرئيسية' : 'Back to Homepage'}
