@@ -8,6 +8,7 @@ import DashboardLayout, { StatCard, TabBar } from '../../components/dashboard/Da
 import { useRequireAuth } from '../../hooks/useRequireAuth';
 import { useToast } from '../../context/ToastProvider';
 import api from '../../lib/api';
+import GuardianOverviewCenter from './GuardianOverviewCenter';
 
 export default function GuardianDashboard() {
   const { user, ready, logout } = useRequireAuth(['guardian', 'admin']);
@@ -148,6 +149,11 @@ export default function GuardianDashboard() {
   if (!ready) return null;
 
   const currentChild = children.find(c => c.studentId === selectedChildId) || children[0] || null;
+  const selectedChildSessions = upcomingSessions.filter((session) => {
+    const childId = session.child?.id || session.childId;
+    return !selectedChildId || String(childId || '') === String(selectedChildId);
+  });
+  const nextChildSession = selectedChildSessions[0] || null;
 
   return (
     <DashboardLayout title="لوحة متابعة ولي الأمر" user={user} onLogout={logout}>
@@ -293,13 +299,17 @@ export default function GuardianDashboard() {
             </div>
           )}
 
+          {currentChild && (
+            <GuardianOverviewCenter child={currentChild} nextSession={nextChildSession} />
+          )}
+
           {/* Tab Navigation */}
           <div className="wn-dashboard-surface">
             <TabBar
               tabs={[
-                { id: 'overview', label: 'نظرة عامة والحصص القادمة' },
-                { id: 'reports', label: 'تقارير الحفظ والتجويد (الواتساب)' },
-                { id: 'attendance', label: 'سجل الحضور والاعتذارات' }
+                { id: 'overview', label: 'الحصص والمتابعة' },
+                { id: 'reports', label: 'تقارير الحفظ والتجويد' },
+                { id: 'attendance', label: 'الحضور والصلاحيات' }
               ]}
               active={tab}
               onChange={setTab}
@@ -321,7 +331,7 @@ export default function GuardianDashboard() {
                     </span>
                   </div>
 
-                  {upcomingSessions.length === 0 ? (
+                  {selectedChildSessions.length === 0 ? (
                     <div className="bg-gray-50 border border-dashed border-gray-200 rounded-xl p-8 text-center">
                       <CalendarCheck className="mx-auto text-gray-400 mb-2" size={32} />
                       <p className="text-gray-600 font-medium">لا توجد حصص قادمة مجدولة حالياً</p>
@@ -329,7 +339,7 @@ export default function GuardianDashboard() {
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {upcomingSessions.map((session) => {
+                      {selectedChildSessions.map((session) => {
                         const dateObj = new Date(session.scheduledAt);
                         const rsvpVal = typeof session.rsvp === 'object' ? session.rsvp?.status : session.rsvp;
                         const isConfirmed = rsvpVal === 'confirmed';
@@ -375,17 +385,10 @@ export default function GuardianDashboard() {
                                   <Users size={16} className="text-gray-400 shrink-0" />
                                   <span>المعلم: <strong className="text-gray-800">{session.teacher?.name || 'معلم الحلقة'}</strong></span>
                                 </div>
-                                {session.teacher?.phone && (
-                                  <a
-                                    href={`https://wa.me/${session.teacher.phone.replace(/[^0-9]/g, '')}`}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="inline-flex items-center gap-1 text-xs text-emerald-700 hover:text-emerald-800 font-bold bg-white px-2.5 py-1 rounded-md border border-emerald-200 hover:bg-emerald-50 transition"
-                                  >
-                                    <MessageCircle size={14} className="text-emerald-600" />
-                                    <span>محادثة المعلم</span>
-                                  </a>
-                                )}
+                                <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 bg-white px-2.5 py-1 rounded-md border border-slate-200">
+                                  <MessageCircle size={13} />
+                                  الشات الداخلي قريبًا
+                                </span>
                               </div>
                             </div>
 
