@@ -9,6 +9,7 @@ import { useRequireAuth } from '../../hooks/useRequireAuth';
 import { useToast } from '../../context/ToastProvider';
 import api from '../../lib/api';
 import { TASK_TYPES } from '../TeacherRegistration/constants';
+import SessionChatModal from '../../components/session/SessionChatModal';
 
 const SESSION_RATE = 50;
 const WEEK_DAYS = [
@@ -35,6 +36,9 @@ export default function TeacherDashboard() {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [meetingProvider, setMeetingProvider] = useState('jitsi');
+  const [chatSession, setChatSession] = useState(null);
+  const [rescheduleModal, setRescheduleModal] = useState(null);
+  const [rescheduleDate, setRescheduleDate] = useState('');
 
   const [evalModal, setEvalModal] = useState(null);
   const [evaluation, setEvaluation] = useState(emptyEval);
@@ -105,15 +109,45 @@ export default function TeacherDashboard() {
   const wallet = profile?.wallet || {};
   const teacher = profile?.teacher;
 
-  const respondTrial = async (id, action) => {
+  const respondTrial = async (id, action, extra = {}) => {
     try {
+      let reason = extra.reason;
+      if (action === 'reject' && reason == null) {
+        reason = window.prompt('سبب الاعتذار عن الحصة (اختياري):', '') ?? '';
+      }
+
       await api.put(`/api/sessions/${id}/respond`, {
         action,
         provider: action === 'accept' ? meetingProvider : undefined,
+        reason,
+        rescheduledDate: extra.rescheduledDate,
       }, { auth: true });
-      toast.success(action === 'accept' ? 'تم قبول الطلب' : 'تم رفض الطلب');
+
+      const labels = {
+        accept: 'تم قبول الطلب وإشعار الطالب',
+        reject: 'تم الاعتذار عن الطلب وإشعار الطالب',
+        reschedule: 'تم اقتراح الموعد الجديد وإشعار الطالب',
+      };
+      toast.success(labels[action] || 'تم تحديث الطلب');
+      setRescheduleModal(null);
+      setRescheduleDate('');
       load();
-    } catch { toast.error('حدث خطأ'); }
+    } catch (error) {
+      toast.error(error.message || 'حدث خطأ');
+    }
+  };
+
+  const submitReschedule = async () => {
+    if (!rescheduleModal || !rescheduleDate) {
+      return toast.error('اختر الموعد الجديد');
+    }
+    const proposed = new Date(rescheduleDate);
+    if (Number.isNaN(proposed.getTime()) || proposed <= new Date()) {
+      return toast.error('اختر موعدًا مستقبليًا صحيحًا');
+    }
+    await respondTrial(rescheduleModal._id, 'reschedule', {
+      rescheduledDate: proposed.toISOString(),
+    });
   };
 
   const openEval = (session) => {
@@ -406,9 +440,11 @@ export default function TeacherDashboard() {
                       <p className="text-sm text-gray-600">{new Date(s.scheduledAt).toLocaleString('ar-EG')}</p>
                       {s.student?.email && <p className="text-xs text-gray-400">{s.student.email}</p>}
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-wrap">
+                      <button onClick={() => setChatSession(s)} className="px-4 py-2 border border-emerald-200 text-emerald-700 rounded-lg text-sm">محادثة</button>
                       <button onClick={() => respondTrial(s._id, 'accept')} className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm">قبول</button>
-                      <button onClick={() => respondTrial(s._id, 'reject')} className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm">رفض</button>
+                      <button onClick={() => { setRescheduleModal(s); setRescheduleDate(''); }} className="px-4 py-2 bg-amber-100 text-amber-800 rounded-lg text-sm">موعد آخر</button>
+                      <button onClick={() => respondTrial(s._id, 'reject')} className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm">اعتذار</button>
                     </div>
                   </div>
                 ))}
@@ -436,9 +472,11 @@ export default function TeacherDashboard() {
                           <p className="text-sm text-gray-600">{new Date(s.scheduledAt).toLocaleString('ar-EG')}</p>
                           {s.notes && <p className="text-xs text-gray-500 mt-1">{s.notes}</p>}
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-wrap">
+                          <button onClick={() => setChatSession(s)} className="px-4 py-2 border border-emerald-200 text-emerald-700 rounded-lg text-sm">محادثة</button>
                           <button onClick={() => respondTrial(s._id, 'accept')} className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm">قبول</button>
-                          <button onClick={() => respondTrial(s._id, 'reject')} className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm">رفض</button>
+                          <button onClick={() => { setRescheduleModal(s); setRescheduleDate(''); }} className="px-4 py-2 bg-amber-100 text-amber-800 rounded-lg text-sm">موعد آخر</button>
+                          <button onClick={() => respondTrial(s._id, 'reject')} className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm">اعتذار</button>
                         </div>
                       </div>
                     ))}
@@ -462,6 +500,7 @@ export default function TeacherDashboard() {
                       )}
                     </div>
                     <div className="flex gap-2 flex-wrap">
+                      <button onClick={() => setChatSession(s)} className="px-4 py-2 border border-emerald-200 text-emerald-700 rounded-lg text-sm">محادثة</button>
                       {s.meetingLink && (
                         <>
                           <a href={s.meetingLink} target="_blank" rel="noreferrer"
@@ -534,6 +573,37 @@ export default function TeacherDashboard() {
             )}
           </div>
         </>
+      )}
+
+      {chatSession && (
+        <SessionChatModal
+          session={chatSession}
+          locale="ar"
+          onClose={() => setChatSession(null)}
+        />
+      )}
+
+      {rescheduleModal && (
+        <Modal title={`اقتراح موعد جديد لـ ${rescheduleModal.student?.name || 'الطالب'}`} onClose={() => { setRescheduleModal(null); setRescheduleDate(''); }}>
+          <div className="space-y-4">
+            <p className="text-sm text-slate-600">
+              الموعد الحالي: {new Date(rescheduleModal.scheduledAt).toLocaleString('ar-EG')}
+            </p>
+            <div>
+              <label className="text-sm font-medium">الموعد المقترح</label>
+              <input
+                type="datetime-local"
+                value={rescheduleDate}
+                min={new Date(Date.now() + 30 * 60 * 1000).toISOString().slice(0, 16)}
+                onChange={(event) => setRescheduleDate(event.target.value)}
+                className="input-field w-full mt-1"
+              />
+            </div>
+            <button type="button" onClick={submitReschedule} className="btn-primary w-full">
+              إرسال الموعد الجديد للطالب
+            </button>
+          </div>
+        </Modal>
       )}
 
       {evalModal && (
