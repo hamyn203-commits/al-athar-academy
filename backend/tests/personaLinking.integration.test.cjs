@@ -14,6 +14,7 @@ const Session = require('../models/Session');
 const Guardian = require('../models/Guardian');
 const LiveSession = require('../models/LiveSession');
 const Notification = require('../models/Notification');
+const TeacherLedger = require('../models/TeacherLedger');
 const app = require('../app');
 const { generateAccessToken } = require('../middleware/auth');
 
@@ -97,6 +98,8 @@ Teacher.find = (filter = {}) => {
   return query(pending ? [{ ...teacher, user: { name: 'QA Teacher', email: 'qa@example.test' } }] : []);
 };
 
+Teacher.findById = (id) => query(String(id) === ids.teacher ? teacher : null);
+
 Teacher.findByIdAndUpdate = async (id, update) => {
   if (String(id) !== ids.teacher) return null;
   teacher.status = update.status ?? teacher.status;
@@ -152,6 +155,28 @@ Session.find = (filter = {}) => {
 };
 
 Session.countDocuments = async (filter = {}) => sessions.filter((s) => matchSession(s, filter)).length;
+Session.aggregate = async () => [{
+  totalMinutes: sessions
+    .filter((session) => session.status === 'completed')
+    .reduce((sum, session) => sum + Number(session.duration || 60), 0),
+}];
+
+const ledgerEntries = [];
+TeacherLedger.exists = async (filter = {}) => ledgerEntries.some((entry) => (
+  (!filter.teacher || String(entry.teacher) === String(filter.teacher))
+  && (!filter.idempotencyKey || entry.idempotencyKey === filter.idempotencyKey)
+));
+TeacherLedger.findOneAndUpdate = async (filter = {}, update = {}) => {
+  let entry = ledgerEntries.find((item) => item.idempotencyKey === filter.idempotencyKey);
+  if (!entry && update.$setOnInsert) {
+    entry = { _id: oid(), ...update.$setOnInsert };
+    ledgerEntries.push(entry);
+  }
+  return entry || null;
+};
+TeacherLedger.findOne = (filter = {}) => query(
+  ledgerEntries.find((entry) => entry.idempotencyKey === filter.idempotencyKey) || null,
+);
 
 Guardian.findOne = (filter = {}) => query(String(filter.user) === ids.guardian ? guardian : null);
 Guardian.find = (filter = {}) => {
@@ -279,6 +304,25 @@ test('four-persona state linking works through real HTTP routes', async (t) => {
   });
   assert.equal(regularBeforeCompletion.status, 400);
 
+  const earlyComplete = await call(base, '/api/sessions/' + sessionId + '/complete', {
+    method: 'PUT',
+    token: teacherToken,
+    body: {
+      evaluation: {
+        attendance: 5,
+        memorization: 5,
+        tajweed: 5,
+        behavior: 5,
+        commitment: 5,
+        overallNotes: 'QA complete',
+      },
+    },
+  });
+  assert.equal(earlyComplete.status, 409);
+  assert.equal(earlyComplete.data.code, 'SESSION_NOT_STARTED');
+
+  sessions[0].scheduledAt = new Date(Date.now() - 60000).toISOString();
+
   const completeTrial = await call(base, '/api/sessions/' + sessionId + '/complete', {
     method: 'PUT',
     token: teacherToken,
@@ -295,6 +339,10 @@ test('four-persona state linking works through real HTTP routes', async (t) => {
   });
   assert.equal(completeTrial.status, 200);
   assert.equal(completeTrial.data.session.status, 'completed');
+  assert.equal(
+    ledgerEntries.filter((entry) => entry.idempotencyKey === `session:${sessionId}:earning`).length,
+    1,
+  );
 
   const sameTeacherTrialAgain = await call(base, '/api/sessions/trial', {
     method: 'POST',
