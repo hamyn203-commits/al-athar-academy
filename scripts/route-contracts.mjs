@@ -130,6 +130,14 @@ assert.match(notifications, /localizeInternalHref\(links\[notification\.type\]/)
 const liveSessions = read('src/pages/LiveSessions/LiveSessions.jsx');
 assert.match(liveSessions, /localizedPath\(\`\/live\/\$\{roomId\}\`,\s*locale\)/);
 
+const teacherDashboard = read('src/pages/TeacherDashboard/index.jsx');
+assert.match(teacherDashboard, /useState\(['"]overview['"]\)/);
+assert.match(teacherDashboard, /function\s+TeacherCommandBar\s*\(/);
+assert.match(teacherDashboard, /tab\s*===\s*['"]students['"]/);
+assert.match(teacherDashboard, /\/api\/finance\/teacher\/balance/);
+assert.match(teacherDashboard, /\/api\/live\/sessions/);
+assert.doesNotMatch(teacherDashboard, /<TabBar\s/);
+
 const studentDashboard = read('src/pages/StudentDashboard/index.jsx');
 assert.match(studentDashboard, /localizeInternalHref\(session\.meetingLink,\s*locale\)/);
 assert.match(studentDashboard, /localizedPath\(\`\/meeting\/\$\{session\._id\}\`,\s*locale\)/);
