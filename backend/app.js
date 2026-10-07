@@ -303,6 +303,7 @@ app.use('/api/students/dashboard', require('./routes/studentDashboard'));
 app.use('/api/student-dashboard', require('./routes/studentDashboard'));
 app.use('/api/students', require('./routes/students'));
 app.use('/api/teachers/dashboard', require('./routes/teacherDashboard'));
+app.use('/api/teacher-updates', require('./routes/teacherUpdates'));
 app.use('/api/teachers', require('./routes/teachers'));
 app.use('/api/translate', require('./routes/translate'));
 app.use('/api/sessions', require('./routes/sessions'));

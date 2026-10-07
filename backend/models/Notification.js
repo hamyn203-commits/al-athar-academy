@@ -30,6 +30,7 @@ const NotificationSchema = new mongoose.Schema({
       'homework-assigned',
       'homework-submitted',
       'review-received',
+      'teacher-update',
       'payment-received',
       'system',
       'marketing'

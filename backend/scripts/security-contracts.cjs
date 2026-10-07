@@ -327,6 +327,43 @@ requireContains(
   /OVERLAPPING_AVAILABILITY_SLOTS/
 );
 
+// T10.6: teacher video updates must stay private and audience-scoped.
+requireContains(
+  'backend/config/uploadPolicy.js',
+  'teacher update videos must use a teacher-only private upload purpose',
+  /['"]teacher-update-video['"]:\s*\{[\s\S]{0,220}roles:\s*\[['"]teacher['"]\][\s\S]{0,220}video\/mp4/
+);
+requireAbsent(
+  'backend/routes/uploads.js',
+  'teacher update videos must never be exposed by the public media proxy',
+  /publicPurpose[\s\S]{0,320}teacher-update-video/
+);
+requireContains(
+  'backend/routes/teacherUpdates.js',
+  'teacher update uploads must verify object ownership before persistence',
+  /referenceMatches\(reference,\s*VIDEO_PURPOSE,\s*req\.user\.id\)/
+);
+requireContains(
+  'backend/routes/teacherUpdates.js',
+  'student teacher-update listing must require recipient membership',
+  /['"]audience\.students['"]:\s*req\.user\.id/
+);
+requireContains(
+  'backend/routes/teacherUpdates.js',
+  'student media access must verify the teacher-student relationship',
+  /canStudentAccessUpdate[\s\S]{0,900}teacherHasStudent/
+);
+requireContains(
+  'backend/routes/teacherUpdates.js',
+  'video playback tokens must be short-lived and purpose scoped',
+  /purpose:\s*VIDEO_PURPOSE[\s\S]{0,260}expiresIn:\s*ACCESS_TOKEN_TTL/
+);
+requireContains(
+  'backend/routes/teacherUpdates.js',
+  'student update payload must redact recipient identities',
+  /includeAudienceStudents:\s*false/
+);
+
 // T10.5: booking must obey real teacher availability and conflict checks.
 requireContains(
   'backend/routes/sessions.js',
