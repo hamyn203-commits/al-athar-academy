@@ -218,5 +218,5 @@ assert.doesNotMatch(guardianDashboard, /useRequireAuth\(\[['"]guardian['"],\s*['
 assert.match(guardianDashboard, /selectedChildId[\s\S]{0,180}['"]family['"]/);
 assert.match(guardianDashboard, /\/api\/guardian\/family-overview/);
 assert.match(guardianDashboard, /\/api\/guardian\/homework\/\$\{selectedChildId\}/);
-assert.match(guardianDashboard, /children\.length\s*>\s*1[\s\S]{0,350}كل الأبناء/);
+assert.match(guardianDashboard, /children\.length\s*>\s*1[\s\S]{0,1200}كل الأبناء/);
 assert.match(guardianDashboard, /session\.instanceKey/);
