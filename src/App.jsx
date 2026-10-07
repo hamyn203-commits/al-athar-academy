@@ -6,7 +6,7 @@ import { ToastProvider } from './context/ToastProvider';
 import { I18nProvider } from './i18n';
 import { MarketProvider } from './context/MarketProvider';
 import LocaleLayout from './components/LocaleLayout';
-import { StudentLegacyRedirect, TeacherLegacyRedirect, GuardianLegacyRedirect } from './components/DashboardRedirect';
+import { StudentLegacyRedirect, TeacherLegacyRedirect, GuardianLegacyRedirect, AdminLegacyRedirect, AuthenticatedLanding } from './components/DashboardRedirect';
 import BrandLogo from './components/BrandLogo';
 import QuranChatWidget from './components/QuranChatWidget';
 import PwaInstallPrompt from './components/PwaInstallPrompt';
@@ -74,7 +74,7 @@ function PageLoader() {
 function pageRoutes() {
   return (
     <>
-      <Route index element={<LandingPage />} />
+      <Route index element={<AuthenticatedLanding><LandingPage /></AuthenticatedLanding>} />
       <Route path="login" element={<Login />} />
       <Route path="forgot-password" element={<ForgotPassword />} />
       <Route path="reset-password" element={<ResetPassword />} />
@@ -97,7 +97,7 @@ function pageRoutes() {
       <Route path="student" element={<StudentLegacyRedirect />} />
       <Route path="student/dashboard" element={<ProtectedRoute roles={['student']}><StudentDashboard /></ProtectedRoute>} />
       <Route path="guardian" element={<GuardianLegacyRedirect />} />
-      <Route path="guardian/dashboard" element={<ProtectedRoute roles={['guardian', 'admin']}><GuardianDashboard /></ProtectedRoute>} />
+      <Route path="guardian/dashboard" element={<ProtectedRoute roles={['guardian']}><GuardianDashboard /></ProtectedRoute>} />
       <Route path="teacher" element={<TeacherLegacyRedirect />} />
       <Route path="teacher/register" element={<TeacherRegistration />} />
       <Route path="teacher/dashboard" element={<ProtectedRoute roles={['teacher']}><TeacherDashboard /></ProtectedRoute>} />
@@ -109,6 +109,7 @@ function pageRoutes() {
       <Route path="global-platform" element={<GlobalPlatform />} />
       <Route path="markets" element={<MarketsIndex />} />
       <Route path="markets/:slug" element={<MarketDetail />} />
+      <Route path="admin/dashboard" element={<ProtectedRoute roles={['admin']}><AdminLegacyRedirect /></ProtectedRoute>} />
       <Route path="admin" element={<ProtectedRoute roles={['admin']}><AdminDashboard /></ProtectedRoute>} />
       <Route path="admin/payments" element={<ProtectedRoute roles={['admin']}><AdminPayments /></ProtectedRoute>} />
       <Route path="live" element={<ProtectedRoute><LiveSessions /></ProtectedRoute>} />
