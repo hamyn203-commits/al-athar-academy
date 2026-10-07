@@ -8,7 +8,6 @@ const Session = require('../models/Session');
 const { protect, authorize } = require('../middleware/auth');
 const storage = require('../services/objectStorage');
 const { notifyUser } = require('../utils/notify');
-const { deleteStoredReference } = require('../utils/storageLifecycle');
 
 const VIDEO_PURPOSE = 'teacher-update-video';
 const MAX_VIDEOS_PER_UPDATE = 5;
@@ -68,11 +67,8 @@ async function canStudentAccessUpdate(update, studentUserId) {
   if (!update?.isPublished) return false;
   if (!await teacherHasStudent(update.teacher, studentUserId)) return false;
 
-  if (update.audience?.mode === 'selected') {
-    return (update.audience.students || []).some((id) => String(id) === String(studentUserId));
-  }
-
-  return true;
+  return (update.audience?.students || [])
+    .some((id) => String(id) === String(studentUserId));
 }
 
 async function canUserAccessUpdate(update, user) {
@@ -208,7 +204,8 @@ router.post('/teacher', authorize('teacher'), async (req, res) => {
       videos: normalizedVideos,
       audience: {
         mode: audienceMode,
-        students: audienceMode === 'selected' ? targetStudents : [],
+        // Snapshot recipients at publish time so future students do not inherit old messages.
+        students: targetStudents,
       },
       isPublished: true,
       publishedAt: new Date(),
@@ -283,10 +280,7 @@ router.get('/student', authorize('student'), async (req, res) => {
     const updates = await TeacherUpdate.find({
       teacher: { $in: teacherIds },
       isPublished: true,
-      $or: [
-        { 'audience.mode': 'all-active' },
-        { 'audience.mode': 'selected', 'audience.students': req.user.id },
-      ],
+      'audience.students': req.user.id,
     })
       .populate({
         path: 'teacher',
