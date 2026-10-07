@@ -8,6 +8,13 @@ const { protect, authorize } = require('../middleware/auth');
 const meetingService = require('../services/meetingService');
 const { ensureSessionEarning } = require('../services/teacherFinance');
 const {
+  parseRequestedDateTime,
+  teacherAvailabilityDecision,
+  overlaps,
+  generateTeacherSlotStarts,
+  safeTimeZone,
+} = require('../services/sessionScheduling');
+const {
   notifyTeacherForSessionRequest,
   notifySessionAccepted,
   notifyGuardiansForStudent,
@@ -16,6 +23,121 @@ const {
 
 const { isMockMode } = require('../config/runtime');
 const isDBConnected = () => mongoose.connection.readyState === 1;
+
+async function validateBookingSlot({ teacher, scheduledAt, timezone, duration = 60 }) {
+  const resolved = parseRequestedDateTime(scheduledAt, timezone);
+  if (!resolved) {
+    return {
+      ok: false,
+      status: 400,
+      error: 'موعد الحصة غير صحيح',
+      code: 'INVALID_SESSION_TIME',
+    };
+  }
+
+  if (resolved.getTime() <= Date.now()) {
+    return {
+      ok: false,
+      status: 400,
+      error: 'اختر موعدًا مستقبليًا للحصة',
+      code: 'SESSION_TIME_IN_PAST',
+    };
+  }
+
+  const availability = teacherAvailabilityDecision(teacher, resolved, duration);
+  if (!availability.allowed) {
+    return {
+      ok: false,
+      status: 409,
+      error: 'هذا الموعد خارج أوقات توفر المعلم',
+      code: availability.code || 'TEACHER_UNAVAILABLE',
+      teacherTimezone: availability.timeZone,
+    };
+  }
+
+  const activeSessions = await Session.find({
+    teacher: teacher._id,
+    status: { $in: ['pending', 'accepted'] },
+  }).select('scheduledAt duration');
+
+  const conflict = (activeSessions || []).find((session) => (
+    overlaps(
+      resolved,
+      duration,
+      session.scheduledAt,
+      session.duration || 60,
+    )
+  ));
+
+  if (conflict) {
+    return {
+      ok: false,
+      status: 409,
+      error: 'هذا الموعد يتعارض مع حصة أخرى لدى المعلم',
+      code: 'TEACHER_SLOT_CONFLICT',
+    };
+  }
+
+  return {
+    ok: true,
+    scheduledAt: resolved,
+    timezone: timezone || availability.timeZone || safeTimeZone(teacher.availabilityTimezone),
+  };
+}
+
+router.get('/available-slots/:teacherId', async (req, res) => {
+  try {
+    const teacher = await Teacher.findOne({
+      _id: req.params.teacherId,
+      status: 'approved',
+      isVerified: true,
+    }).select('availability availabilityTimezone');
+
+    if (!teacher) {
+      return res.status(404).json({ error: 'Teacher not found or not available' });
+    }
+
+    const days = Math.min(21, Math.max(1, Number(req.query.days || 14)));
+    const duration = 60;
+    const generated = generateTeacherSlotStarts(teacher, {
+      days,
+      intervalMinutes: 30,
+      durationMinutes: duration,
+    });
+
+    if (!generated.length) {
+      return res.json({
+        configured: Array.isArray(teacher.availability) && teacher.availability.length > 0,
+        teacherTimezone: safeTimeZone(teacher.availabilityTimezone),
+        slots: [],
+      });
+    }
+
+    const activeSessions = await Session.find({
+      teacher: teacher._id,
+      status: { $in: ['pending', 'accepted'] },
+    }).select('scheduledAt duration');
+
+    const slots = generated
+      .filter((slot) => !(activeSessions || []).some((session) => (
+        overlaps(slot.startsAt, slot.duration, session.scheduledAt, session.duration || 60)
+      )))
+      .map((slot) => ({
+        startsAt: slot.startsAt.toISOString(),
+        duration: slot.duration,
+        teacherLocalDate: slot.teacherLocalDate,
+        teacherLocalTime: slot.teacherLocalTime,
+      }));
+
+    return res.json({
+      configured: true,
+      teacherTimezone: safeTimeZone(teacher.availabilityTimezone),
+      slots,
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
 
 async function sessionIncludesStudent(session, studentId) {
   if (!session || !studentId) return false;
@@ -90,12 +212,26 @@ router.post('/trial', protect, authorize('student'), async (req, res) => {
       });
     }
 
+    const booking = await validateBookingSlot({
+      teacher,
+      scheduledAt,
+      timezone,
+      duration: 60,
+    });
+    if (!booking.ok) {
+      return res.status(booking.status).json({
+        error: booking.error,
+        code: booking.code,
+        teacherTimezone: booking.teacherTimezone,
+      });
+    }
+
     const session = await Session.create({
       student: req.user.id,
       teacher: teacherId,
       type: 'trial',
-      scheduledAt: new Date(scheduledAt),
-      timezone: timezone || 'Africa/Cairo',
+      scheduledAt: booking.scheduledAt,
+      timezone: booking.timezone || timezone || 'Africa/Cairo',
       notes,
       status: 'pending'
     });
@@ -147,12 +283,26 @@ router.post('/regular', protect, async (req, res) => {
       return res.status(400).json({ error: 'لديك حصة منتظمة قيد الانتظار أو مقبولة مع هذا المعلم' });
     }
 
+    const booking = await validateBookingSlot({
+      teacher,
+      scheduledAt,
+      timezone,
+      duration: 60,
+    });
+    if (!booking.ok) {
+      return res.status(booking.status).json({
+        error: booking.error,
+        code: booking.code,
+        teacherTimezone: booking.teacherTimezone,
+      });
+    }
+
     const session = await Session.create({
       student: req.user.id,
       teacher: teacherId,
       type: 'regular',
-      scheduledAt: new Date(scheduledAt),
-      timezone: timezone || 'Africa/Cairo',
+      scheduledAt: booking.scheduledAt,
+      timezone: booking.timezone || timezone || 'Africa/Cairo',
       notes,
       status: 'pending',
     });
