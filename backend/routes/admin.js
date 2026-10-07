@@ -16,9 +16,15 @@ const TeacherLedger = require('../models/TeacherLedger');
 const ContactMessage = require('../models/ContactMessage');
 const GuardianInvitation = require('../models/GuardianInvitation');
 const AdminAuditLog = require('../models/AdminAuditLog');
+const TeacherTask = require('../models/TeacherTask');
+const Guardian = require('../models/Guardian');
+const Progress = require('../models/Progress');
+const Notification = require('../models/Notification');
+const TeacherUpdate = require('../models/TeacherUpdate');
 const { protect, authorize } = require('../middleware/auth');
 const objectStorage = require('../services/objectStorage');
 const { logAdminAction } = require('../services/adminAudit');
+const { maskPhone } = require('../utils/phone');
 
 const coursesUploadDir = path.join(__dirname, '..', 'uploads', 'courses');
 if (process.env.FILE_STORAGE_DRIVER !== 'external') {
