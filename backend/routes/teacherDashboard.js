@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 const router = express.Router();
 const Session = require('../models/Session');
 const Teacher = require('../models/Teacher');
@@ -11,6 +12,7 @@ const { notifyAdmins, notifyUser } = require('../utils/notify');
 const { deleteStoredReference } = require('../utils/storageLifecycle');
 
 const SESSION_RATE = 50;
+const HOMEWORK_UPLOAD_ROOT = path.resolve(process.cwd(), 'uploads', 'homework');
 const { isMockMode } = require('../config/runtime');
 
 // Simple mock-mode fallbacks so the teacher dashboard works in local dev without DB.
@@ -328,6 +330,7 @@ router.patch('/tasks/:id', protect, authorize('teacher'), async (req, res) => {
           reference: task.submissionFile,
           purpose: 'homework',
           owner: task.student,
+          localRoot: HOMEWORK_UPLOAD_ROOT,
         });
       }
 
