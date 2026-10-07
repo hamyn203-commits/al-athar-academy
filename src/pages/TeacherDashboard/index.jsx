@@ -52,7 +52,7 @@ export default function TeacherDashboard() {
   const [activeStudents, setActiveStudents] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [meetingProvider, setMeetingProvider] = useState('jitsi');
+  const meetingProvider = 'jitsi';
   const [chatSession, setChatSession] = useState(null);
   const [rescheduleModal, setRescheduleModal] = useState(null);
   const [rescheduleDate, setRescheduleDate] = useState('');
@@ -229,8 +229,7 @@ export default function TeacherDashboard() {
 
   if (!ready) return null;
 
-  const wallet = profile?.wallet || {};
-  const teacher = profile?.teacher;
+    const teacher = profile?.teacher;
 
   const respondTrial = async (id, action, extra = {}) => {
     try {
