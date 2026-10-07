@@ -85,6 +85,8 @@ export function useTeacherForm() {
   const [step, setStep] = useState(1);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [applicationStatus, setApplicationStatus] = useState('pending');
+  const [applicationStatusToken, setApplicationStatusToken] = useState('');
   const [credentials, setCredentials] = useState({ email: '', password: '', confirmPassword: '' });
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [files, setFiles] = useState(emptyFiles);
@@ -106,6 +108,45 @@ export function useTeacherForm() {
       // Verification proof is intentionally never restored from localStorage.
     } catch { /* ignore */ }
   }, []);
+
+  const checkApplicationStatus = useCallback(async () => {
+    if (!submitted || !applicationStatusToken) return;
+    try {
+      const r = await fetch(apiUrl('/api/teachers/application-status'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: applicationStatusToken }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) return;
+      setApplicationStatus(data.applicationStatus || 'pending');
+    } catch {
+      // Keep the waiting screen stable if connectivity is temporary.
+    }
+  }, [submitted, applicationStatusToken]);
+
+  useEffect(() => {
+    if (!submitted || !applicationStatusToken) return undefined;
+
+    checkApplicationStatus();
+    const interval = window.setInterval(() => {
+      if (document.visibilityState === 'visible') checkApplicationStatus();
+    }, 10000);
+
+    const onFocus = () => checkApplicationStatus();
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') checkApplicationStatus();
+    };
+
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [submitted, applicationStatusToken, checkApplicationStatus]);
 
   const saveDraft = useCallback(() => {
     localStorage.setItem(DRAFT_KEY, JSON.stringify({
@@ -344,6 +385,8 @@ export function useTeacherForm() {
       const data = await r.json();
       if (!r.ok) throw new Error(data.error || 'فشل التسجيل');
       localStorage.removeItem(DRAFT_KEY);
+      setApplicationStatus(data.applicationStatus || 'pending');
+      setApplicationStatusToken(data.applicationStatusToken || '');
       setSubmitted(true);
       toast.success('تم إرسال طلبك بنجاح!');
     } catch (e) {
@@ -354,7 +397,7 @@ export function useTeacherForm() {
   };
 
   return {
-    step, setStep, submitted, submitting, credentials, setCredentials,
+    step, setStep, submitted, submitting, applicationStatus, checkApplicationStatus, credentials, setCredentials,
     formData, files, setFile, update,
     verificationCode, setVerificationCode, isCodeSent, emailVerified,
     verifiedEmail, fieldError,
