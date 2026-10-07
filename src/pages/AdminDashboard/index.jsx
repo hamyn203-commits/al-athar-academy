@@ -12,6 +12,7 @@ import { useToast } from '../../context/ToastProvider';
 import api from '../../lib/api';
 import { uploadFileDirect } from '../../lib/fileUpload';
 import TeacherReviewQueue from './TeacherReviewQueue';
+import LaunchReadinessPanel from './LaunchReadinessPanel';
 
 const STATUS_LABEL = { new: 'جديدة', read: 'مقروءة', replied: 'تم الرد', closed: 'مغلقة' };
 const STATUS_COLOR = { new: 'bg-blue-100 text-blue-700', read: 'bg-gray-100', replied: 'bg-green-100 text-green-700', closed: 'bg-gray-200' };
@@ -345,6 +346,8 @@ export default function AdminDashboard() {
                 <StatCard label="الحصص" value={stats.totalSessions || 0} icon={Calendar} color="purple" />
                 <StatCard label="الأرباح" value={`${stats.totalEarnings || 0} ج.م`} icon={DollarSign} color="yellow" />
               </div>
+              <LaunchReadinessPanel />
+
               {health && (
                 <div className="bg-slate-900 text-white rounded-xl p-5 mb-6">
                   <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
