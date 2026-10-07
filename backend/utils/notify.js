@@ -82,7 +82,7 @@ async function notifyTeacherForSessionRequest(session, teacherUserId) {
     },
     data: {
       session: session._id,
-      actionUrl: `/teacher/dashboard?tab=trials&session=${session._id}`,
+      actionUrl: `/teacher/dashboard?tab=${session.type === 'trial' ? 'trials' : 'sessions'}&session=${session._id}`,
     },
     priority: 'high',
   });
@@ -96,7 +96,11 @@ async function notifySessionAccepted(session, studentId, meetingUrl) {
       ar: `تم قبول حصتك. رابط الانضمام: ${meetingUrl || 'سيُرسل لاحقاً'}`,
       en: `Your session was accepted. Join: ${meetingUrl || 'link pending'}`,
     },
-    data: { session: session._id, meetingLink: meetingUrl },
+    data: {
+      session: session._id,
+      meetingLink: meetingUrl,
+      actionUrl: `/student/dashboard?tab=${session.type === 'trial' ? 'trials' : 'sessions'}&session=${session._id}`,
+    },
     priority: 'high',
   });
 }
