@@ -82,10 +82,17 @@ async function createGuardianInvitation({
   const allowedRelationships = new Set(['father', 'mother', 'guardian', 'other']);
   const safeRelationship = allowedRelationships.has(relationship) ? relationship : 'guardian';
 
-  const student = await User.findOne({ _id: studentId, role: 'student' }).select('_id name');
+  const student = await User.findOne({ _id: studentId, role: 'student' }).select('_id name phone +phoneNormalized');
   if (!student) {
     const error = new Error('Student not found');
     error.code = 'STUDENT_NOT_FOUND';
+    throw error;
+  }
+
+  const studentPhone = student.phoneNormalized || normalizePhone(student.phone);
+  if (studentPhone && studentPhone === normalized) {
+    const error = new Error('رقم ولي الأمر يجب أن يكون مختلفًا عن رقم الطالب');
+    error.code = 'GUARDIAN_PHONE_MATCHES_STUDENT';
     throw error;
   }
 
@@ -193,7 +200,7 @@ function presentStudentInvitation(invitation) {
     status: raw.status,
     source: raw.source,
     phoneMasked: maskPhone(raw.guardianPhone || raw.guardianPhoneNormalized),
-    linkCode: raw.linkCode,
+    linkCode: raw.status === 'pending' ? raw.linkCode : undefined,
     expiresAt: raw.expiresAt,
     respondedAt: raw.respondedAt,
     createdAt: raw.createdAt,
