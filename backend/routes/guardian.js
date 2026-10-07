@@ -482,11 +482,15 @@ router.get('/invitations', protect, authorize('guardian'), async (req, res) => {
       await guardianUser.save();
     }
 
-    const duplicateCount = await User.countDocuments({
+    const duplicateCandidates = await User.find({
       role: 'guardian',
-      phoneNormalized: normalizedPhone,
       isActive: { $ne: false },
-    });
+      $or: [
+        { phoneNormalized: normalizedPhone },
+        ...(guardianUser.phone ? [{ phone: guardianUser.phone }] : []),
+      ],
+    }).select('_id');
+    const duplicateCount = new Set(duplicateCandidates.map((candidate) => String(candidate._id))).size;
 
     if (duplicateCount > 1) {
       return res.json({
