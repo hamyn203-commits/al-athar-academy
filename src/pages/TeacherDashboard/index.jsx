@@ -1088,119 +1088,177 @@ export default function TeacherDashboard() {
               </div>
             )}
 
-            {tab === 'trials' && (
-              <div className="space-y-3">
-                <p className="text-sm text-slate-600 mb-3">طلبات من طلاب شاهدوا صورتك وفيديو تلاوتك ويريدون حصة تجريبية</p>
-                <div className="flex items-center gap-2 text-sm mb-2">
-                  <span className="text-gray-600">منصة الاجتماع عند القبول:</span>
-                  <select value={meetingProvider} onChange={(e) => setMeetingProvider(e.target.value)}
-                    className="border rounded-lg px-2 py-1">
-                    <option value="jitsi">Jitsi (فوري)</option>
-                    <option value="zoom">Zoom</option>
-                    <option value="google_meet">Google Meet</option>
-                  </select>
-                </div>
-                {trials.length === 0 ? <p className="text-center text-gray-500 py-8">لا طلبات تجريبية</p> : trials.map((s) => (
-                  <div key={s._id} className="border rounded-lg p-4 flex flex-wrap justify-between items-center gap-4">
-                    <div>
-                      <h3 className="font-bold">{s.student?.name}</h3>
-                      <p className="text-sm text-gray-600">{new Date(s.scheduledAt).toLocaleString('ar-EG')}</p>
-                      {s.student?.email && <p className="text-xs text-gray-400">{s.student.email}</p>}
-                    </div>
-                    <div className="flex gap-2 flex-wrap">
-                      <button onClick={() => setChatSession(s)} className="px-4 py-2 border border-emerald-200 text-emerald-700 rounded-lg text-sm">محادثة</button>
-                      <button onClick={() => respondTrial(s._id, 'accept')} className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm">قبول</button>
-                      <button onClick={() => { setRescheduleModal(s); setRescheduleDate(''); }} className="px-4 py-2 bg-amber-100 text-amber-800 rounded-lg text-sm">موعد آخر</button>
-                      <button onClick={() => respondTrial(s._id, 'reject')} className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm">اعتذار</button>
-                    </div>
+            {tab === 'requests' && (
+              <div className="wn-teacher-requests">
+                <div className="wn-teacher-requests__intro">
+                  <div>
+                    <span>صندوق الطلبات</span>
+                    <h3>طلبات تحتاج قرارك</h3>
+                    <p>اقبل الموعد، اقترح وقتًا آخر، أو اعتذر. الطالب يتلقى القرار فورًا.</p>
                   </div>
-                ))}
+                  <div className="wn-teacher-request-count">
+                    <strong>{trials.length + pendingRegular.length}</strong>
+                    <small>طلب معلق</small>
+                  </div>
+                </div>
+
+                {(trials.length + pendingRegular.length) === 0 ? (
+                  <div className="wn-teacher-empty-state">
+                    <CheckCircle2 size={28} />
+                    <div><strong>صندوق الطلبات فارغ</strong><p>لا توجد طلبات تحتاج ردك الآن.</p></div>
+                  </div>
+                ) : (
+                  <div className="wn-teacher-request-list">
+                    {[
+                      ...trials.map((item) => ({ ...item, requestKind: 'trial' })),
+                      ...pendingRegular.map((item) => ({ ...item, requestKind: 'regular' })),
+                    ]
+                      .sort((a, b) => new Date(a.scheduledAt) - new Date(b.scheduledAt))
+                      .map((session) => (
+                        <article key={session._id} className="wn-teacher-request-card">
+                          <div className="wn-teacher-request-card__date">
+                            <strong>{new Date(session.scheduledAt).toLocaleDateString('ar-EG', { day: '2-digit' })}</strong>
+                            <span>{new Date(session.scheduledAt).toLocaleDateString('ar-EG', { month: 'short' })}</span>
+                          </div>
+                          <div className="wn-teacher-request-card__body">
+                            <span className={'wn-teacher-request-kind ' + (session.requestKind === 'trial' ? 'is-trial' : 'is-regular')}>
+                              {session.requestKind === 'trial' ? 'حصة تجريبية' : 'حصة منتظمة'}
+                            </span>
+                            <h4>{session.student?.name || 'طالب'}</h4>
+                            <p><Clock size={14} /> {new Date(session.scheduledAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</p>
+                            {session.notes ? <small>{session.notes}</small> : null}
+                          </div>
+                          <div className="wn-teacher-request-card__actions">
+                            <button type="button" onClick={() => setChatSession(session)} className="is-chat"><MessageSquare size={16} /> محادثة</button>
+                            <button type="button" onClick={() => respondTrial(session._id, 'accept')} className="is-accept"><CheckCircle2 size={16} /> قبول</button>
+                            <button type="button" onClick={() => { setRescheduleModal(session); setRescheduleDate(''); }} className="is-reschedule"><Clock size={16} /> موعد آخر</button>
+                            <button type="button" onClick={() => respondTrial(session._id, 'reject')} className="is-reject"><X size={16} /> اعتذار</button>
+                          </div>
+                        </article>
+                      ))}
+                  </div>
+                )}
               </div>
             )}
 
             {tab === 'sessions' && (
-              <div className="space-y-3">
-                {pendingRegular.length > 0 && (
-                  <div className="space-y-3 mb-6">
-                    <p className="text-sm font-semibold text-amber-800">طلبات حصص منتظمة ({pendingRegular.length}) — تحتاج موافقتك</p>
-                    <div className="flex items-center gap-2 text-sm mb-1">
-                      <span className="text-gray-600">منصة الاجتماع عند القبول:</span>
-                      <select value={meetingProvider} onChange={(e) => setMeetingProvider(e.target.value)}
-                        className="border rounded-lg px-2 py-1">
-                        <option value="jitsi">Jitsi (فوري)</option>
-                        <option value="zoom">Zoom</option>
-                        <option value="google_meet">Google Meet</option>
-                      </select>
-                    </div>
-                    {pendingRegular.map((s) => (
-                      <div key={s._id} className="border border-amber-200 bg-amber-50 rounded-lg p-4 flex flex-wrap justify-between items-center gap-4">
-                        <div>
-                          <h3 className="font-bold">{s.student?.name}</h3>
-                          <p className="text-sm text-gray-600">{new Date(s.scheduledAt).toLocaleString('ar-EG')}</p>
-                          {s.notes && <p className="text-xs text-gray-500 mt-1">{s.notes}</p>}
-                        </div>
-                        <div className="flex gap-2 flex-wrap">
-                          <button onClick={() => setChatSession(s)} className="px-4 py-2 border border-emerald-200 text-emerald-700 rounded-lg text-sm">محادثة</button>
-                          <button onClick={() => respondTrial(s._id, 'accept')} className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm">قبول</button>
-                          <button onClick={() => { setRescheduleModal(s); setRescheduleDate(''); }} className="px-4 py-2 bg-amber-100 text-amber-800 rounded-lg text-sm">موعد آخر</button>
-                          <button onClick={() => respondTrial(s._id, 'reject')} className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm">اعتذار</button>
-                        </div>
-                      </div>
-                    ))}
+              <div className="wn-teacher-sessions">
+                <div className="wn-teacher-sessions__intro">
+                  <div>
+                    <span>الحصص المؤكدة</span>
+                    <h3>جدول الحصص</h3>
+                    <p>استخدم غرفة الأكاديمية للحصة، ثم أغلق الحصة وأرسل تقرير المتابعة بعد بدايتها.</p>
+                  </div>
+                  <button type="button" onClick={() => setTab('schedule')} className="wn-teacher-secondary-light">
+                    <CalendarDays size={16} /> إدارة التوفر
+                  </button>
+                </div>
+
+                {sessions.length === 0 ? (
+                  <div className="wn-teacher-empty-state">
+                    <Calendar size={28} />
+                    <div><strong>لا توجد حصص مؤكدة</strong><p>الحصص التي تقبلها ستظهر هنا.</p></div>
+                  </div>
+                ) : (
+                  <div className="wn-teacher-session-list">
+                    {[...sessions]
+                      .sort((a, b) => new Date(a.scheduledAt) - new Date(b.scheduledAt))
+                      .map((session) => {
+                        const hasStarted = new Date(session.scheduledAt) <= new Date();
+                        return (
+                          <article key={session._id} className={'wn-teacher-session-card ' + (hasStarted ? 'is-due' : '')}>
+                            <div className="wn-teacher-session-card__time">
+                              <strong>{new Date(session.scheduledAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</strong>
+                              <span>{new Date(session.scheduledAt).toLocaleDateString('ar-EG', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
+                            </div>
+                            <div className="wn-teacher-session-card__student">
+                              <span>{session.type === 'trial' ? 'تجريبية' : 'فردية'}</span>
+                              <h4>{session.student?.name || 'طالب'}</h4>
+                              <button type="button" onClick={() => openStudent(session.student)}>عرض ملف الطالب</button>
+                            </div>
+                            <div className="wn-teacher-session-card__actions">
+                              <button type="button" onClick={() => setChatSession(session)}><MessageSquare size={16} /> محادثة</button>
+                              <button type="button" onClick={() => enterAcademyRoom(session)} className="is-room"><Video size={16} /> غرفة الأكاديمية</button>
+                              <Link to={lp(`/meeting/${session._id}`)} className="is-translate">ترجمة مباشرة</Link>
+                              <button
+                                type="button"
+                                onClick={() => openEval(session)}
+                                disabled={!hasStarted}
+                                className="is-complete"
+                                title={!hasStarted ? 'يمكن إنهاء الحصة بعد بدء موعدها فقط' : undefined}
+                              >
+                                <CheckCircle2 size={16} /> إنهاء + تقرير
+                              </button>
+                            </div>
+                          </article>
+                        );
+                      })}
                   </div>
                 )}
-                <p className="text-sm text-slate-600 mb-3">الحصص المقبولة — انضم وقيّم بعد الانتهاء</p>
-                {sessions.length === 0 && pendingRegular.length === 0 ? (
-                  <p className="text-center text-gray-500 py-8">لا حصص حالياً</p>
-                ) : sessions.map((s) => (
-                  <div key={s._id} className="border rounded-lg p-4 flex flex-wrap justify-between items-center gap-3">
-                    <div>
-                      <h3 className="font-bold">{s.student?.name}</h3>
-                      <p className="text-sm text-gray-600 flex items-center gap-1">
-                        <Clock size={14} /> {new Date(s.scheduledAt).toLocaleString('ar-EG')} — ساعة واحدة
-                      </p>
-                      {s.meetingLink && (
-                        <a href={s.meetingLink} target="_blank" rel="noreferrer"
-                          className="text-sm text-emerald-600 font-semibold hover:underline mt-1 inline-block">
-                          انضم للحصة
-                        </a>
-                      )}
-                    </div>
-                    <div className="flex gap-2 flex-wrap">
-                      <button onClick={() => setChatSession(s)} className="px-4 py-2 border border-emerald-200 text-emerald-700 rounded-lg text-sm">محادثة</button>
-                      {s.meetingLink && (
-                        <>
-                          <a href={s.meetingLink} target="_blank" rel="noreferrer"
-                            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">بدء</a>
-                          <Link to={`/meeting/${s._id}`}
-                            className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm">🌐 ترجمة</Link>
-                        </>
-                      )}
-                      <button onClick={() => openEval(s)} className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm">
-                        إكمال + تقييم
-                      </button>
-                    </div>
-                  </div>
-                ))}
               </div>
             )}
 
-            {tab === 'evaluate' && (
-              <div className="space-y-3">
-                <p className="text-sm text-slate-600 mb-3">قيّم كل طالب بعد انتهاء الحصة</p>
-                {completedForEval.length === 0 ? (
-                  <p className="text-center text-gray-500 py-8">لا حصص جاهزة للتقييم — أكمل حصة من تبويب «حصصي»</p>
-                ) : completedForEval.map((s) => (
-                  <div key={s._id} className="border rounded-lg p-4 flex justify-between items-center">
-                    <div>
-                      <h3 className="font-bold">{s.student?.name}</h3>
-                      <p className="text-sm text-gray-500">{new Date(s.scheduledAt).toLocaleString('ar-EG')}</p>
-                    </div>
-                    <button onClick={() => openEval(s)} className="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm">
-                      تقييم الطالب
-                    </button>
+            {tab === 'students' && (
+              <div className="wn-teacher-students">
+                <div className="wn-teacher-students__intro">
+                  <div>
+                    <span>Student Hub</span>
+                    <h3>طلابي</h3>
+                    <p>متابعة الطالب لا تتوقف عند الحجز: الحصص، الواجبات، آخر تقدم، والموعد القادم في مكان واحد.</p>
                   </div>
-                ))}
+                  <strong>{activeStudents.length}</strong>
+                </div>
+
+                {activeStudents.length === 0 ? (
+                  <div className="wn-teacher-empty-state">
+                    <Users size={28} />
+                    <div><strong>لا يوجد طلاب نشطون بعد</strong><p>بعد قبول أول حصة منتظمة سيظهر الطالب هنا تلقائيًا.</p></div>
+                  </div>
+                ) : (
+                  <div className="wn-teacher-student-grid">
+                    {activeStudents.map((student) => (
+                      <article key={student._id} className="wn-teacher-student-card">
+                        <div className="wn-teacher-student-card__top">
+                          <span className="wn-teacher-avatar large">{(student.name || 'ط').slice(0, 1)}</span>
+                          <div>
+                            <h4>{student.name}</h4>
+                            <p>{student.completedSessions || 0} حصة مكتملة</p>
+                          </div>
+                          {student.submittedHomework > 0 ? <b>{student.submittedHomework} واجب للتصحيح</b> : null}
+                        </div>
+
+                        <div className="wn-teacher-student-card__metrics">
+                          <div>
+                            <span>الحصة القادمة</span>
+                            <strong>{student.nextSession ? new Date(student.nextSession.scheduledAt).toLocaleDateString('ar-EG') : '—'}</strong>
+                          </div>
+                          <div>
+                            <span>واجبات معلقة</span>
+                            <strong>{student.pendingHomework || 0}</strong>
+                          </div>
+                          <div>
+                            <span>آخر حفظ</span>
+                            <strong>{student.lastProgress?.surahRecited || '—'}</strong>
+                          </div>
+                        </div>
+
+                        {student.lastProgress ? (
+                          <div className="wn-teacher-student-card__progress">
+                            <span>آخر تقييم</span>
+                            <div>
+                              <small>الحفظ</small><strong>{student.lastProgress.memorizationScore ?? '—'}/10</strong>
+                              <small>التجويد</small><strong>{student.lastProgress.tajweedScore ?? '—'}/10</strong>
+                            </div>
+                          </div>
+                        ) : null}
+
+                        <button type="button" onClick={() => openStudent(student)} className="wn-teacher-student-card__open">
+                          فتح الملف التعليمي <ChevronLeft size={16} />
+                        </button>
+                      </article>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
