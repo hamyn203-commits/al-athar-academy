@@ -5,6 +5,7 @@ const Teacher = require('../models/Teacher');
 const TeacherTask = require('../models/TeacherTask');
 const WithdrawRequest = require('../models/WithdrawRequest');
 const { protect, authorize } = require('../middleware/auth');
+const { notifyUser, notifyRole } = require('../utils/notify');
 
 const SESSION_RATE = 50;
 const { isMockMode } = require('../config/runtime');
@@ -139,6 +140,21 @@ router.post('/tasks', protect, authorize('teacher'), async (req, res) => {
       description: description || '',
       dueDate: dueDate ? new Date(dueDate) : undefined,
     });
+
+    notifyUser(studentId, {
+      type: 'homework-assigned',
+      title: { ar: 'واجب جديد من معلمك', en: 'New homework assigned' },
+      message: {
+        ar: title,
+        en: title,
+      },
+      data: {
+        actionUrl: '/student/dashboard?tab=homework',
+        metadata: { taskId: task._id },
+      },
+      priority: 'high',
+    }).catch((error) => console.warn('Homework assignment notification:', error.message));
+
     res.status(201).json({ success: true, task });
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -156,6 +172,19 @@ router.patch('/tasks/:id', protect, authorize('teacher'), async (req, res) => {
       { new: true },
     );
     if (!task) return res.status(404).json({ error: 'Task not found' });
+
+    if (req.body.status === 'done') {
+      notifyUser(task.student, {
+        type: 'assignment-graded',
+        title: { ar: 'تم اعتماد واجبك', en: 'Your homework was reviewed' },
+        message: {
+          ar: 'اعتمد المعلم الواجب المرسل.',
+          en: 'Your tutor reviewed and approved the submitted homework.',
+        },
+        data: { actionUrl: '/student/dashboard?tab=homework' },
+      }).catch((error) => console.warn('Homework review notification:', error.message));
+    }
+
     res.json({ success: true, task });
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -323,6 +352,21 @@ router.post('/withdrawals', protect, authorize('teacher'), async (req, res) => {
       method: method || 'vodafone_cash',
       accountInfo: accountInfo.trim(),
     });
+
+    notifyRole('admin', {
+      type: 'system',
+      title: { ar: 'طلب سحب جديد من معلم', en: 'New teacher withdrawal request' },
+      message: {
+        ar: `طلب سحب بقيمة ${num} ج.م يحتاج مراجعة الإدارة.`,
+        en: `A withdrawal request for ${num} EGP requires admin review.`,
+      },
+      data: {
+        actionUrl: '/admin?tab=withdrawals',
+        metadata: { withdrawalId: withdrawal._id },
+      },
+      priority: 'high',
+    }).catch((error) => console.warn('Admin withdrawal notification:', error.message));
+
     res.status(201).json({ success: true, withdrawal });
   } catch (error) {
     res.status(400).json({ error: error.message });
