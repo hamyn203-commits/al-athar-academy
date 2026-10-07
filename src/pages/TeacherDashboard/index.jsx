@@ -519,35 +519,215 @@ export default function TeacherDashboard() {
     <DashboardLayout title="لوحة تحكم المعلم" user={user} onLogout={logout}>
       {loading ? <div className="flex justify-center py-20"><div className="spinner spinner-lg" /></div> : (
         <>
-          {trials.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setTab('trials')}
-              className="w-full mb-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-right hover:bg-amber-100 transition"
-            >
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="font-black text-amber-900">
-                    لديك {trials.length} {trials.length === 1 ? 'طلب حصة تجريبية جديد' : 'طلبات حصص تجريبية جديدة'}
-                  </p>
-                  <p className="text-sm text-amber-800 mt-1">
-                    اضغط هنا لمراجعة الطلب والقبول أو اقتراح موعد آخر.
-                  </p>
-                </div>
-                <Calendar className="text-amber-700 shrink-0" size={24} />
+
+          <section className="wn-teacher-welcome">
+            <div className="wn-teacher-welcome__main">
+              <span className="wn-teacher-welcome__eyebrow">
+                <Sparkles size={15} />
+                مساحة المعلم اليومية
+              </span>
+              <h2>السلام عليكم، {teacher?.personalInfo?.fullName || user?.name || 'معلمنا'}</h2>
+              <p>
+                {nextSession
+                  ? `حلقتك القادمة مع ${nextSession.student?.name || 'الطالب'} — كل ما تحتاجه للتحضير والمتابعة أمامك.`
+                  : actionCount
+                    ? 'لديك مهام تحتاج قرارك. ابدأ بمركز الإجراءات ثم راجع جدولك.'
+                    : 'يومك هادئ الآن. راجع جدولك أو تابع تقدم طلابك.'}
+              </p>
+
+              <div className="wn-teacher-welcome__chips">
+                <span className="is-verified"><CheckCircle2 size={14} /> معلم معتمد</span>
+                <span><Users size={14} /> {activeStudents.length} طالب نشط</span>
+                <span><Star size={14} /> {stats.averageRating?.toFixed?.(1) || '0'} تقييم</span>
               </div>
-            </button>
-          )}
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
-            <StatCard label="رصيد مستحق" value={`${wallet.pendingEarnings || 0} ج.م`} icon={Wallet} color="yellow" />
-            <StatCard label="حصص مكتملة" value={wallet.completedSessions || stats.totalSessions || 0} icon={Calendar} color="blue" />
-            <StatCard label="طلاب نشطون" value={activeStudents.length} icon={Users} color="green" />
-            <StatCard label="التقييم" value={stats.averageRating?.toFixed?.(1) || '0'} icon={Star} color="orange" />
-          </div>
+              <div className="wn-teacher-welcome__actions">
+                {nextSession ? (
+                  <button type="button" onClick={() => enterAcademyRoom(nextSession)} className="wn-teacher-primary-action">
+                    <Video size={17} />
+                    دخول الحصة القادمة
+                  </button>
+                ) : (
+                  <button type="button" onClick={() => setTab('schedule')} className="wn-teacher-primary-action">
+                    <CalendarDays size={17} />
+                    مراجعة الجدول
+                  </button>
+                )}
+                <button type="button" onClick={() => setTab('requests')} className="wn-teacher-secondary-action">
+                  <ClipboardList size={17} />
+                  مركز الطلبات
+                  {(trials.length + pendingRegular.length) > 0 ? <b>{trials.length + pendingRegular.length}</b> : null}
+                </button>
+              </div>
+            </div>
 
-          <div className="wn-dashboard-surface">
-            <TabBar tabs={tabs} active={tab} onChange={setTab} />
+            <div className="wn-teacher-welcome__next">
+              <div className="wn-teacher-welcome__next-heading">
+                <span>{nextSession ? 'الحصة القادمة' : 'الحالة الحالية'}</span>
+                {nextSession ? <Clock size={16} /> : <Sparkles size={16} />}
+              </div>
+              {nextSession ? (
+                <>
+                  <strong>{nextSession.student?.name || 'الطالب'}</strong>
+                  <p>{new Date(nextSession.scheduledAt).toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+                  <p>{new Date(nextSession.scheduledAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</p>
+                  <div className="wn-teacher-welcome__next-actions">
+                    <button type="button" onClick={() => setChatSession(nextSession)}>
+                      <MessageSquare size={15} /> محادثة
+                    </button>
+                    <button type="button" onClick={() => openStudent(nextSession.student)}>
+                      <UserRound size={15} /> ملف الطالب
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="wn-teacher-welcome__empty">
+                  <Calendar size={26} />
+                  <strong>لا توجد حصة قادمة</strong>
+                  <p>ستظهر أقرب حصة مؤكدة هنا تلقائيًا.</p>
+                </div>
+              )}
+            </div>
+          </section>
+
+          <div className="wn-dashboard-surface wn-teacher-surface">
+            <TeacherCommandBar
+              primaryItems={primaryNavItems}
+              secondaryItems={secondaryNavItems}
+              active={tab}
+              onChange={setTab}
+              actionCount={actionCount}
+            />
+
+            {tab === 'overview' && (
+              <div className="wn-teacher-overview">
+                <div className="wn-teacher-overview__grid">
+                  <section className="wn-teacher-today-card">
+                    <div className="wn-teacher-section-heading">
+                      <div>
+                        <span>جدول اليوم</span>
+                        <h3>الحصص القادمة</h3>
+                      </div>
+                      <button type="button" onClick={() => setTab('sessions')}>عرض كل الحصص</button>
+                    </div>
+
+                    {upcomingSessions.length === 0 ? (
+                      <div className="wn-teacher-empty-state">
+                        <Calendar size={28} />
+                        <div>
+                          <strong>لا توجد حصص قادمة حاليًا</strong>
+                          <p>راجع التوفر الأسبوعي أو الطلبات الجديدة.</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="wn-teacher-agenda">
+                        {upcomingSessions.slice(0, 3).map((session, index) => (
+                          <div key={session._id} className={'wn-teacher-agenda__item ' + (index === 0 ? 'is-next' : '')}>
+                            <div className="wn-teacher-agenda__time">
+                              <strong>{new Date(session.scheduledAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</strong>
+                              <small>{new Date(session.scheduledAt).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' })}</small>
+                            </div>
+                            <div className="wn-teacher-agenda__student">
+                              <strong>{session.student?.name || 'طالب'}</strong>
+                              <span>{session.type === 'trial' ? 'حصة تجريبية' : 'حصة فردية'}</span>
+                            </div>
+                            <div className="wn-teacher-agenda__actions">
+                              <button type="button" onClick={() => setChatSession(session)} aria-label="محادثة"><MessageSquare size={16} /></button>
+                              <button type="button" onClick={() => enterAcademyRoom(session)} className="is-primary">
+                                <Video size={16} /> دخول
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </section>
+
+                  <aside className="wn-teacher-action-center">
+                    <div className="wn-teacher-section-heading">
+                      <div>
+                        <span>يحتاج إجراء</span>
+                        <h3>مركز الإجراءات</h3>
+                      </div>
+                      {actionCount > 0 ? <b>{actionCount}</b> : null}
+                    </div>
+
+                    <div className="wn-teacher-action-list">
+                      <button type="button" onClick={() => setTab('requests')}>
+                        <span className="wn-teacher-action-icon is-amber"><ClipboardList size={18} /></span>
+                        <span><strong>طلبات جديدة</strong><small>تجريبية ومنتظمة تحتاج ردك</small></span>
+                        <b>{trials.length + pendingRegular.length}</b>
+                      </button>
+                      <button type="button" onClick={() => setTab('homework')}>
+                        <span className="wn-teacher-action-icon is-blue"><Headphones size={18} /></span>
+                        <span><strong>واجبات للتصحيح</strong><small>تسجيلات الطلاب المُسلّمة</small></span>
+                        <b>{submittedTasks.length}</b>
+                      </button>
+                      <button type="button" onClick={() => setTab('sessions')}>
+                        <span className="wn-teacher-action-icon is-emerald"><CheckCircle2 size={18} /></span>
+                        <span><strong>حصص تحتاج إغلاق</strong><small>انتهى موعدها ولم تُعتمد بعد</small></span>
+                        <b>{awaitingCompletion.length}</b>
+                      </button>
+                    </div>
+                  </aside>
+                </div>
+
+                <div className="wn-teacher-stat-grid">
+                  <StatCard label="الرصيد المتاح" value={`${egpBalance.available || 0} ج.م`} icon={Wallet} />
+                  <StatCard label="حصص مكتملة" value={stats.totalSessions || 0} icon={Calendar} />
+                  <StatCard label="طلاب نشطون" value={activeStudents.length} icon={Users} />
+                  <StatCard label="متوسط التقييم" value={stats.averageRating?.toFixed?.(1) || '0'} icon={Star} />
+                </div>
+
+                <div className="wn-teacher-overview__lower">
+                  <section className="wn-teacher-students-preview">
+                    <div className="wn-teacher-section-heading">
+                      <div>
+                        <span>طلابك</span>
+                        <h3>متابعة سريعة</h3>
+                      </div>
+                      <button type="button" onClick={() => setTab('students')}>كل الطلاب</button>
+                    </div>
+                    {activeStudents.length === 0 ? (
+                      <div className="wn-teacher-empty-state compact">
+                        <Users size={24} />
+                        <div><strong>لا يوجد طلاب نشطون بعد</strong><p>سيظهر الطلاب بعد قبول أول حصة منتظمة.</p></div>
+                      </div>
+                    ) : (
+                      <div className="wn-teacher-student-preview-list">
+                        {activeStudents.slice(0, 4).map((student) => (
+                          <button type="button" key={student._id} onClick={() => openStudent(student)}>
+                            <span className="wn-teacher-avatar">{(student.name || 'ط').slice(0, 1)}</span>
+                            <span>
+                              <strong>{student.name}</strong>
+                              <small>
+                                {student.nextSession
+                                  ? `القادمة ${new Date(student.nextSession.scheduledAt).toLocaleDateString('ar-EG')}`
+                                  : 'لا موعد قادم'}
+                              </small>
+                            </span>
+                            <ChevronLeft size={16} />
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </section>
+
+                  <section className="wn-teacher-performance-preview">
+                    <span>هذا الشهر</span>
+                    <h3>لوحة الأداء</h3>
+                    <div className="wn-teacher-performance-preview__metrics">
+                      <div><strong>{analytics?.trialConversion?.rate ?? '—'}%</strong><small>تحويل التجريبية</small></div>
+                      <div><strong>{analytics?.homework?.completionRate ?? '—'}%</strong><small>إكمال الواجبات</small></div>
+                      <div><strong>{analytics?.upcomingSevenDays ?? upcomingSessions.length}</strong><small>حصص 7 أيام</small></div>
+                    </div>
+                    <button type="button" onClick={() => setTab('analytics')}>
+                      عرض تحليلات الأداء <TrendingUp size={15} />
+                    </button>
+                  </section>
+                </div>
+              </div>
+            )}
 
             {tab === 'account' && teacher && (
               <div className="space-y-6">
