@@ -461,6 +461,58 @@ requireContains(
   /alternateGuardian[\s\S]{0,800}guardian:\s*alternateGuardian\.user/
 );
 
+// T12: no-OTP guardian invitations must remain consent-based and scoped.
+requireContains(
+  'backend/routes/auth.js',
+  'guardian self-registration must require a usable phone identity',
+  /assignedRole\s*===\s*['"]guardian['"][\s\S]{0,260}!normalizedPhone/
+);
+requireContains(
+  'backend/routes/auth.js',
+  'student registration may create a pending guardian invitation without auto-linking',
+  /user\.role\s*===\s*['"]student['"]\s*&&\s*guardianPhone[\s\S]{0,500}createGuardianInvitation/
+);
+requireAbsent(
+  'backend/routes/auth.js',
+  'registration must never directly assign a guardian relationship from a submitted phone',
+  /guardianPhone[\s\S]{0,500}(?:student\.guardian\s*=|\$addToSet:\s*\{\s*children)/
+);
+requireContains(
+  'backend/models/GuardianInvitation.js',
+  'guardian invitations must have explicit pending/accepted/rejected/cancelled/expired lifecycle',
+  /enum:\s*\[['"]pending['"],\s*['"]accepted['"],\s*['"]rejected['"],\s*['"]cancelled['"],\s*['"]expired['"]\]/
+);
+requireContains(
+  'backend/services/guardianInvitations.js',
+  'guardian invitation codes must be unique across invitations and legacy student codes',
+  /GuardianInvitation\.exists\(\{\s*linkCode:\s*code\s*\}\)[\s\S]{0,220}User\.exists\(\{\s*guardianLinkCode:\s*code\s*\}\)/
+);
+requireContains(
+  'backend/routes/guardian.js',
+  'phone-matched guardian invitations must require explicit guardian response',
+  /router\.post\(['"]\/invitations\/:id\/respond['"][\s\S]{0,1200}action[\s\S]{0,1200}linkGuardianToStudent/
+);
+requireContains(
+  'backend/routes/guardian.js',
+  'guardian invitation acceptance must verify the logged-in guardian phone',
+  /invitation\.guardianPhoneNormalized\s*!==\s*normalizedPhone/
+);
+requireContains(
+  'backend/routes/guardian.js',
+  'ambiguous duplicate guardian phone identities must fall back to link code',
+  /duplicateCount\s*>\s*1[\s\S]{0,260}requiresCode:\s*true/
+);
+requireContains(
+  'backend/routes/guardian.js',
+  'guardian link code fallback must accept pending invitation codes',
+  /GuardianInvitation\.findOne\([\s\S]{0,500}linkCode:\s*normalizedCode[\s\S]{0,1000}linkGuardianToStudent/
+);
+requireContains(
+  'backend/routes/studentDashboard.js',
+  'students must be able to cancel only their own pending guardian invitations',
+  /GuardianInvitation\.findOne\([\s\S]{0,300}student:\s*req\.user\.id[\s\S]{0,180}status:\s*['"]pending['"]/
+);
+
 requireAbsent(
   'backend/routes/guardian.js',
   'guardian session payload must not expose teacher phone numbers now that communication is moving in-platform',
