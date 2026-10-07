@@ -1,15 +1,19 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Calendar, Users, Star, Wallet, ClipboardList,
   BookOpen, X, Plus, Clock, BarChart3, MessageSquare, Sparkles,
+  Video, MoreHorizontal, UserRound, CheckCircle2, AlertTriangle,
+  Headphones, RotateCcw, ChevronLeft, TrendingUp, CalendarDays,
 } from 'lucide-react';
-import DashboardLayout, { StatCard, TabBar } from '../../components/dashboard/DashboardLayout';
+import DashboardLayout, { StatCard } from '../../components/dashboard/DashboardLayout';
 import { useRequireAuth } from '../../hooks/useRequireAuth';
 import { useToast } from '../../context/ToastProvider';
 import api from '../../lib/api';
 import { TASK_TYPES } from '../TeacherRegistration/constants';
 import SessionChatModal from '../../components/session/SessionChatModal';
+import { useI18n } from '../../i18n';
+import { localizedPath } from '../../lib/locale';
 
 const SESSION_RATE = 50;
 const WEEK_DAYS = [
@@ -19,15 +23,27 @@ const WEEK_DAYS = [
   { id: 'saturday', label: 'السبت' },
 ];
 const emptyEval = {
-  attendance: 5, memorization: 5, tajweed: 5, behavior: 5, commitment: 5, overallNotes: '',
+  attendance: 5,
+  memorization: 5,
+  tajweed: 5,
+  behavior: 5,
+  commitment: 5,
+  overallNotes: '',
+  surahRecited: '',
+  fromAyah: '',
+  toAyah: '',
+  nextHomework: '',
 };
 const emptyHomework = { type: 'memorization', description: '', dueDate: '' };
 
 export default function TeacherDashboard() {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user, ready, logout } = useRequireAuth(['teacher']);
+  const { locale } = useI18n();
+  const lp = (value) => localizedPath(value, locale);
   const toast = useToast();
-  const [tab, setTab] = useState('account');
+  const [tab, setTab] = useState('overview');
   const [profile, setProfile] = useState(null);
   const [stats, setStats] = useState({});
   const [trials, setTrials] = useState([]);
@@ -47,10 +63,30 @@ export default function TeacherDashboard() {
 
   const [taskModal, setTaskModal] = useState(false);
   const [newTask, setNewTask] = useState({ studentId: '', type: 'memorization', title: '', description: '', dueDate: '' });
-  const [withdrawals, setWithdrawals] = useState([]);
-  const [availableBalance, setAvailableBalance] = useState(0);
-  const [withdrawForm, setWithdrawForm] = useState({ amount: '', method: 'vodafone_cash', accountInfo: '' });
+  const [finance, setFinance] = useState({
+    balances: {
+      EGP: { available: 0, pending: 0, withdrawn: 0, totalEarned: 0 },
+      USD: { available: 0, pending: 0, withdrawn: 0, totalEarned: 0 },
+    },
+    limits: { minPayoutEGP: 100, minPayoutUSD: 10 },
+  });
+  const [transactions, setTransactions] = useState([]);
+  const [withdrawForm, setWithdrawForm] = useState({
+    amount: '',
+    currency: 'EGP',
+    payoutMethod: 'vodafone_cash',
+    phone: '',
+    ipaAddress: '',
+    bankName: '',
+    bankAccountNumber: '',
+    paypalEmail: '',
+  });
   const [withdrawing, setWithdrawing] = useState(false);
+  const [studentModal, setStudentModal] = useState(null);
+  const [studentSummary, setStudentSummary] = useState(null);
+  const [studentSummaryLoading, setStudentSummaryLoading] = useState(false);
+  const [homeworkAudio, setHomeworkAudio] = useState({ taskId: '', url: '', loading: false });
+  const [taskReview, setTaskReview] = useState({});
   const [analytics, setAnalytics] = useState(null);
   const [reviewsData, setReviewsData] = useState({ reviews: [], averageRating: 0, totalReviews: 0 });
   const [schedule, setSchedule] = useState([]);
@@ -62,7 +98,7 @@ export default function TeacherDashboard() {
 
   const load = useCallback(async () => {
     try {
-      const [prof, st, tr, pendReg, sess, stud, tsk, wdr] = await Promise.all([
+      const [prof, st, tr, pendReg, sess, stud, tsk, balance, tx] = await Promise.all([
         api.get('/api/teachers/dashboard/profile', { auth: true }),
         api.get('/api/teachers/dashboard/stats', { auth: true }),
         api.get('/api/sessions/my-sessions?type=trial&status=pending', { auth: true }),
@@ -70,17 +106,24 @@ export default function TeacherDashboard() {
         api.get('/api/sessions/my-sessions?type=regular&status=accepted', { auth: true }),
         api.get('/api/teachers/dashboard/active-students', { auth: true }),
         api.get('/api/teachers/dashboard/tasks', { auth: true }),
-        api.get('/api/teachers/dashboard/withdrawals', { auth: true }),
+        api.get('/api/finance/teacher/balance', { auth: true }),
+        api.get('/api/finance/teacher/transactions?limit=20', { auth: true }),
       ]);
       setProfile(prof);
       setStats(st);
       setTrials(tr.sessions || []);
       setPendingRegular(pendReg.sessions || []);
-      setSessions(sess.sessions || []);
+      setSessions((sess.sessions || []).sort((a, b) => new Date(a.scheduledAt) - new Date(b.scheduledAt)));
       setActiveStudents(stud.students || []);
       setTasks(tsk.tasks || []);
-      setWithdrawals(wdr.withdrawals || []);
-      setAvailableBalance(wdr.available ?? prof?.wallet?.pendingEarnings ?? 0);
+      setFinance(balance || {
+        balances: {
+          EGP: { available: 0, pending: 0, withdrawn: 0, totalEarned: 0 },
+          USD: { available: 0, pending: 0, withdrawn: 0, totalEarned: 0 },
+        },
+        limits: { minPayoutEGP: 100, minPayoutUSD: 10 },
+      });
+      setTransactions(tx.transactions || []);
     } catch {
       toast.error('تعذر تحميل بيانات لوحة المعلم');
     } finally {
@@ -141,9 +184,14 @@ export default function TeacherDashboard() {
 
   useEffect(() => {
     const requestedTab = searchParams.get('tab');
-    if (requestedTab && ['account', 'schedule', 'analytics', 'reviews', 'trials', 'sessions', 'evaluate', 'homework'].includes(requestedTab)) {
+    const allowedTabs = ['overview', 'requests', 'sessions', 'students', 'homework', 'schedule', 'wallet', 'analytics', 'reviews', 'account'];
+    if (requestedTab && allowedTabs.includes(requestedTab)) {
       setTab(requestedTab);
     }
+
+    // Backwards-compatible deep links.
+    if (requestedTab === 'trials') setTab('requests');
+    if (requestedTab === 'evaluate') setTab('sessions');
 
     const requestedSessionId = searchParams.get('session');
     if (!requestedSessionId) return;
@@ -228,14 +276,37 @@ export default function TeacherDashboard() {
     try {
       await api.put(`/api/sessions/${evalModal._id}/complete`, {
         evaluation: {
-          ...evaluation,
-          assignedHomework: homeworkList.filter((h) => h.description?.trim()),
+          attendance: evaluation.attendance,
+          memorization: evaluation.memorization,
+          tajweed: evaluation.tajweed,
+          behavior: evaluation.behavior,
+          commitment: evaluation.commitment,
+          overallNotes: evaluation.overallNotes,
+          assignedHomework: homeworkList.filter((item) => item.description?.trim()),
         },
       }, { auth: true });
-      toast.success(`تم إكمال الحصة — +${SESSION_RATE} ج.م`);
+
+      try {
+        await api.post(`/api/sessions/${evalModal._id}/report`, {
+          studentId: evalModal.student?._id,
+          memorizationScore: Math.min(10, Math.max(0, evaluation.memorization * 2)),
+          tajweedScore: Math.min(10, Math.max(0, evaluation.tajweed * 2)),
+          surahRecited: evaluation.surahRecited,
+          fromAyah: evaluation.fromAyah || undefined,
+          toAyah: evaluation.toAyah || undefined,
+          nextHomework: evaluation.nextHomework || homeworkList[0]?.description || '',
+          notes: evaluation.overallNotes,
+        }, { auth: true });
+      } catch {
+        toast.info('تم إنهاء الحصة، لكن تعذر إرسال تقرير المتابعة الخارجي. التقرير محفوظ داخل الحصة.');
+      }
+
+      toast.success(`تم إنهاء الحصة واعتماد الاستحقاق (+${SESSION_RATE} ج.م)`);
       setEvalModal(null);
       load();
-    } catch { toast.error('فشل إكمال الحصة'); }
+    } catch (error) {
+      toast.error(error.message || 'فشل إكمال الحصة');
+    }
   };
 
   const assignTask = async () => {
@@ -253,24 +324,112 @@ export default function TeacherDashboard() {
     e.preventDefault();
     setWithdrawing(true);
     try {
-      await api.post('/api/teachers/dashboard/withdrawals', {
+      const payoutDetails = {};
+      if (withdrawForm.payoutMethod === 'vodafone_cash') payoutDetails.phone = withdrawForm.phone;
+      if (withdrawForm.payoutMethod === 'instapay') {
+        payoutDetails.ipaAddress = withdrawForm.ipaAddress;
+        payoutDetails.phone = withdrawForm.phone;
+      }
+      if (withdrawForm.payoutMethod === 'bank_transfer') {
+        payoutDetails.bankName = withdrawForm.bankName;
+        payoutDetails.bankAccountNumber = withdrawForm.bankAccountNumber;
+      }
+      if (withdrawForm.payoutMethod === 'paypal') payoutDetails.paypalEmail = withdrawForm.paypalEmail;
+
+      await api.post('/api/finance/teacher/request-payout', {
         amount: Number(withdrawForm.amount),
-        method: withdrawForm.method,
-        accountInfo: withdrawForm.accountInfo,
+        currency: withdrawForm.currency,
+        payoutMethod: withdrawForm.payoutMethod,
+        payoutDetails,
       }, { auth: true });
-      toast.success('تم إرسال طلب السحب — سيتم المراجعة خلال 48 ساعة');
-      setWithdrawForm({ amount: '', method: 'vodafone_cash', accountInfo: '' });
+
+      toast.success('تم إرسال طلب السحب للإدارة');
+      setWithdrawForm({
+        amount: '',
+        currency: 'EGP',
+        payoutMethod: 'vodafone_cash',
+        phone: '',
+        ipaAddress: '',
+        bankName: '',
+        bankAccountNumber: '',
+        paypalEmail: '',
+      });
       load();
-    } catch (err) { toast.error(err.message || 'فشل طلب السحب'); }
-    finally { setWithdrawing(false); }
+    } catch (err) {
+      toast.error(err.message || 'فشل طلب السحب');
+    } finally {
+      setWithdrawing(false);
+    }
   };
 
-  const markTaskDone = async (id) => {
+  const reviewTask = async (task, action) => {
     try {
-      await api.patch(`/api/teachers/dashboard/tasks/${id}`, { status: 'done' }, { auth: true });
-      toast.success('تم اعتماد الواجب');
+      await api.patch(`/api/teachers/dashboard/tasks/${task._id}`, {
+        action,
+        teacherFeedback: taskReview[task._id] || '',
+      }, { auth: true });
+      toast.success(action === 'approve' ? 'تم اعتماد الواجب وإشعار الطالب' : 'تم طلب إعادة الواجب وإشعار الطالب');
+      setTaskReview((current) => ({ ...current, [task._id]: '' }));
+      if (homeworkAudio.url) URL.revokeObjectURL(homeworkAudio.url);
+      setHomeworkAudio({ taskId: '', url: '', loading: false });
       load();
-    } catch { toast.error('فشل'); }
+    } catch (error) {
+      toast.error(error.message || 'تعذر مراجعة الواجب');
+    }
+  };
+
+  const playHomeworkSubmission = async (task) => {
+    if (!task.submissionFile) return toast.error('لا يوجد ملف تسليم لهذا الواجب');
+
+    if (homeworkAudio.taskId === task._id && homeworkAudio.url) return;
+
+    if (homeworkAudio.url) URL.revokeObjectURL(homeworkAudio.url);
+    setHomeworkAudio({ taskId: task._id, url: '', loading: true });
+
+    try {
+      const response = await api.request(`/api/homework/tasks/${task._id}/file`, {
+        auth: true,
+        json: false,
+        method: 'GET',
+      });
+      const blob = await response.blob();
+      setHomeworkAudio({
+        taskId: task._id,
+        url: URL.createObjectURL(blob),
+        loading: false,
+      });
+    } catch (error) {
+      setHomeworkAudio({ taskId: '', url: '', loading: false });
+      toast.error(error.message || 'تعذر تشغيل تسجيل الطالب');
+    }
+  };
+
+  const openStudent = async (student) => {
+    setStudentModal(student);
+    setStudentSummary(null);
+    setStudentSummaryLoading(true);
+    try {
+      const result = await api.get(`/api/teachers/dashboard/students/${student._id}/summary`, { auth: true });
+      setStudentSummary(result);
+    } catch (error) {
+      toast.error(error.message || 'تعذر تحميل ملف الطالب');
+    } finally {
+      setStudentSummaryLoading(false);
+    }
+  };
+
+  const enterAcademyRoom = async (session) => {
+    try {
+      const room = await api.post('/api/live/sessions', {
+        title: `حلقة ${session.student?.name || 'الطالب'}`,
+        description: 'حلقة فردية عبر غرفة الأكاديمية',
+        subject: 'quran',
+        sessionId: session._id,
+      }, { auth: true });
+      navigate(lp(`/live/${room.roomId}`));
+    } catch (error) {
+      toast.error(error.message || 'تعذر فتح غرفة الأكاديمية');
+    }
   };
 
   const generateAiHomework = async () => {
@@ -287,26 +446,73 @@ export default function TeacherDashboard() {
     setSavingSchedule(true);
     try {
       const availability = schedule
-        .filter((d) => d.startTime && d.endTime)
-        .map((d) => ({ day: d.day, slots: [{ startTime: d.startTime, endTime: d.endTime }] }));
+        .map((day) => ({
+          day: day.day,
+          slots: (day.slots || []).filter((slot) => slot.startTime && slot.endTime),
+        }))
+        .filter((day) => day.slots.length);
+
       await api.put('/api/teachers/dashboard/availability', { availability }, { auth: true });
-      toast.success('تم حفظ الجدول');
-    } catch { toast.error('فشل حفظ الجدول'); }
-    finally { setSavingSchedule(false); }
+      toast.success('تم حفظ أوقات التوفر');
+    } catch (error) {
+      toast.error(error.message || 'فشل حفظ الجدول');
+    } finally {
+      setSavingSchedule(false);
+    }
   };
 
-  const tabs = [
-    { id: 'account', label: 'حسابي' },
-    { id: 'schedule', label: 'الجدول' },
-    { id: 'analytics', label: 'الإحصائيات' },
-    { id: 'reviews', label: 'التقييمات' },
-    { id: 'trials', label: `تجريبية (${trials.length})` },
-    { id: 'sessions', label: `حصصي (${sessions.length + pendingRegular.length})` },
-    { id: 'evaluate', label: 'التقييم' },
-    { id: 'homework', label: 'الواجبات' },
+  const addScheduleSlot = (dayIndex) => {
+    setSchedule((current) => current.map((day, index) => (
+      index === dayIndex
+        ? { ...day, slots: [...(day.slots || []), { startTime: '', endTime: '' }] }
+        : day
+    )));
+  };
+
+  const updateScheduleSlot = (dayIndex, slotIndex, key, value) => {
+    setSchedule((current) => current.map((day, index) => {
+      if (index !== dayIndex) return day;
+      return {
+        ...day,
+        slots: day.slots.map((slot, currentSlotIndex) => (
+          currentSlotIndex === slotIndex ? { ...slot, [key]: value } : slot
+        )),
+      };
+    }));
+  };
+
+  const removeScheduleSlot = (dayIndex, slotIndex) => {
+    setSchedule((current) => current.map((day, index) => (
+      index === dayIndex
+        ? { ...day, slots: day.slots.filter((_, currentSlotIndex) => currentSlotIndex !== slotIndex) }
+        : day
+    )));
+  };
+
+  const primaryNavItems = [
+    { id: 'overview', label: 'الرئيسية', icon: Sparkles },
+    { id: 'requests', label: 'الطلبات', icon: ClipboardList, badge: trials.length + pendingRegular.length },
+    { id: 'sessions', label: 'حصصي', icon: Calendar, badge: sessions.length },
+    { id: 'students', label: 'طلابي', icon: Users, badge: activeStudents.length },
+    { id: 'homework', label: 'الواجبات', icon: BookOpen, badge: tasks.filter((task) => task.status === 'submitted').length },
   ];
 
-  const completedForEval = sessions.filter((s) => s.status === 'accepted');
+  const secondaryNavItems = [
+    { id: 'schedule', label: 'الجدول', icon: CalendarDays, description: 'أوقات التوفر الأسبوعية' },
+    { id: 'wallet', label: 'المحفظة', icon: Wallet, description: 'الرصيد والسحب والمعاملات' },
+    { id: 'analytics', label: 'الأداء', icon: BarChart3, description: 'الحصص والتحويل والواجبات' },
+    { id: 'reviews', label: 'التقييمات', icon: Star, description: 'آراء الطلاب ومتوسط التقييم' },
+    { id: 'account', label: 'ملفي', icon: UserRound, description: 'بيانات حساب المعلم' },
+  ];
+
+  const now = new Date();
+  const upcomingSessions = sessions
+    .filter((session) => new Date(session.scheduledAt) >= now)
+    .sort((a, b) => new Date(a.scheduledAt) - new Date(b.scheduledAt));
+  const nextSession = upcomingSessions[0] || null;
+  const submittedTasks = tasks.filter((task) => task.status === 'submitted');
+  const actionCount = trials.length + pendingRegular.length + submittedTasks.length;
+  const egpBalance = finance?.balances?.EGP || { available: 0, pending: 0, withdrawn: 0, totalEarned: 0 };
 
   return (
     <DashboardLayout title="لوحة تحكم المعلم" user={user} onLogout={logout}>
