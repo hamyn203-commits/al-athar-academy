@@ -184,6 +184,32 @@ export default function StudentDashboard() {
   }, [ready, syncSessions]);
 
   useEffect(() => {
+    if (!ready) return undefined;
+
+    const onRealtimeNotification = (event) => {
+      const type = event?.detail?.type;
+      if ([
+        'session-accepted',
+        'session-rejected',
+        'session-rescheduled',
+        'session-completed',
+        'session-chat-message',
+      ].includes(type)) {
+        syncSessions();
+      }
+    };
+
+    window.addEventListener('wn:realtime-notification', onRealtimeNotification);
+    return () => window.removeEventListener('wn:realtime-notification', onRealtimeNotification);
+  }, [ready, syncSessions]);
+
+  useEffect(() => {
+    const requestedTab = searchParams.get('tab');
+    const allowedTabs = ['discover', 'account', 'trials', 'sessions', 'homework', 'certificates', 'recordings', 'achievements', 'referral', 'evaluations'];
+    if (requestedTab && allowedTabs.includes(requestedTab)) {
+      setTab(requestedTab);
+    }
+
     const requestedSessionId = searchParams.get('session');
     if (!requestedSessionId) return;
     const found = [...trials, ...sessions].find((item) => String(item._id) === String(requestedSessionId));
@@ -234,6 +260,13 @@ export default function StudentDashboard() {
 
   const upcomingTrials = trials.filter((s) => s.status === 'accepted' && new Date(s.scheduledAt) >= new Date());
   const pendingTrials = trials.filter((s) => s.status === 'pending');
+  const completedTrials = trials
+    .filter((s) => s.status === 'completed')
+    .sort((a, b) => new Date(b.updatedAt || b.scheduledAt) - new Date(a.updatedAt || a.scheduledAt));
+  const requestedPostTrialId = searchParams.get('postTrial');
+  const postTrialSession = completedTrials.find((s) => String(s._id) === String(requestedPostTrialId || ''))
+    || completedTrials[0]
+    || null;
   const upcomingSessions = sessions.filter((s) => s.status === 'accepted' && new Date(s.scheduledAt) >= new Date());
   const pendingSessions = sessions.filter((s) => s.status === 'pending');
 
@@ -426,6 +459,46 @@ export default function StudentDashboard() {
         <div className="flex justify-center py-20"><div className="spinner spinner-lg" /></div>
       ) : (
         <>
+          {postTrialSession && (
+            <div className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <p className="font-black text-emerald-950">
+                    {locale === 'ar'
+                      ? 'أكملت الحصة التجريبية — اختر خطوتك التالية'
+                      : 'Your trial is complete — choose your next step'}
+                  </p>
+                  <p className="text-sm text-emerald-800 mt-1">
+                    {locale === 'ar'
+                      ? `يمكنك الاستمرار مع ${postTrialSession.teacher?.user?.name || postTrialSession.teacher?.personalInfo?.fullName || 'المعلم'} أو تجربة معلم آخر.`
+                      : 'Continue with this tutor or try another tutor.'}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => openBook(postTrialSession.teacher)}
+                    className="px-4 py-2.5 rounded-xl bg-emerald-700 text-white text-sm font-bold"
+                  >
+                    {locale === 'ar' ? 'استمر مع نفس المعلم' : 'Continue with this tutor'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTab('discover')}
+                    className="px-4 py-2.5 rounded-xl border border-emerald-300 bg-white text-emerald-800 text-sm font-bold"
+                  >
+                    {locale === 'ar' ? 'جرّب معلماً آخر' : 'Try another tutor'}
+                  </button>
+                </div>
+              </div>
+              <p className="text-xs text-emerald-700 mt-3">
+                {locale === 'ar'
+                  ? 'الباقات الشهرية للجلسات الفردية ستظهر هنا بعد اعتماد أسعارها وعدد حصص كل باقة من الإدارة.'
+                  : 'Monthly 1-to-1 packages will appear here after administration configures package pricing and session counts.'}
+              </p>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
             <StatCard label={locale === 'id' ? 'Sesi Mendatang' : locale === 'ar' ? 'حصص قادمة' : 'Upcoming Sessions'} value={stats.upcomingSessions || 0} icon={Calendar} color="emerald" />
             <StatCard label={locale === 'id' ? 'Uji Coba Pending' : locale === 'ar' ? 'تجريبية معلقة' : 'Pending Trials'} value={stats.pendingTrials || 0} icon={Clock} color="yellow" />

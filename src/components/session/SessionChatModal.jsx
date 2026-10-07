@@ -101,9 +101,27 @@ export default function SessionChatModal({ session, onClose, locale = 'ar' }) {
 
   useEffect(() => {
     loadMessages();
-    const poll = window.setInterval(() => loadMessages({ silent: true }), 5000);
-    return () => window.clearInterval(poll);
-  }, [loadMessages]);
+
+    const onRealtimeNotification = (event) => {
+      const notification = event?.detail;
+      if (
+        notification?.type === 'session-chat-message' &&
+        String(notification?.data?.session || '') === String(sessionId || '')
+      ) {
+        loadMessages({ silent: true });
+      }
+    };
+
+    window.addEventListener('wn:realtime-notification', onRealtimeNotification);
+
+    // Fallback for offline/reconnect cases. Realtime is the primary path.
+    const poll = window.setInterval(() => loadMessages({ silent: true }), 30000);
+
+    return () => {
+      window.clearInterval(poll);
+      window.removeEventListener('wn:realtime-notification', onRealtimeNotification);
+    };
+  }, [loadMessages, sessionId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

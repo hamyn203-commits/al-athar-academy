@@ -1,5 +1,6 @@
 const Notification = require('../models/Notification');
 const User = require('../models/User');
+const Guardian = require('../models/Guardian');
 
 async function notifyUser(userId, { type, title, message, data = {}, priority = 'medium', channels }) {
   const user = await User.findById(userId).select('preferences email phone pushToken telegramId');
@@ -23,6 +24,24 @@ async function notifyUser(userId, { type, title, message, data = {}, priority = 
   });
 }
 
+async function notifyGuardiansForStudent(studentId, payload) {
+  if (!studentId) return [];
+
+  const guardians = await Guardian.find({
+    isActive: true,
+    children: {
+      $elemMatch: {
+        student: studentId,
+        'permissions.receiveNotifications': { $ne: false },
+      },
+    },
+  }).select('user');
+
+  return Promise.allSettled(
+    guardians.map((guardian) => notifyUser(guardian.user, payload))
+  );
+}
+
 async function notifyTeacherForSessionRequest(session, teacherUserId) {
   return notifyUser(teacherUserId, {
     type: 'session-request',
@@ -33,7 +52,7 @@ async function notifyTeacherForSessionRequest(session, teacherUserId) {
     },
     data: {
       session: session._id,
-      actionUrl: `/teacher/dashboard?tab=trials&session=${session._id}`,
+      actionUrl: `/teacher/dashboard?tab=${session.type === 'trial' ? 'trials' : 'sessions'}&session=${session._id}`,
     },
     priority: 'high',
   });
@@ -47,7 +66,11 @@ async function notifySessionAccepted(session, studentId, meetingUrl) {
       ar: `تم قبول حصتك. رابط الانضمام: ${meetingUrl || 'سيُرسل لاحقاً'}`,
       en: `Your session was accepted. Join: ${meetingUrl || 'link pending'}`,
     },
-    data: { session: session._id, meetingLink: meetingUrl },
+    data: {
+      session: session._id,
+      meetingLink: meetingUrl,
+      actionUrl: `/student/dashboard?tab=${session.type === 'trial' ? 'trials' : 'sessions'}&session=${session._id}`,
+    },
     priority: 'high',
   });
 }
@@ -82,6 +105,7 @@ module.exports = {
   notifyUser,
   notifyTeacherForSessionRequest,
   notifySessionAccepted,
+  notifyGuardiansForStudent,
   notifyCourseEnrollment,
   notifyCertificateIssued,
 };

@@ -127,6 +127,7 @@ Session.create = async (data) => {
     timezone: data.timezone,
     notes: data.notes,
     attendance: [],
+    earnings: { amount: 0, status: 'pending' },
     async save() { return this; },
   };
   sessions.push(doc);
@@ -153,6 +154,13 @@ Session.find = (filter = {}) => {
 Session.countDocuments = async (filter = {}) => sessions.filter((s) => matchSession(s, filter)).length;
 
 Guardian.findOne = (filter = {}) => query(String(filter.user) === ids.guardian ? guardian : null);
+Guardian.find = (filter = {}) => {
+  const studentId = filter.children?.$elemMatch?.student;
+  if (!studentId || String(studentId) === ids.student) {
+    return query([{ user: ids.guardian }]);
+  }
+  return query([]);
+};
 LiveSession.find = () => query([]);
 const notifications = [];
 Notification.createAndSend = async (userId, payload) => {
@@ -259,4 +267,58 @@ test('four-persona state linking works through real HTTP routes', async (t) => {
   assert.equal(guardianView.data.sessions.length, 1);
   assert.equal(guardianView.data.sessions[0].status, 'accepted');
   assert.equal(guardianView.data.sessions[0].teacher.name, 'QA Teacher');
+
+  const regularBeforeCompletion = await call(base, '/api/sessions/regular', {
+    method: 'POST',
+    token: studentToken,
+    body: {
+      teacherId: ids.teacher,
+      scheduledAt: new Date(Date.now() + 3 * 86400000).toISOString(),
+      timezone: 'Africa/Cairo',
+    },
+  });
+  assert.equal(regularBeforeCompletion.status, 400);
+
+  const completeTrial = await call(base, '/api/sessions/' + sessionId + '/complete', {
+    method: 'PUT',
+    token: teacherToken,
+    body: {
+      evaluation: {
+        attendance: 5,
+        memorization: 5,
+        tajweed: 5,
+        behavior: 5,
+        commitment: 5,
+        overallNotes: 'QA complete',
+      },
+    },
+  });
+  assert.equal(completeTrial.status, 200);
+  assert.equal(completeTrial.data.session.status, 'completed');
+
+  const sameTeacherTrialAgain = await call(base, '/api/sessions/trial', {
+    method: 'POST',
+    token: studentToken,
+    body: {
+      teacherId: ids.teacher,
+      scheduledAt: new Date(Date.now() + 4 * 86400000).toISOString(),
+      timezone: 'Africa/Cairo',
+    },
+  });
+  assert.equal(sameTeacherTrialAgain.status, 409);
+  assert.equal(sameTeacherTrialAgain.data.code, 'TRIAL_ALREADY_COMPLETED_WITH_TEACHER');
+  assert.deepEqual(sameTeacherTrialAgain.data.nextActions, ['continue-with-teacher', 'try-another-teacher']);
+
+  const regularAfterCompletion = await call(base, '/api/sessions/regular', {
+    method: 'POST',
+    token: studentToken,
+    body: {
+      teacherId: ids.teacher,
+      scheduledAt: new Date(Date.now() + 5 * 86400000).toISOString(),
+      timezone: 'Africa/Cairo',
+    },
+  });
+  assert.equal(regularAfterCompletion.status, 201);
+  assert.equal(regularAfterCompletion.data.session.type, 'regular');
+  assert.equal(regularAfterCompletion.data.session.status, 'pending');
 });

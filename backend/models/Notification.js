@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { publishRealtimeNotification } = require('../services/realtimeNotificationBus');
 
 const NotificationSchema = new mongoose.Schema({
   user: {
@@ -272,8 +273,26 @@ NotificationSchema.statics.createAndSend = async function(userId, notificationDa
 
   await notification.save();
 
-  const channels = ['inApp', 'email', 'push', 'telegram', 'sms'];
-  for (const channel of channels) {
+  // Persist and deliver inside the app first. External channels must never
+  // delay the user's in-app alert.
+  if (notification.channels.inApp?.enabled) {
+    await notification.send('inApp');
+  }
+
+  await publishRealtimeNotification(userId, {
+    type: 'notification',
+    notification: {
+      _id: notification._id,
+      type: notification.type,
+      title: notification.title,
+      message: notification.message,
+      data: notification.data,
+      priority: notification.priority,
+      createdAt: notification.createdAt,
+    },
+  });
+
+  for (const channel of ['email', 'push', 'telegram', 'sms']) {
     if (notification.channels[channel]?.enabled) {
       await notification.send(channel);
     }
@@ -291,8 +310,24 @@ NotificationSchema.statics.sendBulk = async function(userIds, notificationData) 
   const created = await this.insertMany(notifications);
 
   for (const notification of created) {
-    const channels = ['inApp', 'email', 'push', 'telegram', 'sms'];
-    for (const channel of channels) {
+    if (notification.channels.inApp?.enabled) {
+      await notification.send('inApp');
+    }
+
+    await publishRealtimeNotification(notification.user, {
+      type: 'notification',
+      notification: {
+        _id: notification._id,
+        type: notification.type,
+        title: notification.title,
+        message: notification.message,
+        data: notification.data,
+        priority: notification.priority,
+        createdAt: notification.createdAt,
+      },
+    });
+
+    for (const channel of ['email', 'push', 'telegram', 'sms']) {
       if (notification.channels[channel]?.enabled) {
         await notification.send(channel);
       }

@@ -6,7 +6,12 @@ const Teacher = require('../models/Teacher');
 const GroupCircle = require('../models/GroupCircle');
 const { protect, authorize } = require('../middleware/auth');
 const meetingService = require('../services/meetingService');
-const { notifyTeacherForSessionRequest, notifySessionAccepted, notifyUser } = require('../utils/notify');
+const {
+  notifyTeacherForSessionRequest,
+  notifySessionAccepted,
+  notifyGuardiansForStudent,
+  notifyUser,
+} = require('../utils/notify');
 
 const { isMockMode } = require('../config/runtime');
 const isDBConnected = () => mongoose.connection.readyState === 1;
@@ -38,6 +43,28 @@ router.post('/trial', protect, authorize('student'), async (req, res) => {
 
     if (!teacher) {
       return res.status(404).json({ error: 'Teacher not found or not available' });
+    }
+
+    const completedTrial = await Session.findOne({
+      student: req.user.id,
+      teacher: teacherId,
+      type: 'trial',
+      status: 'completed',
+    });
+
+    if (completedTrial) {
+      return res.status(409).json({
+        error: 'Trial already completed with this teacher',
+        code: 'TRIAL_ALREADY_COMPLETED_WITH_TEACHER',
+        existingSession: {
+          _id: completedTrial._id,
+          teacher: completedTrial.teacher,
+          status: completedTrial.status,
+          scheduledAt: completedTrial.scheduledAt,
+          type: completedTrial.type,
+        },
+        nextActions: ['continue-with-teacher', 'try-another-teacher'],
+      });
     }
 
     const existingTrial = await Session.findOne({
@@ -103,7 +130,7 @@ router.post('/regular', protect, async (req, res) => {
     const prior = await Session.findOne({
       student: req.user.id,
       teacher: teacherId,
-      status: { $in: ['accepted', 'completed'] },
+      status: 'completed',
     });
     if (!prior) {
       return res.status(400).json({ error: 'يجب إجراء حصة تجريبية أو حصة سابقة مع هذا المعلم أولاً' });
@@ -255,15 +282,23 @@ router.put('/:id/respond', protect, authorize('teacher'), async (req, res) => {
       await session.save();
 
       try {
-        await notifyUser(session.student, {
+        const payload = {
           type: 'session-rescheduled',
           title: { ar: 'اقتراح موعد جديد للحصة', en: 'New session time proposed' },
           message: {
             ar: `اقترح المعلم موعدًا جديدًا: ${proposedDate.toLocaleString('ar-EG')}`,
             en: `Your tutor proposed a new time: ${proposedDate.toLocaleString('en-US')}`,
           },
-          data: { session: newSession._id },
+          data: {
+            session: newSession._id,
+            actionUrl: `/student/dashboard?tab=${newSession.type === 'trial' ? 'trials' : 'sessions'}&session=${newSession._id}`,
+          },
           priority: 'high',
+        };
+        await notifyUser(session.student, payload);
+        await notifyGuardiansForStudent(session.student, {
+          ...payload,
+          data: { ...payload.data, actionUrl: '/guardian/dashboard' },
         });
       } catch (e) {
         console.warn('Session reschedule notification:', e.message);
@@ -277,15 +312,33 @@ router.put('/:id/respond', protect, authorize('teacher'), async (req, res) => {
     try {
       if (action === 'accept') {
         await notifySessionAccepted(session, session.student, session.meetingLink);
+        await notifyGuardiansForStudent(session.student, {
+          type: 'session-accepted',
+          title: { ar: 'تم تأكيد حصة الطالب', en: 'Student session confirmed' },
+          message: {
+            ar: `تم تأكيد الحصة بتاريخ ${new Date(session.scheduledAt).toLocaleString('ar-EG')}`,
+            en: `The session was confirmed for ${new Date(session.scheduledAt).toLocaleString('en-US')}`,
+          },
+          data: { session: session._id, actionUrl: '/guardian/dashboard' },
+          priority: 'high',
+        });
       } else if (action === 'reject') {
-        await notifyUser(session.student, {
+        const payload = {
           type: 'session-rejected',
           title: { ar: 'تم رفض الحصة', en: 'Session rejected' },
           message: {
             ar: reason || 'لم يتم قبول طلب الحصة',
             en: reason || 'Your session request was not accepted',
           },
-          data: { session: session._id },
+          data: {
+            session: session._id,
+            actionUrl: `/student/dashboard?tab=${session.type === 'trial' ? 'trials' : 'sessions'}`,
+          },
+        };
+        await notifyUser(session.student, payload);
+        await notifyGuardiansForStudent(session.student, {
+          ...payload,
+          data: { ...payload.data, actionUrl: '/guardian/dashboard' },
         });
       }
     } catch (e) {
@@ -338,6 +391,44 @@ router.put('/:id/complete', protect, authorize('teacher'), async (req, res) => {
         'earnings.pendingEarnings': SESSION_RATE,
       },
     });
+
+    try {
+      const isTrial = session.type === 'trial';
+      const payload = {
+        type: 'session-completed',
+        title: {
+          ar: isTrial ? 'اكتملت حصتك التجريبية' : 'اكتملت حصتك',
+          en: isTrial ? 'Your trial session is complete' : 'Your session is complete',
+        },
+        message: {
+          ar: isTrial
+            ? 'يمكنك الآن الاستمرار مع نفس المعلم أو تجربة معلم آخر.'
+            : 'تم تسجيل الحصة كتجربة مكتملة ويمكنك مراجعة التقييم والواجب.',
+          en: isTrial
+            ? 'You can now continue with this tutor or try another tutor.'
+            : 'The session is complete. Review your evaluation and homework.',
+        },
+        data: {
+          session: session._id,
+          actionUrl: isTrial
+            ? `/student/dashboard?tab=trials&postTrial=${session._id}`
+            : '/student/dashboard?tab=evaluations',
+        },
+        priority: 'high',
+      };
+
+      await notifyUser(session.student, payload);
+      await notifyGuardiansForStudent(session.student, {
+        ...payload,
+        title: {
+          ar: isTrial ? 'اكتملت الحصة التجريبية للطالب' : 'اكتملت حصة الطالب',
+          en: isTrial ? 'Student trial session completed' : 'Student session completed',
+        },
+        data: { ...payload.data, actionUrl: '/guardian/dashboard' },
+      });
+    } catch (e) {
+      console.warn('Session completion notification:', e.message);
+    }
 
     res.json({ success: true, session });
   } catch (error) {
