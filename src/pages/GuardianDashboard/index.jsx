@@ -101,16 +101,26 @@ export default function GuardianDashboard() {
     const interval = window.setInterval(refresh, 15000);
     const onFocus = () => refresh();
     const onVisibility = () => refresh();
+    const onRealtime = () => {
+      syncUpcomingSessions();
+      if (selectedChildId) {
+        api.get(`/api/guardian/reports/${selectedChildId}`, { auth: true })
+          .then((res) => setReports(res.reports || []))
+          .catch(() => {});
+      }
+    };
 
     window.addEventListener('focus', onFocus);
+    window.addEventListener('wn:realtime', onRealtime);
     document.addEventListener('visibilitychange', onVisibility);
 
     return () => {
       window.clearInterval(interval);
       window.removeEventListener('focus', onFocus);
+      window.removeEventListener('wn:realtime', onRealtime);
       document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [ready, syncUpcomingSessions]);
+  }, [ready, syncUpcomingSessions, selectedChildId]);
 
   // Fetch reports when selected child changes or tab is reports
   useEffect(() => {
