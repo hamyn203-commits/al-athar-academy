@@ -5,11 +5,14 @@ import {
   BookOpen, X, Plus, Clock, BarChart3, MessageSquare, Sparkles,
   Video, MoreHorizontal, UserRound, CheckCircle2, AlertTriangle,
   Headphones, RotateCcw, ChevronLeft, TrendingUp, CalendarDays,
+  Upload, Trash2, Send, Megaphone,
 } from 'lucide-react';
 import DashboardLayout, { StatCard } from '../../components/dashboard/DashboardLayout';
 import { useRequireAuth } from '../../hooks/useRequireAuth';
 import { useToast } from '../../context/ToastProvider';
 import api from '../../lib/api';
+import { uploadFileDirect } from '../../lib/fileUpload';
+import { apiUrl } from '../../config';
 import { TASK_TYPES } from '../TeacherRegistration/constants';
 import SessionChatModal from '../../components/session/SessionChatModal';
 import { useI18n } from '../../i18n';
@@ -95,10 +98,20 @@ export default function TeacherDashboard() {
   const [aiTopic, setAiTopic] = useState('التجويد');
   const [aiResult, setAiResult] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
+  const [teacherUpdates, setTeacherUpdates] = useState([]);
+  const [updateForm, setUpdateForm] = useState({
+    title: '',
+    message: '',
+    audienceMode: 'all-active',
+    studentIds: [],
+    files: [],
+  });
+  const [publishingUpdate, setPublishingUpdate] = useState(false);
+  const [updateVideoUrls, setUpdateVideoUrls] = useState({});
 
   const load = useCallback(async () => {
     try {
-      const [prof, st, tr, pendReg, sess, stud, tsk, balance, tx, analyticsData] = await Promise.all([
+      const [prof, st, tr, pendReg, sess, stud, tsk, balance, tx, analyticsData, updateData] = await Promise.all([
         api.get('/api/teachers/dashboard/profile', { auth: true }),
         api.get('/api/teachers/dashboard/stats', { auth: true }),
         api.get('/api/sessions/my-sessions?type=trial&status=pending', { auth: true }),
@@ -109,6 +122,7 @@ export default function TeacherDashboard() {
         api.get('/api/finance/teacher/balance', { auth: true }),
         api.get('/api/finance/teacher/transactions?limit=20', { auth: true }),
         api.get('/api/teachers/dashboard/analytics', { auth: true }),
+        api.get('/api/teacher-updates/teacher', { auth: true }),
       ]);
       setProfile(prof);
       setStats(st);
@@ -126,6 +140,7 @@ export default function TeacherDashboard() {
       });
       setTransactions(tx.transactions || []);
       setAnalytics(analyticsData || null);
+      setTeacherUpdates(updateData.updates || []);
     } catch {
       toast.error('تعذر تحميل بيانات لوحة المعلم');
     } finally {
@@ -196,7 +211,7 @@ export default function TeacherDashboard() {
 
   useEffect(() => {
     const requestedTab = searchParams.get('tab');
-    const allowedTabs = ['overview', 'requests', 'sessions', 'students', 'homework', 'schedule', 'wallet', 'analytics', 'reviews', 'account'];
+    const allowedTabs = ['overview', 'requests', 'sessions', 'students', 'homework', 'updates', 'schedule', 'wallet', 'analytics', 'reviews', 'account'];
     if (requestedTab && allowedTabs.includes(requestedTab)) {
       setTab(requestedTab);
     }
@@ -443,6 +458,89 @@ export default function TeacherDashboard() {
     }
   };
 
+  const toggleUpdateStudent = (studentId) => {
+    setUpdateForm((current) => ({
+      ...current,
+      studentIds: current.studentIds.includes(studentId)
+        ? current.studentIds.filter((id) => id !== studentId)
+        : [...current.studentIds, studentId],
+    }));
+  };
+
+  const publishTeacherUpdate = async (event) => {
+    event.preventDefault();
+
+    if (!updateForm.title.trim()) return toast.error('اكتب عنوان الرسالة');
+    if (!updateForm.files.length) return toast.error('اختر فيديو واحدًا على الأقل');
+    if (updateForm.files.length > 5) return toast.error('الحد الأقصى 5 فيديوهات في الرسالة الواحدة');
+    if (updateForm.audienceMode === 'selected' && !updateForm.studentIds.length) {
+      return toast.error('اختر طالبًا واحدًا على الأقل');
+    }
+
+    setPublishingUpdate(true);
+    try {
+      const uploaded = [];
+      for (const file of updateForm.files) {
+        const result = await uploadFileDirect(file, 'teacher-update-video');
+        uploaded.push({
+          reference: result.url,
+          name: result.name,
+          size: result.size,
+          contentType: result.contentType,
+        });
+      }
+
+      await api.post('/api/teacher-updates/teacher', {
+        title: updateForm.title.trim(),
+        message: updateForm.message.trim(),
+        audienceMode: updateForm.audienceMode,
+        studentIds: updateForm.studentIds,
+        videos: uploaded,
+      }, { auth: true });
+
+      toast.success('تم نشر الرسالة وإشعار الطلاب');
+      setUpdateForm({
+        title: '',
+        message: '',
+        audienceMode: 'all-active',
+        studentIds: [],
+        files: [],
+      });
+      const result = await api.get('/api/teacher-updates/teacher', { auth: true });
+      setTeacherUpdates(result.updates || []);
+    } catch (error) {
+      toast.error(error.message || 'تعذر نشر الرسالة');
+    } finally {
+      setPublishingUpdate(false);
+    }
+  };
+
+  const deleteTeacherUpdate = async (updateId) => {
+    if (!window.confirm('حذف هذه الرسالة وفيديوهاتها؟')) return;
+    try {
+      await api.delete(`/api/teacher-updates/teacher/${updateId}`, { auth: true });
+      setTeacherUpdates((current) => current.filter((item) => item._id !== updateId));
+      toast.success('تم حذف الرسالة');
+    } catch (error) {
+      toast.error(error.message || 'تعذر حذف الرسالة');
+    }
+  };
+
+  const loadTeacherUpdateVideo = async (updateId, index) => {
+    const key = `${updateId}-${index}`;
+    if (updateVideoUrls[key]) return;
+
+    try {
+      const result = await api.post(`/api/teacher-updates/${updateId}/videos/${index}/access`, {}, { auth: true });
+      setUpdateVideoUrls((current) => ({
+        ...current,
+        [key]: apiUrl(result.streamUrl),
+      }));
+    } catch (error) {
+      toast.error(error.message || 'تعذر فتح الفيديو');
+    }
+  };
+
   const generateAiHomework = async () => {
     setAiLoading(true);
     try {
@@ -512,6 +610,7 @@ export default function TeacherDashboard() {
   ];
 
   const secondaryNavItems = [
+    { id: 'updates', label: 'رسائل لطلابي', icon: Megaphone, description: 'فيديوهات ورسائل تعليمية لطلابك' },
     { id: 'schedule', label: 'الجدول', icon: CalendarDays, description: 'أوقات التوفر الأسبوعية' },
     { id: 'wallet', label: 'المحفظة', icon: Wallet, description: 'الرصيد والسحب والمعاملات' },
     { id: 'analytics', label: 'الأداء', icon: BarChart3, description: 'الحصص والتحويل والواجبات' },
@@ -571,6 +670,10 @@ export default function TeacherDashboard() {
                   <ClipboardList size={17} />
                   مركز الطلبات
                   {(trials.length + pendingRegular.length) > 0 ? <b>{trials.length + pendingRegular.length}</b> : null}
+                </button>
+                <button type="button" onClick={() => setTab('updates')} className="wn-teacher-secondary-action">
+                  <Megaphone size={17} />
+                  رسالة لطلابي
                 </button>
               </div>
             </div>
