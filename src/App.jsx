@@ -1,9 +1,9 @@
 import { Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AppProvider } from './context/AppProvider';
-import { AuthProvider } from './hooks/useAuth.jsx';
+import { AuthProvider, useAuth } from './hooks/useAuth.jsx';
 import { ToastProvider } from './context/ToastProvider';
-import { I18nProvider } from './i18n';
+import { I18nProvider, useI18n } from './i18n';
 import { MarketProvider } from './context/MarketProvider';
 import LocaleLayout from './components/LocaleLayout';
 import { StudentLegacyRedirect, TeacherLegacyRedirect, GuardianLegacyRedirect } from './components/DashboardRedirect';
@@ -12,6 +12,8 @@ import QuranChatWidget from './components/QuranChatWidget';
 import PwaInstallPrompt from './components/PwaInstallPrompt';
 import ErrorBoundary from './components/shared/ErrorBoundary';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import RealtimeBridge from './components/RealtimeBridge';
+import { localizedPath } from './lib/locale';
 
 const LandingPage = lazy(() => import('./pages/NewLandingPage'));
 const LiveSessions = lazy(() => import('./pages/LiveSessions/LiveSessions'));
@@ -74,7 +76,7 @@ function PageLoader() {
 function pageRoutes() {
   return (
     <>
-      <Route index element={<LandingPage />} />
+      <Route index element={<RoleAwareHome />} />
       <Route path="login" element={<Login />} />
       <Route path="forgot-password" element={<ForgotPassword />} />
       <Route path="reset-password" element={<ResetPassword />} />
@@ -133,6 +135,39 @@ function pageRoutes() {
   );
 }
 
+function RoleAwareHome() {
+  const { user, isAuthenticated, isLoading } = useAuth();
+  const { locale } = useI18n();
+
+  if (isLoading) return <PageLoader />;
+
+  const roleHome = {
+    student: '/student/dashboard',
+    teacher: '/teacher/dashboard',
+    guardian: '/guardian/dashboard',
+    admin: '/admin',
+  }[user?.role];
+
+  if (isAuthenticated && roleHome) {
+    return <Navigate replace to={localizedPath(roleHome, locale)} />;
+  }
+
+  return <LandingPage />;
+}
+
+function GlobalWidgets() {
+  const location = useLocation();
+  const path = location.pathname.replace(/^\/(ar|en|id)(?=\/|$)/, '') || '/';
+  const isWorkspace = /^\/(student|teacher|guardian|admin|live|meeting)(\/|$)/.test(path);
+
+  return (
+    <>
+      {!isWorkspace && <QuranChatWidget />}
+      <PwaInstallPrompt />
+    </>
+  );
+}
+
 function AppContent() {
   return (
     <div className="min-h-screen flex flex-col">
@@ -162,9 +197,9 @@ export default function App() {
             <AuthProvider>
               <ToastProvider>
               <Router>
+                <RealtimeBridge />
                 <AppContent />
-                <QuranChatWidget />
-                <PwaInstallPrompt />
+                <GlobalWidgets />
               </Router>
               </ToastProvider>
             </AuthProvider>
