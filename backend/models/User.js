@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
+const { normalizePhone } = require('../utils/phone');
 
 const UserSchema = new mongoose.Schema({
   name: { 
@@ -28,6 +29,12 @@ const UserSchema = new mongoose.Schema({
     type: String,
     trim: true,
     match: [/^\+?[\d\s-]{10,}$/, 'Please provide a valid phone number']
+  },
+  phoneNormalized: {
+    type: String,
+    trim: true,
+    select: false,
+    index: true,
   },
   role: { 
     type: String, 
@@ -124,6 +131,10 @@ UserSchema.index({ email: 1 });
 UserSchema.index({ role: 1 });
 
 UserSchema.pre('save', async function(next) {
+  if (this.isModified('phone')) {
+    this.phoneNormalized = normalizePhone(this.phone) || undefined;
+  }
+
   if (!this.isModified('password')) return next();
   
   try {
