@@ -979,40 +979,85 @@ export default function TeacherDashboard() {
             )}
 
             {tab === 'analytics' && (
-              <div className="space-y-4">
-                {!analytics ? <p className="text-center py-8 text-gray-500">جاري التحميل...</p> : (
+              <div className="wn-teacher-analytics">
+                {!analytics ? (
+                  <div className="wn-teacher-empty-state">
+                    <BarChart3 size={28} />
+                    <div><strong>جاري إعداد لوحة الأداء</strong><p>يتم تجميع بيانات الحصص والواجبات والتحويل.</p></div>
+                  </div>
+                ) : (
                   <>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      <div className="bg-emerald-50 rounded-xl p-4 text-center">
-                        <p className="text-2xl font-bold text-emerald-700">{analytics.earnings?.daily || 0}</p>
-                        <p className="text-xs text-slate-600">أرباح اليوم (ج.م)</p>
+                    <div className="wn-teacher-analytics__hero">
+                      <div>
+                        <span>مؤشر الأداء التعليمي</span>
+                        <h3>أداءك مع الطلاب في مكان واحد</h3>
+                        <p>هذه المؤشرات تساعدك على تحسين الاستمرار بعد التجريبية ومتابعة الالتزام بالواجبات.</p>
                       </div>
-                      <div className="bg-blue-50 rounded-xl p-4 text-center">
-                        <p className="text-2xl font-bold text-blue-700">{analytics.earnings?.weekly || 0}</p>
-                        <p className="text-xs text-slate-600">هذا الأسبوع</p>
+                      <TrendingUp size={32} />
+                    </div>
+
+                    <div className="wn-teacher-analytics__kpis">
+                      <div>
+                        <span>تحويل التجريبية</span>
+                        <strong>{analytics.trialConversion?.rate || 0}%</strong>
+                        <small>{analytics.trialConversion?.converted || 0} من {analytics.trialConversion?.completedTrials || 0} استمروا</small>
                       </div>
-                      <div className="bg-purple-50 rounded-xl p-4 text-center">
-                        <p className="text-2xl font-bold text-purple-700">{analytics.earnings?.monthly || 0}</p>
-                        <p className="text-xs text-slate-600">هذا الشهر</p>
+                      <div>
+                        <span>إكمال الواجبات</span>
+                        <strong>{analytics.homework?.completionRate || 0}%</strong>
+                        <small>{analytics.homework?.completed || 0} واجب معتمد</small>
                       </div>
-                      <div className="bg-yellow-50 rounded-xl p-4 text-center">
-                        <p className="text-2xl font-bold text-yellow-700">{analytics.totalCompleted || 0}</p>
-                        <p className="text-xs text-slate-600">حصص (6 أشهر)</p>
+                      <div>
+                        <span>متوسط التقييم</span>
+                        <strong>{Number(analytics.averageRating || 0).toFixed(1)}</strong>
+                        <small>من 5 نجوم</small>
+                      </div>
+                      <div>
+                        <span>الأسبوع القادم</span>
+                        <strong>{analytics.upcomingSevenDays || 0}</strong>
+                        <small>حصة مؤكدة</small>
                       </div>
                     </div>
-                    <div>
-                      <h3 className="font-bold text-sm mb-3 flex items-center gap-2"><BarChart3 size={16} /> حصص شهرية</h3>
-                      <div className="space-y-2">
-                        {(analytics.monthlySessions || []).map((m) => (
-                          <div key={m.month} className="flex items-center gap-3">
-                            <span className="text-xs w-16 text-slate-500">{m.month}</span>
-                            <div className="flex-1 bg-slate-100 rounded-full h-3">
-                              <div className="bg-emerald-500 h-3 rounded-full" style={{ width: `${Math.min(100, m.count * 15)}%` }} />
+
+                    <div className="wn-teacher-analytics__grid">
+                      <section>
+                        <div className="wn-teacher-section-heading">
+                          <div><span>الحصص</span><h3>آخر 6 أشهر</h3></div>
+                          <strong>{analytics.totalCompleted || 0}</strong>
+                        </div>
+                        <div className="wn-teacher-monthly-bars">
+                          {(analytics.monthlySessions || []).length === 0 ? (
+                            <div className="wn-teacher-empty-state compact">
+                              <Calendar size={22} />
+                              <div><strong>لا بيانات كافية بعد</strong><p>تظهر الاتجاهات بعد إكمال الحصص.</p></div>
                             </div>
-                            <span className="text-sm font-bold w-6">{m.count}</span>
-                          </div>
-                        ))}
-                      </div>
+                          ) : (analytics.monthlySessions || []).map((month) => {
+                            const maxCount = Math.max(...analytics.monthlySessions.map((item) => item.count), 1);
+                            return (
+                              <div key={month.month}>
+                                <span>{month.month}</span>
+                                <div><i style={{ width: `${Math.max(8, (month.count / maxCount) * 100)}%` }} /></div>
+                                <strong>{month.count}</strong>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </section>
+
+                      <section>
+                        <div className="wn-teacher-section-heading">
+                          <div><span>الدخل</span><h3>ملخص الاستحقاقات</h3></div>
+                        </div>
+                        <div className="wn-teacher-earning-summary">
+                          <div><span>اليوم</span><strong>{analytics.earnings?.daily || 0} ج.م</strong></div>
+                          <div><span>آخر 7 أيام</span><strong>{analytics.earnings?.weekly || 0} ج.م</strong></div>
+                          <div><span>هذا الشهر</span><strong>{analytics.earnings?.monthly || 0} ج.م</strong></div>
+                          <div><span>متاح للسحب</span><strong>{analytics.earnings?.available || 0} ج.م</strong></div>
+                        </div>
+                        <button type="button" onClick={() => setTab('wallet')} className="wn-teacher-text-link">
+                          فتح المحفظة <ChevronLeft size={15} />
+                        </button>
+                      </section>
                     </div>
                   </>
                 )}
