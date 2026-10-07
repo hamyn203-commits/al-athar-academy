@@ -172,16 +172,26 @@ export default function StudentDashboard() {
     const interval = window.setInterval(refresh, 15000);
     const onFocus = () => refresh();
     const onVisibility = () => refresh();
+    const onRealtime = (event) => {
+      const type = event.detail?.notification?.type || '';
+      if (type.startsWith('session-') || type === 'session-request') {
+        syncSessions();
+      } else {
+        load();
+      }
+    };
 
     window.addEventListener('focus', onFocus);
+    window.addEventListener('wn:realtime', onRealtime);
     document.addEventListener('visibilitychange', onVisibility);
 
     return () => {
       window.clearInterval(interval);
       window.removeEventListener('focus', onFocus);
+      window.removeEventListener('wn:realtime', onRealtime);
       document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [ready, syncSessions]);
+  }, [ready, syncSessions, load]);
 
   useEffect(() => {
     const requestedSessionId = searchParams.get('session');
