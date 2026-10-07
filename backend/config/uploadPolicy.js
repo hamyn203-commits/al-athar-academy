@@ -41,6 +41,11 @@ const PURPOSES = Object.freeze({
     types: ['image/jpeg', 'image/png', 'application/pdf'],
     maxBytes: 25 * 1024 * 1024,
   },
+  'teacher-update-video': {
+    roles: ['teacher'],
+    types: ['video/mp4', 'video/webm', 'video/quicktime'],
+    maxBytes: 100 * 1024 * 1024,
+  },
 });
 
 const EXTENSIONS_BY_CONTENT_TYPE = Object.freeze({
