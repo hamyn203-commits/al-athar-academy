@@ -7,6 +7,7 @@ const TeacherTask = require('../models/TeacherTask');
 const StudentTutorPreference = require('../models/StudentTutorPreference');
 const User = require('../models/User');
 const GuardianInvitation = require('../models/GuardianInvitation');
+const Guardian = require('../models/Guardian');
 const { protect, authorize } = require('../middleware/auth');
 const { findMockUserById } = require('../mockStore');
 const { isMockMode } = require('../config/runtime');
@@ -111,13 +112,32 @@ router.get('/guardian-invitations', protect, authorize('student'), async (req, r
     }
 
     await expireStaleInvitations({ student: req.user.id });
-    const invitations = await GuardianInvitation.find({ student: req.user.id })
-      .select('+linkCode +guardianPhone +guardianPhoneNormalized')
-      .sort({ createdAt: -1 })
-      .limit(20);
+    const [invitations, guardianProfiles] = await Promise.all([
+      GuardianInvitation.find({ student: req.user.id })
+        .select('+linkCode +guardianPhone +guardianPhoneNormalized')
+        .sort({ createdAt: -1 })
+        .limit(20),
+      Guardian.find({ 'children.student': req.user.id, isActive: { $ne: false } })
+        .populate('user', 'name avatar')
+        .select('user children')
+        .lean(),
+    ]);
+
+    const linkedGuardians = guardianProfiles.map((profile) => {
+      const child = (profile.children || []).find(
+        (entry) => entry.student && String(entry.student) === String(req.user.id),
+      );
+      return {
+        id: profile.user?._id || profile.user,
+        name: profile.user?.name || 'ولي الأمر',
+        avatar: profile.user?.avatar || '',
+        relationship: child?.relationship || 'guardian',
+      };
+    });
 
     return res.json({
       invitations: invitations.map(presentStudentInvitation),
+      linkedGuardians,
     });
   } catch (error) {
     return res.status(500).json({ error: 'تعذر تحميل حالة ربط ولي الأمر' });
