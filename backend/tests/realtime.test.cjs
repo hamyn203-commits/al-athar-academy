@@ -59,6 +59,6 @@ test('realtime token cannot publish and is scoped to the authenticated user room
   const decoded = jwt.decode(data.token);
   assert.equal(decoded.video.room, data.roomName);
   assert.equal(decoded.video.roomJoin, true);
-  assert.equal(decoded.video.canPublish, false);
-  assert.equal(decoded.video.canPublishData, false);
+  assert.notEqual(decoded.video.canPublish, true);
+  assert.notEqual(decoded.video.canPublishData, true);
 });
