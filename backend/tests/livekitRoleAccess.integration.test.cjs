@@ -17,6 +17,9 @@ const Session = require('../models/Session');
 const Guardian = require('../models/Guardian');
 const LiveSession = require('../models/LiveSession');
 
+const originalReadyState = mongoose.connection.readyState;
+mongoose.connection.readyState = 1;
+
 const oid = () => new mongoose.Types.ObjectId().toString();
 const ids = {
   teacherUser: oid(),
@@ -63,6 +66,7 @@ const liveSession = {
 function q(value) {
   const query = {
     select() { return query; },
+    lean() { return Promise.resolve(value); },
     then(resolve, reject) { return Promise.resolve(value).then(resolve, reject); },
   };
   return query;
@@ -120,7 +124,7 @@ async function call(base, user, body) {
   };
 }
 
-test('LiveKit room permissions are server-derived for teacher, student and guardian', async (t) => {
+test('LiveKit room permissions are server-derived and fail closed', async (t) => {
   const app = express();
   app.use(express.json());
   app.use('/api/live', liveRouter);
@@ -129,11 +133,13 @@ test('LiveKit room permissions are server-derived for teacher, student and guard
   await new Promise((resolve) => server.once('listening', resolve));
 
   t.after(async () => {
+    bookedSession.status = 'accepted';
     await new Promise((resolve) => server.close(resolve));
     Teacher.findOne = originalTeacherFindOne;
     Session.findById = originalSessionFindById;
     Guardian.findOne = originalGuardianFindOne;
     LiveSession.findOne = originalLiveFindOne;
+    mongoose.connection.readyState = originalReadyState;
     delete require.cache[require.resolve('../routes/live')];
   });
 
@@ -172,24 +178,8 @@ test('LiveKit room permissions are server-derived for teacher, student and guard
 
   const stranger = await call(base, users.strangerGuardian, { roomName: liveSession.roomId });
   assert.equal(stranger.status, 403);
-});
 
-test('LiveKit access fails closed for unaccepted booked sessions', async (t) => {
   bookedSession.status = 'pending';
-
-  const app = express();
-  app.use(express.json());
-  app.use('/api/live', liveRouter);
-
-  const server = app.listen(0);
-  await new Promise((resolve) => server.once('listening', resolve));
-  t.after(async () => {
-    bookedSession.status = 'accepted';
-    await new Promise((resolve) => server.close(resolve));
-  });
-
-  const base = 'http://127.0.0.1:' + server.address().port;
-  const result = await call(base, users.student, { roomName: liveSession.roomId });
-
-  assert.equal(result.status, 403);
+  const pendingStudent = await call(base, users.student, { roomName: liveSession.roomId });
+  assert.equal(pendingStudent.status, 403);
 });
