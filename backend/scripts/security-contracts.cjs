@@ -788,8 +788,18 @@ requireContains(
 );
 requireContains(
   'backend/services/teacherReview.js',
-  'teacher review gate must require identity and core teaching media',
-  /id-card-front[\s\S]{0,500}id-card-back[\s\S]{0,700}introduction-video[\s\S]{0,500}recitation-video[\s\S]{0,500}teaching-method-video/
+  'teacher review gate must require both sides of teacher identity',
+  /id-card-front[\s\S]{0,500}id-card-back/
+);
+requireContains(
+  'backend/services/teacherReview.js',
+  'teacher review gate must require introduction, recitation and teaching-method media',
+  /introduction-video[\s\S]{0,500}recitation-video[\s\S]{0,500}teaching-method-video/
+);
+requireContains(
+  'backend/models/AdminAuditLog.js',
+  'admin audit records must be append-only at the application layer',
+  /Admin audit log entries are append-only/
 );
 
 if (failures.length) {
