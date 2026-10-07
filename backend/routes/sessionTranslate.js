@@ -9,13 +9,18 @@ const objectStorage = require('../services/objectStorage');
 const { validateUploadMetadata } = require('../config/uploadPolicy');
 const { notifyUser } = require('../utils/notify');
 
+function refId(value) {
+  return String(value?._id || value?.id || value || '');
+}
+
 async function canAccessSession(session, userId, userRole) {
-  const isStudent = String(session.student) === userId;
+  const normalizedUserId = String(userId || '');
+  const isStudent = refId(session.student) === normalizedUserId;
   if (isStudent) return true;
   if (userRole === 'admin') return true;
   if (userRole === 'teacher') {
-    const teacher = await Teacher.findOne({ user: userId }).select('_id');
-    return Boolean(teacher && String(session.teacher) === String(teacher._id));
+    const teacher = await Teacher.findOne({ user: normalizedUserId }).select('_id');
+    return Boolean(teacher && refId(session.teacher) === refId(teacher));
   }
   return false;
 }
