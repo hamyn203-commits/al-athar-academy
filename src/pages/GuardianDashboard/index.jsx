@@ -187,11 +187,15 @@ export default function GuardianDashboard() {
             .catch(() => {});
         }
       }
+
+      if (type === 'system') {
+        loadDashboardData();
+      }
     };
 
     window.addEventListener('wn:realtime-notification', onRealtimeNotification);
     return () => window.removeEventListener('wn:realtime-notification', onRealtimeNotification);
-  }, [ready, syncUpcomingSessions, refreshFamilyOverview, selectedChildId]);
+  }, [ready, syncUpcomingSessions, refreshFamilyOverview, selectedChildId, loadDashboardData]);
 
   // Fetch only the selected child's private data. Family mode never mixes
   // reports or homework between siblings.
