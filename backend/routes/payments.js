@@ -17,7 +17,7 @@ const manualPayments = require('../config/manualPayments');
 const objectStorage = require('../services/objectStorage');
 const { processPaymobWebhook } = require('../services/paymentSettlement');
 const { processManualPaymentReview } = require('../services/manualPaymentSettlement');
-const { notifyCourseEnrollment } = require('../utils/notify');
+const { notifyCourseEnrollment, notifyAdmins } = require('../utils/notify');
 
 const SUPPORTED_LOCALES = new Set(['ar', 'en', 'fr', 'de', 'tr', 'ur', 'id', 'ms', 'ku']);
 
@@ -300,11 +300,32 @@ router.post('/course/:slug/manual', protect, authorize('student'), async (req, r
         proofReference,
         proofFilename: cleanText(req.body?.proofFilename, 180) || undefined,
         proofContentType: cleanText(req.body?.proofContentType, 100) || undefined,
-        proofSize: Number.isFinite(Number(req.body?.proofSize))
+        proofSize: Number.isFinite(Number(req.body.proofSize))
           ? Math.max(1, Math.min(Number(req.body.proofSize), 10 * 1024 * 1024))
           : undefined,
         submittedAt: new Date(),
       },
+    });
+
+    notifyAdmins({
+      type: 'payment-received',
+      title: { ar: 'إثبات دفع يدوي جديد', en: 'New manual payment proof' },
+      message: {
+        ar: 'تم رفع إثبات دفع جديد ويحتاج مراجعة وتأكيد وصول المبلغ.',
+        en: 'A new manual payment proof was submitted and requires fund verification.',
+      },
+      data: {
+        actionUrl: '/admin/payments',
+        metadata: {
+          paymentId: String(payment._id),
+          courseId: String(course._id),
+          amountMinor,
+          currency,
+        },
+      },
+      priority: 'high',
+    }).catch((error) => {
+      console.warn('Admin manual payment notification failed:', error.message);
     });
 
     return res.status(201).json({
