@@ -3617,3 +3617,338 @@
     grid-template-columns: repeat(3,minmax(0,1fr));
   }
 }
+
+
+/* T12 — No-OTP guardian invitation linking */
+.wn-guardian-invitations,
+.wn-student-guardian-link {
+  padding: 1rem;
+  border: 1px solid rgba(15,107,79,.10);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 20px 50px -44px rgba(7,53,40,.42);
+}
+
+.wn-guardian-invitations__heading,
+.wn-student-guardian-link__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: .8rem;
+}
+
+.wn-guardian-invitations__heading span,
+.wn-student-guardian-link__heading span {
+  display: block;
+  color: #9a7330;
+  font-size: .52rem;
+  font-weight: 850;
+}
+
+.wn-guardian-invitations__heading h3,
+.wn-student-guardian-link__heading h3 {
+  margin-top: .1rem;
+  color: var(--wn-emerald-deep);
+  font-size: .9rem;
+  font-weight: 950;
+}
+
+.wn-guardian-invitations__heading p,
+.wn-student-guardian-link__heading p {
+  max-width: 44rem;
+  margin-top: .22rem;
+  color: var(--wn-text-tertiary);
+  font-size: .55rem;
+  line-height: 1.7;
+}
+
+.wn-guardian-invitations__heading > b {
+  min-width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #fff0cf;
+  color: #9a681a;
+  font-size: .66rem;
+}
+
+.wn-student-guardian-link__heading > svg {
+  flex: 0 0 auto;
+  color: var(--wn-emerald-dark);
+}
+
+.wn-guardian-invitations__list {
+  display: grid;
+  gap: .5rem;
+  margin-top: .8rem;
+}
+
+.wn-guardian-invitations__list > article {
+  display: grid;
+  grid-template-columns: auto minmax(0,1fr) auto;
+  align-items: center;
+  gap: .65rem;
+  padding: .7rem;
+  border: 1px solid rgba(15,107,79,.09);
+  border-radius: 13px;
+  background: linear-gradient(135deg,#fbfdfb,#fffdf8);
+}
+
+.wn-guardian-invitations__list article > div:nth-child(2) > span,
+.wn-guardian-invitations__list article > div:nth-child(2) > h4,
+.wn-guardian-invitations__list article > div:nth-child(2) > small {
+  display: block;
+}
+
+.wn-guardian-invitations__list article > div:nth-child(2) > span {
+  color: #9a7330;
+  font-size: .49rem;
+  font-weight: 800;
+}
+
+.wn-guardian-invitations__list article > div:nth-child(2) > h4 {
+  margin-top: .08rem;
+  color: var(--wn-text-primary);
+  font-size: .7rem;
+  font-weight: 900;
+}
+
+.wn-guardian-invitations__list article > div:nth-child(2) > small {
+  margin-top: .08rem;
+  color: var(--wn-text-tertiary);
+  font-size: .48rem;
+}
+
+.wn-guardian-invitations__actions {
+  display: flex;
+  gap: .35rem;
+}
+
+.wn-guardian-invitations__actions button {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  padding: .42rem .62rem;
+  border-radius: 9px;
+  font-size: .55rem;
+  font-weight: 850;
+}
+
+.wn-guardian-invitations__actions .is-accept {
+  background: var(--wn-emerald-deep);
+  color: #fff;
+}
+
+.wn-guardian-invitations__actions .is-reject {
+  background: #fff0f0;
+  color: #a34848;
+}
+
+.wn-guardian-invitation-note {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .7rem .8rem;
+  border: 1px solid rgba(184,138,57,.18);
+  border-radius: 12px;
+  background: #fff9ea;
+  color: #8c682c;
+  font-size: .56rem;
+}
+
+.wn-student-guardian-linked {
+  display: grid;
+  gap: .45rem;
+  margin-top: .8rem;
+}
+
+.wn-student-guardian-linked > div {
+  display: grid;
+  grid-template-columns: auto minmax(0,1fr) auto;
+  align-items: center;
+  gap: .55rem;
+  padding: .58rem;
+  border-radius: 12px;
+  background: var(--wn-emerald-soft);
+}
+
+.wn-student-guardian-avatar {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--wn-emerald-deep);
+  color: #fff;
+  font-size: .7rem;
+  font-weight: 900;
+}
+
+.wn-student-guardian-linked strong,
+.wn-student-guardian-linked small {
+  display: block;
+}
+
+.wn-student-guardian-linked strong {
+  color: var(--wn-emerald-deep);
+  font-size: .62rem;
+}
+
+.wn-student-guardian-linked small {
+  margin-top: .08rem;
+  color: var(--wn-text-tertiary);
+  font-size: .48rem;
+}
+
+.wn-student-guardian-linked > div > svg {
+  color: var(--wn-emerald-dark);
+}
+
+.wn-student-guardian-form {
+  display: grid;
+  grid-template-columns: minmax(0,1.2fr) minmax(150px,.6fr) auto;
+  align-items: end;
+  gap: .55rem;
+  margin-top: .85rem;
+  padding-top: .8rem;
+  border-top: 1px solid rgba(15,107,79,.08);
+}
+
+.wn-student-guardian-form label {
+  display: block;
+  margin-bottom: .25rem;
+  color: var(--wn-text-secondary);
+  font-size: .52rem;
+  font-weight: 800;
+}
+
+.wn-student-guardian-form > button {
+  min-height: 42px;
+  padding: .6rem .8rem;
+  border-radius: 10px;
+  background: var(--wn-emerald-deep);
+  color: #fff;
+  font-size: .57rem;
+  font-weight: 850;
+}
+
+.wn-student-guardian-form > button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.wn-student-guardian-invitations {
+  display: grid;
+  gap: .4rem;
+  margin-top: .8rem;
+}
+
+.wn-student-guardian-invitations > h4 {
+  color: var(--wn-emerald-deep);
+  font-size: .62rem;
+  font-weight: 900;
+}
+
+.wn-student-guardian-invitations > div {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto;
+  align-items: center;
+  gap: .55rem;
+  padding: .58rem;
+  border: 1px solid rgba(15,107,79,.08);
+  border-radius: 10px;
+  background: #fbfdfb;
+}
+
+.wn-student-guardian-invitations > div.is-pending {
+  border-color: rgba(184,138,57,.18);
+  background: #fffdf7;
+}
+
+.wn-student-guardian-invitations > div.is-accepted {
+  background: var(--wn-emerald-soft);
+}
+
+.wn-student-guardian-invitations strong,
+.wn-student-guardian-invitations small {
+  display: block;
+}
+
+.wn-student-guardian-invitations strong {
+  color: var(--wn-text-primary);
+  font-size: .58rem;
+}
+
+.wn-student-guardian-invitations small {
+  margin-top: .08rem;
+  color: var(--wn-text-tertiary);
+  font-size: .47rem;
+}
+
+.wn-student-guardian-invitations > div > div {
+  display: flex;
+  gap: .3rem;
+}
+
+.wn-student-guardian-invitations button {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  padding: .35rem .5rem;
+  border-radius: 8px;
+  background: #f1f5f2;
+  color: var(--wn-emerald-dark);
+  font-size: .5rem;
+  font-weight: 800;
+}
+
+.wn-student-guardian-invitations button:last-child {
+  color: #a34848;
+}
+
+.wn-student-guardian-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .6rem;
+  margin-top: .75rem;
+  padding: .55rem .65rem;
+  border: 1px dashed rgba(15,107,79,.13);
+  border-radius: 10px;
+  color: var(--wn-text-tertiary);
+  font-size: .5rem;
+}
+
+.wn-student-guardian-fallback button {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  color: var(--wn-emerald-dark);
+  font-weight: 850;
+}
+
+@media (max-width: 720px) {
+  .wn-student-guardian-form {
+    grid-template-columns: 1fr;
+  }
+
+  .wn-student-guardian-form > button {
+    width: 100%;
+  }
+
+  .wn-guardian-invitations__list > article {
+    grid-template-columns: auto minmax(0,1fr);
+  }
+
+  .wn-guardian-invitations__actions {
+    grid-column: 1 / -1;
+  }
+
+  .wn-guardian-invitations__actions button {
+    flex: 1;
+    justify-content: center;
+  }
+}

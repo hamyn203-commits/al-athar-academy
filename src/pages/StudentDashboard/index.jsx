@@ -23,6 +23,18 @@ import SessionChatModal from '../../components/session/SessionChatModal';
 const emptyReview = { rating: 5, comment: '', wouldContinue: true };
 const emptyBook = { date: '', time: '', notes: '' };
 
+function guardianRelationshipLabel(value, locale) {
+  const ar = { father: 'الأب', mother: 'الأم', guardian: 'ولي الأمر / الوصي', other: 'ولي أمر' };
+  const en = { father: 'Father', mother: 'Mother', guardian: 'Guardian', other: 'Guardian' };
+  return (locale === 'ar' ? ar : en)[value] || (locale === 'ar' ? 'ولي الأمر' : 'Guardian');
+}
+
+function guardianInvitationStatus(status, locale) {
+  const ar = { pending: 'بانتظار ولي الأمر', accepted: 'تم الربط', rejected: 'تم الرفض', cancelled: 'ملغي', expired: 'انتهت الصلاحية' };
+  const en = { pending: 'Waiting for guardian', accepted: 'Linked', rejected: 'Rejected', cancelled: 'Cancelled', expired: 'Expired' };
+  return (locale === 'ar' ? ar : en)[status] || status;
+}
+
 
 function StudentCommandBar({ primaryItems, secondaryItems, active, onChange, locale }) {
   const [moreOpen, setMoreOpen] = useState(false);
@@ -196,6 +208,10 @@ export default function StudentDashboard() {
   const [referral, setReferral] = useState(null);
   const [teacherUpdates, setTeacherUpdates] = useState([]);
   const [teacherUpdateVideoUrls, setTeacherUpdateVideoUrls] = useState({});
+  const [guardianInvitations, setGuardianInvitations] = useState([]);
+  const [linkedGuardians, setLinkedGuardians] = useState([]);
+  const [guardianInviteForm, setGuardianInviteForm] = useState({ guardianPhone: '', relationship: 'father' });
+  const [savingGuardianInvite, setSavingGuardianInvite] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const [reviewModal, setReviewModal] = useState(null);
@@ -224,7 +240,7 @@ export default function StudentDashboard() {
 
   const load = useCallback(async () => {
     try {
-      const [prof, st, tr, sess, hw, tch, ev, rev, enrollments, ref, discovery, updateData] = await Promise.all([
+      const [prof, st, tr, sess, hw, tch, ev, rev, enrollments, ref, discovery, updateData, guardianData] = await Promise.all([
         api.get('/api/students/dashboard/profile', { auth: true }),
         api.get('/api/students/dashboard/stats', { auth: true }),
         api.get('/api/sessions/my-sessions?type=trial&limit=50', { auth: true }),
@@ -237,6 +253,7 @@ export default function StudentDashboard() {
         api.get('/api/referrals/my', { auth: true }).catch(() => ({ code: '', stats: {}, referrals: [] })),
         api.get('/api/teachers?limit=8&sortBy=rating&sortOrder=desc').catch(() => ({ teachers: [] })),
         api.get('/api/teacher-updates/student', { auth: true }).catch(() => ({ updates: [] })),
+        api.get('/api/students/dashboard/guardian-invitations', { auth: true }).catch(() => ({ invitations: [], linkedGuardians: [] })),
       ]);
       setProfile(prof);
       setStats(st);
@@ -250,6 +267,8 @@ export default function StudentDashboard() {
       setCourses(Array.isArray(enrollments) ? enrollments : []);
       setReferral(ref);
       setTeacherUpdates(updateData.updates || []);
+      setGuardianInvitations(guardianData.invitations || []);
+      setLinkedGuardians(guardianData.linkedGuardians || []);
     } catch {
       toast.error(locale === 'id' ? 'Gagal memuat data dasbor siswa' : locale === 'ar' ? 'تعذر تحميل بيانات لوحة الطالب' : 'Failed to load student dashboard data');
     } finally {
@@ -309,6 +328,14 @@ export default function StudentDashboard() {
       if (type === 'teacher-update') {
         api.get('/api/teacher-updates/student', { auth: true })
           .then((result) => setTeacherUpdates(result.updates || []))
+          .catch(() => {});
+      }
+      if (type === 'system') {
+        api.get('/api/students/dashboard/guardian-invitations', { auth: true })
+          .then((result) => {
+            setGuardianInvitations(result.invitations || []);
+            setLinkedGuardians(result.linkedGuardians || []);
+          })
           .catch(() => {});
       }
     };
@@ -587,6 +614,55 @@ export default function StudentDashboard() {
     } finally {
       setBooking(false);
     }
+  };
+
+  const refreshGuardianLinks = async () => {
+    try {
+      const result = await api.get('/api/students/dashboard/guardian-invitations', { auth: true });
+      setGuardianInvitations(result.invitations || []);
+      setLinkedGuardians(result.linkedGuardians || []);
+    } catch {
+      // Keep the last known link state during transient failures.
+    }
+  };
+
+  const submitGuardianInvitation = async (event) => {
+    event.preventDefault();
+    if (!guardianInviteForm.guardianPhone.trim()) return;
+
+    setSavingGuardianInvite(true);
+    try {
+      await api.post('/api/students/dashboard/guardian-invitations', {
+        guardianPhone: guardianInviteForm.guardianPhone.trim(),
+        relationship: guardianInviteForm.relationship,
+      }, { auth: true });
+
+      toast.success(locale === 'ar'
+        ? 'تم إنشاء طلب الربط. سيظهر لولي الأمر عند تسجيل الدخول بنفس الرقم.'
+        : 'Guardian invitation created.');
+      setGuardianInviteForm((current) => ({ ...current, guardianPhone: '' }));
+      await refreshGuardianLinks();
+    } catch (error) {
+      toast.error(error.message || (locale === 'ar' ? 'تعذر إنشاء طلب الربط' : 'Could not create guardian invitation'));
+    } finally {
+      setSavingGuardianInvite(false);
+    }
+  };
+
+  const cancelGuardianInvitation = async (invitationId) => {
+    try {
+      await api.delete(`/api/students/dashboard/guardian-invitations/${invitationId}`, { auth: true });
+      toast.success(locale === 'ar' ? 'تم إلغاء طلب الربط' : 'Guardian invitation cancelled');
+      await refreshGuardianLinks();
+    } catch (error) {
+      toast.error(error.message || (locale === 'ar' ? 'تعذر إلغاء طلب الربط' : 'Could not cancel invitation'));
+    }
+  };
+
+  const copyInvitationCode = async (code) => {
+    if (!code) return;
+    await navigator.clipboard?.writeText(code);
+    toast.success(locale === 'ar' ? 'تم نسخ كود الربط' : 'Link code copied');
   };
 
   const copyGuardianLinkCode = async () => {
@@ -992,6 +1068,104 @@ export default function StudentDashboard() {
                   </div>
                 </div>
 
+                <section className="wn-student-guardian-link">
+                  <div className="wn-student-guardian-link__heading">
+                    <div>
+                      <span>{locale === 'ar' ? 'ولي الأمر' : 'Guardian'}</span>
+                      <h3>{locale === 'ar' ? 'ربط حساب ولي الأمر' : 'Guardian account linking'}</h3>
+                      <p>
+                        {locale === 'ar'
+                          ? 'الربط لا يتم تلقائيًا بمجرد كتابة الرقم. ولي الأمر يجب أن يوافق من حسابه، أو يستخدم كود الربط.'
+                          : 'Entering a phone number never links an account automatically. The guardian must confirm or use the link code.'}
+                      </p>
+                    </div>
+                    <Users size={24} />
+                  </div>
+
+                  {linkedGuardians.length > 0 && (
+                    <div className="wn-student-guardian-linked">
+                      {linkedGuardians.map((guardian) => (
+                        <div key={guardian.id}>
+                          <span className="wn-student-guardian-avatar">{guardian.name?.slice(0, 1) || 'و'}</span>
+                          <span>
+                            <strong>{guardian.name}</strong>
+                            <small>{guardianRelationshipLabel(guardian.relationship, locale)} · {locale === 'ar' ? 'مرتبط' : 'Linked'}</small>
+                          </span>
+                          <CheckCircle size={18} />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <form onSubmit={submitGuardianInvitation} className="wn-student-guardian-form">
+                    <div>
+                      <label>{locale === 'ar' ? 'رقم ولي الأمر' : 'Guardian phone'}</label>
+                      <input
+                        type="tel"
+                        className="input-field w-full"
+                        placeholder="+20 10 0000 0000"
+                        value={guardianInviteForm.guardianPhone}
+                        onChange={(event) => setGuardianInviteForm((current) => ({ ...current, guardianPhone: event.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label>{locale === 'ar' ? 'صلة القرابة' : 'Relationship'}</label>
+                      <select
+                        className="input-field w-full"
+                        value={guardianInviteForm.relationship}
+                        onChange={(event) => setGuardianInviteForm((current) => ({ ...current, relationship: event.target.value }))}
+                      >
+                        <option value="father">{locale === 'ar' ? 'أب' : 'Father'}</option>
+                        <option value="mother">{locale === 'ar' ? 'أم' : 'Mother'}</option>
+                        <option value="guardian">{locale === 'ar' ? 'ولي أمر / وصي' : 'Guardian'}</option>
+                        <option value="other">{locale === 'ar' ? 'صلة أخرى' : 'Other'}</option>
+                      </select>
+                    </div>
+                    <button type="submit" disabled={savingGuardianInvite || !guardianInviteForm.guardianPhone.trim()}>
+                      {savingGuardianInvite
+                        ? (locale === 'ar' ? 'جاري الحفظ...' : 'Saving...')
+                        : (locale === 'ar' ? 'إنشاء طلب ربط' : 'Create invitation')}
+                    </button>
+                  </form>
+
+                  {guardianInvitations.length > 0 && (
+                    <div className="wn-student-guardian-invitations">
+                      <h4>{locale === 'ar' ? 'طلبات الربط' : 'Link requests'}</h4>
+                      {guardianInvitations.slice(0, 8).map((invitation) => (
+                        <div key={invitation._id} className={`is-${invitation.status}`}>
+                          <span>
+                            <strong>{guardianRelationshipLabel(invitation.relationship, locale)}</strong>
+                            <small>
+                              {invitation.phoneMasked || '—'} · {guardianInvitationStatus(invitation.status, locale)}
+                            </small>
+                          </span>
+                          {invitation.status === 'pending' && (
+                            <div>
+                              <button type="button" onClick={() => copyInvitationCode(invitation.linkCode)}>
+                                <Copy size={14} />
+                                {invitation.linkCode}
+                              </button>
+                              <button type="button" onClick={() => cancelGuardianInvitation(invitation._id)}>
+                                <X size={14} />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {guardianInvitations.every((invitation) => invitation.status !== 'pending') && profile?.user?.guardianLinkCode && (
+                    <div className="wn-student-guardian-fallback">
+                      <span>{locale === 'ar' ? 'كود احتياطي قديم' : 'Legacy fallback code'}</span>
+                      <button type="button" onClick={copyGuardianLinkCode}>
+                        <Copy size={14} />
+                        {profile.user.guardianLinkCode}
+                      </button>
+                    </div>
+                  )}
+                </section>
+
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl p-5">
                     <Trophy className="text-emerald-600 mb-2" size={28} />
@@ -1024,7 +1198,7 @@ export default function StudentDashboard() {
 
                 <div>
                   <div className="flex justify-between items-center mb-3">
-                    <h3 className="font-bold flex items-center gap-2"><Users size={18} /> {locale === 'id' ? 'Guru Saya' : locale === 'ar' ? 'معلموي' : 'My Tutors'} ({teachers.length})</h3>
+                    <h3 className="font-bold flex items-center gap-2"><Users size={18} /> {locale === 'id' ? 'Guru Saya' : locale === 'ar' ? 'معلمي' : 'My Tutors'} ({teachers.length})</h3>
                     <Link to={lp('/teachers')} className="text-sm text-emerald-600 hover:underline">{locale === 'id' ? 'Cari Guru' : locale === 'ar' ? 'ابحث عن معلم' : 'Find a Tutor'}</Link>
                   </div>
                   {teachers.length === 0 ? (

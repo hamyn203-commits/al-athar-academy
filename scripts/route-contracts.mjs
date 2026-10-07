@@ -82,6 +82,9 @@ assert.match(login, /searchParams\.get\(['"]redirect['"]\)/);
 const register = read('src/pages/Register/index.jsx');
 assert.match(register, /dashboardPathForRole\s*\(/);
 assert.match(register, /localizedPath\(['"]\/login['"]/);
+assert.match(register, /guardianPhone/);
+assert.match(register, /guardianRelationship/);
+assert.match(register, /required=\{role\s*===\s*['"]guardian['"]\}/);
 
 const redirects = read('src/components/DashboardRedirect.jsx');
 assert.match(redirects, /dashboardPathForRole/);
@@ -157,6 +160,9 @@ assert.match(studentDashboard, /primaryNavItems/);
 assert.match(studentDashboard, /secondaryNavItems/);
 assert.match(studentDashboard, /tab\s*===\s*['"]teacher-updates['"]/);
 assert.match(studentDashboard, /\/api\/teacher-updates\/student/);
+assert.match(studentDashboard, /\/api\/students\/dashboard\/guardian-invitations/);
+assert.match(studentDashboard, /submitGuardianInvitation/);
+assert.match(studentDashboard, /copyInvitationCode/);
 assert.doesNotMatch(studentDashboard, /<TabBar\s/);
 
 const errorBoundary = read('src/components/shared/ErrorBoundary.jsx');
@@ -220,3 +226,6 @@ assert.match(guardianDashboard, /\/api\/guardian\/family-overview/);
 assert.match(guardianDashboard, /\/api\/guardian\/homework\/\$\{selectedChildId\}/);
 assert.match(guardianDashboard, /children\.length\s*>\s*1[\s\S]{0,1200}كل الأبناء/);
 assert.match(guardianDashboard, /session\.instanceKey/);
+assert.match(guardianDashboard, /\/api\/guardian\/invitations/);
+assert.match(guardianDashboard, /respondToInvitation/);
+assert.match(guardianDashboard, /طلبات ربط جديدة/);

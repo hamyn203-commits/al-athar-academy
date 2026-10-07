@@ -20,6 +20,11 @@ function taskStatusLabel(status) {
   return labels[status] || status;
 }
 
+function invitationRelationshipLabel(value) {
+  const labels = { father: 'طلب ربط كأب', mother: 'طلب ربط كأم', guardian: 'طلب ربط كولي أمر', other: 'طلب ربط' };
+  return labels[value] || 'طلب ربط';
+}
+
 export default function GuardianDashboard() {
   const { user, ready, logout } = useRequireAuth(['guardian']);
   const toast = useToast();
@@ -33,6 +38,9 @@ export default function GuardianDashboard() {
   const [upcomingSessions, setUpcomingSessions] = useState([]);
   const [reports, setReports] = useState([]);
   const [homeworkTasks, setHomeworkTasks] = useState([]);
+  const [pendingInvitations, setPendingInvitations] = useState([]);
+  const [invitationMessage, setInvitationMessage] = useState('');
+  const [respondingInvitationId, setRespondingInvitationId] = useState('');
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('overview');
 
@@ -69,13 +77,14 @@ export default function GuardianDashboard() {
     if (!ready) return;
     setLoading(true);
     try {
-      const [childrenRes, familyRes, sessionsRes] = await Promise.all([
+      const [childrenRes, familyRes, sessionsRes, invitationRes] = await Promise.all([
         api.get('/api/guardian/children', { auth: true }).catch(() => ({ children: [] })),
         api.get('/api/guardian/family-overview', { auth: true }).catch(() => ({
           summary: { totalChildren: 0, upcomingSessions: 0, pendingHomework: 0, needsAttention: 0 },
           children: [],
         })),
         api.get('/api/guardian/upcoming-sessions', { auth: true }).catch(() => ({ sessions: [] })),
+        api.get('/api/guardian/invitations', { auth: true }).catch(() => ({ invitations: [], message: '' })),
       ]);
 
       const kidsList = childrenRes.children || [];
@@ -85,6 +94,8 @@ export default function GuardianDashboard() {
         children: familyRes.children || [],
       });
       setUpcomingSessions(sessionsRes.sessions || []);
+      setPendingInvitations(invitationRes.invitations || []);
+      setInvitationMessage(invitationRes.message || '');
 
       setSelectedChildId((current) => {
         if (!kidsList.length) return 'family';
@@ -176,11 +187,15 @@ export default function GuardianDashboard() {
             .catch(() => {});
         }
       }
+
+      if (type === 'system') {
+        loadDashboardData();
+      }
     };
 
     window.addEventListener('wn:realtime-notification', onRealtimeNotification);
     return () => window.removeEventListener('wn:realtime-notification', onRealtimeNotification);
-  }, [ready, syncUpcomingSessions, refreshFamilyOverview, selectedChildId]);
+  }, [ready, syncUpcomingSessions, refreshFamilyOverview, selectedChildId, loadDashboardData]);
 
   // Fetch only the selected child's private data. Family mode never mixes
   // reports or homework between siblings.
@@ -201,6 +216,19 @@ export default function GuardianDashboard() {
   }, [ready, selectedChildId]);
 
   // Link child handler
+  const respondToInvitation = async (invitationId, action) => {
+    setRespondingInvitationId(invitationId);
+    try {
+      await api.post(`/api/guardian/invitations/${invitationId}/respond`, { action }, { auth: true });
+      toast.success(action === 'accept' ? 'تم ربط الابن بحسابك' : 'تم رفض طلب الربط');
+      await loadDashboardData();
+    } catch (error) {
+      toast.error(error.message || 'تعذر تحديث طلب الربط');
+    } finally {
+      setRespondingInvitationId('');
+    }
+  };
+
   const handleLinkChild = async (e) => {
     e.preventDefault();
     if (!linkInput.trim()) {
@@ -355,6 +383,61 @@ export default function GuardianDashboard() {
               </div>
             )}
           </div>
+
+          {pendingInvitations.length > 0 && (
+            <section className="wn-guardian-invitations">
+              <div className="wn-guardian-invitations__heading">
+                <div>
+                  <span>طلبات ربط جديدة</span>
+                  <h3>أبناء استخدموا رقمك كولي أمر</h3>
+                  <p>راجع الاسم ثم وافق أو ارفض. لن تظهر بيانات الطالب الكاملة قبل الموافقة.</p>
+                </div>
+                <b>{pendingInvitations.length}</b>
+              </div>
+
+              <div className="wn-guardian-invitations__list">
+                {pendingInvitations.map((invitation) => (
+                  <article key={invitation._id}>
+                    <span className="wn-guardian-child-avatar">
+                      {invitation.student?.name?.charAt(0) || 'ط'}
+                    </span>
+                    <div>
+                      <span>{invitationRelationshipLabel(invitation.relationship)}</span>
+                      <h4>{invitation.student?.name || 'طالب'}</h4>
+                      <small>الرقم المطابق: {invitation.phoneMasked || '—'}</small>
+                    </div>
+                    <div className="wn-guardian-invitations__actions">
+                      <button
+                        type="button"
+                        onClick={() => respondToInvitation(invitation._id, 'accept')}
+                        disabled={respondingInvitationId === invitation._id}
+                        className="is-accept"
+                      >
+                        <Check size={15} />
+                        تأكيد
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => respondToInvitation(invitation._id, 'reject')}
+                        disabled={respondingInvitationId === invitation._id}
+                        className="is-reject"
+                      >
+                        <XCircle size={15} />
+                        رفض
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {!pendingInvitations.length && invitationMessage && (
+            <div className="wn-guardian-invitation-note">
+              <ShieldCheck size={17} />
+              <span>{invitationMessage}</span>
+            </div>
+          )}
 
           {/* Family command center or selected child metrics */}
           {isFamilyMode && children.length > 0 ? (

@@ -14,6 +14,8 @@ const {
 const { addMockUser, findMockUserByEmail, findMockUserById, updateMockUser } = require('../mockStore');
 const { sendEmail } = require('../services/notificationDispatcher');
 const { getTeacherAccessDecision } = require('../utils/teacherAccess');
+const { normalizePhone } = require('../utils/phone');
+const { createGuardianInvitation } = require('../services/guardianInvitations');
 
 const { isMockMode } = require('../config/runtime');
 const isDBConnected = () => mongoose.connection.readyState === 1;
@@ -55,7 +57,7 @@ function sanitizeUserResponse(user) {
 
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, password, phone, role } = req.body;
+    const { name, email, password, phone, role, guardianPhone, guardianRelationship } = req.body;
     const normalizedEmail = String(email || '').trim().toLowerCase();
     const allowedRoles = ['student', 'guardian'];
 
@@ -75,6 +77,11 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'This role cannot be self-registered' });
     }
     const assignedRole = role || 'student';
+    const normalizedPhone = normalizePhone(phone);
+
+    if (assignedRole === 'guardian' && !normalizedPhone) {
+      return res.status(400).json({ error: 'رقم هاتف ولي الأمر مطلوب لإنشاء الحساب' });
+    }
 
     if (!isMockMode || isDBConnected()) {
       const existingUser = await User.findOne({ email: normalizedEmail });
@@ -84,17 +91,43 @@ router.post('/register', async (req, res) => {
         });
       }
 
+      if (assignedRole === 'guardian') {
+        const guardianPhoneOwner = await User.findOne({
+          role: 'guardian',
+          phoneNormalized: normalizedPhone,
+          isActive: { $ne: false },
+        }).select('_id');
+        if (guardianPhoneOwner) {
+          return res.status(409).json({
+            error: 'يوجد حساب ولي أمر مسجل بالفعل بهذا الرقم. سجل الدخول إلى الحساب الحالي.',
+            code: 'GUARDIAN_PHONE_ALREADY_REGISTERED',
+          });
+        }
+      }
+
       const user = await User.create({
         name,
         email: normalizedEmail,
         password,
         phone,
+        phoneNormalized: normalizedPhone || undefined,
         role: assignedRole,
       });
 
       if (req.body.referralCode && user.role === 'student') {
         const { processReferralSignup } = require('./referrals');
         await processReferralSignup(req.body.referralCode, user._id).catch(() => {});
+      }
+
+      if (user.role === 'student' && guardianPhone) {
+        await createGuardianInvitation({
+          studentId: user._id,
+          guardianPhone,
+          relationship: guardianRelationship || 'guardian',
+          source: 'student-registration',
+        }).catch((error) => {
+          console.warn('Guardian invitation creation warning:', error.message);
+        });
       }
 
       const accessToken = generateAccessToken(user);
@@ -167,7 +200,7 @@ router.post('/login', async (req, res) => {
 
     const user = isMockMode && !isDBConnected()
       ? findMockUserByEmail(email)
-      : await User.findOne({ email: email.toLowerCase() }).select('+password +refreshTokenVersion');
+      : await User.findOne({ email: email.toLowerCase() }).select('+password +refreshTokenVersion +phoneNormalized');
     
     if (!user) {
       return res.status(401).json({ 
@@ -209,6 +242,9 @@ router.post('/login', async (req, res) => {
 
     if (!isMockMode || isDBConnected()) {
       user.lastLogin = new Date();
+      if (user.phone) {
+        user.phoneNormalized = normalizePhone(user.phone) || undefined;
+      }
       await user.save();
     } else {
       updateMockUser(user._id || user.id, { lastLogin: new Date() });
