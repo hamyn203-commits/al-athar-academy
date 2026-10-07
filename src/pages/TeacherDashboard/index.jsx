@@ -730,99 +730,251 @@ export default function TeacherDashboard() {
             )}
 
             {tab === 'account' && teacher && (
-              <div className="space-y-6">
-                <div className="wn-dashboard-gold-card rounded-2xl p-5">
-                <div className="flex justify-between items-center mb-2">
-                  <div className="flex items-center gap-2"><Wallet className="text-emerald-600" /><h3 className="font-bold">محفظتي</h3></div>
-                  <button type="button" onClick={() => setAiModal(true)} className="text-sm flex items-center gap-1 text-purple-600 hover:underline">
-                    <Sparkles size={16} /> مساعد AI
-                  </button>
-                </div>
-                  <p className="text-3xl font-bold text-emerald-700">{wallet.pendingEarnings || 0} <span className="text-lg">ج.م</span></p>
-                  <p className="text-sm text-slate-600 mt-2">
-                    كل حصة = ساعة واحدة = <strong>{SESSION_RATE} ج.م</strong> (ثابت)
-                  </p>
-                  <div className="grid grid-cols-2 gap-3 mt-4 text-sm">
-                    <div className="bg-white rounded-lg p-3"><span className="text-slate-500">إجمالي الأرباح</span><p className="font-bold">{wallet.totalEarned || 0} ج.م</p></div>
-                    <div className="bg-white rounded-lg p-3"><span className="text-slate-500">تم سحبه</span><p className="font-bold">{wallet.withdrawn || 0} ج.م</p></div>
+              <div className="wn-teacher-profile-view">
+                <section className="wn-teacher-profile-card">
+                  <div className="wn-teacher-profile-card__top">
+                    <div className="wn-teacher-profile-card__avatar">
+                      {(teacher.personalInfo?.fullName || user?.name || 'م').slice(0, 1)}
+                    </div>
+                    <div>
+                      <span className="wn-teacher-profile-card__status"><CheckCircle2 size={14} /> {statusLabel(teacher.status)}</span>
+                      <h3>{teacher.personalInfo?.fullName || user?.name}</h3>
+                      <p>{teacher.academicInfo?.qualification || teacher.academicInfo?.specialization || 'معلم قرآن كريم'}</p>
+                    </div>
+                    <button type="button" onClick={() => setAiModal(true)} className="wn-teacher-ai-button">
+                      <Sparkles size={16} /> مساعد المعلم
+                    </button>
                   </div>
-                  <p className="text-xs text-slate-500 mt-3">متاح للسحب: <strong>{availableBalance} ج.م</strong></p>
+
+                  <div className="wn-teacher-profile-grid">
+                    <InfoRow label="البريد" value={user?.email} />
+                    <InfoRow label="الهاتف" value={teacher.personalInfo?.phone} />
+                    <InfoRow label="البلد" value={teacher.personalInfo?.country} />
+                    <InfoRow label="المدينة" value={teacher.personalInfo?.city} />
+                    <InfoRow label="الجامعة" value={teacher.academicInfo?.university} />
+                    <InfoRow label="التخصص" value={teacher.academicInfo?.specialization} />
+                    <InfoRow label="سنوات الخبرة" value={teacher.quranInfo?.teachingExperience} />
+                    <InfoRow label="الإجازات" value={teacher.quranInfo?.numberOfIjazat} />
+                  </div>
+
+                  <div className="wn-teacher-profile-note">
+                    <AlertTriangle size={17} />
+                    <div>
+                      <strong>بيانات الملف العام</strong>
+                      <p>تعديل البيانات التي تظهر للطلاب سيخضع لمراجعة الإدارة عند تفعيل محرر الملف العام.</p>
+                    </div>
+                  </div>
+                </section>
+              </div>
+            )}
+
+            {tab === 'wallet' && (
+              <div className="wn-teacher-wallet">
+                <div className="wn-teacher-wallet__hero">
+                  <div>
+                    <span>الرصيد المتاح للسحب</span>
+                    <h3>{egpBalance.available || 0} <small>ج.م</small></h3>
+                    <p>النظام المالي الجديد يعتمد سجل معاملات واحد لكل استحقاق وسحب.</p>
+                  </div>
+                  <Wallet size={34} />
                 </div>
 
-                {availableBalance >= SESSION_RATE && (
-                  <form onSubmit={requestWithdraw} className="border border-slate-200 rounded-xl p-5 space-y-3">
-                    <h3 className="font-bold text-sm">طلب سحب أرباح</h3>
-                    <div className="grid md:grid-cols-3 gap-3">
-                      <input type="number" min={SESSION_RATE} step={SESSION_RATE} required placeholder={`المبلغ (min ${SESSION_RATE})`}
-                        value={withdrawForm.amount} onChange={(e) => setWithdrawForm((p) => ({ ...p, amount: e.target.value }))}
-                        className="input-field" />
-                      <select value={withdrawForm.method} onChange={(e) => setWithdrawForm((p) => ({ ...p, method: e.target.value }))}
-                        className="input-field">
-                        <option value="vodafone_cash">فودافون كاش</option>
-                        <option value="instapay">InstaPay</option>
-                        <option value="bank">حساب بنكي</option>
-                      </select>
-                      <input required placeholder="رقم المحفظة / IBAN"
-                        value={withdrawForm.accountInfo} onChange={(e) => setWithdrawForm((p) => ({ ...p, accountInfo: e.target.value }))}
-                        className="input-field" />
+                <div className="wn-teacher-wallet__stats">
+                  <div><span>إجمالي المستحقات</span><strong>{egpBalance.totalEarned || 0} ج.م</strong></div>
+                  <div><span>طلبات سحب معلقة</span><strong>{egpBalance.pending || 0} ج.م</strong></div>
+                  <div><span>تم سحبه</span><strong>{egpBalance.withdrawn || 0} ج.م</strong></div>
+                </div>
+
+                <div className="wn-teacher-wallet__grid">
+                  <form onSubmit={requestWithdraw} className="wn-teacher-wallet__payout">
+                    <div className="wn-teacher-section-heading">
+                      <div><span>طلب جديد</span><h3>سحب الأرباح</h3></div>
                     </div>
-                    <button type="submit" disabled={withdrawing} className="btn-primary text-sm">
+
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      <div>
+                        <label>المبلغ</label>
+                        <input
+                          type="number"
+                          required
+                          min={finance?.limits?.minPayoutEGP || 100}
+                          value={withdrawForm.amount}
+                          onChange={(event) => setWithdrawForm((current) => ({ ...current, amount: event.target.value }))}
+                          className="input-field w-full"
+                          placeholder={`الحد الأدنى ${finance?.limits?.minPayoutEGP || 100} ج.م`}
+                        />
+                      </div>
+                      <div>
+                        <label>وسيلة السحب</label>
+                        <select
+                          value={withdrawForm.payoutMethod}
+                          onChange={(event) => setWithdrawForm((current) => ({ ...current, payoutMethod: event.target.value }))}
+                          className="input-field w-full"
+                        >
+                          <option value="vodafone_cash">محفظة إلكترونية</option>
+                          <option value="instapay">InstaPay</option>
+                          <option value="bank_transfer">تحويل بنكي</option>
+                          <option value="paypal">PayPal</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {withdrawForm.payoutMethod === 'vodafone_cash' && (
+                      <input
+                        required
+                        className="input-field w-full"
+                        placeholder="رقم المحفظة — 01xxxxxxxxx"
+                        value={withdrawForm.phone}
+                        onChange={(event) => setWithdrawForm((current) => ({ ...current, phone: event.target.value }))}
+                      />
+                    )}
+                    {withdrawForm.payoutMethod === 'instapay' && (
+                      <div className="grid sm:grid-cols-2 gap-3">
+                        <input
+                          className="input-field w-full"
+                          placeholder="InstaPay IPA"
+                          value={withdrawForm.ipaAddress}
+                          onChange={(event) => setWithdrawForm((current) => ({ ...current, ipaAddress: event.target.value }))}
+                        />
+                        <input
+                          className="input-field w-full"
+                          placeholder="أو رقم الهاتف"
+                          value={withdrawForm.phone}
+                          onChange={(event) => setWithdrawForm((current) => ({ ...current, phone: event.target.value }))}
+                        />
+                      </div>
+                    )}
+                    {withdrawForm.payoutMethod === 'bank_transfer' && (
+                      <div className="grid sm:grid-cols-2 gap-3">
+                        <input
+                          required
+                          className="input-field w-full"
+                          placeholder="اسم البنك"
+                          value={withdrawForm.bankName}
+                          onChange={(event) => setWithdrawForm((current) => ({ ...current, bankName: event.target.value }))}
+                        />
+                        <input
+                          required
+                          className="input-field w-full"
+                          placeholder="رقم الحساب / IBAN"
+                          value={withdrawForm.bankAccountNumber}
+                          onChange={(event) => setWithdrawForm((current) => ({ ...current, bankAccountNumber: event.target.value }))}
+                        />
+                      </div>
+                    )}
+                    {withdrawForm.payoutMethod === 'paypal' && (
+                      <input
+                        required
+                        type="email"
+                        className="input-field w-full"
+                        placeholder="بريد PayPal"
+                        value={withdrawForm.paypalEmail}
+                        onChange={(event) => setWithdrawForm((current) => ({ ...current, paypalEmail: event.target.value }))}
+                      />
+                    )}
+
+                    <button type="submit" disabled={withdrawing} className="wn-teacher-primary-action">
                       {withdrawing ? 'جاري الإرسال...' : 'إرسال طلب السحب'}
                     </button>
                   </form>
-                )}
 
-                {withdrawals.length > 0 && (
-                  <div>
-                    <h3 className="font-bold text-sm mb-2">سجل السحوبات</h3>
-                    <div className="space-y-2">
-                      {withdrawals.map((w) => (
-                        <div key={w._id} className="flex justify-between items-center border rounded-lg p-3 text-sm">
-                          <div>
-                            <span className="font-bold">{w.amount} ج.م</span>
-                            <span className="text-slate-500 mx-2">—</span>
-                            <span className="text-slate-600">{w.method}</span>
-                            <p className="text-xs text-slate-400 mt-0.5">{new Date(w.createdAt).toLocaleDateString('ar-EG')}</p>
-                          </div>
-                          <span className={`text-xs px-2 py-1 rounded ${
-                            w.status === 'approved' ? 'bg-green-100 text-green-700'
-                              : w.status === 'rejected' ? 'bg-red-100 text-red-700'
-                              : 'bg-yellow-100 text-yellow-700'
-                          }`}>
-                            {w.status === 'approved' ? 'تم التحويل' : w.status === 'rejected' ? 'مرفوض' : 'قيد المراجعة'}
-                          </span>
-                        </div>
-                      ))}
+                  <section className="wn-teacher-wallet__transactions">
+                    <div className="wn-teacher-section-heading">
+                      <div><span>السجل المالي</span><h3>آخر المعاملات</h3></div>
                     </div>
-                  </div>
-                )}
-                <div className="grid md:grid-cols-2 gap-4 text-sm">
-                  <InfoRow label="الاسم" value={teacher.personalInfo?.fullName} />
-                  <InfoRow label="البريد" value={user?.email} />
-                  <InfoRow label="الهاتف" value={teacher.personalInfo?.phone} />
-                  <InfoRow label="البلد" value={teacher.personalInfo?.country} />
-                  <InfoRow label="الجامعة" value={teacher.academicInfo?.university} />
-                  <InfoRow label="الحالة" value={statusLabel(teacher.status)} />
+                    {transactions.length === 0 ? (
+                      <div className="wn-teacher-empty-state compact">
+                        <Wallet size={24} />
+                        <div><strong>لا معاملات بعد</strong><p>ستظهر استحقاقات الحصص وطلبات السحب هنا.</p></div>
+                      </div>
+                    ) : (
+                      <div className="wn-teacher-transaction-list">
+                        {transactions.slice(0, 12).map((transaction) => (
+                          <div key={transaction._id}>
+                            <span className={'wn-teacher-transaction-icon ' + (transaction.type === 'payout' ? 'is-out' : 'is-in')}>
+                              {transaction.type === 'payout' ? '−' : '+'}
+                            </span>
+                            <span>
+                              <strong>
+                                {transaction.type === 'session_earning'
+                                  ? 'مستحق حصة'
+                                  : transaction.type === 'payout'
+                                    ? 'طلب سحب'
+                                    : transaction.type === 'adjustment'
+                                      ? 'رصيد مرحّل'
+                                      : 'معاملة'}
+                              </strong>
+                              <small>{new Date(transaction.createdAt).toLocaleString('ar-EG')}</small>
+                            </span>
+                            <span className="wn-teacher-transaction-amount">
+                              <strong>{transaction.type === 'payout' ? '−' : '+'}{transaction.amount} {transaction.currency}</strong>
+                              <small>{financeStatusLabel(transaction.status)}</small>
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </section>
                 </div>
               </div>
             )}
 
             {tab === 'schedule' && (
-              <div className="space-y-4">
-                <p className="text-sm text-slate-600">حدّد أوقات فراغك الأسبوعية — يراها الطلاب عند الحجز</p>
-                {schedule.map((row, i) => (
-                  <div key={row.day} className="flex flex-wrap items-center gap-3 border rounded-lg p-3">
-                    <span className="w-20 font-medium text-sm">{row.label}</span>
-                    <input type="time" className="input-field w-32" value={row.startTime}
-                      onChange={(e) => setSchedule((p) => p.map((r, j) => j === i ? { ...r, startTime: e.target.value } : r))} />
-                    <span className="text-slate-400">—</span>
-                    <input type="time" className="input-field w-32" value={row.endTime}
-                      onChange={(e) => setSchedule((p) => p.map((r, j) => j === i ? { ...r, endTime: e.target.value } : r))} />
+              <div className="wn-teacher-schedule">
+                <div className="wn-teacher-schedule__intro">
+                  <div>
+                    <span>إدارة التوفر</span>
+                    <h3>جدولك الأسبوعي</h3>
+                    <p>يمكنك إضافة أكثر من فترة في اليوم نفسه. يمنع النظام الفترات المتداخلة تلقائيًا.</p>
                   </div>
-                ))}
-                <button type="button" onClick={saveSchedule} disabled={savingSchedule} className="btn-primary text-sm">
-                  {savingSchedule ? 'جاري الحفظ...' : 'حفظ الجدول'}
-                </button>
+                  <button type="button" onClick={saveSchedule} disabled={savingSchedule} className="wn-teacher-primary-action">
+                    {savingSchedule ? 'جاري الحفظ...' : 'حفظ التوفر'}
+                  </button>
+                </div>
+
+                <div className="wn-teacher-schedule__days">
+                  {schedule.map((day, dayIndex) => (
+                    <section key={day.day} className="wn-teacher-schedule-day">
+                      <div className="wn-teacher-schedule-day__heading">
+                        <div>
+                          <strong>{day.label}</strong>
+                          <small>{day.slots.length ? `${day.slots.length} فترة متاحة` : 'غير متاح'}</small>
+                        </div>
+                        <button type="button" onClick={() => addScheduleSlot(dayIndex)}>
+                          <Plus size={15} /> إضافة فترة
+                        </button>
+                      </div>
+
+                      {day.slots.length === 0 ? (
+                        <div className="wn-teacher-schedule-day__off">لا توجد أوقات متاحة في هذا اليوم</div>
+                      ) : (
+                        <div className="wn-teacher-schedule-day__slots">
+                          {day.slots.map((slot, slotIndex) => (
+                            <div key={`${day.day}-${slotIndex}`}>
+                              <Clock size={16} />
+                              <input
+                                type="time"
+                                className="input-field"
+                                value={slot.startTime}
+                                onChange={(event) => updateScheduleSlot(dayIndex, slotIndex, 'startTime', event.target.value)}
+                              />
+                              <span>إلى</span>
+                              <input
+                                type="time"
+                                className="input-field"
+                                value={slot.endTime}
+                                onChange={(event) => updateScheduleSlot(dayIndex, slotIndex, 'endTime', event.target.value)}
+                              />
+                              <button type="button" onClick={() => removeScheduleSlot(dayIndex, slotIndex)} aria-label="حذف الفترة">
+                                <X size={16} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </section>
+                  ))}
+                </div>
               </div>
             )}
 
