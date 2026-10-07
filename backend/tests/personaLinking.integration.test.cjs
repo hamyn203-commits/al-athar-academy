@@ -14,9 +14,11 @@ const Session = require('../models/Session');
 const Guardian = require('../models/Guardian');
 const LiveSession = require('../models/LiveSession');
 const Notification = require('../models/Notification');
+const app = require('../app');
+const { generateAccessToken } = require('../middleware/auth');
 
-// Models must compile while disconnected; after compilation we simulate an
-// available database because all model IO below is replaced with in-memory stubs.
+// Compile the full application while disconnected. Only after every model has
+// been registered do we simulate an available DB; model IO is stubbed below.
 mongoose.connection.readyState = 1;
 
 const oid = () => new mongoose.Types.ObjectId().toString();
@@ -153,9 +155,6 @@ Session.countDocuments = async (filter = {}) => sessions.filter((s) => matchSess
 Guardian.findOne = (filter = {}) => query(String(filter.user) === ids.guardian ? guardian : null);
 LiveSession.find = () => query([]);
 Notification.createAndSend = async () => ({ success: true });
-
-const { generateAccessToken } = require('../middleware/auth');
-const app = require('../app');
 
 const auth = (id) => generateAccessToken(users.get(id));
 
