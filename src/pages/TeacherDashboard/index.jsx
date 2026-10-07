@@ -1609,6 +1609,88 @@ export default function TeacherDashboard() {
   );
 }
 
+function TeacherCommandBar({ primaryItems, secondaryItems, active, onChange, actionCount }) {
+  const [moreOpen, setMoreOpen] = useState(false);
+  const secondaryActiveItem = secondaryItems.find((item) => item.id === active);
+
+  const selectItem = (id) => {
+    onChange(id);
+    setMoreOpen(false);
+  };
+
+  return (
+    <div className="wn-teacher-command-shell">
+      <nav className="wn-teacher-command" aria-label="التنقل داخل مساحة المعلم">
+        <div className="wn-teacher-command__identity" aria-hidden="true">
+          <span><BookOpen size={17} /></span>
+          <div>
+            <strong>مساحة المعلم</strong>
+            <small>إدارة يومك التعليمي</small>
+          </div>
+        </div>
+
+        <div className="wn-teacher-command__primary">
+          {primaryItems.map(({ id, label, icon: Icon, badge }) => {
+            const selected = active === id;
+            return (
+              <button
+                type="button"
+                key={id}
+                onClick={() => selectItem(id)}
+                className={'wn-teacher-command__item ' + (selected ? 'is-active' : '')}
+                aria-current={selected ? 'page' : undefined}
+              >
+                <span className="wn-teacher-command__icon"><Icon size={18} /></span>
+                <strong>{label}</strong>
+                {badge ? <b>{badge}</b> : null}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="wn-teacher-command__more">
+          <button
+            type="button"
+            onClick={() => setMoreOpen((value) => !value)}
+            className={'wn-teacher-command__item wn-teacher-command__more-button ' + (secondaryActiveItem ? 'is-active' : '')}
+            aria-expanded={moreOpen}
+          >
+            <span className="wn-teacher-command__icon"><MoreHorizontal size={19} /></span>
+            <span>
+              <strong>المزيد</strong>
+              {secondaryActiveItem ? <small>{secondaryActiveItem.label}</small> : null}
+            </span>
+            {actionCount > 0 && active === 'overview' ? <i>{actionCount}</i> : null}
+          </button>
+
+          {moreOpen && (
+            <div className="wn-teacher-command__panel">
+              <div className="wn-teacher-command__panel-heading">
+                <div><span>أدوات المعلم</span><strong>إدارة المساحة</strong></div>
+                <button type="button" onClick={() => setMoreOpen(false)} aria-label="إغلاق"><X size={17} /></button>
+              </div>
+              <div className="wn-teacher-command__panel-grid">
+                {secondaryItems.map(({ id, label, icon: Icon, description }) => (
+                  <button
+                    type="button"
+                    key={id}
+                    onClick={() => selectItem(id)}
+                    className={active === id ? 'is-active' : ''}
+                  >
+                    <span><Icon size={18} /></span>
+                    <span><strong>{label}</strong><small>{description}</small></span>
+                    <ChevronLeft size={15} />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </nav>
+    </div>
+  );
+}
+
 function Modal({ title, onClose, children, wide = false }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" dir="rtl">
