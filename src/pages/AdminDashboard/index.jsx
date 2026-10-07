@@ -150,16 +150,22 @@ export default function AdminDashboard() {
     const interval = window.setInterval(refreshQueue, 12000);
     const onFocus = () => refreshQueue();
     const onVisibility = () => refreshQueue();
+    const onRealtime = () => {
+      load().catch?.(() => {});
+      loadPendingTeachers().catch(() => {});
+    };
 
     window.addEventListener('focus', onFocus);
+    window.addEventListener('wn:realtime', onRealtime);
     document.addEventListener('visibilitychange', onVisibility);
 
     return () => {
       window.clearInterval(interval);
       window.removeEventListener('focus', onFocus);
+      window.removeEventListener('wn:realtime', onRealtime);
       document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [ready, tab, loadPendingTeachers]);
+  }, [ready, tab, loadPendingTeachers, load]);
 
   if (!ready) return null;
 
