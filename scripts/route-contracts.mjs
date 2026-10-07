@@ -206,6 +206,27 @@ assert.match(teacherReviewDossier, /approvalReady/);
 assert.match(teacherReviewDossier, /onOpenDocument/);
 assert.match(teacherReviewDossier, /onOpenMedia/);
 
+
+const adminPeopleSearch = read('src/pages/AdminDashboard/AdminPeopleSearch.jsx');
+const student360Dossier = read('src/pages/AdminDashboard/Student360Dossier.jsx');
+const family360Dossier = read('src/pages/AdminDashboard/Family360Dossier.jsx');
+assert.match(adminDashboard, /AdminPeopleSearch/);
+assert.match(adminDashboard, /openStudentDossier/);
+assert.match(adminDashboard, /\/api\/admin\/people\/students\/\$\{studentId\}/);
+assert.match(adminDashboard, /\/api\/admin\/people\/guardians\/\$\{guardianId\}/);
+assert.match(adminDashboard, /\/api\/homework\/tasks\/\$\{taskId\}\/file\?reason=student-360-review/);
+assert.match(adminPeopleSearch, /\/api\/admin\/people\/search\?q=/);
+assert.match(adminPeopleSearch, /onOpenStudent/);
+assert.match(adminPeopleSearch, /onOpenGuardian/);
+assert.match(adminPeopleSearch, /onOpenTeacher/);
+assert.match(student360Dossier, /Student 360/);
+assert.match(student360Dossier, /الحصص والتقارير/);
+assert.match(student360Dossier, /الواجبات والتسليمات/);
+assert.match(student360Dossier, /المدفوعات/);
+assert.match(family360Dossier, /Family 360/);
+assert.match(family360Dossier, /الأبناء/);
+assert.match(family360Dossier, /طلبات الربط/);
+
 const app = read('src/App.jsx');
 assert.match(
   app,
