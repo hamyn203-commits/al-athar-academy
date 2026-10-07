@@ -1,5 +1,4 @@
-import { Home, LogOut } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { LogOut } from 'lucide-react';
 import BrandLogo from '../BrandLogo';
 import NotificationBell from '../NotificationBell';
 import { useI18n } from '../../i18n';
@@ -16,8 +15,14 @@ export default function DashboardLayout({ title, user, onLogout, children }) {
       ? 'مرحبًا، ' + (user?.name || '')
       : 'Welcome, ' + (user?.name || '');
 
-  const websiteLabel = locale === 'id' ? 'Situs' : locale === 'ar' ? 'الموقع' : 'Website';
   const logoutLabel = locale === 'id' ? 'Keluar' : locale === 'ar' ? 'خروج' : 'Logout';
+
+  const dashboardPath = {
+    student: '/student/dashboard',
+    teacher: '/teacher/dashboard',
+    guardian: '/guardian/dashboard',
+    admin: '/admin',
+  }[user?.role] || '/';
 
   return (
     <div className="wn-dashboard-shell" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -26,7 +31,7 @@ export default function DashboardLayout({ title, user, onLogout, children }) {
         <div className="page-container wn-dashboard-header__inner">
           <div className="flex items-center gap-3 min-w-0">
             <div className="wn-dashboard-brand shrink-0">
-              <BrandLogo size={42} to={lp('/')} />
+              <BrandLogo size={42} to={lp(dashboardPath)} />
             </div>
             <div className="min-w-0">
               <h1 className="wn-dashboard-title truncate">{title}</h1>
@@ -36,10 +41,6 @@ export default function DashboardLayout({ title, user, onLogout, children }) {
 
           <div className="wn-dashboard-actions">
             <NotificationBell />
-            <Link to={lp('/')} className="wn-dashboard-action">
-              <Home size={15} />
-              <span>{websiteLabel}</span>
-            </Link>
             <button type="button" onClick={onLogout} className="wn-dashboard-action hover:!text-red-700 hover:!border-red-200">
               <LogOut size={15} />
               <span>{logoutLabel}</span>
