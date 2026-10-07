@@ -14,6 +14,7 @@ const { deleteStoredReference } = require('../utils/storageLifecycle');
 const SESSION_RATE = 50;
 const HOMEWORK_UPLOAD_ROOT = path.resolve(process.cwd(), 'uploads', 'homework');
 const { isMockMode } = require('../config/runtime');
+const { safeTimeZone } = require('../services/sessionScheduling');
 
 // Simple mock-mode fallbacks so the teacher dashboard works in local dev without DB.
 if (isMockMode) {
@@ -667,9 +668,12 @@ function normalizeAvailabilityDays(availability) {
 
 router.get('/availability', protect, authorize('teacher'), async (req, res) => {
   try {
-    const teacher = await Teacher.findOne({ user: req.user.id }).select('availability');
+    const teacher = await Teacher.findOne({ user: req.user.id }).select('availability availabilityTimezone');
     if (!teacher) return res.status(404).json({ error: 'Teacher profile not found' });
-    res.json({ availability: teacher.availability || [] });
+    res.json({
+      availability: teacher.availability || [],
+      timezone: safeTimeZone(teacher.availabilityTimezone),
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -680,16 +684,22 @@ router.put('/availability', protect, authorize('teacher'), async (req, res) => {
     const teacher = await Teacher.findOne({ user: req.user.id });
     if (!teacher) return res.status(404).json({ error: 'Teacher profile not found' });
 
-    const { availability } = req.body;
+    const { availability, timezone } = req.body;
     if (!Array.isArray(availability)) {
       return res.status(400).json({ error: 'availability must be an array' });
     }
 
     const cleaned = normalizeAvailabilityDays(availability);
+    const normalizedTimezone = safeTimeZone(timezone || teacher.availabilityTimezone);
 
     teacher.availability = cleaned;
+    teacher.availabilityTimezone = normalizedTimezone;
     await teacher.save();
-    res.json({ success: true, availability: teacher.availability });
+    res.json({
+      success: true,
+      availability: teacher.availability,
+      timezone: teacher.availabilityTimezone,
+    });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
