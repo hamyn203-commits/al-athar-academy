@@ -20,7 +20,7 @@ function connectionId() {
 
 export default function RealtimeBridge() {
   const { isAuthenticated, isLoading, user } = useAuth();
-  const toast = useToast();
+  const { info } = useToast();
   const { locale } = useI18n();
   const connectionIdRef = useRef(connectionId());
 
@@ -55,7 +55,7 @@ export default function RealtimeBridge() {
               const title = localized(notification.title, locale) || 'تنبيه جديد';
               const message = localized(notification.message, locale);
 
-              toast.info(message || title, {
+              info(message || title, {
                 title,
                 duration: notification.priority === 'urgent' || notification.priority === 'high' ? 7000 : 4500,
                 position: 'top-right',
@@ -96,7 +96,7 @@ export default function RealtimeBridge() {
       active = false;
       room?.disconnect?.();
     };
-  }, [isAuthenticated, isLoading, user?._id, user?.id, locale, toast]);
+  }, [isAuthenticated, isLoading, user?._id, user?.id, locale, info]);
 
   return null;
 }
