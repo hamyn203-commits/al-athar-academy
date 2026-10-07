@@ -11,7 +11,9 @@ const emptyFiles = () => ({
   graduationCertificate: null,
   tajweedCertificates: [],
   ijazat: [],
+  introductionVideo: null,
   recitationVideos: [],
+  teachingMethodVideo: null,
 });
 
 const normalizeEmail = (value) => String(value || '').trim().toLowerCase();
@@ -70,7 +72,9 @@ function validateTeacherFiles(files) {
     [files.graduationCertificate, FILE_RULES.privateDocument],
     ...((files.tajweedCertificates || []).map((file) => [file, FILE_RULES.privateDocument])),
     ...((files.ijazat || []).map((file) => [file, FILE_RULES.privateDocument])),
+    [files.introductionVideo, FILE_RULES.recitationVideo],
     ...((files.recitationVideos || []).map((file) => [file, FILE_RULES.recitationVideo])),
+    [files.teachingMethodVideo, FILE_RULES.recitationVideo],
   ];
 
   for (const [file, rule] of checks) {
@@ -250,7 +254,9 @@ export function useTeacherForm() {
         if (!files.profilePhoto) return 'ارفع صورة شخصية 4×6';
         if (!files.idCardFront) return 'ارفع صورة وجه البطاقة الشخصية';
         if (!files.idCardBack) return 'ارفع صورة ظهر البطاقة الشخصية';
+        if (!files.introductionVideo) return 'ارفع فيديو تعريفي قصير';
         if (!files.recitationVideos?.length) return 'ارفع فيديو تلاوة واحد على الأقل';
+        if (!files.teachingMethodVideo) return 'ارفع فيديو يوضح طريقة التدريس';
 
         if (typeof docs.graduationCertificate !== 'boolean') {
           return 'حدد هل شهادة التخرج موجودة أم غير موجودة';
@@ -318,7 +324,9 @@ export function useTeacherForm() {
         graduationCertificate,
         tajweedCertificates,
         ijazat,
+        introductionVideo,
         recitationVideo,
+        teachingMethodVideo,
       ] = await Promise.all([
         uploadOne(files.profilePhoto, 'teacher-public'),
         uploadOne(files.idCardFront, 'teacher-private'),
@@ -332,7 +340,9 @@ export function useTeacherForm() {
         formData.documentAvailability.ijazat
           ? uploadMany(files.ijazat, 'teacher-private')
           : Promise.resolve([]),
+        uploadOne(files.introductionVideo, 'teacher-public'),
         uploadMany(files.recitationVideos, 'teacher-public'),
+        uploadOne(files.teachingMethodVideo, 'teacher-public'),
       ]);
 
       const payload = {
@@ -372,7 +382,9 @@ export function useTeacherForm() {
           graduationCertificate,
           tajweedCertificates,
           ijazat,
+          introductionVideo,
           recitationVideo,
+          teachingMethodVideo,
         },
       };
 
