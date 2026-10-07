@@ -87,6 +87,9 @@ export default function NotificationBell() {
     if (notification.data?.meetingLink) {
       return localizeInternalHref(notification.data.meetingLink, locale);
     }
+    if (notification.data?.actionUrl) {
+      return localizeInternalHref(notification.data.actionUrl, locale);
+    }
     const links = {
       'session-request': '/teacher/dashboard',
       'session-accepted': '/student/dashboard',
