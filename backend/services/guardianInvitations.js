@@ -3,6 +3,7 @@ const Guardian = require('../models/Guardian');
 const GuardianInvitation = require('../models/GuardianInvitation');
 const User = require('../models/User');
 const { normalizePhone, maskPhone } = require('../utils/phone');
+const { notifyUser } = require('../utils/notify');
 
 const INVITATION_TTL_DAYS = 180;
 
@@ -20,6 +21,34 @@ async function createUniqueLinkCode() {
 
 function invitationExpiresAt() {
   return new Date(Date.now() + (INVITATION_TTL_DAYS * 24 * 60 * 60 * 1000));
+}
+
+async function notifyMatchingGuardian({ normalizedPhone, rawPhone, invitation, studentName }) {
+  const candidates = await User.find({
+    role: 'guardian',
+    isActive: { $ne: false },
+    $or: [
+      { phoneNormalized: normalizedPhone },
+      ...(rawPhone ? [{ phone: rawPhone }] : []),
+    ],
+  }).select('_id');
+
+  const ids = [...new Set(candidates.map((candidate) => String(candidate._id)))];
+  if (ids.length !== 1) return;
+
+  await notifyUser(ids[0], {
+    type: 'system',
+    title: { ar: 'طلب ربط ابن جديد', en: 'New child link request' },
+    message: {
+      ar: `${studentName || 'طالب'} استخدم رقمك كولي أمر. راجع الطلب من بوابة ولي الأمر.`,
+      en: `${studentName || 'A student'} used your phone as a guardian. Review the request in the guardian portal.`,
+    },
+    data: {
+      actionUrl: '/guardian/dashboard',
+      metadata: { guardianInvitationId: String(invitation._id) },
+    },
+    priority: 'high',
+  });
 }
 
 async function expireStaleInvitations(filter = {}) {
@@ -75,6 +104,12 @@ async function createGuardianInvitation({
     existing.expiresAt = invitationExpiresAt();
     existing.history.push({ action: 'renewed', actor: studentId });
     await existing.save();
+    await notifyMatchingGuardian({
+      normalizedPhone: normalized,
+      rawPhone: guardianPhone,
+      invitation: existing,
+      studentName: student.name,
+    }).catch(() => {});
     return existing;
   }
 
@@ -89,7 +124,7 @@ async function createGuardianInvitation({
     throw error;
   }
 
-  return GuardianInvitation.create({
+  const invitation = await GuardianInvitation.create({
     student: studentId,
     guardianPhone,
     guardianPhoneNormalized: normalized,
@@ -100,6 +135,15 @@ async function createGuardianInvitation({
     expiresAt: invitationExpiresAt(),
     history: [{ action: 'created', actor: studentId }],
   });
+
+  await notifyMatchingGuardian({
+    normalizedPhone: normalized,
+    rawPhone: guardianPhone,
+    invitation,
+    studentName: student.name,
+  }).catch(() => {});
+
+  return invitation;
 }
 
 async function linkGuardianToStudent({ guardianUserId, studentId, relationship = 'guardian' }) {
