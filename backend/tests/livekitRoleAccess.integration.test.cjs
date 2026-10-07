@@ -18,7 +18,6 @@ const Guardian = require('../models/Guardian');
 const LiveSession = require('../models/LiveSession');
 
 const originalReadyState = mongoose.connection.readyState;
-mongoose.connection.readyState = 1;
 
 const oid = () => new mongoose.Types.ObjectId().toString();
 const ids = {
@@ -107,6 +106,10 @@ LiveSession.findOne = (filter = {}) => q(filter.roomId === liveSession.roomId ? 
 delete require.cache[require.resolve('../routes/live')];
 const liveRouter = require('../routes/live');
 const { generateAccessToken } = require('../middleware/auth');
+
+// Compile every model used by the live route while disconnected. After that,
+// simulate a connected database because all model IO in this test is stubbed.
+mongoose.connection.readyState = 1;
 
 async function call(base, user, body) {
   const response = await fetch(base + '/api/live/token', {
