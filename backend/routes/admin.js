@@ -11,8 +11,14 @@ const Lesson = require('../models/Lesson');
 const Enrollment = require('../models/Enrollment');
 const Blog = require('../models/Blog');
 const WithdrawRequest = require('../models/WithdrawRequest');
+const Payment = require('../models/Payment');
+const TeacherLedger = require('../models/TeacherLedger');
+const ContactMessage = require('../models/ContactMessage');
+const GuardianInvitation = require('../models/GuardianInvitation');
+const AdminAuditLog = require('../models/AdminAuditLog');
 const { protect, authorize } = require('../middleware/auth');
 const objectStorage = require('../services/objectStorage');
+const { logAdminAction } = require('../services/adminAudit');
 
 const coursesUploadDir = path.join(__dirname, '..', 'uploads', 'courses');
 if (process.env.FILE_STORAGE_DRIVER !== 'external') {
@@ -37,6 +43,169 @@ const API_PUBLIC = process.env.API_PUBLIC_URL || 'https://wahy-wa-namaa-api.verc
 
 router.get('/', protect, authorize('admin'), (_req, res) => {
   res.json({ ok: true, module: 'admin', version: 2 });
+});
+
+router.get('/command-center', protect, authorize('admin'), async (req, res) => {
+  if (isMockMode && !isDBConnected()) {
+    return res.json({
+      summary: {
+        totalPendingActions: 0,
+        criticalActions: 0,
+      },
+      actions: [],
+      recentAudit: [],
+    });
+  }
+
+  try {
+    const now = new Date();
+    const [
+      pendingTeachers,
+      pendingManualPayments,
+      pendingPayouts,
+      newMessages,
+      pendingGuardianInvitations,
+      overdueAcceptedSessions,
+      completedWithoutReports,
+      recentTeachers,
+      recentAudit,
+    ] = await Promise.all([
+      Teacher.countDocuments({ status: { $in: ['pending', 'under-review'] } }),
+      Payment.countDocuments({
+        provider: 'manual',
+        kind: 'course_enrollment',
+        status: 'pending',
+      }),
+      TeacherLedger.countDocuments({
+        type: 'payout',
+        status: { $in: ['pending', 'processing'] },
+      }),
+      ContactMessage.countDocuments({ status: 'new' }),
+      GuardianInvitation.countDocuments({
+        status: 'pending',
+        expiresAt: { $gt: now },
+      }),
+      Session.countDocuments({
+        status: 'accepted',
+        scheduledAt: { $lt: now },
+      }),
+      Session.countDocuments({
+        status: 'completed',
+        $or: [
+          { studentReports: { $exists: false } },
+          { studentReports: { $size: 0 } },
+        ],
+      }),
+      Teacher.find({ status: { $in: ['pending', 'under-review'] } })
+        .populate('user', 'name email')
+        .select('user personalInfo status createdAt reviewStartedAt')
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .lean(),
+      AdminAuditLog.find()
+        .populate('actor', 'name email')
+        .sort({ createdAt: -1 })
+        .limit(12)
+        .lean(),
+    ]);
+
+    const actions = [
+      {
+        id: 'teacher-review',
+        label: 'معلمون ينتظرون المراجعة',
+        count: pendingTeachers,
+        severity: pendingTeachers ? 'high' : 'ok',
+        actionUrl: '/admin?tab=teachers',
+      },
+      {
+        id: 'manual-payments',
+        label: 'إثباتات دفع تحتاج مراجعة',
+        count: pendingManualPayments,
+        severity: pendingManualPayments ? 'high' : 'ok',
+        actionUrl: '/admin/payments',
+      },
+      {
+        id: 'payouts',
+        label: 'سحوبات المعلمين',
+        count: pendingPayouts,
+        severity: pendingPayouts ? 'medium' : 'ok',
+        actionUrl: '/admin?tab=withdrawals',
+      },
+      {
+        id: 'messages',
+        label: 'رسائل جديدة',
+        count: newMessages,
+        severity: newMessages ? 'medium' : 'ok',
+        actionUrl: '/admin?tab=messages',
+      },
+      {
+        id: 'guardian-links',
+        label: 'طلبات ربط أولياء الأمور',
+        count: pendingGuardianInvitations,
+        severity: 'info',
+        actionUrl: '/admin?tab=overview',
+      },
+      {
+        id: 'overdue-sessions',
+        label: 'حصص انتهى موعدها ولم تُغلق',
+        count: overdueAcceptedSessions,
+        severity: overdueAcceptedSessions ? 'high' : 'ok',
+        actionUrl: '/admin?tab=overview',
+      },
+      {
+        id: 'missing-session-reports',
+        label: 'حصص مكتملة بدون تقرير طالب',
+        count: completedWithoutReports,
+        severity: completedWithoutReports ? 'medium' : 'ok',
+        actionUrl: '/admin?tab=overview',
+      },
+    ];
+
+    const totalPendingActions = actions.reduce((sum, item) => sum + Number(item.count || 0), 0);
+    const criticalActions = actions
+      .filter((item) => item.severity === 'high')
+      .reduce((sum, item) => sum + Number(item.count || 0), 0);
+
+    return res.json({
+      summary: {
+        totalPendingActions,
+        criticalActions,
+      },
+      actions,
+      recentTeachers,
+      recentAudit: recentAudit.map((entry) => ({
+        _id: entry._id,
+        actor: entry.actor,
+        action: entry.action,
+        entityType: entry.entityType,
+        entityId: entry.entityId,
+        reason: entry.reason,
+        createdAt: entry.createdAt,
+      })),
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/audit', protect, authorize('admin'), async (req, res) => {
+  try {
+    const filter = {};
+    if (req.query.entityType) filter.entityType = String(req.query.entityType);
+    if (req.query.entityId) filter.entityId = String(req.query.entityId);
+    if (req.query.action) filter.action = String(req.query.action);
+
+    const limit = Math.max(1, Math.min(200, Number(req.query.limit) || 100));
+    const entries = await AdminAuditLog.find(filter)
+      .populate('actor', 'name email')
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean();
+
+    return res.json({ entries });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
 });
 
 router.get('/stats', protect, authorize('admin'), async (req, res) => {
@@ -134,7 +303,7 @@ router.post('/teachers', protect, authorize('admin'), async (req, res) => {
     const {
       name, email, password, phone = '+201000000000', country = 'مصر', city = 'القاهرة',
       gender = 'male', age = 30, university = 'الأزهر', specialization = 'تحفيظ',
-      hourlyRate = 50, autoApprove = true,
+      hourlyRate = 50, autoApprove = false,
     } = req.body;
 
     if (!name || !email || !password) {
@@ -163,13 +332,28 @@ router.post('/teachers', protect, authorize('admin'), async (req, res) => {
         recitationVideo: PLACEHOLDER,
         teachingMethodVideo: PLACEHOLDER,
       },
-      status: autoApprove ? 'approved' : 'pending',
-      isVerified: !!autoApprove,
+      status: 'pending',
+      isVerified: false,
       hourlyRate,
       languages: ['arabic', 'english'],
     });
 
-    res.status(201).json({ user: { id: user._id, name, email }, teacher });
+    await logAdminAction({
+      req,
+      action: 'teacher.created-by-admin',
+      entityType: 'teacher',
+      entityId: teacher._id,
+      reason: autoApprove
+        ? 'تم تجاهل autoApprove؛ يجب إكمال مراجعة الملف قبل الاعتماد.'
+        : 'تم إنشاء ملف معلم من الإدارة بحالة pending.',
+      metadata: { requestedAutoApprove: Boolean(autoApprove) },
+    }).catch(() => {});
+
+    res.status(201).json({
+      user: { id: user._id, name, email },
+      teacher,
+      reviewRequired: true,
+    });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -189,11 +373,30 @@ router.put('/teachers/:id', protect, authorize('admin'), async (req, res) => {
     if (country) teacher.personalInfo.country = country;
     if (city) teacher.personalInfo.city = city;
     if (hourlyRate != null) teacher.hourlyRate = hourlyRate;
+    if (status === 'approved') {
+      return res.status(409).json({
+        error: 'اعتماد المعلم يتم فقط من مركز المراجعة بعد إكمال Approval Gate',
+        code: 'USE_TEACHER_REVIEW_GATE',
+      });
+    }
     if (status) {
       teacher.status = status;
-      teacher.isVerified = status === 'approved';
+      teacher.isVerified = false;
     }
     await teacher.save();
+
+    await logAdminAction({
+      req,
+      action: 'teacher.admin-profile.updated',
+      entityType: 'teacher',
+      entityId: teacher._id,
+      reason: String(req.body.adminReason || '').trim(),
+      metadata: {
+        fields: ['name', 'hourlyRate', 'status', 'country', 'city', 'phone']
+          .filter((key) => req.body[key] !== undefined),
+      },
+    }).catch(() => {});
+
     res.json(teacher);
   } catch (error) {
     res.status(400).json({ error: error.message });
