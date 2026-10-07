@@ -8,17 +8,7 @@ const { translateBatch, SUPPORTED } = require('../services/translateService');
 const objectStorage = require('../services/objectStorage');
 const { validateUploadMetadata } = require('../config/uploadPolicy');
 const { notifyUser } = require('../utils/notify');
-
-async function canAccessSession(session, userId, userRole) {
-  const isStudent = String(session.student) === userId;
-  if (isStudent) return true;
-  if (userRole === 'admin') return true;
-  if (userRole === 'teacher') {
-    const teacher = await Teacher.findOne({ user: userId }).select('_id');
-    return Boolean(teacher && String(session.teacher) === String(teacher._id));
-  }
-  return false;
-}
+const { canAccessSession } = require('../utils/sessionChatAccess');
 
 function audioMessageUrl(sessionId, messageId) {
   return `/api/sessions/${sessionId}/translate/messages/${messageId}/audio`;
