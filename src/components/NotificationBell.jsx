@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Bell, CheckCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useI18n } from '../i18n';
 import { localizeInternalHref } from '../lib/navigation';
+import { useToast } from '../context/ToastProvider';
 
 function pickText(obj, locale = 'ar') {
   if (!obj) return '';
@@ -13,6 +14,9 @@ function pickText(obj, locale = 'ar') {
 
 export default function NotificationBell() {
   const { locale } = useI18n();
+  const toast = useToast();
+  const knownNotificationIds = useRef(new Set());
+  const initializedNotifications = useRef(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
@@ -21,7 +25,29 @@ export default function NotificationBell() {
     try {
       if (!api.getToken()) return;
       const data = await api.get('/api/notifications?limit=10', { auth: true });
-      setNotifications(data.notifications || []);
+      const nextNotifications = data.notifications || [];
+
+      if (!initializedNotifications.current) {
+        nextNotifications.forEach((item) => knownNotificationIds.current.add(String(item._id)));
+        initializedNotifications.current = true;
+      } else {
+        const fresh = nextNotifications.filter((item) => (
+          !item.isRead && !knownNotificationIds.current.has(String(item._id))
+        ));
+
+        nextNotifications.forEach((item) => knownNotificationIds.current.add(String(item._id)));
+
+        if (fresh.length > 0) {
+          const newest = fresh[0];
+          toast.info(pickText(newest.message, locale), {
+            title: pickText(newest.title, locale),
+            position: 'top-right',
+            duration: 5000,
+          });
+        }
+      }
+
+      setNotifications(nextNotifications);
       setUnreadCount(data.unreadCount || 0);
     } catch (error) {
       console.error('Error fetching notifications:', error);
@@ -153,14 +179,14 @@ export default function NotificationBell() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-2">
                               <h4 className="font-semibold text-sm text-gray-900">
-                                {pickText(notification.title)}
+                                {pickText(notification.title, locale)}
                               </h4>
                               {!notification.isRead && (
                                 <div className="w-2 h-2 bg-emerald-600 rounded-full flex-shrink-0 mt-1" />
                               )}
                             </div>
                             <p className="text-sm text-gray-600 mt-1 line-clamp-2">
-                              {pickText(notification.message)}
+                              {pickText(notification.message, locale)}
                             </p>
                             <p className="text-xs text-gray-400 mt-2">
                               {new Date(notification.createdAt).toLocaleString('ar-EG')}
