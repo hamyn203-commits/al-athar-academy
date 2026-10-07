@@ -5,6 +5,7 @@ const Teacher = require('../models/Teacher');
 const TeacherTask = require('../models/TeacherTask');
 const WithdrawRequest = require('../models/WithdrawRequest');
 const { protect, authorize } = require('../middleware/auth');
+const { notifyAdmins } = require('../utils/notify');
 
 const SESSION_RATE = 50;
 const { isMockMode } = require('../config/runtime');
@@ -323,6 +324,23 @@ router.post('/withdrawals', protect, authorize('teacher'), async (req, res) => {
       method: method || 'vodafone_cash',
       accountInfo: accountInfo.trim(),
     });
+
+    notifyAdmins({
+      type: 'system',
+      title: { ar: 'طلب سحب أرباح جديد', en: 'New withdrawal request' },
+      message: {
+        ar: `طلب معلم سحب ${num} ج.م ويحتاج مراجعة الإدارة.`,
+        en: `A tutor requested a withdrawal of ${num} EGP and it needs admin review.`,
+      },
+      data: {
+        actionUrl: '/admin?tab=withdrawals',
+        metadata: { withdrawalId: String(withdrawal._id), amount: num },
+      },
+      priority: 'high',
+    }).catch((error) => {
+      console.warn('Admin withdrawal notification failed:', error.message);
+    });
+
     res.status(201).json({ success: true, withdrawal });
   } catch (error) {
     res.status(400).json({ error: error.message });
