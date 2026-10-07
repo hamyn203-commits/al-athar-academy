@@ -147,7 +147,10 @@ function teacherDossierPayload(teacher, gate, auditEntries = [], activity = {}) 
       updatedAt: raw.updatedAt,
       documents: {
         idCard: Boolean(documents.idCard && documents.idCard !== 'not-provided'),
-        idCardFront: Boolean(documents.idCardFront && documents.idCardFront !== 'not-provided'),
+        idCardFront: Boolean(
+          (documents.idCardFront && documents.idCardFront !== 'not-provided')
+          || (documents.idCard && documents.idCard !== 'not-provided')
+        ),
         idCardBack: Boolean(documents.idCardBack && documents.idCardBack !== 'not-provided'),
         graduationCertificateAvailable: Boolean(documents.graduationCertificateAvailable),
         graduationCertificate: Boolean(documents.graduationCertificate && documents.graduationCertificate !== 'not-provided'),
