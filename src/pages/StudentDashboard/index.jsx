@@ -81,7 +81,7 @@ export default function StudentDashboard() {
   const toast = useToast();
   const { stats: gameStats, badges } = useGamificationApi();
 
-  const [tab, setTab] = useState('discover');
+  const [tab, setTab] = useState('overview');
   const [profile, setProfile] = useState(null);
   const [stats, setStats] = useState({});
   const [trials, setTrials] = useState([]);
@@ -205,7 +205,7 @@ export default function StudentDashboard() {
 
   useEffect(() => {
     const requestedTab = searchParams.get('tab');
-    const allowedTabs = ['discover', 'account', 'trials', 'sessions', 'homework', 'certificates', 'recordings', 'achievements', 'referral', 'evaluations'];
+    const allowedTabs = ['overview', 'discover', 'trials', 'sessions', 'homework', 'evaluations', 'recordings', 'certificates', 'achievements', 'referral', 'account'];
     if (requestedTab && allowedTabs.includes(requestedTab)) {
       setTab(requestedTab);
     }
@@ -258,19 +258,33 @@ export default function StudentDashboard() {
 
   if (!ready) return null;
 
-  const upcomingTrials = trials.filter((s) => s.status === 'accepted' && new Date(s.scheduledAt) >= new Date());
-  const pendingTrials = trials.filter((s) => s.status === 'pending');
+  const now = new Date();
+  const upcomingTrials = trials
+    .filter((session) => session.status === 'accepted' && new Date(session.scheduledAt) >= now)
+    .sort((a, b) => new Date(a.scheduledAt) - new Date(b.scheduledAt));
+  const pendingTrials = trials.filter((session) => session.status === 'pending');
   const completedTrials = trials
-    .filter((s) => s.status === 'completed')
+    .filter((session) => session.status === 'completed')
     .sort((a, b) => new Date(b.updatedAt || b.scheduledAt) - new Date(a.updatedAt || a.scheduledAt));
   const requestedPostTrialId = searchParams.get('postTrial');
-  const postTrialSession = completedTrials.find((s) => String(s._id) === String(requestedPostTrialId || ''))
+  const postTrialSession = completedTrials.find((session) => String(session._id) === String(requestedPostTrialId || ''))
     || completedTrials[0]
     || null;
-  const upcomingSessions = sessions.filter((s) => s.status === 'accepted' && new Date(s.scheduledAt) >= new Date());
-  const pendingSessions = sessions.filter((s) => s.status === 'pending');
+  const upcomingSessions = sessions
+    .filter((session) => session.status === 'accepted' && new Date(session.scheduledAt) >= now)
+    .sort((a, b) => new Date(a.scheduledAt) - new Date(b.scheduledAt));
+  const pendingSessions = sessions.filter((session) => session.status === 'pending');
 
-  const nextActiveSession = upcomingSessions[0] || upcomingTrials[0] || null;
+  const nextActiveSession = [...upcomingSessions, ...upcomingTrials]
+    .sort((a, b) => new Date(a.scheduledAt) - new Date(b.scheduledAt))[0] || null;
+  const studentName = profile?.user?.name || user?.name || '';
+  const studentFirstName = studentName.trim().split(/\s+/)[0] || (locale === 'ar' ? 'طالبنا' : 'Student');
+  const dateLocale = locale === 'id' ? 'id-ID' : locale === 'ar' ? 'ar-EG' : 'en-US';
+  const nextSessionTeacherName = nextActiveSession?.teacher?.user?.name
+    || nextActiveSession?.teacher?.personalInfo?.fullName
+    || nextActiveSession?.teacher?.name
+    || (locale === 'ar' ? 'معلم الأكاديمية' : 'Quran Tutor');
+  const nextSessionDate = nextActiveSession ? new Date(nextActiveSession.scheduledAt) : null;
 
   const submitHomework = async (homeworkId, file, sessionId) => {
     if (!file) return;
@@ -441,124 +455,288 @@ export default function StudentDashboard() {
   const hasReviewed = (sessionId) => reviews.some((r) => r.session === sessionId || r.session?._id === sessionId);
 
   const tabs = [
-    { id: 'discover', label: locale === 'id' ? 'Cari Guru' : locale === 'ar' ? 'اكتشف معلمك' : 'Find a Tutor' },
-    { id: 'account', label: locale === 'id' ? 'Akun Saya' : locale === 'ar' ? 'حسابي' : 'My Account' },
-    { id: 'trials', label: locale === 'id' ? `Uji Coba (${pendingTrials.length + upcomingTrials.length})` : locale === 'ar' ? `تجريبية (${pendingTrials.length + upcomingTrials.length})` : `Trials (${pendingTrials.length + upcomingTrials.length})` },
-    { id: 'sessions', label: locale === 'id' ? `Sesi Saya (${upcomingSessions.length + pendingSessions.length})` : locale === 'ar' ? `حصصي (${upcomingSessions.length + pendingSessions.length})` : `My Sessions (${upcomingSessions.length + pendingSessions.length})` },
-    { id: 'homework', label: locale === 'id' ? `Tugas (${stats.homeworkPending || 0})` : locale === 'ar' ? `واجبات (${stats.homeworkPending || 0})` : `Homework (${stats.homeworkPending || 0})` },
-    { id: 'certificates', label: locale === 'id' ? 'Sertifikat' : locale === 'ar' ? 'شهاداتي' : 'Certificates' },
-    { id: 'recordings', label: locale === 'id' ? 'Rekaman' : locale === 'ar' ? 'تسجيلات' : 'Recordings' },
-    { id: 'achievements', label: locale === 'id' ? 'Pencapaian' : locale === 'ar' ? 'إنجازاتي' : 'Achievements' },
+    { id: 'overview', label: locale === 'id' ? 'Beranda' : locale === 'ar' ? 'الرئيسية' : 'Overview' },
+    { id: 'discover', label: locale === 'id' ? 'Cari Guru' : locale === 'ar' ? 'اختر معلمك' : 'Find a Tutor' },
+    { id: 'trials', label: locale === 'id' ? `Uji Coba (${pendingTrials.length + upcomingTrials.length})` : locale === 'ar' ? `التجريبية (${pendingTrials.length + upcomingTrials.length})` : `Trials (${pendingTrials.length + upcomingTrials.length})` },
+    { id: 'sessions', label: locale === 'id' ? `Sesi (${upcomingSessions.length + pendingSessions.length})` : locale === 'ar' ? `حصصي (${upcomingSessions.length + pendingSessions.length})` : `Sessions (${upcomingSessions.length + pendingSessions.length})` },
+    { id: 'homework', label: locale === 'id' ? `Tugas (${stats.homeworkPending || 0})` : locale === 'ar' ? `واجباتي (${stats.homeworkPending || 0})` : `Homework (${stats.homeworkPending || 0})` },
+    { id: 'evaluations', label: locale === 'id' ? 'Evaluasi' : locale === 'ar' ? 'التقييمات' : 'Evaluations' },
+    { id: 'recordings', label: locale === 'id' ? 'Rekaman' : locale === 'ar' ? 'التسجيلات' : 'Recordings' },
+    { id: 'certificates', label: locale === 'id' ? 'Sertifikat' : locale === 'ar' ? 'الشهادات' : 'Certificates' },
+    { id: 'achievements', label: locale === 'id' ? 'Pencapaian' : locale === 'ar' ? 'الإنجازات' : 'Achievements' },
     { id: 'referral', label: locale === 'id' ? 'Afiliasi' : locale === 'ar' ? 'السفراء' : 'Referral' },
-    { id: 'evaluations', label: locale === 'id' ? 'Evaluasi Guru' : locale === 'ar' ? 'تقييمات المعلم' : 'Tutor Evaluations' },
+    { id: 'account', label: locale === 'id' ? 'Akun' : locale === 'ar' ? 'حسابي' : 'Account' },
   ];
 
   return (
-    <DashboardLayout title={locale === 'id' ? 'Dasbor Siswa' : locale === 'ar' ? 'لوحة تحكم الطالب' : 'Student Dashboard'} user={user} onLogout={logout}>
+    <DashboardLayout title={locale === 'id' ? 'Dasbor Siswa' : locale === 'ar' ? 'لوحة الطالب' : 'Student Dashboard'} user={user} onLogout={logout}>
       {loading ? (
         <div className="flex justify-center py-20"><div className="spinner spinner-lg" /></div>
       ) : (
         <>
-          {postTrialSession && (
-            <div className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <section className="wn-student-welcome">
+            <div className="wn-student-welcome__content">
+              <span className="wn-student-welcome__eyebrow">
+                <Sparkles size={15} />
+                {locale === 'id' ? 'Perjalanan Quran Anda' : locale === 'ar' ? 'رحلتك مع القرآن' : 'Your Quran journey'}
+              </span>
+              <h2 className="wn-student-welcome__title">
+                {locale === 'ar' ? `السلام عليكم، ${studentFirstName}` : locale === 'id' ? `Assalamu’alaikum, ${studentFirstName}` : `Assalamu alaikum, ${studentFirstName}`}
+              </h2>
+              <p className="wn-student-welcome__lead">
+                {nextActiveSession
+                  ? (locale === 'ar'
+                    ? `حلقتك القادمة مع ${nextSessionTeacherName}. كل ما تحتاجه للحصة والمتابعة موجود هنا.`
+                    : `Your next session is with ${nextSessionTeacherName}. Everything you need is here.`)
+                  : pendingTrials.length
+                    ? (locale === 'ar' ? 'طلبك التجريبي قيد المراجعة من المعلم. سننبهك فور الرد.' : 'Your trial request is waiting for tutor confirmation.')
+                    : (locale === 'ar' ? 'ابدأ بخطوة واضحة: اختر المعلم المناسب واحجز حصتك التجريبية.' : 'Start with one clear step: choose a tutor and book your trial.')}
+              </p>
+
+              <div className="wn-student-welcome__actions">
+                <button
+                  type="button"
+                  onClick={() => setTab(nextActiveSession ? (nextActiveSession.type === 'trial' ? 'trials' : 'sessions') : 'discover')}
+                  className="wn-student-primary-action"
+                >
+                  {nextActiveSession
+                    ? (locale === 'ar' ? 'عرض الحصة القادمة' : 'View next session')
+                    : (locale === 'ar' ? 'اختر معلمك' : 'Find your tutor')}
+                </button>
+                <button type="button" onClick={() => setTab('homework')} className="wn-student-secondary-action">
+                  <FileText size={16} />
+                  {locale === 'ar'
+                    ? `واجباتي${stats.homeworkPending ? ` (${stats.homeworkPending})` : ''}`
+                    : `Homework${stats.homeworkPending ? ` (${stats.homeworkPending})` : ''}`}
+                </button>
+              </div>
+            </div>
+
+            <div className="wn-student-welcome__summary">
+              <div className="wn-student-welcome__metric">
+                <Calendar size={18} />
                 <div>
-                  <p className="font-black text-emerald-950">
-                    {locale === 'ar'
-                      ? 'أكملت الحصة التجريبية — اختر خطوتك التالية'
-                      : 'Your trial is complete — choose your next step'}
-                  </p>
-                  <p className="text-sm text-emerald-800 mt-1">
-                    {locale === 'ar'
-                      ? `يمكنك الاستمرار مع ${postTrialSession.teacher?.user?.name || postTrialSession.teacher?.personalInfo?.fullName || 'المعلم'} أو تجربة معلم آخر.`
-                      : 'Continue with this tutor or try another tutor.'}
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => openBook(postTrialSession.teacher)}
-                    className="px-4 py-2.5 rounded-xl bg-emerald-700 text-white text-sm font-bold"
-                  >
-                    {locale === 'ar' ? 'استمر مع نفس المعلم' : 'Continue with this tutor'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setTab('discover')}
-                    className="px-4 py-2.5 rounded-xl border border-emerald-300 bg-white text-emerald-800 text-sm font-bold"
-                  >
-                    {locale === 'ar' ? 'جرّب معلماً آخر' : 'Try another tutor'}
-                  </button>
+                  <small>{locale === 'ar' ? 'الحصة القادمة' : 'Next session'}</small>
+                  <strong>
+                    {nextSessionDate
+                      ? nextSessionDate.toLocaleDateString(dateLocale, { day: 'numeric', month: 'short' })
+                      : (locale === 'ar' ? 'لا يوجد موعد' : 'No session')}
+                  </strong>
                 </div>
               </div>
-              <p className="text-xs text-emerald-700 mt-3">
-                {locale === 'ar'
-                  ? 'الباقات الشهرية للجلسات الفردية ستظهر هنا بعد اعتماد أسعارها وعدد حصص كل باقة من الإدارة.'
-                  : 'Monthly 1-to-1 packages will appear here after administration configures package pricing and session counts.'}
-              </p>
+              <div className="wn-student-welcome__metric">
+                <FileText size={18} />
+                <div>
+                  <small>{locale === 'ar' ? 'واجبات مطلوبة' : 'Homework due'}</small>
+                  <strong>{stats.homeworkPending || 0}</strong>
+                </div>
+              </div>
+              <div className="wn-student-welcome__metric">
+                <Trophy size={18} />
+                <div>
+                  <small>{locale === 'ar' ? 'نقاطك' : 'Your points'}</small>
+                  <strong>{gameStats?.points?.total || 0}</strong>
+                </div>
+              </div>
             </div>
-          )}
+          </section>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
-            <StatCard label={locale === 'id' ? 'Sesi Mendatang' : locale === 'ar' ? 'حصص قادمة' : 'Upcoming Sessions'} value={stats.upcomingSessions || 0} icon={Calendar} color="emerald" />
-            <StatCard label={locale === 'id' ? 'Uji Coba Pending' : locale === 'ar' ? 'تجريبية معلقة' : 'Pending Trials'} value={stats.pendingTrials || 0} icon={Clock} color="yellow" />
-            <StatCard label={locale === 'id' ? 'Sesi Selesai' : locale === 'ar' ? 'حصص مكتملة' : 'Completed Sessions'} value={stats.completedSessions || 0} icon={CheckCircle} color="blue" />
-            <StatCard label={locale === 'id' ? 'Poin' : locale === 'ar' ? 'النقاط' : 'Points'} value={gameStats?.points?.total || 0} icon={Trophy} color="orange" />
-          </div>
-
-          {referral?.code && (
-            <div className="wn-dashboard-gold-card mb-6 rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4">
+          {postTrialSession && (
+            <section className="wn-student-next-step">
               <div>
-                <p className="font-bold flex items-center gap-2 text-orange-900"><Gift size={20} /> {locale === 'id' ? 'Program Afiliasi' : locale === 'ar' ? 'برنامج السفراء' : 'Referral Program'}</p>
-                <p className="text-sm text-orange-800 mt-1">
-                  {locale === 'id' ? `Undang teman dan dapatkan poin — ${referral.stats?.totalPoints || 0} poin sejauh ini` : locale === 'ar' ? `ادعُ صديقاً واحصل على نقاط — ${referral.stats?.totalPoints || 0} نقطة حتى الآن` : `Invite a friend and earn points — ${referral.stats?.totalPoints || 0} points so far`}
+                <span className="wn-student-next-step__eyebrow">{locale === 'ar' ? 'خطوتك التالية' : 'Next step'}</span>
+                <h3>{locale === 'ar' ? 'أكملت الحصة التجريبية بنجاح' : 'Your trial session is complete'}</h3>
+                <p>
+                  {locale === 'ar'
+                    ? `استمر مع ${postTrialSession.teacher?.user?.name || postTrialSession.teacher?.personalInfo?.fullName || 'المعلم'} أو جرّب معلماً آخر قبل الاشتراك.`
+                    : 'Continue with this tutor or try another tutor before subscribing.'}
                 </p>
               </div>
-              <div className="flex items-center gap-2">
-                <code className="bg-white px-3 py-2 rounded-lg font-mono text-sm border">{referral.code}</code>
-                <button type="button" onClick={() => { navigator.clipboard?.writeText(referral.link || referral.code); toast.success(locale === 'id' ? 'Tautan afiliasi berhasil disalin' : locale === 'ar' ? 'تم نسخ رابط الإحالة' : 'Referral link copied'); }}
-                  className="flex items-center gap-1 bg-orange-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-orange-700">
-                  <Copy size={16} /> {locale === 'id' ? 'Salin' : locale === 'ar' ? 'نسخ' : 'Copy'}
+              <div className="wn-student-next-step__actions">
+                <button type="button" onClick={() => openBook(postTrialSession.teacher)} className="wn-student-primary-action">
+                  {locale === 'ar' ? 'استمر مع نفس المعلم' : 'Continue with tutor'}
                 </button>
-                <button type="button" onClick={() => setTab('referral')} className="text-sm text-orange-700 underline">{locale === 'id' ? 'Detail' : locale === 'ar' ? 'التفاصيل' : 'Details'}</button>
+                <button type="button" onClick={() => setTab('discover')} className="wn-student-secondary-action">
+                  {locale === 'ar' ? 'جرّب معلماً آخر' : 'Try another tutor'}
+                </button>
               </div>
-            </div>
+            </section>
           )}
 
-          {/* Live Session Launchpad Card */}
-          {nextActiveSession && (
-            <div className="wn-dashboard-hero-card mb-6 rounded-2xl p-6 text-white relative overflow-hidden">
-              <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 relative z-10">
-                <div className="space-y-2">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-500/20 text-emerald-300 rounded-full text-xs font-bold border border-emerald-400/30">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                    <span>{locale === 'id' ? 'Sesi Langsung Berikutnya' : locale === 'ar' ? 'حلقتك القرآنية القادمة المباشرة' : 'Your Next Live Session'}</span>
-                  </div>
-                  <h3 className="text-xl font-bold font-arabic">
-                    {locale === 'id' ? `Sesi bersama ${nextActiveSession.teacher?.user?.name || nextActiveSession.teacher?.name || 'Guru Al-Quran'}` : locale === 'ar' ? `جلسة التسميع مع ${nextActiveSession.teacher?.user?.name || nextActiveSession.teacher?.name || 'المعلم'}` : `Session with ${nextActiveSession.teacher?.user?.name || nextActiveSession.teacher?.name || 'Quran Tutor'}`}
-                  </h3>
-                  <div className="text-emerald-100/80 text-sm flex items-center gap-3 font-arabic">
-                    <span className="flex items-center gap-1.5"><Calendar size={15} /> {new Date(nextActiveSession.scheduledAt).toLocaleDateString(locale === 'id' ? 'id-ID' : 'ar-EG', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
-                    <span>•</span>
-                    <span className="flex items-center gap-1.5"><Clock size={15} /> {new Date(nextActiveSession.scheduledAt).toLocaleTimeString(locale === 'id' ? 'id-ID' : 'ar-EG', { hour: '2-digit', minute: '2-digit' })}</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <a
-                    href={nextActiveSession.roomUrl || `/live/session-${nextActiveSession._id}?role=student`}
-                    className="px-6 py-3.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-stone-950 font-black rounded-xl text-sm transition-all shadow-lg shadow-amber-950/40 flex items-center gap-2 active:scale-95"
-                  >
-                    <Video size={18} />
-                    <span>{locale === 'id' ? 'Masuk Kelas Sekarang 🚀' : locale === 'ar' ? 'ادخل حلقتك الآن' : 'Join Live Class Now 🚀'}</span>
-                  </a>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="wn-dashboard-surface">
+          <div className="wn-dashboard-surface wn-student-surface">
             <TabBar tabs={tabs} active={tab} onChange={setTab} />
+
+            {tab === 'overview' && (
+              <div className="wn-student-overview">
+                <div className="wn-student-overview__grid">
+                  <section className="wn-student-session-panel">
+                    <div className="wn-student-section-heading">
+                      <div>
+                        <span>{locale === 'ar' ? 'الأولوية الآن' : 'Up next'}</span>
+                        <h3>{locale === 'ar' ? 'الحصة القادمة' : 'Your next session'}</h3>
+                      </div>
+                      {nextActiveSession ? (
+                        <button
+                          type="button"
+                          onClick={() => setTab(nextActiveSession.type === 'trial' ? 'trials' : 'sessions')}
+                          className="wn-student-text-action"
+                        >
+                          {locale === 'ar' ? 'كل الحصص' : 'All sessions'}
+                        </button>
+                      ) : null}
+                    </div>
+
+                    {nextActiveSession ? (
+                      <div className="wn-student-session-panel__body">
+                        <div className="wn-student-session-panel__date">
+                          <strong>{nextSessionDate?.toLocaleDateString(dateLocale, { day: '2-digit' })}</strong>
+                          <span>{nextSessionDate?.toLocaleDateString(dateLocale, { month: 'short' })}</span>
+                        </div>
+                        <div className="wn-student-session-panel__details">
+                          <span className="wn-student-session-type">
+                            {nextActiveSession.type === 'trial'
+                              ? (locale === 'ar' ? 'حصة تجريبية' : 'Trial session')
+                              : (locale === 'ar' ? 'حصة منتظمة' : 'Regular session')}
+                          </span>
+                          <h4>{nextSessionTeacherName}</h4>
+                          <p>
+                            <Clock size={15} />
+                            {nextSessionDate?.toLocaleTimeString(dateLocale, { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
+                        <a
+                          href={nextActiveSession.meetingLink
+                            ? localizeInternalHref(nextActiveSession.meetingLink, locale)
+                            : lp(`/meeting/${nextActiveSession._id}`)}
+                          className="wn-student-join-action"
+                        >
+                          <Video size={17} />
+                          {locale === 'ar' ? 'دخول الحصة' : 'Join session'}
+                        </a>
+                      </div>
+                    ) : (
+                      <div className="wn-student-empty-session">
+                        <BookOpen size={28} />
+                        <div>
+                          <h4>{locale === 'ar' ? 'لا توجد حصة قادمة' : 'No upcoming session'}</h4>
+                          <p>{locale === 'ar' ? 'اختر معلماً معتمداً وابدأ بحصة تجريبية.' : 'Choose an approved tutor and start with a trial.'}</p>
+                        </div>
+                        <button type="button" onClick={() => setTab('discover')} className="wn-student-primary-action">
+                          {locale === 'ar' ? 'اختر معلمك' : 'Find a tutor'}
+                        </button>
+                      </div>
+                    )}
+                  </section>
+
+                  <aside className="wn-student-quick-panel">
+                    <div className="wn-student-section-heading">
+                      <div>
+                        <span>{locale === 'ar' ? 'وصول سريع' : 'Quick access'}</span>
+                        <h3>{locale === 'ar' ? 'ماذا تريد أن تفعل؟' : 'What do you need?'}</h3>
+                      </div>
+                    </div>
+                    <div className="wn-student-quick-grid">
+                      <button type="button" onClick={() => setTab('discover')} className="wn-student-quick-card">
+                        <Users size={20} />
+                        <span>{locale === 'ar' ? 'اختر معلمك' : 'Find tutor'}</span>
+                      </button>
+                      <button type="button" onClick={() => setTab('sessions')} className="wn-student-quick-card">
+                        <Calendar size={20} />
+                        <span>{locale === 'ar' ? 'حصصي' : 'My sessions'}</span>
+                      </button>
+                      <button type="button" onClick={() => setTab('homework')} className="wn-student-quick-card">
+                        <FileText size={20} />
+                        <span>{locale === 'ar' ? 'واجباتي' : 'Homework'}</span>
+                      </button>
+                      <button type="button" onClick={() => setTab('achievements')} className="wn-student-quick-card">
+                        <Trophy size={20} />
+                        <span>{locale === 'ar' ? 'إنجازاتي' : 'Achievements'}</span>
+                      </button>
+                    </div>
+                  </aside>
+                </div>
+
+                <div className="wn-student-stat-grid">
+                  <StatCard label={locale === 'ar' ? 'حصص قادمة' : 'Upcoming sessions'} value={stats.upcomingSessions || 0} icon={Calendar} />
+                  <StatCard label={locale === 'ar' ? 'تجريبية معلقة' : 'Pending trials'} value={stats.pendingTrials || 0} icon={Clock} />
+                  <StatCard label={locale === 'ar' ? 'حصص مكتملة' : 'Completed sessions'} value={stats.completedSessions || 0} icon={CheckCircle} />
+                  <StatCard label={locale === 'ar' ? 'واجبات تم تسليمها' : 'Homework submitted'} value={stats.homeworkSubmitted || 0} icon={FileText} />
+                </div>
+
+                <div className="wn-student-overview__lower">
+                  <section className="wn-student-journey-card">
+                    <div className="wn-student-section-heading">
+                      <div>
+                        <span>{locale === 'ar' ? 'ملخص رحلتك' : 'Journey snapshot'}</span>
+                        <h3>{locale === 'ar' ? 'تقدمك في مكان واحد' : 'Your progress in one place'}</h3>
+                      </div>
+                    </div>
+                    <div className="wn-student-journey-list">
+                      <button type="button" onClick={() => setTab('sessions')}>
+                        <span>{locale === 'ar' ? 'الحصص المكتملة' : 'Completed sessions'}</span>
+                        <strong>{stats.completedSessions || 0}</strong>
+                      </button>
+                      <button type="button" onClick={() => setTab('homework')}>
+                        <span>{locale === 'ar' ? 'الواجبات المسلمة' : 'Submitted homework'}</span>
+                        <strong>{stats.homeworkSubmitted || 0}</strong>
+                      </button>
+                      <button type="button" onClick={() => setTab('account')}>
+                        <span>{locale === 'ar' ? 'الدورات المسجلة' : 'Enrolled courses'}</span>
+                        <strong>{courses.length}</strong>
+                      </button>
+                      <button type="button" onClick={() => setTab('account')}>
+                        <span>{locale === 'ar' ? 'المعلمون في رحلتك' : 'Your tutors'}</span>
+                        <strong>{teachers.length}</strong>
+                      </button>
+                    </div>
+                  </section>
+
+                  {referral?.code ? (
+                    <section className="wn-student-referral-card">
+                      <Gift size={24} />
+                      <span>{locale === 'ar' ? 'برنامج السفراء' : 'Referral program'}</span>
+                      <h3>{locale === 'ar' ? 'شارك الخير واكسب نقاطاً' : 'Invite a friend and earn points'}</h3>
+                      <p>{locale === 'ar' ? `جمعت ${referral.stats?.totalPoints || 0} نقطة حتى الآن.` : `You have earned ${referral.stats?.totalPoints || 0} points so far.`}</p>
+                      <div className="wn-student-referral-card__code">
+                        <code>{referral.code}</code>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard?.writeText(referral.link || referral.code);
+                            toast.success(locale === 'ar' ? 'تم نسخ رابط الإحالة' : 'Referral link copied');
+                          }}
+                        >
+                          <Copy size={15} />
+                          {locale === 'ar' ? 'نسخ' : 'Copy'}
+                        </button>
+                      </div>
+                      <button type="button" onClick={() => setTab('referral')} className="wn-student-text-action">
+                        {locale === 'ar' ? 'عرض التفاصيل' : 'View details'}
+                      </button>
+                    </section>
+                  ) : (
+                    <section className="wn-student-referral-card is-muted">
+                      <Sparkles size={24} />
+                      <span>{locale === 'ar' ? 'خطوة مقترحة' : 'Suggested next step'}</span>
+                      <h3>
+                        {pendingTrials.length
+                          ? (locale === 'ar' ? 'طلبك التجريبي في انتظار رد المعلم' : 'Your trial request is awaiting a response')
+                          : stats.homeworkPending
+                            ? (locale === 'ar' ? 'لديك واجب يحتاج إلى التسليم' : 'You have homework waiting')
+                            : (locale === 'ar' ? 'استكشف المعلمين واختر الأنسب لك' : 'Explore tutors and find your match')}
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={() => setTab(pendingTrials.length ? 'trials' : stats.homeworkPending ? 'homework' : 'discover')}
+                        className="wn-student-primary-action"
+                      >
+                        {locale === 'ar' ? 'ابدأ الآن' : 'Continue'}
+                      </button>
+                    </section>
+                  )}
+                </div>
+              </div>
+            )}
 
             {tab === 'discover' && (
               <StudentTeacherMarketplace teachers={discoverTeachers} locale={locale} />
