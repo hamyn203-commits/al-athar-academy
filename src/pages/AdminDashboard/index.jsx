@@ -137,6 +137,29 @@ export default function AdminDashboard() {
 
   useEffect(() => { if (ready) load(); }, [ready, load]);
 
+  useEffect(() => {
+    if (!ready || !['overview', 'teachers'].includes(tab)) return undefined;
+
+    const refreshQueue = () => {
+      if (document.visibilityState === 'visible') {
+        loadPendingTeachers().catch(() => {});
+      }
+    };
+
+    const interval = window.setInterval(refreshQueue, 10000);
+    const onFocus = () => refreshQueue();
+    const onVisibility = () => refreshQueue();
+
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [ready, tab, loadPendingTeachers]);
+
   if (!ready) return null;
 
   const review = async (id, action, note = '') => {
