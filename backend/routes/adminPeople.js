@@ -17,6 +17,7 @@ const TeacherUpdate = require('../models/TeacherUpdate');
 const AdminAuditLog = require('../models/AdminAuditLog');
 const { protect, authorize } = require('../middleware/auth');
 const { maskPhone } = require('../utils/phone');
+const { logAdminAction } = require('../services/adminAudit');
 
 function escapeRegex(value) {
   return String(value || '').replace(/[|\\{}()[\]^$+*?.-]/g, '\\$&');
@@ -74,7 +75,7 @@ router.use(protect, authorize('admin'));
 
 router.get('/search', async (req, res) => {
   try {
-    const q = String(req.query.q || '').trim();
+    const q = String(req.query.q || '').trim().slice(0, 120);
     if (q.length < 2) {
       return res.json({ query: q, people: [], sessions: [], payments: [] });
     }
@@ -197,6 +198,15 @@ router.get('/students/:id', async (req, res) => {
       .lean();
 
     if (!student) return res.status(404).json({ error: 'Student not found' });
+
+    await logAdminAction({
+      req,
+      action: 'student.360.viewed',
+      entityType: 'student',
+      entityId: student._id,
+      reason: String(req.query.reason || 'student-360-review').slice(0, 200),
+      metadata: { source: 'admin-people-360' },
+    });
 
     const studentId = student._id;
 
@@ -375,6 +385,15 @@ router.get('/guardians/:id', async (req, res) => {
       .lean();
 
     if (!guardianUser) return res.status(404).json({ error: 'Guardian not found' });
+
+    await logAdminAction({
+      req,
+      action: 'guardian.360.viewed',
+      entityType: 'guardian',
+      entityId: guardianUser._id,
+      reason: String(req.query.reason || 'family-360-review').slice(0, 200),
+      metadata: { source: 'admin-people-360' },
+    });
 
     const profile = await Guardian.findOne({ user: guardianUser._id })
       .populate('children.student', 'name email phone avatar currentLevel preferredTrack circle isActive lastLogin createdAt')
