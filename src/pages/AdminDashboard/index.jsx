@@ -146,7 +146,7 @@ export default function AdminDashboard() {
       }
     };
 
-    const interval = window.setInterval(refreshQueue, 10000);
+    const interval = window.setInterval(refreshQueue, 12000);
     const onFocus = () => refreshQueue();
     const onVisibility = () => refreshQueue();
 
