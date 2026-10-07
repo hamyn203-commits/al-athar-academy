@@ -8,6 +8,7 @@ async function calculateTeacherBalance(teacherId) {
   const teacher = await Teacher.findById(teacherId);
   if (!teacher) return null;
 
+  await ensureLegacyOpeningEntries(teacherId);
   const ledgerEntries = await TeacherLedger.find({ teacher: teacherId });
 
   const balances = {
