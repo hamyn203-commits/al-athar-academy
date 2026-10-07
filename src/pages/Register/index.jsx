@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   User, Users, Lock, Mail, Phone, Eye, EyeOff, ArrowRight, CheckCircle,
-  Sparkles, CheckCircle2, Globe, ArrowLeft, Star
+  Sparkles, CheckCircle2, Globe, ArrowLeft, Star, ShieldCheck
 } from 'lucide-react';
 import BrandLogo from '../../components/BrandLogo';
 import { useI18n } from '../../i18n';
@@ -40,6 +40,8 @@ export default function Register() {
     name: '',
     email: '',
     phone: '',
+    guardianPhone: '',
+    guardianRelationship: 'father',
     password: '',
     confirmPassword: ''
   });
@@ -78,6 +80,12 @@ export default function Register() {
         phone: formData.phone,
         password: formData.password,
         role,
+        ...(role === 'student' && formData.guardianPhone.trim()
+          ? {
+              guardianPhone: formData.guardianPhone.trim(),
+              guardianRelationship: formData.guardianRelationship,
+            }
+          : {}),
         ...(referralCode ? { referralCode } : {}),
         ...(planPath ? { selectedPlan: { path: planPath, freq: planFreq, level: planLevel } } : {}),
       });
@@ -426,7 +434,9 @@ export default function Register() {
               {/* Phone Number */}
               <div>
                 <label className="block text-xs font-bold text-[var(--athar-text)] mb-2">
-                  {locale === 'ar' ? 'رقم الهاتف (اختياري)' : 'Phone Number (Optional)'}
+                  {role === 'guardian'
+                    ? (locale === 'ar' ? 'رقم هاتف ولي الأمر' : 'Guardian Phone Number')
+                    : (locale === 'ar' ? 'رقم الهاتف (اختياري)' : 'Phone Number (Optional)')}
                 </label>
                 <div className="relative">
                   <Phone size={18} style={iconStyle} className="absolute top-1/2 transform -translate-y-1/2 text-slate-400" />
@@ -435,12 +445,71 @@ export default function Register() {
                     name="phone"
                     value={formData.phone}
                     onChange={handleChange}
+                    required={role === 'guardian'}
                     placeholder="+20 123 456 7890"
                     style={{ padding: inputPadding }}
                     className="w-full rounded-xl border border-slate-200 bg-white text-sm text-slate-900 outline-none transition focus:border-[var(--athar-gold)] focus:ring-2 focus:ring-[var(--athar-gold)]/10"
                   />
                 </div>
+                {role === 'guardian' && (
+                  <p className="mt-2 text-[11px] text-slate-500 leading-relaxed">
+                    {locale === 'ar'
+                      ? 'نستخدم الرقم فقط لمطابقة طلبات ربط أبنائك. لا يتم الربط إلا بعد موافقتك داخل حسابك.'
+                      : 'This number is used only to match child-link requests. Nothing is linked until you confirm it.'}
+                  </p>
+                )}
               </div>
+
+              {role === 'student' && (
+                <div className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4 space-y-3">
+                  <div className="flex items-start gap-2.5">
+                    <ShieldCheck size={18} className="text-emerald-700 mt-0.5 shrink-0" />
+                    <div>
+                      <h3 className="text-sm font-bold text-emerald-900">
+                        {locale === 'ar' ? 'ربط ولي الأمر' : 'Guardian Linking'}
+                      </h3>
+                      <p className="text-[11px] text-emerald-800/80 mt-1 leading-relaxed">
+                        {locale === 'ar'
+                          ? 'اختياري الآن. اكتب رقم ولي الأمر ليظهر له طلب الربط عندما ينشئ حسابه أو يسجل الدخول. لن يتم الربط تلقائيًا.'
+                          : 'Optional for now. Enter a guardian phone so a pending request appears when they sign in. Linking is never automatic.'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-[var(--athar-text)] mb-2">
+                        {locale === 'ar' ? 'رقم ولي الأمر' : 'Guardian Phone'}
+                      </label>
+                      <input
+                        type="tel"
+                        name="guardianPhone"
+                        value={formData.guardianPhone}
+                        onChange={handleChange}
+                        placeholder="+20 10 0000 0000"
+                        className="w-full rounded-xl border border-emerald-100 bg-white px-3.5 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-[var(--athar-text)] mb-2">
+                        {locale === 'ar' ? 'صلة القرابة' : 'Relationship'}
+                      </label>
+                      <select
+                        name="guardianRelationship"
+                        value={formData.guardianRelationship}
+                        onChange={handleChange}
+                        className="w-full rounded-xl border border-emerald-100 bg-white px-3.5 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                      >
+                        <option value="father">{locale === 'ar' ? 'أب' : 'Father'}</option>
+                        <option value="mother">{locale === 'ar' ? 'أم' : 'Mother'}</option>
+                        <option value="guardian">{locale === 'ar' ? 'ولي أمر / وصي' : 'Guardian'}</option>
+                        <option value="other">{locale === 'ar' ? 'صلة أخرى' : 'Other'}</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Password */}
               <div>
