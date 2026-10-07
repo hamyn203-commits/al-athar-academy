@@ -1385,6 +1385,98 @@ export default function TeacherDashboard() {
         </Modal>
       )}
 
+      {studentModal && (
+        <Modal
+          title={`الملف التعليمي — ${studentModal.name || 'الطالب'}`}
+          onClose={() => { setStudentModal(null); setStudentSummary(null); }}
+          wide
+        >
+          {studentSummaryLoading ? (
+            <div className="wn-teacher-empty-state">
+              <Users size={28} />
+              <div><strong>جاري تحميل ملف الطالب</strong><p>يتم جمع الحصص والواجبات والتقارير.</p></div>
+            </div>
+          ) : !studentSummary ? (
+            <div className="wn-teacher-empty-state">
+              <AlertTriangle size={28} />
+              <div><strong>تعذر تحميل الملف</strong><p>أغلق النافذة وحاول مرة أخرى.</p></div>
+            </div>
+          ) : (
+            <div className="wn-teacher-student-profile">
+              <div className="wn-teacher-student-profile__hero">
+                <span className="wn-teacher-avatar xlarge">{(studentSummary.student?.name || 'ط').slice(0, 1)}</span>
+                <div>
+                  <h3>{studentSummary.student?.name}</h3>
+                  <p>{studentSummary.student?.email}</p>
+                </div>
+                <button type="button" onClick={() => {
+                  setStudentModal(null);
+                  setNewTask((current) => ({ ...current, studentId: studentSummary.student?._id || '' }));
+                  setTaskModal(true);
+                }}>
+                  <Plus size={15} /> إسناد واجب
+                </button>
+              </div>
+
+              <div className="wn-teacher-student-profile__stats">
+                <div><span>إجمالي الحصص</span><strong>{studentSummary.summary?.totalSessions || 0}</strong></div>
+                <div><span>مكتملة</span><strong>{studentSummary.summary?.completedSessions || 0}</strong></div>
+                <div><span>قادمة</span><strong>{studentSummary.summary?.upcomingSessions || 0}</strong></div>
+                <div><span>واجبات للتصحيح</span><strong>{studentSummary.summary?.submittedHomework || 0}</strong></div>
+              </div>
+
+              <section className="wn-teacher-student-profile__section">
+                <div className="wn-teacher-section-heading">
+                  <div><span>التاريخ التعليمي</span><h3>آخر الحصص والتقارير</h3></div>
+                </div>
+                {(studentSummary.sessions || []).length === 0 ? (
+                  <p className="text-sm text-slate-500">لا توجد حصص مسجلة.</p>
+                ) : (
+                  <div className="wn-teacher-student-timeline">
+                    {studentSummary.sessions.slice(0, 10).map((session) => (
+                      <div key={session._id}>
+                        <span className={'wn-teacher-timeline-dot ' + (session.status === 'completed' ? 'is-done' : '')} />
+                        <div>
+                          <strong>{session.type === 'trial' ? 'حصة تجريبية' : 'حصة منتظمة'}</strong>
+                          <small>{new Date(session.scheduledAt).toLocaleString('ar-EG')}</small>
+                          {session.progressReport ? (
+                            <div className="wn-teacher-timeline-report">
+                              <span>الحفظ <b>{session.progressReport.memorizationScore ?? '—'}/10</b></span>
+                              <span>التجويد <b>{session.progressReport.tajweedScore ?? '—'}/10</b></span>
+                              {session.progressReport.surahRecited ? <p>تم التسميع: {session.progressReport.surahRecited}</p> : null}
+                              {session.progressReport.nextHomework ? <p>التالي: {session.progressReport.nextHomework}</p> : null}
+                            </div>
+                          ) : null}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+
+              <section className="wn-teacher-student-profile__section">
+                <div className="wn-teacher-section-heading">
+                  <div><span>الواجبات</span><h3>آخر المهام</h3></div>
+                </div>
+                {(studentSummary.tasks || []).length === 0 ? (
+                  <p className="text-sm text-slate-500">لا توجد واجبات لهذا الطالب.</p>
+                ) : (
+                  <div className="wn-teacher-student-task-list">
+                    {studentSummary.tasks.slice(0, 8).map((task) => (
+                      <div key={task._id}>
+                        <span>{taskTypeLabel(task.type)}</span>
+                        <strong>{task.title}</strong>
+                        <small>{task.status === 'done' ? 'معتمد' : task.status === 'submitted' ? 'مُسلّم' : 'قيد الانتظار'}</small>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+            </div>
+          )}
+        </Modal>
+      )}
+
       {evalModal && (
         <Modal title={`تقييم ${evalModal.student?.name}`} onClose={() => setEvalModal(null)}>
           <div className="space-y-4">
@@ -1403,6 +1495,42 @@ export default function TeacherDashboard() {
                 <span className="text-sm text-emerald-600 font-bold">{evaluation[key]}</span>
               </div>
             ))}
+            <div className="wn-teacher-eval-report">
+              <div className="wn-teacher-section-heading">
+                <div><span>تقرير ولي الأمر</span><h3>ماذا تم في الحصة؟</h3></div>
+              </div>
+              <input
+                className="input-field w-full"
+                placeholder="السورة / المقطع الذي تم تسميعه"
+                value={evaluation.surahRecited}
+                onChange={(event) => setEvaluation((current) => ({ ...current, surahRecited: event.target.value }))}
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <input
+                  type="number"
+                  min="1"
+                  className="input-field w-full"
+                  placeholder="من آية"
+                  value={evaluation.fromAyah}
+                  onChange={(event) => setEvaluation((current) => ({ ...current, fromAyah: event.target.value }))}
+                />
+                <input
+                  type="number"
+                  min="1"
+                  className="input-field w-full"
+                  placeholder="إلى آية"
+                  value={evaluation.toAyah}
+                  onChange={(event) => setEvaluation((current) => ({ ...current, toAyah: event.target.value }))}
+                />
+              </div>
+              <input
+                className="input-field w-full"
+                placeholder="الواجب أو الهدف القادم"
+                value={evaluation.nextHomework}
+                onChange={(event) => setEvaluation((current) => ({ ...current, nextHomework: event.target.value }))}
+              />
+            </div>
+
             <div>
               <label className="text-sm font-medium">ملاحظات</label>
               <textarea className="input-field w-full mt-1" rows={2} value={evaluation.overallNotes}
@@ -1427,9 +1555,12 @@ export default function TeacherDashboard() {
                 </div>
               ))}
             </div>
-            <button onClick={completeSession} className="btn-primary w-full">
-              إكمال الحصة (+{SESSION_RATE} ج.م)
-            </button>
+            <div className="wn-teacher-eval-submit">
+              <p><CheckCircle2 size={16} /> سيتم إنهاء الحصة، تسجيل الاستحقاق، وحفظ تقرير المتابعة.</p>
+              <button onClick={completeSession} className="btn-primary w-full">
+                إنهاء الحصة وإرسال التقرير (+{SESSION_RATE} ج.م)
+              </button>
+            </div>
           </div>
         </Modal>
       )}
@@ -1478,10 +1609,10 @@ export default function TeacherDashboard() {
   );
 }
 
-function Modal({ title, onClose, children }) {
+function Modal({ title, onClose, children, wide = false }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" dir="rtl">
-      <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 relative">
+      <div className={`bg-white rounded-xl ${wide ? 'max-w-4xl' : 'max-w-lg'} w-full max-h-[90vh] overflow-y-auto p-6 relative`}>
         <button onClick={onClose} className="absolute left-4 top-4 text-gray-400 hover:text-gray-600"><X size={20} /></button>
         <h3 className="text-lg font-bold mb-4">{title}</h3>
         {children}
@@ -1504,14 +1635,30 @@ function statusLabel(s) {
   return m[s] || s;
 }
 
+function financeStatusLabel(status) {
+  const labels = {
+    pending: 'قيد المراجعة',
+    processing: 'جاري التحويل',
+    completed: 'مكتمل',
+    rejected: 'مرفوض',
+  };
+  return labels[status] || status;
+}
+
 function taskTypeLabel(t) {
   return TASK_TYPES.find((x) => x.id === t)?.label || t;
 }
 
 function mergeSchedule(apiDays) {
-  return WEEK_DAYS.map((d) => {
-    const found = (apiDays || []).find((a) => a.day === d.id);
-    const slot = found?.slots?.[0];
-    return { day: d.id, label: d.label, startTime: slot?.startTime || '', endTime: slot?.endTime || '' };
+  return WEEK_DAYS.map((day) => {
+    const found = (apiDays || []).find((item) => item.day === day.id);
+    return {
+      day: day.id,
+      label: day.label,
+      slots: (found?.slots || []).map((slot) => ({
+        startTime: slot.startTime || '',
+        endTime: slot.endTime || '',
+      })),
+    };
   });
 }
