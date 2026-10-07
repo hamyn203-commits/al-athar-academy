@@ -154,7 +154,11 @@ Session.countDocuments = async (filter = {}) => sessions.filter((s) => matchSess
 
 Guardian.findOne = (filter = {}) => query(String(filter.user) === ids.guardian ? guardian : null);
 LiveSession.find = () => query([]);
-Notification.createAndSend = async () => ({ success: true });
+const notifications = [];
+Notification.createAndSend = async (userId, payload) => {
+  notifications.push({ userId: String(userId), ...payload });
+  return { success: true };
+};
 
 const auth = (id) => generateAccessToken(users.get(id));
 
@@ -212,6 +216,26 @@ test('four-persona state linking works through real HTTP routes', async (t) => {
   });
   assert.equal(createTrial.status, 201);
   assert.equal(createTrial.data.session.status, 'pending');
+
+  const requestNotification = notifications.find((item) => item.type === 'session-request');
+  assert.ok(requestNotification);
+  assert.equal(requestNotification.userId, ids.teacherUser);
+  assert.match(String(requestNotification.data?.actionUrl || ''), /\/teacher\/dashboard\?tab=trials&session=/);
+
+  const duplicateTrial = await call(base, '/api/sessions/trial', {
+    method: 'POST',
+    token: studentToken,
+    body: {
+      teacherId: ids.teacher,
+      scheduledAt: new Date(Date.now() + 2 * 86400000).toISOString(),
+      timezone: 'Africa/Cairo',
+      notes: 'Duplicate QA trial',
+    },
+  });
+  assert.equal(duplicateTrial.status, 409);
+  assert.equal(duplicateTrial.data.code, 'TRIAL_ALREADY_EXISTS');
+  assert.equal(String(duplicateTrial.data.existingSession?._id), String(createTrial.data.session._id));
+  assert.equal(duplicateTrial.data.existingSession?.status, 'pending');
 
   const teacherView = await call(base, '/api/sessions/my-sessions?type=trial&status=pending', { token: teacherToken });
   assert.equal(teacherView.status, 200);

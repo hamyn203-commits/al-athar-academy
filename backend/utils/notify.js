@@ -31,7 +31,10 @@ async function notifyTeacherForSessionRequest(session, teacherUserId) {
       ar: `طلب حصة ${session.type === 'trial' ? 'تجريبية' : ''} — ${new Date(session.scheduledAt).toLocaleString('ar-EG')}`,
       en: `New ${session.type} session — ${new Date(session.scheduledAt).toLocaleString('en-US')}`,
     },
-    data: { session: session._id },
+    data: {
+      session: session._id,
+      actionUrl: `/teacher/dashboard?tab=trials&session=${session._id}`,
+    },
     priority: 'high',
   });
 }

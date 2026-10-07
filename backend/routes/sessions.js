@@ -48,7 +48,18 @@ router.post('/trial', protect, authorize('student'), async (req, res) => {
     });
 
     if (existingTrial) {
-      return res.status(400).json({ error: 'You already have a pending trial session with this teacher' });
+      return res.status(409).json({
+        error: 'You already have an active trial session with this teacher',
+        code: 'TRIAL_ALREADY_EXISTS',
+        existingSession: {
+          _id: existingTrial._id,
+          teacher: existingTrial.teacher,
+          status: existingTrial.status,
+          scheduledAt: existingTrial.scheduledAt,
+          timezone: existingTrial.timezone,
+          type: existingTrial.type,
+        },
+      });
     }
 
     const session = await Session.create({
