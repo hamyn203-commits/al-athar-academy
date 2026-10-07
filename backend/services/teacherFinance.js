@@ -142,28 +142,33 @@ async function ensureSessionEarning({
 
   const idempotencyKey = `session:${sessionId}:earning`;
 
-  return TeacherLedger.findOneAndUpdate(
-    { idempotencyKey },
-    {
-      $setOnInsert: {
-        idempotencyKey,
-        teacher: teacherId,
-        session: sessionId,
-        type: 'session_earning',
-        amount: normalizedAmount,
-        currency: currency === 'USD' ? 'USD' : 'EGP',
-        attendeesCount: Math.max(0, Number(attendeesCount) || 0),
-        status: 'completed',
-        notes,
-        description: `مستحقات حصة تعليمية - ${normalizedAmount} ${currency === 'USD' ? 'USD' : 'EGP'}`,
+  try {
+    return await TeacherLedger.findOneAndUpdate(
+      { idempotencyKey },
+      {
+        $setOnInsert: {
+          idempotencyKey,
+          teacher: teacherId,
+          session: sessionId,
+          type: 'session_earning',
+          amount: normalizedAmount,
+          currency: currency === 'USD' ? 'USD' : 'EGP',
+          attendeesCount: Math.max(0, Number(attendeesCount) || 0),
+          status: 'completed',
+          notes,
+          description: `مستحقات حصة تعليمية - ${normalizedAmount} ${currency === 'USD' ? 'USD' : 'EGP'}`,
+        },
       },
-    },
-    {
-      upsert: true,
-      new: true,
-      setDefaultsOnInsert: true,
-    },
-  );
+      {
+        upsert: true,
+        new: true,
+        setDefaultsOnInsert: true,
+      },
+    );
+  } catch (error) {
+    if (error?.code !== 11000) throw error;
+    return TeacherLedger.findOne({ idempotencyKey });
+  }
 }
 
 async function listTeacherTransactions(teacherId, {
