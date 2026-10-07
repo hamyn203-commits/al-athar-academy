@@ -1,5 +1,6 @@
 const Notification = require('../models/Notification');
 const User = require('../models/User');
+const { emitRealtimeEvent } = require('./realtime');
 
 async function notifyUser(userId, { type, title, message, data = {}, priority = 'medium', channels }) {
   const user = await User.findById(userId).select('preferences email phone pushToken telegramId');
@@ -13,7 +14,7 @@ async function notifyUser(userId, { type, title, message, data = {}, priority = 
     sms: { enabled: !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && user?.phone) },
   };
 
-  return Notification.createAndSend(userId, {
+  const notification = await Notification.createAndSend(userId, {
     type,
     title,
     message,
@@ -21,6 +22,22 @@ async function notifyUser(userId, { type, title, message, data = {}, priority = 
     priority,
     channels: channels || defaultChannels,
   });
+
+  await emitRealtimeEvent(userId, {
+    event: 'notification',
+    notification: {
+      _id: notification._id,
+      type: notification.type,
+      title: notification.title,
+      message: notification.message,
+      data: notification.data,
+      priority: notification.priority,
+      isRead: notification.isRead,
+      createdAt: notification.createdAt,
+    },
+  });
+
+  return notification;
 }
 
 async function notifyTeacherForSessionRequest(session, teacherUserId) {
