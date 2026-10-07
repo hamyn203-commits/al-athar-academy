@@ -1027,6 +1027,18 @@ router.put('/admin/:id/review', protect, authorize('admin'), async (req, res) =>
 
     const gate = buildTeacherReviewGate(teacher);
     if (action === 'approve' && !gate.approvalReady) {
+      await logAdminAction({
+        req,
+        action: 'teacher.review.approval-blocked',
+        entityType: 'teacher',
+        entityId: teacher._id,
+        reason: 'Approval attempted before all required review items were complete.',
+        metadata: {
+          readiness: gate.readiness,
+          blockers: gate.blockers.map((item) => item.key),
+        },
+      }).catch(() => {});
+
       return res.status(409).json({
         error: 'لا يمكن اعتماد المعلم قبل اكتمال قائمة المراجعة الإلزامية',
         code: 'TEACHER_REVIEW_GATE_INCOMPLETE',
@@ -1209,6 +1221,9 @@ router.get('/admin/:id/document/:kind{/:index}', protect, authorize('admin'), as
     if (!allowed.includes(kind)) return res.status(400).json({ error: 'Invalid document type' });
 
     let stored = teacher.documents?.[kind];
+    if (kind === 'idCardFront' && (!stored || stored === 'not-provided')) {
+      stored = teacher.documents?.idCard;
+    }
     if (Array.isArray(stored)) {
       const index = Number(req.params.index || 0);
       stored = stored[index];
