@@ -569,3 +569,25 @@ requireAbsent(
   'session chat audio must never be served by the public media proxy',
   /publicPurpose[\s\S]{0,300}session-chat-audio/
 );
+
+
+requireContains(
+  'backend/routes/teachers.js',
+  'teacher application status polling token must be purpose-scoped',
+  /purpose:\s*['"]teacher-application-status['"][\s\S]{0,500}expiresIn:\s*['"]7d['"]/
+);
+requireContains(
+  'backend/routes/teachers.js',
+  'teacher application status endpoint must bind the token to teacher and user identifiers',
+  /router\.post\(['"]\/application-status['"][\s\S]{0,1200}_id:\s*payload\.teacherId[\s\S]{0,300}user:\s*payload\.userId/
+);
+requireContains(
+  'src/pages/AdminDashboard/index.jsx',
+  'admin pending-teacher queue must auto-refresh while visible',
+  /setInterval\(refreshQueue,\s*12000\)/
+);
+requireContains(
+  'src/pages/TeacherRegistration/useTeacherForm.js',
+  'teacher waiting screen must poll approval without repeatedly attempting login',
+  /teachers\/application-status[\s\S]{0,1000}setInterval[\s\S]{0,300}10000/
+);
