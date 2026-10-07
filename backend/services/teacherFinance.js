@@ -59,11 +59,12 @@ async function ensureLegacyOpeningEntries(teacherId) {
   const teacher = await Teacher.findById(teacherId).select('earnings');
   if (!teacher?.earnings) return;
 
-  const existingCanonicalEntry = await TeacherLedger.exists({
+  const existingNonMigrationEntry = await TeacherLedger.exists({
     teacher: teacherId,
+    idempotencyKey: { $exists: false },
     type: { $in: ['session_earning', 'bonus', 'adjustment', 'payout'] },
   });
-  if (existingCanonicalEntry) return;
+  if (existingNonMigrationEntry) return;
 
   const legacyTotal = Number(teacher.earnings.totalEarned) || 0;
   const legacyPending = Number(teacher.earnings.pendingEarnings) || 0;
@@ -71,29 +72,43 @@ async function ensureLegacyOpeningEntries(teacherId) {
   const openingEarned = Math.max(0, legacyTotal + legacyPending);
 
   if (openingEarned > 0) {
-    await TeacherLedger.create({
-      teacher: teacherId,
-      type: 'adjustment',
-      amount: openingEarned,
-      currency: 'EGP',
-      status: 'completed',
-      notes: 'legacy-opening-balance',
-      description: 'رصيد افتتاحي مرحّل من نظام مستحقات المعلم القديم',
-    });
+    await TeacherLedger.findOneAndUpdate(
+      { idempotencyKey: `legacy-opening:${teacherId}:earned` },
+      {
+        $setOnInsert: {
+          idempotencyKey: `legacy-opening:${teacherId}:earned`,
+          teacher: teacherId,
+          type: 'adjustment',
+          amount: openingEarned,
+          currency: 'EGP',
+          status: 'completed',
+          notes: 'legacy-opening-balance',
+          description: 'رصيد افتتاحي مرحّل من نظام مستحقات المعلم القديم',
+        },
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true },
+    );
   }
 
   if (legacyWithdrawn > 0) {
-    await TeacherLedger.create({
-      teacher: teacherId,
-      type: 'payout',
-      amount: legacyWithdrawn,
-      currency: 'EGP',
-      status: 'completed',
-      payoutMethod: 'bank_transfer',
-      notes: 'legacy-opening-withdrawn',
-      description: 'مسحوبات تاريخية مرحّلة من النظام القديم',
-      processedAt: new Date(),
-    });
+    await TeacherLedger.findOneAndUpdate(
+      { idempotencyKey: `legacy-opening:${teacherId}:withdrawn` },
+      {
+        $setOnInsert: {
+          idempotencyKey: `legacy-opening:${teacherId}:withdrawn`,
+          teacher: teacherId,
+          type: 'payout',
+          amount: legacyWithdrawn,
+          currency: 'EGP',
+          status: 'completed',
+          payoutMethod: 'bank_transfer',
+          notes: 'legacy-opening-withdrawn',
+          description: 'مسحوبات تاريخية مرحّلة من النظام القديم',
+          processedAt: new Date(),
+        },
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true },
+    );
   }
 }
 
@@ -112,14 +127,13 @@ async function ensureSessionEarning({
 
   await ensureLegacyOpeningEntries(teacherId);
 
+  const idempotencyKey = `session:${sessionId}:earning`;
+
   return TeacherLedger.findOneAndUpdate(
-    {
-      teacher: teacherId,
-      session: sessionId,
-      type: 'session_earning',
-    },
+    { idempotencyKey },
     {
       $setOnInsert: {
+        idempotencyKey,
         teacher: teacherId,
         session: sessionId,
         type: 'session_earning',
