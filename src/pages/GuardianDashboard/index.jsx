@@ -115,6 +115,19 @@ export default function GuardianDashboard() {
     }
   }, [ready]);
 
+  const refreshFamilyOverview = useCallback(async () => {
+    if (!ready) return;
+    try {
+      const familyRes = await api.get('/api/guardian/family-overview', { auth: true });
+      setFamilyOverview({
+        summary: familyRes.summary || { totalChildren: children.length, upcomingSessions: 0, pendingHomework: 0, needsAttention: 0 },
+        children: familyRes.children || [],
+      });
+    } catch {
+      // Preserve the last known family summary during transient failures.
+    }
+  }, [ready, children.length]);
+
   useEffect(() => {
     if (!ready) return undefined;
 
@@ -134,7 +147,7 @@ export default function GuardianDashboard() {
       window.removeEventListener('focus', onFocus);
       document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [ready, syncUpcomingSessions]);
+  }, [ready, syncUpcomingSessions, refreshFamilyOverview, selectedChildId]);
 
   useEffect(() => {
     if (!ready) return undefined;
@@ -149,6 +162,16 @@ export default function GuardianDashboard() {
         'session-reminder',
       ].includes(type)) {
         syncUpcomingSessions();
+        refreshFamilyOverview();
+      }
+
+      if (type === 'homework-assigned') {
+        refreshFamilyOverview();
+        if (selectedChildId && selectedChildId !== 'family') {
+          api.get(`/api/guardian/homework/${selectedChildId}`, { auth: true })
+            .then((res) => setHomeworkTasks(res.tasks || []))
+            .catch(() => {});
+        }
       }
     };
 
@@ -302,7 +325,7 @@ export default function GuardianDashboard() {
                   </button>
                 )}
                 {children.map((child) => {
-                  const isSelected = child.studentId === selectedChildId;
+                  const isSelected = String(child.studentId) === String(selectedChildId);
                   return (
                     <button
                       key={child.studentId}
