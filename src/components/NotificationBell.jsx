@@ -5,6 +5,7 @@ import { api } from '../lib/api';
 import { useI18n } from '../i18n';
 import { localizeInternalHref } from '../lib/navigation';
 import { useToast } from '../context/ToastProvider';
+import { Room, RoomEvent } from 'livekit-client';
 
 function pickText(obj, locale = 'ar') {
   if (!obj) return '';
@@ -17,6 +18,7 @@ export default function NotificationBell() {
   const toast = useToast();
   const knownNotificationIds = useRef(new Set());
   const initializedNotifications = useRef(false);
+  const realtimeRoomRef = useRef(null);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
@@ -55,10 +57,58 @@ export default function NotificationBell() {
   };
 
   useEffect(() => {
+    let disposed = false;
+
     fetchNotifications();
+
+    const connectRealtime = async () => {
+      try {
+        if (!api.getToken()) return;
+        const connection = await api.get('/api/notifications/realtime-token', { auth: true });
+        if (disposed || !connection?.token || !connection?.url) return;
+
+        const room = new Room();
+        realtimeRoomRef.current = room;
+
+        room.on(RoomEvent.DataReceived, (payload, _participant, _kind, topic) => {
+          if (topic && topic !== 'notifications') return;
+
+          try {
+            const event = JSON.parse(new TextDecoder().decode(payload));
+            const notification = event?.notification;
+            if (event?.type !== 'notification' || !notification) return;
+
+            const id = String(notification._id || '');
+            if (id) knownNotificationIds.current.add(id);
+
+            toast.info(pickText(notification.message, locale), {
+              title: pickText(notification.title, locale),
+              position: 'top-right',
+              duration: 5000,
+            });
+
+            window.dispatchEvent(new CustomEvent('wn:realtime-notification', {
+              detail: notification,
+            }));
+
+            fetchNotifications();
+          } catch (error) {
+            console.error('Realtime notification payload error:', error);
+          }
+        });
+
+        await room.connect(connection.url, connection.token, { autoSubscribe: false });
+      } catch (error) {
+        console.warn('Realtime notifications unavailable; using polling fallback:', error?.message || error);
+      }
+    };
+
+    connectRealtime();
+
+    // Fallback only. Normal updates arrive instantly through LiveKit.
     const interval = setInterval(() => {
       if (document.visibilityState === 'visible') fetchNotifications();
-    }, 5000);
+    }, 30000);
 
     const onFocus = () => fetchNotifications();
     const onVisibility = () => {
@@ -69,11 +119,14 @@ export default function NotificationBell() {
     document.addEventListener('visibilitychange', onVisibility);
 
     return () => {
+      disposed = true;
       clearInterval(interval);
       window.removeEventListener('focus', onFocus);
       document.removeEventListener('visibilitychange', onVisibility);
+      realtimeRoomRef.current?.disconnect?.();
+      realtimeRoomRef.current = null;
     };
-  }, []);
+  }, [locale, toast]);
 
   const markAsRead = async (id) => {
     try {
