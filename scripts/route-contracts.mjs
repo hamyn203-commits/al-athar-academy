@@ -136,6 +136,9 @@ assert.match(teacherDashboard, /function\s+TeacherCommandBar\s*\(/);
 assert.match(teacherDashboard, /tab\s*===\s*['"]students['"]/);
 assert.match(teacherDashboard, /\/api\/finance\/teacher\/balance/);
 assert.match(teacherDashboard, /\/api\/live\/sessions/);
+assert.match(teacherDashboard, /tab\s*===\s*['"]updates['"]/);
+assert.match(teacherDashboard, /uploadFileDirect\(file,\s*['"]teacher-update-video['"]\)/);
+assert.match(teacherDashboard, /\/api\/teacher-updates\/teacher/);
 assert.doesNotMatch(teacherDashboard, /<TabBar\s/);
 
 const studentDashboard = read('src/pages/StudentDashboard/index.jsx');
@@ -147,6 +150,8 @@ assert.match(studentDashboard, /\[\.\.\.upcomingSessions,\s*\.\.\.upcomingTrials
 assert.match(studentDashboard, /function\s+StudentCommandBar\s*\(/);
 assert.match(studentDashboard, /primaryNavItems/);
 assert.match(studentDashboard, /secondaryNavItems/);
+assert.match(studentDashboard, /tab\s*===\s*['"]teacher-updates['"]/);
+assert.match(studentDashboard, /\/api\/teacher-updates\/student/);
 assert.doesNotMatch(studentDashboard, /<TabBar\s/);
 
 const errorBoundary = read('src/components/shared/ErrorBoundary.jsx');
