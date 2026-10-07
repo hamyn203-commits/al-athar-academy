@@ -15,7 +15,8 @@ async function notifyUser(userId, { type, title, message, data = {}, priority = 
     sms: { enabled: !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && user?.phone) },
   };
 
-  const notification = await Notification.createAndSend(userId, {
+  const notification = new Notification({
+    user: userId,
     type,
     title,
     message,
@@ -24,7 +25,14 @@ async function notifyUser(userId, { type, title, message, data = {}, priority = 
     channels: channels || defaultChannels,
   });
 
-  publishRealtimeNotification(userId, {
+  await notification.save();
+
+  // In-app persistence + realtime delivery must not wait for slower external channels.
+  if (notification.channels.inApp?.enabled) {
+    await notification.send('inApp');
+  }
+
+  await publishRealtimeNotification(userId, {
     type: 'notification',
     notification: {
       _id: notification._id,
@@ -35,7 +43,13 @@ async function notifyUser(userId, { type, title, message, data = {}, priority = 
       priority,
       createdAt: notification.createdAt,
     },
-  }).catch(() => {});
+  });
+
+  for (const channel of ['email', 'push', 'telegram', 'sms']) {
+    if (notification.channels[channel]?.enabled) {
+      await notification.send(channel);
+    }
+  }
 
   return notification;
 }
