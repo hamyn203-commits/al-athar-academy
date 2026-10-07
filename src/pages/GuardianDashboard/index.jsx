@@ -112,6 +112,26 @@ export default function GuardianDashboard() {
     };
   }, [ready, syncUpcomingSessions]);
 
+  useEffect(() => {
+    if (!ready) return undefined;
+
+    const onRealtimeNotification = (event) => {
+      const type = event?.detail?.type;
+      if ([
+        'session-accepted',
+        'session-rejected',
+        'session-rescheduled',
+        'session-completed',
+        'session-reminder',
+      ].includes(type)) {
+        syncUpcomingSessions();
+      }
+    };
+
+    window.addEventListener('wn:realtime-notification', onRealtimeNotification);
+    return () => window.removeEventListener('wn:realtime-notification', onRealtimeNotification);
+  }, [ready, syncUpcomingSessions]);
+
   // Fetch reports when selected child changes or tab is reports
   useEffect(() => {
     if (!ready || !selectedChildId) return;
