@@ -1,7 +1,6 @@
 const Notification = require('../models/Notification');
 const User = require('../models/User');
 const Guardian = require('../models/Guardian');
-const { publishRealtimeNotification } = require('../services/realtimeNotificationBus');
 
 async function notifyUser(userId, { type, title, message, data = {}, priority = 'medium', channels }) {
   const user = await User.findById(userId).select('preferences email phone pushToken telegramId');
@@ -15,8 +14,7 @@ async function notifyUser(userId, { type, title, message, data = {}, priority = 
     sms: { enabled: !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && user?.phone) },
   };
 
-  const notification = new Notification({
-    user: userId,
+  return Notification.createAndSend(userId, {
     type,
     title,
     message,
@@ -24,34 +22,6 @@ async function notifyUser(userId, { type, title, message, data = {}, priority = 
     priority,
     channels: channels || defaultChannels,
   });
-
-  await notification.save();
-
-  // In-app persistence + realtime delivery must not wait for slower external channels.
-  if (notification.channels.inApp?.enabled) {
-    await notification.send('inApp');
-  }
-
-  await publishRealtimeNotification(userId, {
-    type: 'notification',
-    notification: {
-      _id: notification._id,
-      type,
-      title,
-      message,
-      data,
-      priority,
-      createdAt: notification.createdAt,
-    },
-  });
-
-  for (const channel of ['email', 'push', 'telegram', 'sms']) {
-    if (notification.channels[channel]?.enabled) {
-      await notification.send(channel);
-    }
-  }
-
-  return notification;
 }
 
 async function notifyGuardiansForStudent(studentId, payload) {
