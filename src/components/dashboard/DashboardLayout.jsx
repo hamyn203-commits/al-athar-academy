@@ -9,6 +9,13 @@ import '../../styles/dashboard-experience.css';
 export default function DashboardLayout({ title, user, onLogout, children }) {
   const { locale, isRTL } = useI18n();
   const lp = (path) => localizedPath(path, locale);
+  const roleHome = {
+    student: '/student/dashboard',
+    teacher: '/teacher/dashboard',
+    guardian: '/guardian/dashboard',
+    admin: '/admin/dashboard',
+  }[user?.role] || '/';
+  const roleHomeHref = lp(roleHome);
 
   const greeting = locale === 'id'
     ? 'Halo, ' + (user?.name || '')
@@ -16,7 +23,7 @@ export default function DashboardLayout({ title, user, onLogout, children }) {
       ? 'مرحبًا، ' + (user?.name || '')
       : 'Welcome, ' + (user?.name || '');
 
-  const websiteLabel = locale === 'id' ? 'Situs' : locale === 'ar' ? 'الموقع' : 'Website';
+  const websiteLabel = locale === 'id' ? 'Dasbor' : locale === 'ar' ? 'لوحتي' : 'Dashboard';
   const logoutLabel = locale === 'id' ? 'Keluar' : locale === 'ar' ? 'خروج' : 'Logout';
 
   return (
@@ -26,7 +33,7 @@ export default function DashboardLayout({ title, user, onLogout, children }) {
         <div className="page-container wn-dashboard-header__inner">
           <div className="flex items-center gap-3 min-w-0">
             <div className="wn-dashboard-brand shrink-0">
-              <BrandLogo size={42} to={lp('/')} />
+              <BrandLogo size={42} to={roleHomeHref} />
             </div>
             <div className="min-w-0">
               <h1 className="wn-dashboard-title truncate">{title}</h1>
@@ -36,7 +43,7 @@ export default function DashboardLayout({ title, user, onLogout, children }) {
 
           <div className="wn-dashboard-actions">
             <NotificationBell />
-            <Link to={lp('/')} className="wn-dashboard-action">
+            <Link to={roleHomeHref} className="wn-dashboard-action">
               <Home size={15} />
               <span>{websiteLabel}</span>
             </Link>
