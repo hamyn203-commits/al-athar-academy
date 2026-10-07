@@ -1,12 +1,10 @@
-import { CheckCircle, Edit3, Eye, RefreshCw, Video, XCircle } from 'lucide-react';
+import { Eye, RefreshCw, ShieldCheck } from 'lucide-react';
 
 export default function TeacherReviewQueue({
   teachers = [],
   loading = false,
   onRefresh,
-  onReview,
-  onOpenDocument,
-  onOpenMedia,
+  onOpenDossier,
   compact = false,
 }) {
   return (
@@ -56,28 +54,25 @@ export default function TeacherReviewQueue({
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                  <button onClick={() => onReview(t._id, 'approve')} className="px-3 py-2 bg-green-100 text-green-700 rounded-lg text-sm flex items-center gap-1">
-                    <CheckCircle size={16} /> قبول
-                  </button>
-                  <button onClick={() => onReview(t._id, 'request-changes')} className="px-3 py-2 bg-amber-100 text-amber-800 rounded-lg text-sm flex items-center gap-1">
-                    <Edit3 size={16} /> طلب استكمال
-                  </button>
-                  <button onClick={() => onReview(t._id, 'reject', 'مرفوض')} className="px-3 py-2 bg-red-100 text-red-700 rounded-lg text-sm flex items-center gap-1">
-                    <XCircle size={16} /> رفض
+                  <button
+                    type="button"
+                    onClick={() => onOpenDossier(t._id)}
+                    className="px-3 py-2 bg-emerald-700 text-white rounded-lg text-sm flex items-center gap-1"
+                  >
+                    <ShieldCheck size={16} /> فتح ملف المراجعة الكامل
                   </button>
                 </div>
               </div>
 
               {!compact && (
-                <div className="mt-4 border-t pt-3">
-                  <p className="text-xs font-semibold text-slate-600 mb-2">ملفات المراجعة</p>
-                  <div className="flex flex-wrap gap-2">
-                    {t.media?.profilePhoto && (
-                      <button onClick={() => onOpenMedia(t.media.profilePhoto)} className="px-3 py-1.5 bg-slate-100 rounded-lg text-xs flex items-center gap-1">
-                        <Eye size={14} /> الصورة الشخصية
-                      </button>
-                    )}
-                    {t.media?.recitationVideo && (
+                <div className="mt-4 border-t pt-3 flex items-start gap-2 text-xs text-slate-500">
+                  <Eye size={14} className="mt-0.5 shrink-0" />
+                  <p>
+                    الصور والفيديوهات والهوية والشهادات وقائمة الاعتماد أصبحت داخل ملف Teacher 360.
+                    لا يمكن اعتماد المعلم من قائمة الطلبات مباشرة.
+                  </p>
+                </div>
+              )}                   {t.media?.recitationVideo && (
                       <button onClick={() => onOpenMedia(t.media.recitationVideo)} className="px-3 py-1.5 bg-slate-100 rounded-lg text-xs flex items-center gap-1">
                         <Video size={14} /> فيديو التلاوة
                       </button>
