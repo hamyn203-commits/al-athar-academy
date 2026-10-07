@@ -85,6 +85,13 @@ assert.match(register, /localizedPath\(['"]\/login['"]/);
 assert.match(register, /guardianPhone/);
 assert.match(register, /guardianRelationship/);
 assert.match(register, /required=\{role\s*===\s*['"]guardian['"]\}/);
+const teacherRegistration = read('src/pages/TeacherRegistration/index.jsx');
+const teacherRegistrationForm = read('src/pages/TeacherRegistration/useTeacherForm.js');
+assert.match(teacherRegistration, /فيديو تعريفي قصير/);
+assert.match(teacherRegistration, /فيديو طريقة التدريس/);
+assert.match(teacherRegistrationForm, /introductionVideo/);
+assert.match(teacherRegistrationForm, /teachingMethodVideo/);
+
 
 const redirects = read('src/components/DashboardRedirect.jsx');
 assert.match(redirects, /dashboardPathForRole/);
