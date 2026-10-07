@@ -24,22 +24,55 @@ export default function TeacherRegistration() {
   const f = useTeacherForm();
 
   if (f.submitted) {
+    const approved = f.applicationStatus === 'approved';
+    const underReview = f.applicationStatus === 'under-review';
+    const rejected = f.applicationStatus === 'rejected';
+
     return (
       <>
         <GlobalHeader />
         <div className="wn-teacher-register-shell min-h-screen flex items-center justify-center p-4" dir="rtl">
           <div className="wn-teacher-register-card max-w-lg w-full text-center p-10">
-            <CheckCircle2 className="mx-auto text-emerald-600 mb-4" size={64} />
-            <h1 className="text-2xl font-bold text-slate-900 mb-2">تم استلام طلبك ✅</h1>
-            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900 mb-6">
-              <p className="font-bold mb-1">طلبك الآن في انتظار موافقة الإدارة</p>
+            <CheckCircle2 className={`mx-auto mb-4 ${approved ? 'text-emerald-600' : rejected ? 'text-red-600' : 'text-amber-600'}`} size={64} />
+            <h1 className="text-2xl font-bold text-slate-900 mb-2">
+              {approved ? 'تم قبولك كمعلم ✅' : rejected ? 'تم تحديث حالة طلبك' : 'تم استلام طلبك ✅'}
+            </h1>
+
+            <div className={`rounded-xl border p-4 mb-6 ${
+              approved
+                ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
+                : rejected
+                  ? 'border-red-200 bg-red-50 text-red-900'
+                  : 'border-amber-200 bg-amber-50 text-amber-900'
+            }`}>
+              <p className="font-bold mb-1">
+                {approved
+                  ? 'وافقت الإدارة على طلبك ويمكنك الدخول الآن'
+                  : rejected
+                    ? 'تعذر اعتماد الطلب في الوقت الحالي'
+                    : underReview
+                      ? 'طلبك قيد المراجعة ويحتاج متابعة الإدارة'
+                      : 'طلبك الآن في انتظار موافقة الإدارة'}
+              </p>
               <p className="text-sm">
-                لن تتمكن من دخول لوحة المعلم قبل اعتماد الطلب. سنرسل تحديث الحالة إلى
-                {' '}<strong>{f.credentials.email}</strong>.
+                {approved
+                  ? 'تم تحديث الحالة تلقائيًا بدون الحاجة لعمل Refresh. استخدم نفس البريد وكلمة المرور للدخول.'
+                  : rejected
+                    ? 'راجع البريد الإلكتروني أو تواصل مع إدارة الأكاديمية لمعرفة الخطوة التالية.'
+                    : <>تتحدث هذه الصفحة تلقائيًا كل عدة ثوانٍ. سنرسل تحديث الحالة أيضًا إلى <strong>{f.credentials.email}</strong>.</>}
               </p>
             </div>
+
+            {!approved && !rejected && (
+              <button type="button" onClick={f.checkApplicationStatus} className="btn-secondary w-full mb-3">
+                تحديث الحالة الآن
+              </button>
+            )}
+
             <div className="flex flex-col gap-3">
-              <Link to={localizedPath('/login', locale)} className="btn-primary">تسجيل الدخول</Link>
+              <Link to={localizedPath('/login', locale)} className="btn-primary">
+                {approved ? 'الدخول إلى لوحة المعلم' : 'تسجيل الدخول'}
+              </Link>
               <Link to={localizedPath('/', locale)} className="btn-secondary">العودة للرئيسية</Link>
             </div>
           </div>
