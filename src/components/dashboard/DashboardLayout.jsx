@@ -1,6 +1,7 @@
 import { Home, LogOut } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import BrandLogo from '../BrandLogo';
+import NotificationBell from '../NotificationBell';
 import { useI18n } from '../../i18n';
 import { localizedPath } from '../../lib/locale';
 import '../../styles/dashboard-experience.css';
@@ -34,6 +35,7 @@ export default function DashboardLayout({ title, user, onLogout, children }) {
           </div>
 
           <div className="wn-dashboard-actions">
+            <NotificationBell />
             <Link to={lp('/')} className="wn-dashboard-action">
               <Home size={15} />
               <span>{websiteLabel}</span>
