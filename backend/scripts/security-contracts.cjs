@@ -740,6 +740,22 @@ requireContains(
   /refreshTokenVersion:\s*1/
 );
 
+requireContains(
+  'backend/routes/teachers.js',
+  'new teacher applications must require a dedicated introduction video',
+  /TEACHER_INTRODUCTION_VIDEO_REQUIRED/
+);
+requireContains(
+  'backend/routes/teachers.js',
+  'new teacher applications must require a dedicated teaching-method video',
+  /TEACHER_TEACHING_METHOD_VIDEO_REQUIRED/
+);
+requireContains(
+  'src/pages/TeacherRegistration/useTeacherForm.js',
+  'teacher registration must upload introduction and teaching method videos separately',
+  /uploadOne\(files\.introductionVideo,[\s\S]{0,500}uploadOne\(files\.teachingMethodVideo/
+);
+
 // T13: admin teacher approval must be review-gated, auditable and private.
 requireContains(
   'backend/routes/teachers.js',
