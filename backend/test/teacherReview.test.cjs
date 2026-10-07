@@ -71,6 +71,19 @@ test('missing required media blocks approval even when checklist says approved',
   assert.ok(gate.blockers.some((item) => item.key === 'recitation-video'));
 });
 
+test('placeholder teacher assets never satisfy approval readiness', () => {
+  const teacher = completeTeacher();
+  teacher.media.profilePhoto = '/uploads/teachers/placeholder.jpg';
+
+  teacher.reviewChecklist = buildTeacherReviewGate(teacher).items
+    .filter((item) => item.requiredForTeacher)
+    .map((item) => ({ key: item.key, status: 'approved' }));
+
+  const gate = buildTeacherReviewGate(teacher);
+  assert.equal(gate.approvalReady, false);
+  assert.ok(gate.blockers.some((item) => item.key === 'profile-photo'));
+});
+
 test('required checklist items cannot be marked not-applicable', () => {
   assert.equal(sanitizeChecklistStatus('not-applicable', true), null);
   assert.equal(sanitizeChecklistStatus('approved', true), 'approved');
