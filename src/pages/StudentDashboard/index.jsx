@@ -330,6 +330,14 @@ export default function StudentDashboard() {
           .then((result) => setTeacherUpdates(result.updates || []))
           .catch(() => {});
       }
+      if (type === 'system') {
+        api.get('/api/students/dashboard/guardian-invitations', { auth: true })
+          .then((result) => {
+            setGuardianInvitations(result.invitations || []);
+            setLinkedGuardians(result.linkedGuardians || []);
+          })
+          .catch(() => {});
+      }
     };
 
     window.addEventListener('wn:realtime-notification', onRealtimeNotification);
