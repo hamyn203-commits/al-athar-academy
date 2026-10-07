@@ -86,6 +86,9 @@ assert.match(register, /localizedPath\(['"]\/login['"]/);
 const redirects = read('src/components/DashboardRedirect.jsx');
 assert.match(redirects, /dashboardPathForRole/);
 assert.match(redirects, /loginPathForLocale/);
+assert.match(redirects, /AuthenticatedLanding/);
+assert.match(redirects, /AdminLegacyRedirect/);
+assert.doesNotMatch(redirects, /localizedPath\(['"]\/teacher\/register['"]/);
 
 const requireAuth = read('src/hooks/useRequireAuth.js');
 assert.match(requireAuth, /loginPathForLocale/);
@@ -152,7 +155,15 @@ assert.match(adminPayments, /\/review/);
 const app = read('src/App.jsx');
 assert.match(
   app,
-  /path=["']guardian\/dashboard["'][\s\S]{0,180}roles=\{\[['"]guardian['"],\s*['"]admin['"]\]\}/
+  /path=["']guardian\/dashboard["'][\s\S]{0,180}roles=\{\[['"]guardian['"]\]\}/
+);
+assert.match(
+  app,
+  /path=["']admin\/dashboard["'][\s\S]{0,180}roles=\{\[['"]admin['"]\]\}[\s\S]{0,120}<AdminLegacyRedirect\s*\/>/
+);
+assert.match(
+  app,
+  /<Route\s+index\s+element=\{<AuthenticatedLanding><LandingPage\s*\/><\/AuthenticatedLanding>\}/
 );
 assert.match(
   app,
@@ -172,3 +183,10 @@ assert.match(
 );
 
 console.log('Route navigation contracts passed.');
+const dashboardLayout = read('src/components/dashboard/DashboardLayout.jsx');
+assert.match(dashboardLayout, /dashboardPathForRole\(user\?\.role,\s*locale\)/);
+assert.doesNotMatch(dashboardLayout, /['"]\/admin\/dashboard['"]/);
+
+const guardianDashboard = read('src/pages/GuardianDashboard/index.jsx');
+assert.match(guardianDashboard, /useRequireAuth\(\[['"]guardian['"]\]\)/);
+assert.doesNotMatch(guardianDashboard, /useRequireAuth\(\[['"]guardian['"],\s*['"]admin['"]\]\)/);
