@@ -11,13 +11,6 @@ const MEDIA_ITEMS = [
   { key: 'teachingMethodVideo', label: 'فيديو طريقة التدريس', icon: Video },
 ];
 
-const STATUS_LABEL = {
-  pending: 'لم تتم المراجعة',
-  approved: 'تمت المراجعة',
-  'changes-requested': 'يحتاج تعديل',
-  'not-applicable': 'غير منطبق',
-};
-
 function Value({ label, value }) {
   return (
     <div className="wn-admin-dossier__value">
