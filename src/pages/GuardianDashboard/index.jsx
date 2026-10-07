@@ -11,7 +11,7 @@ import api from '../../lib/api';
 import GuardianOverviewCenter from './GuardianOverviewCenter';
 
 export default function GuardianDashboard() {
-  const { user, ready, logout } = useRequireAuth(['guardian', 'admin']);
+  const { user, ready, logout } = useRequireAuth(['guardian']);
   const toast = useToast();
 
   const [children, setChildren] = useState([]);
