@@ -3,6 +3,23 @@ const router = express.Router();
 const Notification = require('../models/Notification');
 const User = require('../models/User');
 const { protect, authorize } = require('../middleware/auth');
+const { createUserRealtimeToken, isRealtimeConfigured } = require('../services/realtimeNotificationBus');
+
+// @route   GET /api/notifications/realtime-token
+// @desc    Get a short-lived LiveKit data-only token for instant in-app events
+// @access  Private
+router.get('/realtime-token', protect, async (req, res) => {
+  try {
+    if (!isRealtimeConfigured()) {
+      return res.status(503).json({ error: 'Realtime notifications are not configured' });
+    }
+    const connection = await createUserRealtimeToken(req.user.id);
+    return res.json(connection);
+  } catch (error) {
+    console.error('Realtime notification token error:', error);
+    return res.status(500).json({ error: 'Failed to create realtime notification connection' });
+  }
+});
 
 // @route   GET /api/notifications
 // @desc    Get user's notifications
