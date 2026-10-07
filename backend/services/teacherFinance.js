@@ -54,6 +54,48 @@ async function calculateTeacherBalance(teacherId) {
   return balances;
 }
 
+async function ensureLegacyOpeningEntries(teacherId) {
+  const teacher = await Teacher.findById(teacherId).select('earnings');
+  if (!teacher?.earnings) return;
+
+  const existingCanonicalEntry = await TeacherLedger.exists({
+    teacher: teacherId,
+    type: { $in: ['session_earning', 'bonus', 'adjustment', 'payout'] },
+  });
+  if (existingCanonicalEntry) return;
+
+  const legacyTotal = Number(teacher.earnings.totalEarned) || 0;
+  const legacyPending = Number(teacher.earnings.pendingEarnings) || 0;
+  const legacyWithdrawn = Number(teacher.earnings.withdrawnEarnings) || 0;
+  const openingEarned = Math.max(0, legacyTotal + legacyPending);
+
+  if (openingEarned > 0) {
+    await TeacherLedger.create({
+      teacher: teacherId,
+      type: 'adjustment',
+      amount: openingEarned,
+      currency: 'EGP',
+      status: 'completed',
+      notes: 'legacy-opening-balance',
+      description: 'رصيد افتتاحي مرحّل من نظام مستحقات المعلم القديم',
+    });
+  }
+
+  if (legacyWithdrawn > 0) {
+    await TeacherLedger.create({
+      teacher: teacherId,
+      type: 'payout',
+      amount: legacyWithdrawn,
+      currency: 'EGP',
+      status: 'completed',
+      payoutMethod: 'bank_transfer',
+      notes: 'legacy-opening-withdrawn',
+      description: 'مسحوبات تاريخية مرحّلة من النظام القديم',
+      processedAt: new Date(),
+    });
+  }
+}
+
 async function ensureSessionEarning({
   sessionId,
   teacherId,
@@ -66,6 +108,8 @@ async function ensureSessionEarning({
   if (!sessionId || !teacherId || !Number.isFinite(normalizedAmount) || normalizedAmount < 0) {
     throw new Error('Invalid teacher earning payload');
   }
+
+  await ensureLegacyOpeningEntries(teacherId);
 
   return TeacherLedger.findOneAndUpdate(
     {
@@ -142,6 +186,7 @@ module.exports = {
   MIN_PAYOUT_EGP,
   MIN_PAYOUT_USD,
   calculateTeacherBalance,
+  ensureLegacyOpeningEntries,
   ensureSessionEarning,
   listTeacherTransactions,
 };
