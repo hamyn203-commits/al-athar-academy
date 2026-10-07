@@ -127,6 +127,7 @@ Session.create = async (data) => {
     timezone: data.timezone,
     notes: data.notes,
     attendance: [],
+    earnings: { amount: 0, status: 'pending' },
     async save() { return this; },
   };
   sessions.push(doc);
