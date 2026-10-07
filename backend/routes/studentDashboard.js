@@ -6,9 +6,11 @@ const Teacher = require('../models/Teacher');
 const TeacherTask = require('../models/TeacherTask');
 const StudentTutorPreference = require('../models/StudentTutorPreference');
 const User = require('../models/User');
+const GuardianInvitation = require('../models/GuardianInvitation');
 const { protect, authorize } = require('../middleware/auth');
 const { findMockUserById } = require('../mockStore');
 const { isMockMode } = require('../config/runtime');
+const { createGuardianInvitation, expireStaleInvitations, presentStudentInvitation } = require('../services/guardianInvitations');
 
 const isDBConnected = () => mongoose.connection.readyState === 1;
 const isValidObjectId = (id) => id && mongoose.Types.ObjectId.isValid(id);
@@ -99,6 +101,66 @@ router.post('/guardian-link-code/rotate', protect, authorize('student'), async (
     return res.json({ guardianLinkCode: user.guardianLinkCode });
   } catch (error) {
     return res.status(500).json({ error: 'Failed to rotate guardian link code' });
+  }
+});
+
+router.get('/guardian-invitations', protect, authorize('student'), async (req, res) => {
+  try {
+    if (!isDBConnected() || !isValidObjectId(req.user.id)) {
+      return res.json({ invitations: [] });
+    }
+
+    await expireStaleInvitations({ student: req.user.id });
+    const invitations = await GuardianInvitation.find({ student: req.user.id })
+      .select('+linkCode +guardianPhone +guardianPhoneNormalized')
+      .sort({ createdAt: -1 })
+      .limit(20);
+
+    return res.json({
+      invitations: invitations.map(presentStudentInvitation),
+    });
+  } catch (error) {
+    return res.status(500).json({ error: 'تعذر تحميل حالة ربط ولي الأمر' });
+  }
+});
+
+router.post('/guardian-invitations', protect, authorize('student'), async (req, res) => {
+  try {
+    const invitation = await createGuardianInvitation({
+      studentId: req.user.id,
+      guardianPhone: req.body.guardianPhone,
+      relationship: req.body.relationship || 'guardian',
+      source: 'student-dashboard',
+    });
+
+    return res.status(201).json({
+      success: true,
+      invitation: presentStudentInvitation(invitation),
+    });
+  } catch (error) {
+    return res.status(400).json({ error: error.message, code: error.code || null });
+  }
+});
+
+router.delete('/guardian-invitations/:id', protect, authorize('student'), async (req, res) => {
+  try {
+    const invitation = await GuardianInvitation.findOne({
+      _id: req.params.id,
+      student: req.user.id,
+      status: 'pending',
+    });
+
+    if (!invitation) {
+      return res.status(404).json({ error: 'طلب الربط غير موجود أو لا يمكن إلغاؤه' });
+    }
+
+    invitation.status = 'cancelled';
+    invitation.history.push({ action: 'cancelled', actor: req.user.id });
+    await invitation.save();
+
+    return res.json({ success: true });
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
   }
 });
 
