@@ -4,11 +4,12 @@ const router = express.Router();
 const Session = require('../models/Session');
 const Teacher = require('../models/Teacher');
 const TeacherTask = require('../models/TeacherTask');
+const User = require('../models/User');
 const WithdrawRequest = require('../models/WithdrawRequest');
 const TeacherLedger = require('../models/TeacherLedger');
 const { calculateTeacherBalance } = require('../services/teacherFinance');
 const { protect, authorize } = require('../middleware/auth');
-const { notifyAdmins, notifyUser } = require('../utils/notify');
+const { notifyAdmins, notifyUser, notifyGuardiansForStudent } = require('../utils/notify');
 const { deleteStoredReference } = require('../utils/storageLifecycle');
 
 const SESSION_RATE = 50;
@@ -288,6 +289,36 @@ router.post('/tasks', protect, authorize('teacher'), async (req, res) => {
       description: description || '',
       dueDate: dueDate ? new Date(dueDate) : undefined,
     });
+
+    const studentUser = await User.findById(studentId).select('name');
+    const studentName = studentUser?.name || 'الطالب';
+
+    await Promise.allSettled([
+      notifyUser(studentId, {
+        type: 'homework-assigned',
+        title: { ar: 'واجب جديد من معلمك', en: 'New homework from your tutor' },
+        message: { ar: title, en: title },
+        data: {
+          actionUrl: '/student/dashboard?tab=homework',
+          metadata: { taskId: String(task._id) },
+        },
+        priority: 'normal',
+      }),
+      notifyGuardiansForStudent(studentId, {
+        type: 'homework-assigned',
+        title: { ar: `واجب جديد لـ ${studentName}`, en: `New homework for ${studentName}` },
+        message: {
+          ar: `${title}${dueDate ? ' — راجع موعد التسليم من لوحة ولي الأمر.' : ''}`,
+          en: title,
+        },
+        data: {
+          actionUrl: '/guardian/dashboard',
+          metadata: { taskId: String(task._id), studentId: String(studentId) },
+        },
+        priority: 'normal',
+      }),
+    ]);
+
     res.status(201).json({ success: true, task });
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -361,6 +392,27 @@ router.patch('/tasks/:id', protect, authorize('teacher'), async (req, res) => {
       },
       priority: 'normal',
     }).catch(() => {});
+
+    User.findById(task.student).select('name').then((studentUser) => (
+      notifyGuardiansForStudent(task.student, {
+        type: 'homework-assigned',
+        title: {
+          ar: action === 'approve'
+            ? `تم اعتماد واجب ${studentUser?.name || 'الطالب'}`
+            : `مطلوب إعادة واجب ${studentUser?.name || 'الطالب'}`,
+          en: action === 'approve' ? 'Homework approved' : 'Homework revision requested',
+        },
+        message: {
+          ar: task.teacherFeedback || (action === 'approve' ? 'تم اعتماد الواجب.' : 'راجع ملاحظات المعلم من لوحة ولي الأمر.'),
+          en: action === 'approve' ? 'Homework approved.' : 'Homework revision requested.',
+        },
+        data: {
+          actionUrl: '/guardian/dashboard',
+          metadata: { taskId: String(task._id), studentId: String(task.student) },
+        },
+        priority: 'normal',
+      })
+    )).catch(() => {});
 
     return res.json({ success: true, task });
   } catch (error) {
