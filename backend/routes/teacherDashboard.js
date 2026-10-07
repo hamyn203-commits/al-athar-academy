@@ -4,6 +4,8 @@ const Session = require('../models/Session');
 const Teacher = require('../models/Teacher');
 const TeacherTask = require('../models/TeacherTask');
 const WithdrawRequest = require('../models/WithdrawRequest');
+const TeacherLedger = require('../models/TeacherLedger');
+const { calculateTeacherBalance } = require('../services/teacherFinance');
 const { protect, authorize } = require('../middleware/auth');
 const { notifyAdmins } = require('../utils/notify');
 
@@ -66,23 +68,165 @@ router.get('/active-students', protect, authorize('teacher'), async (req, res) =
     const teacher = await Teacher.findOne({ user: req.user.id });
     if (!teacher) return res.status(404).json({ error: 'Teacher profile not found' });
 
-    const sessions = await Session.find({
-      teacher: teacher._id,
-      type: 'regular',
-      status: { $in: ['accepted', 'completed'] },
-    }).populate('student', 'name email avatar phone');
+    const [sessions, tasks] = await Promise.all([
+      Session.find({
+        teacher: teacher._id,
+        type: 'regular',
+        status: { $in: ['accepted', 'completed'] },
+      })
+        .populate('student', 'name email avatar phone')
+        .sort({ scheduledAt: -1 })
+        .lean(),
+      TeacherTask.find({ teacher: teacher._id })
+        .select('student status dueDate updatedAt')
+        .lean(),
+    ]);
 
-    const map = {};
-    sessions.forEach((s) => {
-      const id = s.student._id.toString();
-      if (!map[id]) {
-        map[id] = { ...s.student.toObject(), sessionCount: 0, lastSession: s.scheduledAt };
+    const now = Date.now();
+    const map = new Map();
+
+    for (const session of sessions) {
+      if (!session.student?._id) continue;
+      const id = String(session.student._id);
+
+      if (!map.has(id)) {
+        map.set(id, {
+          ...session.student,
+          sessionCount: 0,
+          completedSessions: 0,
+          nextSession: null,
+          lastSession: null,
+          pendingHomework: 0,
+          submittedHomework: 0,
+          lastProgress: null,
+        });
       }
-      map[id].sessionCount++;
+
+      const record = map.get(id);
+      record.sessionCount += 1;
+
+      const at = new Date(session.scheduledAt).getTime();
+      if (session.status === 'completed') {
+        record.completedSessions += 1;
+        if (!record.lastSession || at > new Date(record.lastSession.scheduledAt).getTime()) {
+          record.lastSession = {
+            _id: session._id,
+            scheduledAt: session.scheduledAt,
+            type: session.type,
+          };
+        }
+
+        const latestReport = (session.studentReports || []).find(
+          (report) => report.student && String(report.student) === id,
+        );
+        if (latestReport && (!record.lastProgress || at > new Date(record.lastProgress.scheduledAt).getTime())) {
+          record.lastProgress = {
+            scheduledAt: session.scheduledAt,
+            memorizationScore: latestReport.memorizationScore,
+            tajweedScore: latestReport.tajweedScore,
+            surahRecited: latestReport.surahRecited,
+            nextHomework: latestReport.nextHomework,
+            notes: latestReport.notes,
+          };
+        }
+      }
+
+      if (session.status === 'accepted' && at >= now) {
+        if (!record.nextSession || at < new Date(record.nextSession.scheduledAt).getTime()) {
+          record.nextSession = {
+            _id: session._id,
+            scheduledAt: session.scheduledAt,
+            type: session.type,
+          };
+        }
+      }
+    }
+
+    for (const task of tasks) {
+      const record = map.get(String(task.student));
+      if (!record) continue;
+      if (task.status === 'submitted') record.submittedHomework += 1;
+      if (task.status === 'pending') record.pendingHomework += 1;
+    }
+
+    const students = [...map.values()].sort((a, b) => {
+      const aNext = a.nextSession ? new Date(a.nextSession.scheduledAt).getTime() : Number.MAX_SAFE_INTEGER;
+      const bNext = b.nextSession ? new Date(b.nextSession.scheduledAt).getTime() : Number.MAX_SAFE_INTEGER;
+      return aNext - bNext || String(a.name || '').localeCompare(String(b.name || ''), 'ar');
     });
-    res.json({ students: Object.values(map) });
+
+    return res.json({ students });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/students/:studentId/summary', protect, authorize('teacher'), async (req, res) => {
+  try {
+    const teacher = await Teacher.findOne({ user: req.user.id }).select('_id');
+    if (!teacher) return res.status(404).json({ error: 'Teacher profile not found' });
+
+    const relationship = await Session.findOne({
+      teacher: teacher._id,
+      student: req.params.studentId,
+      status: { $in: ['accepted', 'completed'] },
+    })
+      .populate('student', 'name email avatar phone')
+      .lean();
+
+    if (!relationship?.student) {
+      return res.status(403).json({ error: 'لا يمكنك فتح ملف طالب غير مرتبط بحصصك' });
+    }
+
+    const [sessions, tasks] = await Promise.all([
+      Session.find({
+        teacher: teacher._id,
+        student: req.params.studentId,
+        status: { $in: ['accepted', 'completed'] },
+      })
+        .select('type status scheduledAt duration teacherEvaluation studentReports')
+        .sort({ scheduledAt: -1 })
+        .limit(50)
+        .lean(),
+      TeacherTask.find({
+        teacher: teacher._id,
+        student: req.params.studentId,
+      })
+        .select('type title description dueDate status teacherFeedback reviewedAt createdAt updatedAt')
+        .sort({ createdAt: -1 })
+        .limit(50)
+        .lean(),
+    ]);
+
+    const studentId = String(req.params.studentId);
+    const timeline = sessions.map((session) => ({
+      _id: session._id,
+      type: session.type,
+      status: session.status,
+      scheduledAt: session.scheduledAt,
+      duration: session.duration,
+      evaluation: session.teacherEvaluation || null,
+      progressReport: (session.studentReports || []).find(
+        (report) => report.student && String(report.student) === studentId,
+      ) || null,
+    }));
+
+    return res.json({
+      student: relationship.student,
+      summary: {
+        totalSessions: sessions.length,
+        completedSessions: sessions.filter((session) => session.status === 'completed').length,
+        upcomingSessions: sessions.filter((session) => (
+          session.status === 'accepted' && new Date(session.scheduledAt) >= new Date()
+        )).length,
+        pendingHomework: tasks.filter((task) => task.status === 'pending').length,
+        submittedHomework: tasks.filter((task) => task.status === 'submitted').length,
+      },
+      sessions: timeline,
+      tasks,
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
   }
 });
 
@@ -234,44 +378,106 @@ router.get('/analytics', protect, authorize('teacher'), async (req, res) => {
     const teacher = await Teacher.findOne({ user: req.user.id });
     if (!teacher) return res.status(404).json({ error: 'Teacher profile not found' });
 
-    const sixMonthsAgo = new Date();
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-
-    const sessions = await Session.find({
-      teacher: teacher._id,
-      status: 'completed',
-      updatedAt: { $gte: sixMonthsAgo },
-    });
-
-    const monthly = {};
-    sessions.forEach((s) => {
-      const key = `${s.updatedAt.getFullYear()}-${String(s.updatedAt.getMonth() + 1).padStart(2, '0')}`;
-      monthly[key] = (monthly[key] || 0) + 1;
-    });
-
     const now = new Date();
+    const sixMonthsAgo = new Date(now);
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
     const dayStart = new Date(now); dayStart.setHours(0, 0, 0, 0);
     const weekStart = new Date(now); weekStart.setDate(now.getDate() - 7);
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const sevenDaysAhead = new Date(now.getTime() + (7 * 24 * 60 * 60 * 1000));
+
+    const [allSessions, tasks, ledgerEntries, balances] = await Promise.all([
+      Session.find({ teacher: teacher._id })
+        .select('student type status scheduledAt updatedAt duration')
+        .lean(),
+      TeacherTask.find({ teacher: teacher._id }).select('status').lean(),
+      TeacherLedger.find({
+        teacher: teacher._id,
+        type: 'session_earning',
+        status: 'completed',
+        createdAt: { $gte: sixMonthsAgo },
+      }).select('amount currency createdAt').lean(),
+      calculateTeacherBalance(teacher._id),
+    ]);
+
+    const recentCompleted = allSessions.filter((session) => (
+      session.status === 'completed'
+      && new Date(session.updatedAt || session.scheduledAt) >= sixMonthsAgo
+    ));
+
+    const monthly = {};
+    for (const session of recentCompleted) {
+      const date = new Date(session.updatedAt || session.scheduledAt);
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      monthly[key] = (monthly[key] || 0) + 1;
+    }
 
     const earnings = { daily: 0, weekly: 0, monthly: 0 };
-    sessions.forEach((s) => {
-      const amt = s.earnings?.amount || SESSION_RATE;
-      const d = s.updatedAt;
-      if (d >= dayStart) earnings.daily += amt;
-      if (d >= weekStart) earnings.weekly += amt;
-      if (d >= monthStart) earnings.monthly += amt;
-    });
+    for (const entry of ledgerEntries) {
+      if (entry.currency !== 'EGP') continue;
+      const date = new Date(entry.createdAt);
+      const amount = Number(entry.amount) || 0;
+      if (date >= dayStart) earnings.daily += amount;
+      if (date >= weekStart) earnings.weekly += amount;
+      if (date >= monthStart) earnings.monthly += amount;
+    }
 
-    res.json({
-      monthlySessions: Object.entries(monthly).map(([month, count]) => ({ month, count })),
-      totalCompleted: sessions.length,
+    const completedTrials = allSessions.filter((session) => (
+      session.type === 'trial' && session.status === 'completed' && session.student
+    ));
+    const trialStudentIds = new Set(completedTrials.map((session) => String(session.student)));
+    const continuingStudentIds = new Set(
+      allSessions
+        .filter((session) => (
+          session.type === 'regular'
+          && ['accepted', 'completed'].includes(session.status)
+          && session.student
+        ))
+        .map((session) => String(session.student)),
+    );
+    const convertedCount = [...trialStudentIds].filter((id) => continuingStudentIds.has(id)).length;
+    const trialConversionRate = trialStudentIds.size
+      ? Math.round((convertedCount / trialStudentIds.size) * 100)
+      : 0;
+
+    const completedTasks = tasks.filter((task) => task.status === 'done').length;
+    const homeworkCompletionRate = tasks.length
+      ? Math.round((completedTasks / tasks.length) * 100)
+      : 0;
+
+    const upcomingSevenDays = allSessions.filter((session) => {
+      if (session.status !== 'accepted') return false;
+      const scheduledAt = new Date(session.scheduledAt);
+      return scheduledAt >= now && scheduledAt <= sevenDaysAhead;
+    }).length;
+
+    return res.json({
+      monthlySessions: Object.entries(monthly)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([month, count]) => ({ month, count })),
+      totalCompleted: recentCompleted.length,
+      lifetimeCompleted: allSessions.filter((session) => session.status === 'completed').length,
       averageRating: teacher.rating.average,
-      totalStudents: teacher.stats.totalStudents,
-      earnings: { ...earnings, pending: teacher.earnings.pendingEarnings },
+      totalStudents: continuingStudentIds.size,
+      trialConversion: {
+        completedTrials: trialStudentIds.size,
+        converted: convertedCount,
+        rate: trialConversionRate,
+      },
+      homework: {
+        total: tasks.length,
+        completed: completedTasks,
+        completionRate: homeworkCompletionRate,
+      },
+      upcomingSevenDays,
+      earnings: {
+        ...earnings,
+        available: balances?.EGP?.available || 0,
+        pendingPayouts: balances?.EGP?.pending || 0,
+      },
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 });
 
@@ -349,6 +555,56 @@ router.post('/withdrawals', protect, authorize('teacher'), async (req, res) => {
 
 const VALID_DAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
+function timeToMinutes(value) {
+  if (!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(String(value || ''))) return null;
+  const [hours, minutes] = String(value).split(':').map(Number);
+  return (hours * 60) + minutes;
+}
+
+function normalizeAvailabilityDays(availability) {
+  const normalized = [];
+
+  for (const day of availability || []) {
+    if (!VALID_DAYS.includes(day?.day)) continue;
+
+    const slots = [];
+    for (const slot of day.slots || []) {
+      const start = timeToMinutes(slot?.startTime);
+      const end = timeToMinutes(slot?.endTime);
+      if (start == null || end == null || start >= end) {
+        const error = new Error('كل فترة متاحة يجب أن تحتوي وقت بداية ونهاية صحيحين وأن تكون النهاية بعد البداية');
+        error.code = 'INVALID_AVAILABILITY_SLOT';
+        throw error;
+      }
+      slots.push({
+        startTime: slot.startTime,
+        endTime: slot.endTime,
+        isBooked: false,
+        start,
+        end,
+      });
+    }
+
+    slots.sort((a, b) => a.start - b.start);
+    for (let index = 1; index < slots.length; index += 1) {
+      if (slots[index].start < slots[index - 1].end) {
+        const error = new Error('لا يمكن حفظ فترات متداخلة في اليوم نفسه');
+        error.code = 'OVERLAPPING_AVAILABILITY_SLOTS';
+        throw error;
+      }
+    }
+
+    if (slots.length) {
+      normalized.push({
+        day: day.day,
+        slots: slots.map(({ startTime, endTime, isBooked }) => ({ startTime, endTime, isBooked })),
+      });
+    }
+  }
+
+  return normalized;
+}
+
 router.get('/availability', protect, authorize('teacher'), async (req, res) => {
   try {
     const teacher = await Teacher.findOne({ user: req.user.id }).select('availability');
@@ -369,15 +625,7 @@ router.put('/availability', protect, authorize('teacher'), async (req, res) => {
       return res.status(400).json({ error: 'availability must be an array' });
     }
 
-    const cleaned = availability
-      .filter((d) => VALID_DAYS.includes(d.day))
-      .map((d) => ({
-        day: d.day,
-        slots: (d.slots || [])
-          .filter((s) => s.startTime && s.endTime)
-          .map((s) => ({ startTime: s.startTime, endTime: s.endTime, isBooked: false })),
-      }))
-      .filter((d) => d.slots.length);
+    const cleaned = normalizeAvailabilityDays(availability);
 
     teacher.availability = cleaned;
     await teacher.save();
