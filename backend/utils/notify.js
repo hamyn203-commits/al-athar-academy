@@ -1,5 +1,6 @@
 const Notification = require('../models/Notification');
 const User = require('../models/User');
+const Guardian = require('../models/Guardian');
 const { emitRealtimeEvent } = require('./realtime');
 
 async function notifyUser(userId, { type, title, message, data = {}, priority = 'medium', channels }) {
@@ -38,6 +39,31 @@ async function notifyUser(userId, { type, title, message, data = {}, priority = 
   });
 
   return notification;
+}
+
+async function notifyRole(role, payload) {
+  const users = await User.find({ role, isActive: { $ne: false } }).select('_id');
+  const results = await Promise.allSettled(
+    users.map((user) => notifyUser(user._id, payload))
+  );
+  return results.filter((result) => result.status === 'fulfilled').length;
+}
+
+async function notifyGuardiansForStudent(studentId, payload) {
+  if (!studentId) return 0;
+  const guardians = await Guardian.find({
+    isActive: true,
+    'children.student': studentId,
+  }).select('user');
+
+  const userIds = [...new Set(
+    guardians.map((guardian) => String(guardian.user || '')).filter(Boolean)
+  )];
+
+  const results = await Promise.allSettled(
+    userIds.map((userId) => notifyUser(userId, payload))
+  );
+  return results.filter((result) => result.status === 'fulfilled').length;
 }
 
 async function notifyTeacherForSessionRequest(session, teacherUserId) {
@@ -97,6 +123,8 @@ async function notifyCertificateIssued(userId, certificate, course) {
 
 module.exports = {
   notifyUser,
+  notifyRole,
+  notifyGuardiansForStudent,
   notifyTeacherForSessionRequest,
   notifySessionAccepted,
   notifyCourseEnrollment,
