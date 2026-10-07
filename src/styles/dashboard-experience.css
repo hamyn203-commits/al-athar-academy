@@ -3305,3 +3305,315 @@
     width: 100%;
   }
 }
+
+
+/* T11 — Guardian Family Hub */
+.wn-guardian-family-hub {
+  display: grid;
+  gap: 1rem;
+}
+
+.wn-guardian-family-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: .7rem;
+}
+
+.wn-guardian-family-summary > div {
+  padding: .85rem;
+  border: 1px solid rgba(15,107,79,.10);
+  border-radius: 15px;
+  background: #fff;
+  box-shadow: 0 18px 44px -42px rgba(7,53,40,.42);
+}
+
+.wn-guardian-family-summary > div.is-alert {
+  border-color: rgba(217,119,6,.22);
+  background: linear-gradient(135deg,#fff,#fff9eb);
+}
+
+.wn-guardian-family-summary span,
+.wn-guardian-family-summary strong,
+.wn-guardian-family-summary small {
+  display: block;
+}
+
+.wn-guardian-family-summary span {
+  color: var(--wn-text-tertiary);
+  font-size: .52rem;
+  font-weight: 800;
+}
+
+.wn-guardian-family-summary strong {
+  margin-top: .14rem;
+  color: var(--wn-emerald-deep);
+  font-size: 1.2rem;
+  font-weight: 950;
+}
+
+.wn-guardian-family-summary small {
+  margin-top: .1rem;
+  color: var(--wn-text-tertiary);
+  font-size: .48rem;
+}
+
+.wn-guardian-family-summary .is-alert strong {
+  color: #a46411;
+}
+
+.wn-guardian-family-grid {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: .75rem;
+}
+
+.wn-guardian-child-card {
+  min-width: 0;
+  display: block;
+  padding: .9rem;
+  border: 1px solid rgba(15,107,79,.10);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 92% 8%, rgba(212,175,107,.10), transparent 38%),
+    #fff;
+  text-align: start;
+  box-shadow: 0 20px 50px -46px rgba(7,53,40,.52);
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+
+.wn-guardian-child-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(15,107,79,.20);
+  box-shadow: 0 28px 58px -45px rgba(7,53,40,.55);
+}
+
+.wn-guardian-child-card__top {
+  display: grid;
+  grid-template-columns: auto minmax(0,1fr) auto;
+  align-items: center;
+  gap: .65rem;
+}
+
+.wn-guardian-child-avatar {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: linear-gradient(145deg,#073c2f,#0a7659);
+  color: #fff;
+  font-size: .9rem;
+  font-weight: 950;
+}
+
+.wn-guardian-child-card__top strong,
+.wn-guardian-child-card__top small {
+  display: block;
+}
+
+.wn-guardian-child-card__top strong {
+  color: var(--wn-emerald-deep);
+  font-size: .78rem;
+  font-weight: 950;
+}
+
+.wn-guardian-child-card__top small {
+  margin-top: .08rem;
+  color: var(--wn-text-tertiary);
+  font-size: .5rem;
+}
+
+.wn-guardian-child-card__top > b {
+  min-width: 25px;
+  height: 25px;
+  display: grid;
+  place-items: center;
+  padding-inline: 5px;
+  border-radius: 999px;
+  background: #fff1d6;
+  color: #9b6617;
+  font-size: .56rem;
+}
+
+.wn-guardian-child-card__metrics {
+  display: grid;
+  grid-template-columns: repeat(3,minmax(0,1fr));
+  gap: .42rem;
+  margin-top: .75rem;
+}
+
+.wn-guardian-child-card__metrics > div {
+  min-width: 0;
+  padding: .55rem;
+  border-radius: 11px;
+  background: #f7faf8;
+}
+
+.wn-guardian-child-card__metrics span,
+.wn-guardian-child-card__metrics strong {
+  display: block;
+}
+
+.wn-guardian-child-card__metrics span {
+  color: var(--wn-text-tertiary);
+  font-size: .47rem;
+}
+
+.wn-guardian-child-card__metrics strong {
+  margin-top: .1rem;
+  overflow: hidden;
+  color: var(--wn-text-primary);
+  font-size: .62rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wn-guardian-child-card__next {
+  display: flex;
+  align-items: center;
+  gap: .38rem;
+  margin-top: .6rem;
+  padding: .55rem .6rem;
+  border-radius: 10px;
+  background: var(--wn-emerald-soft);
+  color: var(--wn-emerald-dark);
+  font-size: .53rem;
+}
+
+.wn-guardian-child-card__next.is-empty {
+  background: #f7f8f7;
+  color: var(--wn-text-tertiary);
+}
+
+.wn-guardian-child-card__next span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wn-guardian-child-card__open {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: .65rem;
+  padding-top: .6rem;
+  border-top: 1px solid rgba(15,107,79,.08);
+  color: var(--wn-emerald-dark);
+  font-size: .56rem;
+  font-weight: 850;
+}
+
+.wn-guardian-homework-list {
+  display: grid;
+  gap: .6rem;
+}
+
+.wn-guardian-homework-card {
+  padding: .85rem;
+  border: 1px solid rgba(15,107,79,.09);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.wn-guardian-homework-card.is-submitted {
+  border-color: rgba(64,101,151,.18);
+  background: linear-gradient(135deg,#fff,#f8fbff);
+}
+
+.wn-guardian-homework-card.is-done {
+  border-color: rgba(15,107,79,.16);
+  background: linear-gradient(135deg,#fff,#f7fcf9);
+}
+
+.wn-guardian-homework-card > div:first-child > span {
+  display: inline-flex;
+  padding: .2rem .42rem;
+  border-radius: 999px;
+  background: #fff4d7;
+  color: #96651b;
+  font-size: .49rem;
+  font-weight: 850;
+}
+
+.wn-guardian-homework-card.is-submitted > div:first-child > span {
+  background: #edf4ff;
+  color: #476b98;
+}
+
+.wn-guardian-homework-card.is-done > div:first-child > span {
+  background: var(--wn-emerald-soft);
+  color: var(--wn-emerald-dark);
+}
+
+.wn-guardian-homework-card h4 {
+  margin-top: .3rem;
+  color: var(--wn-emerald-deep);
+  font-size: .72rem;
+  font-weight: 900;
+}
+
+.wn-guardian-homework-card > div:first-child > p {
+  margin-top: .18rem;
+  color: var(--wn-text-secondary);
+  font-size: .57rem;
+  line-height: 1.65;
+}
+
+.wn-guardian-homework-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .7rem;
+  margin-top: .55rem;
+}
+
+.wn-guardian-homework-card__meta > span {
+  display: inline-flex;
+  align-items: center;
+  gap: .28rem;
+  color: var(--wn-text-tertiary);
+  font-size: .5rem;
+}
+
+.wn-guardian-homework-feedback {
+  display: flex;
+  gap: .5rem;
+  margin-top: .6rem;
+  padding: .6rem;
+  border-radius: 10px;
+  background: #fff8e8;
+  color: #896425;
+}
+
+.wn-guardian-homework-feedback strong,
+.wn-guardian-homework-feedback p {
+  display: block;
+}
+
+.wn-guardian-homework-feedback strong {
+  font-size: .52rem;
+}
+
+.wn-guardian-homework-feedback p {
+  margin-top: .1rem;
+  font-size: .55rem;
+  line-height: 1.6;
+}
+
+@media (max-width: 800px) {
+  .wn-guardian-family-summary,
+  .wn-guardian-family-grid {
+    grid-template-columns: repeat(2,minmax(0,1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .wn-guardian-family-summary,
+  .wn-guardian-family-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .wn-guardian-child-card__metrics {
+    grid-template-columns: repeat(3,minmax(0,1fr));
+  }
+}
