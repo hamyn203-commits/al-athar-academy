@@ -1263,39 +1263,93 @@ export default function TeacherDashboard() {
             )}
 
             {tab === 'homework' && (
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <p className="text-sm text-slate-600">واجباتك للطلاب: حفظ، مراجعة قريبة/بعيدة، تسجيل صوتي...</p>
-                  <button onClick={() => setTaskModal(true)} className="btn-primary text-sm flex items-center gap-1">
-                    <Plus size={16} /> واجب جديد
-                  </button>
-                </div>
-                {tasks.length === 0 ? <p className="text-center text-gray-500 py-8">لا واجبات بعد</p> : tasks.map((t) => (
-                  <div key={t._id} className="border rounded-lg p-4 flex justify-between items-start gap-3">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <BookOpen size={16} className="text-emerald-600" />
-                        <h3 className="font-bold">{t.title}</h3>
-                        <span className="text-xs bg-slate-100 px-2 py-0.5 rounded">{taskTypeLabel(t.type)}</span>
-                      </div>
-                      <p className="text-sm text-gray-600 mt-1">{t.student?.name}</p>
-                      {t.description && <p className="text-sm text-gray-500 mt-1">{t.description}</p>}
-                      {t.dueDate && <p className="text-xs text-gray-400 mt-1">موعد: {new Date(t.dueDate).toLocaleDateString('ar-EG')}</p>}
-                    </div>
-                    <div className="flex flex-col items-end gap-2">
-                      <span className={`text-xs px-2 py-1 rounded ${t.status === 'done' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                        {t.status === 'done' ? 'منجز' : t.status === 'submitted' ? 'مُسلّم' : 'قيد الانتظار'}
-                      </span>
-                      {t.status === 'submitted' && (
-                        <button onClick={() => markTaskDone(t._id)} className="text-xs px-2 py-1 bg-emerald-600 text-white rounded">
-                          اعتماد
-                        </button>
-                      )}
-                    </div>
+              <div className="wn-teacher-homework">
+                <div className="wn-teacher-homework__intro">
+                  <div>
+                    <span>متابعة الواجبات</span>
+                    <h3>الواجبات والتسجيلات الصوتية</h3>
+                    <p>استمع لتسليم الطالب، اكتب ملاحظتك، ثم اعتمد الواجب أو اطلب إعادة التسجيل.</p>
                   </div>
-                ))}
+                  <div className="wn-teacher-homework__actions">
+                    {submittedTasks.length > 0 ? <b>{submittedTasks.length} تحتاج مراجعة</b> : null}
+                    <button type="button" onClick={() => setTaskModal(true)} className="wn-teacher-primary-action">
+                      <Plus size={16} /> واجب جديد
+                    </button>
+                  </div>
+                </div>
+
+                {tasks.length === 0 ? (
+                  <div className="wn-teacher-empty-state">
+                    <BookOpen size={28} />
+                    <div><strong>لا توجد واجبات بعد</strong><p>أنشئ واجبًا لطالب نشط ليظهر هنا.</p></div>
+                  </div>
+                ) : (
+                  <div className="wn-teacher-homework-list">
+                    {tasks.map((task) => (
+                      <article key={task._id} className={'wn-teacher-homework-card is-' + task.status}>
+                        <div className="wn-teacher-homework-card__top">
+                          <span className="wn-teacher-homework-card__icon"><BookOpen size={18} /></span>
+                          <div>
+                            <span>{taskTypeLabel(task.type)}</span>
+                            <h4>{task.title}</h4>
+                            <p>{task.student?.name || 'طالب'}</p>
+                          </div>
+                          <span className="wn-teacher-homework-status">
+                            {task.status === 'done' ? 'معتمد' : task.status === 'submitted' ? 'جاهز للمراجعة' : 'بانتظار الطالب'}
+                          </span>
+                        </div>
+
+                        {task.description ? <p className="wn-teacher-homework-card__description">{task.description}</p> : null}
+
+                        <div className="wn-teacher-homework-card__meta">
+                          <span><Calendar size={14} /> {task.dueDate ? new Date(task.dueDate).toLocaleDateString('ar-EG') : 'بدون موعد'}</span>
+                          <span><Clock size={14} /> أُنشئ {new Date(task.createdAt).toLocaleDateString('ar-EG')}</span>
+                        </div>
+
+                        {task.status === 'submitted' && (
+                          <div className="wn-teacher-homework-review">
+                            <div className="wn-teacher-homework-audio">
+                              <button type="button" onClick={() => playHomeworkSubmission(task)} disabled={homeworkAudio.loading && homeworkAudio.taskId === task._id}>
+                                <Headphones size={17} />
+                                {homeworkAudio.loading && homeworkAudio.taskId === task._id ? 'جاري التحميل...' : 'استماع لتسجيل الطالب'}
+                              </button>
+                              {homeworkAudio.taskId === task._id && homeworkAudio.url ? (
+                                <audio src={homeworkAudio.url} controls preload="metadata" />
+                              ) : null}
+                            </div>
+
+                            <textarea
+                              rows={2}
+                              className="input-field w-full"
+                              placeholder="ملاحظة للطالب — مثال: ممتاز، راجع أحكام النون الساكنة في الآية 6"
+                              value={taskReview[task._id] || ''}
+                              onChange={(event) => setTaskReview((current) => ({ ...current, [task._id]: event.target.value }))}
+                            />
+
+                            <div className="wn-teacher-homework-review__actions">
+                              <button type="button" onClick={() => reviewTask(task, 'approve')} className="is-approve">
+                                <CheckCircle2 size={16} /> اعتماد الواجب
+                              </button>
+                              <button type="button" onClick={() => reviewTask(task, 'request-revision')} className="is-revision">
+                                <RotateCcw size={16} /> يحتاج إعادة
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {task.teacherFeedback ? (
+                          <div className="wn-teacher-homework-feedback">
+                            <MessageSquare size={15} />
+                            <div><strong>ملاحظتك</strong><p>{task.teacherFeedback}</p></div>
+                          </div>
+                        ) : null}
+                      </article>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
+
           </div>
         </>
       )}
