@@ -157,6 +157,7 @@ export default function NotificationBell() {
       'course-enrollment': '📚',
       'certificate-issued': '🏆',
       'homework-assigned': '📝',
+      'teacher-update': '🎥',
       'system': '🔔',
     };
     return icons[type] || '🔔';
