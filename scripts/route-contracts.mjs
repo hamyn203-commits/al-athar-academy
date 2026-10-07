@@ -192,6 +192,7 @@ assert.match(adminPayments, /\/review/);
 
 
 const adminDashboard = read('src/pages/AdminDashboard/index.jsx');
+const adminDashboardShell = read('src/pages/AdminDashboard/AdminDashboardShell.jsx');
 const teacherReviewQueue = read('src/pages/AdminDashboard/TeacherReviewQueue.jsx');
 const teacherReviewDossier = read('src/pages/AdminDashboard/TeacherReviewDossier.jsx');
 assert.match(adminDashboard, /\/api\/admin\/command-center/);
@@ -199,6 +200,16 @@ assert.match(adminDashboard, /\/api\/admin\/audit\?limit=/);
 assert.match(adminDashboard, /openTeacherDossier/);
 assert.match(adminDashboard, /review-checklist\/\$\{key\}/);
 assert.match(adminDashboard, /TeacherReviewDossier/);
+assert.match(adminDashboard, /AdminDashboardShell/);
+assert.match(adminDashboard, /wn-admin-kpi-grid/);
+assert.match(adminDashboard, /id:\s*['"]people['"]/);
+assert.doesNotMatch(adminDashboard, /<DashboardLayout/);
+assert.doesNotMatch(adminDashboard, /<TabBar/);
+assert.match(adminDashboardShell, /wn-admin-sidebar/);
+assert.match(adminDashboardShell, /wn-admin-topbar/);
+assert.match(adminDashboardShell, /مركز القيادة/);
+assert.match(adminDashboardShell, /السحوبات والمالية/);
+assert.match(adminDashboardShell, /التحليلات والنمو/);
 assert.match(teacherReviewQueue, /فتح ملف المراجعة الكامل/);
 assert.doesNotMatch(teacherReviewQueue, /onReview\(/);
 assert.match(teacherReviewDossier, /Teacher 360 Review Dossier/);
