@@ -295,6 +295,38 @@ if (originProbe.status !== 0) {
   failures.push('backend/config/origins.js: production trusted-origin policy is not fail-closed');
 }
 
+// T10: teacher workflow and finance integrity.
+requireContains(
+  'backend/routes/sessions.js',
+  'teacher must not complete a session before its scheduled start',
+  /SESSION_NOT_STARTED/
+);
+requireContains(
+  'backend/routes/sessions.js',
+  'session completion must use the idempotent canonical teacher ledger',
+  /ensureSessionEarning\(/
+);
+requireAbsent(
+  'backend/routes/sessions.js',
+  'new session completion must not credit legacy pendingEarnings directly',
+  /router\.put\(['"]\/:id\/complete['"][\s\S]{0,3200}['"]earnings\.pendingEarnings['"]\s*:\s*SESSION_RATE/
+);
+requireContains(
+  'backend/models/TeacherLedger.js',
+  'teacher ledger entries must support unique sparse idempotency keys',
+  /idempotencyKey:[\s\S]{0,160}unique:\s*true[\s\S]{0,80}sparse:\s*true/
+);
+requireContains(
+  'backend/routes/teacherDashboard.js',
+  'teacher homework revision must use owned storage lifecycle cleanup',
+  /request-revision[\s\S]{0,1000}deleteStoredReference\([\s\S]{0,260}owner:\s*task\.student/
+);
+requireContains(
+  'backend/routes/teacherDashboard.js',
+  'teacher availability must reject overlapping slots',
+  /OVERLAPPING_AVAILABILITY_SLOTS/
+);
+
 // T03: direct uploads must keep metadata validation and single-MIME token scope.
 requireContains(
   'backend/routes/uploads.js',
