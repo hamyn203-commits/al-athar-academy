@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Users, BookOpen, Calendar, DollarSign, CheckCircle, XCircle, Eye,
   Mail, MessageSquare, Plus, Trash2, Upload, Video, Edit3, Send,
@@ -24,6 +24,7 @@ function Empty({ text }) {
 export default function AdminDashboard() {
   const { user, ready, logout } = useRequireAuth(['admin']);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const toast = useToast();
   const [tab, setTab] = useState('overview');
   const [loading, setLoading] = useState(true);
@@ -139,6 +140,14 @@ export default function AdminDashboard() {
   useEffect(() => { if (ready) load(); }, [ready, load]);
 
   useEffect(() => {
+    const requestedTab = searchParams.get('tab');
+    const allowed = ['overview', 'messages', 'teachers', 'withdrawals', 'courses', 'blog', 'growth'];
+    if (requestedTab && allowed.includes(requestedTab)) {
+      setTab(requestedTab);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
     if (!ready || !['overview', 'teachers'].includes(tab)) return undefined;
 
     const refreshQueue = () => {
@@ -161,7 +170,20 @@ export default function AdminDashboard() {
     };
   }, [ready, tab, loadPendingTeachers]);
 
-  if (!ready) return null;
+  useEffect(() => {
+    if (!ready) return undefined;
+
+    const onRealtimeNotification = (event) => {
+      const actionUrl = String(event?.detail?.data?.actionUrl || '');
+      if (actionUrl.includes('tab=teachers')) loadPendingTeachers().catch(() => {});
+      if (actionUrl.includes('tab=withdrawals')) loadWithdrawals().catch(() => {});
+    };
+
+    window.addEventListener('wn:realtime-notification', onRealtimeNotification);
+    return () => window.removeEventListener('wn:realtime-notification', onRealtimeNotification);
+  }, [ready, loadPendingTeachers, loadWithdrawals]);
+
+    if (!ready) return null;
 
   const review = async (id, action, note = '') => {
     let reviewNote = note;
