@@ -202,7 +202,7 @@ assert.match(adminDashboard, /review-checklist\/\$\{key\}/);
 assert.match(adminDashboard, /TeacherReviewDossier/);
 assert.match(adminDashboard, /AdminDashboardShell/);
 assert.match(adminDashboard, /wn-admin-kpi-grid/);
-assert.match(adminDashboard, /id:\s*['"]people['"]/);
+assert.match(adminDashboard, /tab\s*===\s*['"]people['"]/);
 assert.doesNotMatch(adminDashboard, /<DashboardLayout/);
 assert.doesNotMatch(adminDashboard, /<TabBar/);
 assert.match(adminDashboardShell, /wn-admin-sidebar/);
