@@ -129,6 +129,19 @@ function presentLiveSession(liveSession, access) {
   };
 }
 
+async function syncBookedSessionLiveLink(bookedSession, roomId) {
+  if (!bookedSession?._id || !roomId) return;
+  await Session.updateOne(
+    { _id: bookedSession._id, status: 'accepted' },
+    {
+      $set: {
+        meetingLink: `/live/${roomId}`,
+        meetingProvider: 'livekit',
+      },
+    },
+  );
+}
+
 async function canManageRoom(roomId, user) {
   const liveSession = await LiveSession.findOne({ roomId });
   if (!liveSession) return { liveSession: null, access: null };
@@ -254,6 +267,7 @@ router.post('/sessions', verifyAccessToken, requireRole('teacher', 'admin'), asy
     if (bookedSession) {
       const existing = await LiveSession.findOne({ session: bookedSession._id });
       if (existing) {
+        await syncBookedSessionLiveLink(bookedSession, existing.roomId);
         const access = await getRoomAccess(existing, req.user);
         return res.status(200).json(presentLiveSession(existing, access));
       }
@@ -270,6 +284,10 @@ router.post('/sessions', verifyAccessToken, requireRole('teacher', 'admin'), asy
       isLive: false,
       participants: 0,
     });
+
+    if (bookedSession) {
+      await syncBookedSessionLiveLink(bookedSession, liveSession.roomId);
+    }
 
     const access = await getRoomAccess(liveSession, req.user);
     return res.status(201).json(presentLiveSession(liveSession, access));
