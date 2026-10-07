@@ -2803,3 +2803,505 @@
     justify-content:center;
   }
 }
+
+
+/* T10.5 — Teacher-to-student video updates */
+.wn-teacher-updates,
+.wn-student-teacher-updates {
+  display: grid;
+  gap: 1rem;
+}
+
+.wn-teacher-updates__intro,
+.wn-student-teacher-updates__intro {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.05rem;
+  border: 1px solid rgba(15,107,79,.10);
+  border-radius: 17px;
+  background:
+    radial-gradient(circle at 92% 10%, rgba(212,175,107,.14), transparent 38%),
+    linear-gradient(135deg,#fbfdfb,#fffdf7);
+}
+
+.wn-teacher-updates__intro span,
+.wn-student-teacher-updates__intro span {
+  display: block;
+  color: var(--wn-text-tertiary);
+  font-size: .58rem;
+  font-weight: 800;
+}
+
+.wn-teacher-updates__intro h3,
+.wn-student-teacher-updates__intro h3 {
+  margin-top: .1rem;
+  color: var(--wn-emerald-deep);
+  font-size: .96rem;
+  font-weight: 900;
+}
+
+.wn-teacher-updates__intro p,
+.wn-student-teacher-updates__intro p {
+  max-width: 48rem;
+  margin-top: .25rem;
+  color: var(--wn-text-tertiary);
+  font-size: .6rem;
+  line-height: 1.75;
+}
+
+.wn-teacher-updates__intro > svg,
+.wn-student-teacher-updates__intro > svg {
+  flex: 0 0 auto;
+  color: #ae8237;
+}
+
+.wn-teacher-updates__grid {
+  display: grid;
+  grid-template-columns: minmax(300px,.85fr) minmax(0,1.15fr);
+  gap: 1rem;
+}
+
+.wn-teacher-update-composer,
+.wn-teacher-update-history {
+  padding: 1rem;
+  border: 1px solid rgba(15,107,79,.10);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 20px 50px -44px rgba(7,53,40,.42);
+}
+
+.wn-teacher-update-composer {
+  display: grid;
+  gap: .7rem;
+  align-content: start;
+}
+
+.wn-teacher-update-audience {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: .5rem;
+}
+
+.wn-teacher-update-audience > label {
+  display: flex;
+  align-items: flex-start;
+  gap: .5rem;
+  padding: .65rem;
+  border: 1px solid rgba(15,107,79,.10);
+  border-radius: 12px;
+  background: #fbfdfb;
+  cursor: pointer;
+}
+
+.wn-teacher-update-audience input {
+  margin-top: .15rem;
+  accent-color: var(--wn-emerald-dark);
+}
+
+.wn-teacher-update-audience strong,
+.wn-teacher-update-audience small {
+  display: block;
+}
+
+.wn-teacher-update-audience strong {
+  color: var(--wn-text-primary);
+  font-size: .61rem;
+}
+
+.wn-teacher-update-audience small {
+  margin-top: .12rem;
+  color: var(--wn-text-tertiary);
+  font-size: .49rem;
+  line-height: 1.45;
+}
+
+.wn-teacher-update-students {
+  max-height: 220px;
+  display: grid;
+  gap: .4rem;
+  overflow-y: auto;
+  padding: .45rem;
+  border: 1px solid rgba(15,107,79,.08);
+  border-radius: 12px;
+  background: #f8faf8;
+}
+
+.wn-teacher-update-students > label {
+  display: grid;
+  grid-template-columns: auto auto minmax(0,1fr);
+  align-items: center;
+  gap: .55rem;
+  padding: .5rem;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: white;
+  cursor: pointer;
+}
+
+.wn-teacher-update-students > label.is-selected {
+  border-color: rgba(15,107,79,.18);
+  background: var(--wn-emerald-soft);
+}
+
+.wn-teacher-update-students input {
+  accent-color: var(--wn-emerald-dark);
+}
+
+.wn-teacher-update-students strong,
+.wn-teacher-update-students small {
+  display: block;
+}
+
+.wn-teacher-update-students strong {
+  color: var(--wn-text-primary);
+  font-size: .59rem;
+}
+
+.wn-teacher-update-students small {
+  margin-top: .08rem;
+  color: var(--wn-text-tertiary);
+  font-size: .48rem;
+}
+
+.wn-teacher-update-upload {
+  min-height: 104px;
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  padding: .8rem;
+  border: 1.5px dashed rgba(15,107,79,.22);
+  border-radius: 14px;
+  background: linear-gradient(135deg,#fbfdfb,#fffdf8);
+  cursor: pointer;
+}
+
+.wn-teacher-update-upload > svg {
+  flex: 0 0 auto;
+  color: var(--wn-emerald-dark);
+}
+
+.wn-teacher-update-upload span {
+  min-width: 0;
+  flex: 1;
+}
+
+.wn-teacher-update-upload strong,
+.wn-teacher-update-upload small {
+  display: block;
+}
+
+.wn-teacher-update-upload strong {
+  color: var(--wn-emerald-deep);
+  font-size: .66rem;
+}
+
+.wn-teacher-update-upload small {
+  margin-top: .12rem;
+  color: var(--wn-text-tertiary);
+  font-size: .5rem;
+}
+
+.wn-teacher-update-upload input {
+  width: 1px;
+  height: 1px;
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.wn-teacher-update-files {
+  display: grid;
+  gap: .35rem;
+}
+
+.wn-teacher-update-files > div {
+  display: grid;
+  grid-template-columns: auto minmax(0,1fr) auto;
+  align-items: center;
+  gap: .5rem;
+  padding: .5rem .6rem;
+  border-radius: 10px;
+  background: #f7faf8;
+}
+
+.wn-teacher-update-files > div > svg {
+  color: var(--wn-emerald-dark);
+}
+
+.wn-teacher-update-files strong,
+.wn-teacher-update-files small {
+  display: block;
+}
+
+.wn-teacher-update-files strong {
+  overflow: hidden;
+  color: var(--wn-text-primary);
+  font-size: .56rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wn-teacher-update-files small {
+  margin-top: .06rem;
+  color: var(--wn-text-tertiary);
+  font-size: .47rem;
+}
+
+.wn-teacher-update-files button {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  color: #a84d4d;
+}
+
+.wn-teacher-update-files button:hover {
+  background: #fff0f0;
+}
+
+.wn-teacher-update-list,
+.wn-student-teacher-update-list {
+  display: grid;
+  gap: .75rem;
+}
+
+.wn-teacher-update-list > article,
+.wn-student-teacher-update-list > article {
+  padding: .85rem;
+  border: 1px solid rgba(15,107,79,.10);
+  border-radius: 15px;
+  background: #fff;
+}
+
+.wn-teacher-update-list__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: .6rem;
+}
+
+.wn-teacher-update-list__heading span {
+  display: block;
+  color: #9b7430;
+  font-size: .49rem;
+  font-weight: 800;
+}
+
+.wn-teacher-update-list__heading h4 {
+  margin-top: .12rem;
+  color: var(--wn-emerald-deep);
+  font-size: .76rem;
+  font-weight: 900;
+}
+
+.wn-teacher-update-list__heading small {
+  display: block;
+  margin-top: .1rem;
+  color: var(--wn-text-tertiary);
+  font-size: .47rem;
+}
+
+.wn-teacher-update-list__heading > button {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 9px;
+  color: #a44949;
+}
+
+.wn-teacher-update-list > article > p {
+  margin-top: .55rem;
+  color: var(--wn-text-secondary);
+  font-size: .58rem;
+  line-height: 1.7;
+}
+
+.wn-teacher-update-videos,
+.wn-student-teacher-update-videos {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: .55rem;
+  margin-top: .65rem;
+}
+
+.wn-teacher-update-videos > div,
+.wn-student-teacher-update-videos > div {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgba(15,107,79,.09);
+  border-radius: 12px;
+  background: #f7faf8;
+}
+
+.wn-teacher-update-videos video,
+.wn-student-teacher-update-videos video {
+  width: 100%;
+  max-height: 300px;
+  display: block;
+  background: #071712;
+}
+
+.wn-teacher-update-videos button,
+.wn-student-teacher-update-videos button {
+  width: 100%;
+  min-height: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .55rem;
+  padding: .7rem;
+  color: var(--wn-emerald-dark);
+  text-align: start;
+}
+
+.wn-teacher-update-videos button > svg,
+.wn-student-teacher-update-videos button > svg {
+  flex: 0 0 auto;
+}
+
+.wn-teacher-update-videos strong,
+.wn-teacher-update-videos small,
+.wn-student-teacher-update-videos strong,
+.wn-student-teacher-update-videos small {
+  display: block;
+}
+
+.wn-teacher-update-videos strong,
+.wn-student-teacher-update-videos strong {
+  font-size: .58rem;
+}
+
+.wn-teacher-update-videos small,
+.wn-student-teacher-update-videos small {
+  max-width: 180px;
+  margin-top: .08rem;
+  overflow: hidden;
+  color: var(--wn-text-tertiary);
+  font-size: .47rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wn-student-teacher-update-preview {
+  display: grid;
+  grid-template-columns: auto minmax(0,1fr) auto;
+  align-items: center;
+  gap: .8rem;
+  padding: .85rem 1rem;
+  border: 1px solid rgba(212,175,107,.22);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 92% 12%, rgba(212,175,107,.14), transparent 38%),
+    linear-gradient(135deg,#fffdf8,#f8fcf9);
+}
+
+.wn-student-teacher-update-preview__icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  background: var(--wn-emerald-deep);
+  color: #efd489;
+}
+
+.wn-student-teacher-update-preview > div > span {
+  color: #9a7330;
+  font-size: .5rem;
+  font-weight: 850;
+}
+
+.wn-student-teacher-update-preview h3 {
+  margin-top: .12rem;
+  color: var(--wn-emerald-deep);
+  font-size: .73rem;
+  font-weight: 900;
+}
+
+.wn-student-teacher-update-preview p {
+  max-width: 44rem;
+  margin-top: .12rem;
+  color: var(--wn-text-tertiary);
+  font-size: .53rem;
+  line-height: 1.6;
+}
+
+.wn-student-teacher-update-list__head {
+  display: grid;
+  grid-template-columns: auto minmax(0,1fr);
+  align-items: center;
+  gap: .6rem;
+}
+
+.wn-student-teacher-update-list__avatar {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: linear-gradient(145deg,#073b2e,#0c7759);
+  color: white;
+  font-size: .8rem;
+  font-weight: 900;
+}
+
+.wn-student-teacher-update-list__head > div > span {
+  color: #9b7430;
+  font-size: .49rem;
+  font-weight: 800;
+}
+
+.wn-student-teacher-update-list__head h4 {
+  margin-top: .08rem;
+  color: var(--wn-emerald-deep);
+  font-size: .76rem;
+  font-weight: 900;
+}
+
+.wn-student-teacher-update-list__head small {
+  display: block;
+  margin-top: .08rem;
+  color: var(--wn-text-tertiary);
+  font-size: .47rem;
+}
+
+.wn-student-teacher-update-list__message {
+  margin-top: .65rem;
+  color: var(--wn-text-secondary);
+  font-size: .62rem;
+  line-height: 1.85;
+}
+
+@media (max-width: 900px) {
+  .wn-teacher-updates__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .wn-teacher-updates__intro,
+  .wn-student-teacher-updates__intro {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .wn-teacher-update-audience,
+  .wn-teacher-update-videos,
+  .wn-student-teacher-update-videos {
+    grid-template-columns: 1fr;
+  }
+
+  .wn-student-teacher-update-preview {
+    grid-template-columns: auto minmax(0,1fr);
+  }
+
+  .wn-student-teacher-update-preview > button {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+}
