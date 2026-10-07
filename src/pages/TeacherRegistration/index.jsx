@@ -350,6 +350,28 @@ export default function TeacherRegistration() {
                   <div className="border-t border-slate-100 pt-4">
                     <div className="flex items-center gap-2 mb-2">
                       <Video className="text-emerald-600" size={20} />
+                      <p className="font-semibold text-slate-800">فيديو تعريفي قصير *</p>
+                    </div>
+                    <p className="text-sm text-slate-600 mb-3">
+                      عرّف بنفسك وخبرتك وطريقتك في التعامل مع الطلاب في فيديو واضح من 60–120 ثانية.
+                    </p>
+                    <FileBox
+                      id="introVid"
+                      label="ارفع الفيديو التعريفي"
+                      hint="MP4 أو WebM أو MOV — الحد الأقصى 100 MB"
+                      accept=".mp4,.webm,.mov,video/mp4,video/webm,video/quicktime"
+                      allowedMimeTypes={['video/mp4', 'video/webm', 'video/quicktime']}
+                      allowedExtensions={['.mp4', '.webm', '.mov']}
+                      maxBytes={100 * 1024 * 1024}
+                      captureKind="video"
+                      file={f.files.introductionVideo}
+                      onChange={(file) => f.setFile('introductionVideo', file)}
+                    />
+                  </div>
+
+                  <div className="border-t border-slate-100 pt-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Video className="text-emerald-600" size={20} />
                       <p className="font-semibold text-slate-800">فيديو تلاوة قرآنية *</p>
                     </div>
                     <ul className="text-sm text-slate-600 space-y-1 mb-3 bg-amber-50 border border-amber-100 rounded-lg p-3">
@@ -367,6 +389,28 @@ export default function TeacherRegistration() {
                       multiple
                       files={f.files.recitationVideos}
                       onChange={(files) => f.setFile('recitationVideos', files)}
+                    />
+                  </div>
+
+                  <div className="border-t border-slate-100 pt-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Video className="text-emerald-600" size={20} />
+                      <p className="font-semibold text-slate-800">فيديو طريقة التدريس *</p>
+                    </div>
+                    <p className="text-sm text-slate-600 mb-3">
+                      اشرح أو مثّل جزءًا قصيرًا من حصة لتستطيع الإدارة تقييم أسلوب الشرح والتواصل.
+                    </p>
+                    <FileBox
+                      id="methodVid"
+                      label="ارفع فيديو طريقة التدريس"
+                      hint="MP4 أو WebM أو MOV — الحد الأقصى 100 MB"
+                      accept=".mp4,.webm,.mov,video/mp4,video/webm,video/quicktime"
+                      allowedMimeTypes={['video/mp4', 'video/webm', 'video/quicktime']}
+                      allowedExtensions={['.mp4', '.webm', '.mov']}
+                      maxBytes={100 * 1024 * 1024}
+                      captureKind="video"
+                      file={f.files.teachingMethodVideo}
+                      onChange={(file) => f.setFile('teachingMethodVideo', file)}
                     />
                   </div>
                 </div>
@@ -400,7 +444,9 @@ export default function TeacherRegistration() {
                       f.formData.documentAvailability?.ijazat
                         ? `✓ الإجازات: ${f.files.ijazat?.length || 0}`
                         : '— الإجازات: غير موجودة',
-                      f.files.recitationVideos?.length ? `✓ ${f.files.recitationVideos.length} فيديو تلاوة` : '✗ فيديو',
+                      f.files.introductionVideo ? '✓ فيديو تعريفي' : '✗ فيديو تعريفي',
+                      f.files.recitationVideos?.length ? `✓ ${f.files.recitationVideos.length} فيديو تلاوة` : '✗ فيديو تلاوة',
+                      f.files.teachingMethodVideo ? '✓ فيديو طريقة التدريس' : '✗ فيديو طريقة التدريس',
                     ]} />
                   </div>
                   <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-100 rounded-xl text-sm text-amber-900">

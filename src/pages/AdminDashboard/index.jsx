@@ -3,7 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Users, BookOpen, Calendar, DollarSign, CheckCircle, XCircle, Eye,
   Mail, MessageSquare, Plus, Trash2, Upload, Video, Edit3, Send,
-  TrendingUp, BriefcaseBusiness, MonitorPlay,
+  TrendingUp, BriefcaseBusiness, MonitorPlay, AlertTriangle, ShieldCheck,
+  Clock3, History, ChevronLeft, CreditCard, UserCheck,
 } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar, Cell, PieChart, Pie, Legend } from 'recharts';
 import DashboardLayout, { StatCard, TabBar } from '../../components/dashboard/DashboardLayout';
@@ -12,6 +13,7 @@ import { useToast } from '../../context/ToastProvider';
 import api from '../../lib/api';
 import { uploadFileDirect } from '../../lib/fileUpload';
 import TeacherReviewQueue from './TeacherReviewQueue';
+import TeacherReviewDossier from './TeacherReviewDossier';
 import LaunchReadinessPanel from './LaunchReadinessPanel';
 
 const STATUS_LABEL = { new: 'جديدة', read: 'مقروءة', replied: 'تم الرد', closed: 'مغلقة' };
@@ -53,6 +55,10 @@ export default function AdminDashboard() {
   const [videoForm, setVideoForm] = useState({ title: '', category: 'quran', videoUrl: '', duration: 600 });
   const [courseProgramFilter, setCourseProgramFilter] = useState('all');
   const [health, setHealth] = useState(null);
+  const [commandCenter, setCommandCenter] = useState({ summary: {}, actions: [], recentTeachers: [], recentAudit: [] });
+  const [auditEntries, setAuditEntries] = useState([]);
+  const [teacherDossier, setTeacherDossier] = useState(null);
+  const [teacherDossierLoading, setTeacherDossierLoading] = useState(false);
 
   const loadPendingTeachers = useCallback(async () => {
     const result = await api.get('/api/admin/teachers/pending', { auth: true });
@@ -60,11 +66,12 @@ export default function AdminDashboard() {
   }, []);
 
   const loadCore = useCallback(async () => {
-    const [statsResult, pendingResult, approvedResult, healthResult] = await Promise.allSettled([
+    const [statsResult, pendingResult, approvedResult, healthResult, commandResult] = await Promise.allSettled([
       api.get('/api/admin/stats', { auth: true }),
       api.get('/api/admin/teachers/pending', { auth: true }),
       api.get('/api/admin/teachers/approved', { auth: true }),
       api.get('/api/health'),
+      api.get('/api/admin/command-center', { auth: true }),
     ]);
 
     if (statsResult.status === 'fulfilled') setStats(statsResult.value || {});
@@ -77,6 +84,9 @@ export default function AdminDashboard() {
       setApproved(Array.isArray(value) ? value : (value?.teachers || []));
     }
     if (healthResult.status === 'fulfilled') setHealth(healthResult.value);
+    if (commandResult.status === 'fulfilled') {
+      setCommandCenter(commandResult.value || { summary: {}, actions: [], recentTeachers: [], recentAudit: [] });
+    }
 
     if (pendingResult.status === 'rejected') {
       throw new Error('تعذر تحميل طلبات المعلمين المعلقة');
@@ -96,6 +106,11 @@ export default function AdminDashboard() {
   const loadBlog = useCallback(async () => {
     const r = await api.get('/api/admin/blog', { auth: true });
     setBlogPosts(Array.isArray(r) ? r : []);
+  }, []);
+
+  const loadAudit = useCallback(async () => {
+    const result = await api.get('/api/admin/audit?limit=150', { auth: true });
+    setAuditEntries(result.entries || []);
   }, []);
 
   const loadWithdrawals = useCallback(async () => {
@@ -151,18 +166,19 @@ export default function AdminDashboard() {
       if (tab === 'blog') await loadBlog();
       if (tab === 'withdrawals') await loadWithdrawals();
       if (tab === 'growth') await loadGrowth();
+      if (tab === 'audit') await loadAudit();
     } catch (e) {
       toast.error(e.message || 'تعذر تحميل البيانات');
     } finally {
       setLoading(false);
     }
-  }, [tab, loadCore, loadMessages, loadCourses, loadBlog, loadWithdrawals, loadGrowth, toast]);
+  }, [tab, loadCore, loadMessages, loadCourses, loadBlog, loadWithdrawals, loadGrowth, loadAudit, toast]);
 
   useEffect(() => { if (ready) load(); }, [ready, load]);
 
   useEffect(() => {
     const requestedTab = searchParams.get('tab');
-    const allowed = ['overview', 'messages', 'teachers', 'withdrawals', 'courses', 'blog', 'growth'];
+    const allowed = ['overview', 'messages', 'teachers', 'withdrawals', 'courses', 'blog', 'growth', 'audit'];
     if (requestedTab && allowed.includes(requestedTab)) {
       setTab(requestedTab);
     }
@@ -209,8 +225,11 @@ export default function AdminDashboard() {
   const review = async (id, action, note = '') => {
     let reviewNote = note;
 
-    if (action === 'request-changes' && !reviewNote) {
-      reviewNote = window.prompt('اكتب المطلوب من المعلم استكماله أو تعديله:', '') ?? '';
+    if (['request-changes', 'reject'].includes(action) && !reviewNote) {
+      reviewNote = window.prompt(
+        action === 'reject' ? 'اكتب سبب رفض الطلب:' : 'اكتب المطلوب من المعلم استكماله أو تعديله:',
+        ''
+      ) ?? '';
       if (!reviewNote.trim()) return;
     }
 
@@ -222,9 +241,39 @@ export default function AdminDashboard() {
         'request-changes': 'تم إرسال طلب الاستكمال للمعلم',
       };
       toast.success(labels[action] || 'تم تحديث الطلب');
-      load();
+      setTeacherDossier(null);
+      await loadCore();
     } catch (error) {
       toast.error(error.message || 'فشلت العملية');
+    }
+  };
+
+  const openTeacherDossier = async (teacherId) => {
+    setTeacherDossierLoading(true);
+    setTeacherDossier({ teacher: { _id: teacherId } });
+    try {
+      const result = await api.get(`/api/teachers/admin/${teacherId}/review-dossier`, { auth: true });
+      setTeacherDossier(result);
+    } catch (error) {
+      setTeacherDossier(null);
+      toast.error(error.message || 'تعذر تحميل ملف المعلم الكامل');
+    } finally {
+      setTeacherDossierLoading(false);
+    }
+  };
+
+  const updateTeacherChecklist = async (teacherId, key, status, note = '') => {
+    try {
+      await api.put(
+        `/api/teachers/admin/${teacherId}/review-checklist/${key}`,
+        { status, note },
+        { auth: true }
+      );
+      toast.success(status === 'approved' ? 'تم اعتماد بند المراجعة' : 'تم تحديث بند المراجعة');
+      await openTeacherDossier(teacherId);
+      await loadPendingTeachers();
+    } catch (error) {
+      toast.error(error.message || 'تعذر تحديث قائمة المراجعة');
     }
   };
 
@@ -232,7 +281,7 @@ export default function AdminDashboard() {
     try {
       const suffix = Number.isInteger(index) ? `/${index}` : '';
       const response = await api.request(
-        `/api/teachers/admin/${teacherId}/document/${kind}${suffix}`,
+        `/api/teachers/admin/${teacherId}/document/${kind}${suffix}?reason=teacher-review`,
         { auth: true, json: false, method: 'GET' }
       );
       const blob = await response.blob();
@@ -244,9 +293,20 @@ export default function AdminDashboard() {
     }
   };
 
-  const openTeacherMedia = (reference) => {
-    if (!reference) return toast.error('الملف غير متاح');
-    window.open(reference, '_blank', 'noopener,noreferrer');
+  const openTeacherMedia = async (teacherId, kind, index) => {
+    try {
+      const suffix = Number.isInteger(index) ? `/${index}` : '';
+      const response = await api.request(
+        `/api/teachers/admin/${teacherId}/media/${kind}${suffix}?reason=teacher-review`,
+        { auth: true, json: false, method: 'GET' }
+      );
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank', 'noopener,noreferrer');
+      window.setTimeout(() => URL.revokeObjectURL(url), 120000);
+    } catch (error) {
+      toast.error(error.message || 'تعذر فتح ملف المعلم');
+    }
   };
 
   const sendReply = async (id) => {
@@ -276,8 +336,8 @@ export default function AdminDashboard() {
   const addTeacher = async (e) => {
     e.preventDefault();
     try {
-      await api.post('/api/admin/teachers', { ...teacherForm, autoApprove: true }, { auth: true });
-      toast.success('تم إضافة الشيخ');
+      await api.post('/api/admin/teachers', { ...teacherForm, autoApprove: false }, { auth: true });
+      toast.success('تم إنشاء ملف المعلم وإرساله إلى مركز المراجعة');
       setTeacherForm({ name: '', email: '', password: '', phone: '', country: 'مصر', city: 'القاهرة' });
       load();
     } catch (e) { toast.error(e.message); }
@@ -360,6 +420,7 @@ export default function AdminDashboard() {
     { id: 'courses', label: 'الدورات' },
     { id: 'blog', label: 'المدونة' },
     { id: 'growth', label: 'التحليلات والنمو' },
+    { id: 'audit', label: 'سجل الإدارة' },
   ];
 
   const COLORS = ['#f43f5e', '#3b82f6', '#8b5cf6', '#10b981'];
@@ -389,6 +450,53 @@ export default function AdminDashboard() {
         <>
           {tab === 'overview' && (
             <>
+              <section className="wn-admin-command-center">
+                <div className="wn-admin-command-center__heading">
+                  <div>
+                    <span>Admin Command Center</span>
+                    <h2>ماذا يحتاج تدخل الإدارة الآن؟</h2>
+                    <p>الأولوية للقرارات التشغيلية، ثم الإحصائيات.</p>
+                  </div>
+                  <div className="wn-admin-command-center__score">
+                    <strong>{commandCenter.summary?.totalPendingActions || 0}</strong>
+                    <small>إجراء معلق</small>
+                  </div>
+                </div>
+
+                <div className="wn-admin-command-center__actions">
+                  {(commandCenter.actions || []).map((item) => {
+                    const Icon = item.id === 'teacher-review'
+                      ? UserCheck
+                      : item.id === 'manual-payments'
+                        ? CreditCard
+                        : item.id === 'overdue-sessions'
+                          ? Clock3
+                          : item.severity === 'high'
+                            ? AlertTriangle
+                            : ShieldCheck;
+                    return (
+                      <button
+                        type="button"
+                        key={item.id}
+                        className={`is-${item.severity || 'info'}`}
+                        onClick={() => {
+                          if (item.actionUrl === '/admin/payments') navigate('payments');
+                          else {
+                            const match = item.actionUrl?.match(/tab=([^&]+)/);
+                            if (match?.[1]) setTab(match[1]);
+                          }
+                        }}
+                      >
+                        <span><Icon size={18} /></span>
+                        <span><strong>{item.label}</strong><small>{item.count ? 'يحتاج متابعة' : 'لا يوجد إجراء'}</small></span>
+                        <b>{item.count || 0}</b>
+                        <ChevronLeft size={15} />
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                 <StatCard label="الطلاب" value={stats.totalStudents || 0} icon={Users} />
                 <StatCard label="المعلمون" value={stats.totalTeachers || 0} icon={BookOpen} color="blue" />
@@ -422,9 +530,7 @@ export default function AdminDashboard() {
                 teachers={pending}
                 loading={loading}
                 onRefresh={loadPendingTeachers}
-                onReview={review}
-                onOpenDocument={openTeacherDocument}
-                onOpenMedia={openTeacherMedia}
+                onOpenDossier={openTeacherDossier}
                 compact
               />
             </>
@@ -476,9 +582,7 @@ export default function AdminDashboard() {
                 teachers={pending}
                 loading={loading}
                 onRefresh={loadPendingTeachers}
-                onReview={review}
-                onOpenDocument={openTeacherDocument}
-                onOpenMedia={openTeacherMedia}
+                onOpenDossier={openTeacherDossier}
               />
 
               <div className="grid lg:grid-cols-2 gap-6">
@@ -494,7 +598,7 @@ export default function AdminDashboard() {
                   <input placeholder="الدولة" value={teacherForm.country} onChange={(e) => setTeacherForm((p) => ({ ...p, country: e.target.value }))} className="border rounded-lg px-3 py-2 text-sm" />
                   <input placeholder="المدينة" value={teacherForm.city} onChange={(e) => setTeacherForm((p) => ({ ...p, city: e.target.value }))} className="border rounded-lg px-3 py-2 text-sm" />
                 </div>
-                <button type="submit" className="w-full py-2 bg-emerald-600 text-white rounded-lg text-sm">إضافة واعتماد</button>
+                <button type="submit" className="w-full py-2 bg-emerald-600 text-white rounded-lg text-sm">إنشاء ملف للمراجعة</button>
               </form>
               <div className="wn-dashboard-surface">
                 <h3 className="font-bold mb-4">المعلمون المعتمدون ({approved.length})</h3>
@@ -510,6 +614,39 @@ export default function AdminDashboard() {
               </div>
               </div>
             </div>
+          )}
+
+          {tab === 'audit' && (
+            <section className="wn-dashboard-surface">
+              <div className="flex items-start justify-between gap-3 mb-5">
+                <div>
+                  <h3 className="font-bold flex items-center gap-2"><History size={18} /> سجل الإدارة</h3>
+                  <p className="text-xs text-slate-500 mt-1">يسجل القرارات والوصول إلى المستندات والوسائط الحساسة.</p>
+                </div>
+                <button type="button" onClick={loadAudit} className="wn-btn">تحديث</button>
+              </div>
+
+              {auditEntries.length === 0 ? <Empty text="لا توجد أحداث إدارية مسجلة" /> : (
+                <div className="wn-admin-audit-list">
+                  {auditEntries.map((entry) => (
+                    <div key={entry._id}>
+                      <span>
+                        <strong>{entry.actor?.name || 'الإدارة'}</strong>
+                        <small>{new Date(entry.createdAt).toLocaleString('ar-EG')}</small>
+                      </span>
+                      <span>
+                        <strong>{entry.action}</strong>
+                        <small>{entry.entityType} · {entry.entityId}</small>
+                      </span>
+                      <span>
+                        <strong>{entry.reason || 'بدون ملاحظة'}</strong>
+                        <small>{entry.request?.path || ''}</small>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
           )}
 
           {tab === 'courses' && (
@@ -824,6 +961,17 @@ export default function AdminDashboard() {
             </div>
           )}
         </>
+      )}
+      {teacherDossier && (
+        <TeacherReviewDossier
+          dossier={teacherDossier}
+          loading={teacherDossierLoading}
+          onClose={() => setTeacherDossier(null)}
+          onChecklist={updateTeacherChecklist}
+          onReview={review}
+          onOpenDocument={openTeacherDocument}
+          onOpenMedia={openTeacherMedia}
+        />
       )}
     </DashboardLayout>
   );

@@ -740,6 +740,84 @@ requireContains(
   /refreshTokenVersion:\s*1/
 );
 
+requireContains(
+  'backend/routes/teachers.js',
+  'new teacher applications must require a dedicated introduction video',
+  /TEACHER_INTRODUCTION_VIDEO_REQUIRED/
+);
+requireContains(
+  'backend/routes/teachers.js',
+  'new teacher applications must require a dedicated teaching-method video',
+  /TEACHER_TEACHING_METHOD_VIDEO_REQUIRED/
+);
+requireContains(
+  'src/pages/TeacherRegistration/useTeacherForm.js',
+  'teacher registration must upload introduction and teaching method videos separately',
+  /uploadOne\(files\.introductionVideo,[\s\S]{0,500}uploadOne\(files\.teachingMethodVideo/
+);
+
+// T13: admin teacher approval must be review-gated, auditable and private.
+requireContains(
+  'backend/routes/teachers.js',
+  'teacher approval must fail closed until the required review checklist is complete',
+  /action\s*===\s*['"]approve['"]\s*&&\s*!gate\.approvalReady[\s\S]{0,700}TEACHER_REVIEW_GATE_INCOMPLETE/
+);
+requireContains(
+  'backend/routes/teachers.js',
+  'teacher checklist updates must be admin-only',
+  /router\.put\(['"]\/admin\/:id\/review-checklist\/:key['"],\s*protect,\s*authorize\(['"]admin['"]\)/
+);
+requireContains(
+  'backend/routes/teachers.js',
+  'teacher private media review must be admin-only and audited',
+  /router\.get\(['"]\/admin\/:id\/media\/:kind[\s\S]{0,1000}teacher\.sensitive-media\.viewed/
+);
+requireContains(
+  'backend/routes/teachers.js',
+  'teacher sensitive document review must write an audit event',
+  /teacher\.sensitive-document\.viewed/
+);
+requireContains(
+  'backend/routes/admin.js',
+  'generic admin teacher updates must not bypass the approval gate',
+  /status\s*===\s*['"]approved['"][\s\S]{0,300}USE_TEACHER_REVIEW_GATE/
+);
+requireContains(
+  'backend/routes/admin.js',
+  'admin-created teachers must enter review rather than auto-approve',
+  /status:\s*['"]pending['"][\s\S]{0,120}isVerified:\s*false/
+);
+requireContains(
+  'backend/routes/admin.js',
+  'admin command center must be admin-only',
+  /router\.get\(['"]\/command-center['"],\s*protect,\s*authorize\(['"]admin['"]\)/
+);
+requireContains(
+  'backend/routes/admin.js',
+  'admin audit log must be admin-only',
+  /router\.get\(['"]\/audit['"],\s*protect,\s*authorize\(['"]admin['"]\)/
+);
+requireContains(
+  'backend/services/adminAudit.js',
+  'admin audit metadata must filter obvious secret/reference fields',
+  /\['reference',\s*'url',\s*'token',\s*'password',\s*'secret'\]/
+);
+requireContains(
+  'backend/services/teacherReview.js',
+  'teacher review gate must require both sides of teacher identity',
+  /id-card-front[\s\S]{0,500}id-card-back/
+);
+requireContains(
+  'backend/services/teacherReview.js',
+  'teacher review gate must require introduction, recitation and teaching-method media',
+  /introduction-video[\s\S]{0,500}recitation-video[\s\S]{0,500}teaching-method-video/
+);
+requireContains(
+  'backend/models/AdminAuditLog.js',
+  'admin audit records must be append-only at the application layer',
+  /Admin audit log entries are append-only/
+);
+
 if (failures.length) {
   console.error('Security contracts failed:');
   failures.forEach((failure) => console.error(`- ${failure}`));

@@ -15,6 +15,7 @@ const Guardian = require('../models/Guardian');
 const LiveSession = require('../models/LiveSession');
 const Notification = require('../models/Notification');
 const TeacherLedger = require('../models/TeacherLedger');
+const AdminAuditLog = require('../models/AdminAuditLog');
 const app = require('../app');
 const { generateAccessToken } = require('../middleware/auth');
 
@@ -193,6 +194,13 @@ Notification.createAndSend = async (userId, payload) => {
   return { success: true };
 };
 
+const auditEntries = [];
+AdminAuditLog.create = async (payload) => {
+  const entry = { _id: oid(), ...payload, createdAt: new Date() };
+  auditEntries.push(entry);
+  return entry;
+};
+
 const auth = (id) => generateAccessToken(users.get(id));
 
 async function call(base, path, { method = 'GET', token, body } = {}) {
@@ -225,6 +233,45 @@ test('four-persona state linking works through real HTTP routes', async (t) => {
   const pending = await call(base, '/api/admin/teachers/pending', { token: adminToken });
   assert.equal(pending.status, 200);
   assert.equal(pending.data.length, 1);
+
+  Object.assign(teacher, {
+    personalInfo: {
+      fullName: 'QA Teacher',
+      age: 30,
+      gender: 'male',
+      country: 'Egypt',
+      city: 'Cairo',
+      phone: '01000000000',
+    },
+    academicInfo: {
+      university: 'QA University',
+      faculty: 'QA Faculty',
+      graduationYear: 2020,
+      specialization: 'Quran',
+      qualification: 'BA',
+    },
+    quranInfo: { memorizedParts: 30, teachingExperience: 5, specializations: ['tajweed'] },
+    documents: {
+      idCardFront: '/qa-id-front.jpg',
+      idCardBack: '/qa-id-back.jpg',
+      graduationCertificateAvailable: false,
+      tajweedCertificatesAvailable: false,
+      ijazatAvailable: false,
+    },
+    media: {
+      profilePhoto: '/qa.jpg',
+      introductionVideo: '/qa-intro.mp4',
+      recitationVideo: '/qa-recitation.mp4',
+      teachingMethodVideo: '/qa-method.mp4',
+    },
+    reviewChecklist: [
+      'personal-info', 'academic-info', 'quran-profile', 'profile-photo',
+      'introduction-video', 'recitation-video', 'teaching-method-video',
+      'id-card-front', 'id-card-back',
+    ].map((key) => ({ key, status: 'approved' })),
+    reviewNotes: [],
+    save: async function saveTeacherFixture() { return this; },
+  });
 
   const approved = await call(base, '/api/teachers/admin/' + ids.teacher + '/review', {
     method: 'PUT',

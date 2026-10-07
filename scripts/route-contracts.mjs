@@ -85,6 +85,13 @@ assert.match(register, /localizedPath\(['"]\/login['"]/);
 assert.match(register, /guardianPhone/);
 assert.match(register, /guardianRelationship/);
 assert.match(register, /required=\{role\s*===\s*['"]guardian['"]\}/);
+const teacherRegistration = read('src/pages/TeacherRegistration/index.jsx');
+const teacherRegistrationForm = read('src/pages/TeacherRegistration/useTeacherForm.js');
+assert.match(teacherRegistration, /فيديو تعريفي قصير/);
+assert.match(teacherRegistration, /فيديو طريقة التدريس/);
+assert.match(teacherRegistrationForm, /introductionVideo/);
+assert.match(teacherRegistrationForm, /teachingMethodVideo/);
+
 
 const redirects = read('src/components/DashboardRedirect.jsx');
 assert.match(redirects, /dashboardPathForRole/);
@@ -182,6 +189,22 @@ assert.match(manualPayment, /\/api\/payments\/course\/'\s*\+\s*encodeURIComponen
 const adminPayments = read('src/pages/AdminPayments/index.jsx');
 assert.match(adminPayments, /\/api\/payments\/admin\/manual/);
 assert.match(adminPayments, /\/review/);
+
+
+const adminDashboard = read('src/pages/AdminDashboard/index.jsx');
+const teacherReviewQueue = read('src/pages/AdminDashboard/TeacherReviewQueue.jsx');
+const teacherReviewDossier = read('src/pages/AdminDashboard/TeacherReviewDossier.jsx');
+assert.match(adminDashboard, /\/api\/admin\/command-center/);
+assert.match(adminDashboard, /\/api\/admin\/audit\?limit=/);
+assert.match(adminDashboard, /openTeacherDossier/);
+assert.match(adminDashboard, /review-checklist\/\$\{key\}/);
+assert.match(adminDashboard, /TeacherReviewDossier/);
+assert.match(teacherReviewQueue, /فتح ملف المراجعة الكامل/);
+assert.doesNotMatch(teacherReviewQueue, /onReview\(/);
+assert.match(teacherReviewDossier, /Teacher 360 Review Dossier/);
+assert.match(teacherReviewDossier, /approvalReady/);
+assert.match(teacherReviewDossier, /onOpenDocument/);
+assert.match(teacherReviewDossier, /onOpenMedia/);
 
 const app = read('src/App.jsx');
 assert.match(

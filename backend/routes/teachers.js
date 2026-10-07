@@ -12,6 +12,14 @@ const objectStorage = require('../services/objectStorage');
 const { resolveOwnedTeacherAssets } = require('../utils/teacherAssetLifecycle');
 const { sendEmail } = require('../services/notificationDispatcher');
 const { notifyAdmins } = require('../utils/notify');
+const AdminAuditLog = require('../models/AdminAuditLog');
+const { logAdminAction } = require('../services/adminAudit');
+const {
+  REVIEW_ITEMS,
+  buildTeacherReviewGate,
+  sanitizeChecklistStatus,
+  itemRequiredForTeacher,
+} = require('../services/teacherReview');
 const multer = require('multer');
 const {
   addMockUser,
@@ -55,6 +63,123 @@ if (process.env.FILE_STORAGE_DRIVER !== 'external') {
 }
 
 const externalStorage = process.env.FILE_STORAGE_DRIVER === 'external';
+
+async function streamAdminTeacherAsset(reference, res, { fallbackContentType = 'application/octet-stream' } = {}) {
+  reference = objectStorage.unwrapPublicProxyReference(reference);
+  if (!reference || reference === 'not-provided' || reference === '/default-teacher.png') {
+    return res.status(404).json({ error: 'Asset not found' });
+  }
+
+  res.setHeader('Cache-Control', 'private, no-store');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+
+  if (/^https?:\/\//i.test(reference)) {
+    // External object-storage references stay private and are streamed through
+    // this authenticated admin endpoint.
+    const result = await objectStorage.getPrivateObject(reference, {
+      ifNoneMatch: res.req?.headers?.['if-none-match'],
+    }).catch(() => null);
+
+    if (result) {
+      if (result.statusCode === 304) return res.status(304).end();
+      res.setHeader('Content-Type', result.blob?.contentType || fallbackContentType);
+      if (result.blob?.etag) res.setHeader('ETag', result.blob.etag);
+
+      if (result.stream?.pipe) return result.stream.pipe(res);
+      const reader = result.stream?.getReader?.();
+      if (!reader) return res.status(404).json({ error: 'Asset not found' });
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        res.write(Buffer.from(value));
+      }
+      return res.end();
+    }
+
+    try {
+      const parsed = new URL(reference);
+      reference = parsed.pathname;
+    } catch {
+      return res.status(404).json({ error: 'Asset not found' });
+    }
+  }
+
+  const normalized = String(reference).replace(/^\/+/, '');
+  let absolutePath = null;
+
+  if (normalized.startsWith('uploads/teachers/public/')) {
+    absolutePath = path.join(publicUploadDir, path.basename(normalized));
+  } else if (normalized.startsWith('private/teachers/')) {
+    absolutePath = path.join(privateUploadDir, path.basename(normalized));
+  }
+
+  if (!absolutePath || !fs.existsSync(absolutePath)) {
+    return res.status(404).json({ error: 'Asset not found' });
+  }
+
+  return res.sendFile(absolutePath);
+}
+
+function teacherDossierPayload(teacher, gate, auditEntries = [], activity = {}) {
+  const raw = teacher.toObject ? teacher.toObject() : teacher;
+  const documents = raw.documents || {};
+  const media = raw.media || {};
+
+  return {
+    teacher: {
+      _id: raw._id,
+      user: raw.user,
+      personalInfo: raw.personalInfo,
+      academicInfo: raw.academicInfo,
+      quranInfo: raw.quranInfo,
+      languages: raw.languages || [],
+      hourlyRate: raw.hourlyRate,
+      availabilityTimezone: raw.availabilityTimezone,
+      status: raw.status,
+      isVerified: raw.isVerified,
+      reviewNotes: raw.reviewNotes || [],
+      reviewChecklist: raw.reviewChecklist || [],
+      reviewStartedAt: raw.reviewStartedAt,
+      reviewCompletedAt: raw.reviewCompletedAt,
+      rating: raw.rating,
+      stats: raw.stats,
+      createdAt: raw.createdAt,
+      updatedAt: raw.updatedAt,
+      documents: {
+        idCard: Boolean(documents.idCard && documents.idCard !== 'not-provided'),
+        idCardFront: Boolean(
+          (documents.idCardFront && documents.idCardFront !== 'not-provided')
+          || (documents.idCard && documents.idCard !== 'not-provided')
+        ),
+        idCardBack: Boolean(documents.idCardBack && documents.idCardBack !== 'not-provided'),
+        graduationCertificateAvailable: Boolean(documents.graduationCertificateAvailable),
+        graduationCertificate: Boolean(documents.graduationCertificate && documents.graduationCertificate !== 'not-provided'),
+        tajweedCertificatesAvailable: Boolean(documents.tajweedCertificatesAvailable),
+        tajweedCertificatesCount: (documents.tajweedCertificates || []).filter(Boolean).length,
+        ijazatAvailable: Boolean(documents.ijazatAvailable),
+        ijazatCount: (documents.ijazat || []).filter(Boolean).length,
+      },
+      media: {
+        profilePhoto: Boolean(media.profilePhoto && media.profilePhoto !== '/default-teacher.png'),
+        introductionVideo: Boolean(media.introductionVideo && media.introductionVideo !== '/default-teacher.png'),
+        recitationVideo: Boolean(media.recitationVideo && media.recitationVideo !== '/default-teacher.png'),
+        teachingMethodVideo: Boolean(media.teachingMethodVideo && media.teachingMethodVideo !== '/default-teacher.png'),
+        additionalVideosCount: (media.additionalVideos || []).filter(Boolean).length,
+        audioRecordingsCount: (media.audioRecordings || []).filter(Boolean).length,
+      },
+    },
+    gate,
+    activity,
+    audit: auditEntries.map((entry) => ({
+      _id: entry._id,
+      action: entry.action,
+      reason: entry.reason,
+      metadata: entry.metadata,
+      actor: entry.actor,
+      createdAt: entry.createdAt,
+    })),
+  };
+}
 
 const diskStorage = multer.diskStorage({
   destination: (_req, file, cb) => {
@@ -259,10 +384,24 @@ router.post(
         });
       }
 
+      if (!hasDirectOrLegacy(uploadedFiles.introductionVideo, req.files?.introductionVideo)) {
+        return res.status(400).json({
+          error: 'Introduction video is required',
+          code: 'TEACHER_INTRODUCTION_VIDEO_REQUIRED',
+        });
+      }
+
       if (!hasDirectOrLegacyList(uploadedFiles.recitationVideo, req.files?.recitationVideo)) {
         return res.status(400).json({
           error: 'At least one recitation video is required',
           code: 'TEACHER_RECITATION_VIDEO_REQUIRED',
+        });
+      }
+
+      if (!hasDirectOrLegacy(uploadedFiles.teachingMethodVideo, req.files?.teachingMethodVideo)) {
+        return res.status(400).json({
+          error: 'Teaching method video is required',
+          code: 'TEACHER_TEACHING_METHOD_VIDEO_REQUIRED',
         });
       }
 
@@ -459,9 +598,9 @@ router.post(
 
       const media = {
         profilePhoto: profilePhoto || '/default-teacher.png',
-        introductionVideo: directPublic(uploadedFiles.introductionVideo) || publicMediaPath(req.files?.introductionVideo?.[0]) || mainVideo,
+        introductionVideo: directPublic(uploadedFiles.introductionVideo) || publicMediaPath(req.files?.introductionVideo?.[0]),
         recitationVideo: mainVideo,
-        teachingMethodVideo: directPublic(uploadedFiles.teachingMethodVideo) || publicMediaPath(req.files?.teachingMethodVideo?.[0]) || mainVideo,
+        teachingMethodVideo: directPublic(uploadedFiles.teachingMethodVideo) || publicMediaPath(req.files?.teachingMethodVideo?.[0]),
         additionalVideos: [
           ...directRecitations.slice(1).map(directPublic),
           ...(uploadedFiles.additionalVideos?.map(directPublic) || []),
@@ -700,6 +839,156 @@ router.get('/featured', async (req, res) => {
   }
 });
 
+router.get('/admin/:id/review-dossier', protect, authorize('admin'), async (req, res) => {
+  try {
+    const teacher = await Teacher.findById(req.params.id)
+      .populate('user', 'name email phone avatar bio createdAt lastLogin')
+      .populate('reviewChecklist.reviewedBy', 'name email')
+      .populate('reviewNotes.admin', 'name email');
+
+    if (!teacher) return res.status(404).json({ error: 'Teacher not found' });
+
+    const [auditEntries, activityAgg, distinctStudents] = await Promise.all([
+      AdminAuditLog.find({ entityType: 'teacher', entityId: String(teacher._id) })
+        .populate('actor', 'name email')
+        .sort({ createdAt: -1 })
+        .limit(100)
+        .lean(),
+      Session.aggregate([
+        { $match: { teacher: teacher._id } },
+        {
+          $group: {
+            _id: null,
+            totalSessions: { $sum: 1 },
+            completedSessions: { $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] } },
+            acceptedSessions: { $sum: { $cond: [{ $eq: ['$status', 'accepted'] }, 1, 0] } },
+          },
+        },
+      ]),
+      Session.find({ teacher: teacher._id, student: { $ne: null } }).distinct('student'),
+    ]);
+
+    const gate = buildTeacherReviewGate(teacher);
+    return res.json(teacherDossierPayload(
+      teacher,
+      gate,
+      auditEntries,
+      {
+        totalSessions: activityAgg[0]?.totalSessions || 0,
+        completedSessions: activityAgg[0]?.completedSessions || 0,
+        acceptedSessions: activityAgg[0]?.acceptedSessions || 0,
+        distinctStudents: distinctStudents.length,
+      },
+    ));
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+router.put('/admin/:id/review-checklist/:key', protect, authorize('admin'), async (req, res) => {
+  try {
+    const teacher = await Teacher.findById(req.params.id);
+    if (!teacher) return res.status(404).json({ error: 'Teacher not found' });
+
+    const itemDefinition = REVIEW_ITEMS.find((item) => item.key === req.params.key);
+    if (!itemDefinition) {
+      return res.status(400).json({ error: 'Invalid review checklist item', code: 'INVALID_REVIEW_ITEM' });
+    }
+
+    const requiredForTeacher = itemRequiredForTeacher(teacher, itemDefinition);
+    const status = sanitizeChecklistStatus(req.body.status, requiredForTeacher);
+    if (!status) {
+      return res.status(400).json({ error: 'Invalid checklist status', code: 'INVALID_REVIEW_STATUS' });
+    }
+
+    const note = String(req.body.note || '').trim().slice(0, 1000);
+    if (status === 'changes-requested' && !note) {
+      return res.status(400).json({
+        error: 'A note is required when requesting changes',
+        code: 'REVIEW_NOTE_REQUIRED',
+      });
+    }
+
+    const existing = teacher.reviewChecklist.find((item) => item.key === itemDefinition.key);
+    if (existing) {
+      existing.status = status;
+      existing.note = note;
+      existing.reviewedBy = req.user.id;
+      existing.reviewedAt = new Date();
+    } else {
+      teacher.reviewChecklist.push({
+        key: itemDefinition.key,
+        status,
+        note,
+        reviewedBy: req.user.id,
+        reviewedAt: new Date(),
+      });
+    }
+
+    if (!teacher.reviewStartedAt) teacher.reviewStartedAt = new Date();
+    if (status === 'changes-requested') {
+      teacher.status = 'under-review';
+      teacher.isVerified = false;
+    }
+    await teacher.save();
+
+    const gate = buildTeacherReviewGate(teacher);
+    await logAdminAction({
+      req,
+      action: 'teacher.review-checklist.updated',
+      entityType: 'teacher',
+      entityId: teacher._id,
+      reason: note,
+      metadata: {
+        checklistKey: itemDefinition.key,
+        checklistStatus: status,
+        readiness: gate.readiness,
+      },
+    });
+
+    return res.json({ success: true, gate, reviewChecklist: teacher.reviewChecklist });
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+});
+
+router.get('/admin/:id/media/:kind{/:index}', protect, authorize('admin'), async (req, res) => {
+  try {
+    const teacher = await Teacher.findById(req.params.id).select('media');
+    if (!teacher) return res.status(404).json({ error: 'Teacher not found' });
+
+    const allowed = ['profilePhoto', 'introductionVideo', 'recitationVideo', 'teachingMethodVideo', 'additionalVideos', 'audioRecordings'];
+    const { kind } = req.params;
+    if (!allowed.includes(kind)) return res.status(400).json({ error: 'Invalid media type' });
+
+    let stored = teacher.media?.[kind];
+    if (Array.isArray(stored)) {
+      const index = Number(req.params.index || 0);
+      if (!Number.isInteger(index) || index < 0 || index >= stored.length) {
+        return res.status(404).json({ error: 'Media not found' });
+      }
+      stored = stored[index];
+    }
+
+    if (!stored) return res.status(404).json({ error: 'Media not found' });
+
+    await logAdminAction({
+      req,
+      action: 'teacher.sensitive-media.viewed',
+      entityType: 'teacher',
+      entityId: teacher._id,
+      reason: String(req.query.reason || '').trim(),
+      metadata: { kind, index: req.params.index || null },
+    }).catch(() => {});
+
+    return streamAdminTeacherAsset(stored, res, {
+      fallbackContentType: kind === 'profilePhoto' ? 'image/jpeg' : kind === 'audioRecordings' ? 'audio/mpeg' : 'video/mp4',
+    });
+  } catch (error) {
+    return res.status(500).json({ error: 'Failed to load teacher media' });
+  }
+});
+
 router.get('/admin/pending', protect, authorize('admin'), async (req, res) => {
   if (isMockMode && !isDBConnected()) {
     return res.json([]);
@@ -716,7 +1005,8 @@ router.get('/admin/pending', protect, authorize('admin'), async (req, res) => {
 });
 
 router.put('/admin/:id/review', protect, authorize('admin'), async (req, res) => {
-  const { action, note } = req.body;
+  const { action } = req.body;
+  const note = String(req.body.note || '').trim().slice(0, 1000);
   const statusMap = {
     approve: 'approved',
     reject: 'rejected',
@@ -727,6 +1017,13 @@ router.put('/admin/:id/review', protect, authorize('admin'), async (req, res) =>
     return res.status(400).json({
       error: 'Invalid teacher review action',
       code: 'INVALID_TEACHER_REVIEW_ACTION',
+    });
+  }
+
+  if (['reject', 'request-changes'].includes(action) && !note) {
+    return res.status(400).json({
+      error: 'ملاحظة الإدارة مطلوبة لهذا القرار',
+      code: 'TEACHER_REVIEW_NOTE_REQUIRED',
     });
   }
 
@@ -743,25 +1040,53 @@ router.put('/admin/:id/review', protect, authorize('admin'), async (req, res) =>
   }
 
   try {
-    const teacher = await Teacher.findByIdAndUpdate(
-      req.params.id,
-      {
-        status: statusMap[action],
-        isVerified: action === 'approve',
-        $push: {
-          reviewNotes: {
-            admin: req.user.id,
-            note,
-            date: new Date()
-          }
-        }
-      },
-      { new: true }
-    );
+    const teacher = await Teacher.findById(req.params.id);
+    if (!teacher) return res.status(404).json({ error: 'Teacher not found' });
 
-    if (!teacher) {
-      return res.status(404).json({ error: 'Teacher not found' });
+    const gate = buildTeacherReviewGate(teacher);
+    if (action === 'approve' && !gate.approvalReady) {
+      await logAdminAction({
+        req,
+        action: 'teacher.review.approval-blocked',
+        entityType: 'teacher',
+        entityId: teacher._id,
+        reason: 'Approval attempted before all required review items were complete.',
+        metadata: {
+          readiness: gate.readiness,
+          blockers: gate.blockers.map((item) => item.key),
+        },
+      }).catch(() => {});
+
+      return res.status(409).json({
+        error: 'لا يمكن اعتماد المعلم قبل اكتمال قائمة المراجعة الإلزامية',
+        code: 'TEACHER_REVIEW_GATE_INCOMPLETE',
+        gate,
+      });
     }
+
+    teacher.status = statusMap[action];
+    teacher.isVerified = action === 'approve';
+    teacher.reviewNotes.push({
+      admin: req.user.id,
+      note: note || (action === 'approve' ? 'تم اعتماد الملف بعد اكتمال قائمة المراجعة.' : ''),
+      date: new Date(),
+    });
+    if (!teacher.reviewStartedAt) teacher.reviewStartedAt = new Date();
+    if (action === 'approve') teacher.reviewCompletedAt = new Date();
+    await teacher.save();
+
+    await logAdminAction({
+      req,
+      action: `teacher.review.${action}`,
+      entityType: 'teacher',
+      entityId: teacher._id,
+      reason: note,
+      metadata: {
+        previousStatus: req.body.previousStatus || null,
+        newStatus: teacher.status,
+        readiness: gate.readiness,
+      },
+    });
 
     const teacherUser = await User.findByIdAndUpdate(
       teacher.user,
@@ -778,13 +1103,13 @@ router.put('/admin/:id/review', protect, authorize('admin'), async (req, res) =>
         },
         'request-changes': {
           subject: 'طلبك كمعلم يحتاج استكمال — وَحْيٌ وَنَمَاء',
-          text: `طلبك يحتاج استكمال أو تعديل قبل الاعتماد.${note ? ` ملاحظة الإدارة: ${note}` : ''}`,
-          html: `<div dir="rtl"><h2>طلبك يحتاج استكمال</h2><p>تحتاج الإدارة إلى استكمال أو تعديل بعض البيانات قبل الاعتماد.</p>${note ? `<p><strong>ملاحظة الإدارة:</strong> ${String(note).replace(/[<>&"]/g, '')}</p>` : ''}</div>`,
+          text: `طلبك يحتاج استكمال أو تعديل قبل الاعتماد. ملاحظة الإدارة: ${note}`,
+          html: `<div dir="rtl"><h2>طلبك يحتاج استكمال</h2><p>تحتاج الإدارة إلى استكمال أو تعديل بعض البيانات قبل الاعتماد.</p><p><strong>ملاحظة الإدارة:</strong> ${String(note).replace(/[<>&"]/g, '')}</p></div>`,
         },
         reject: {
           subject: 'تحديث حالة طلب المعلم — وَحْيٌ وَنَمَاء',
-          text: `تعذر اعتماد طلبك كمعلم في الوقت الحالي.${note ? ` ملاحظة الإدارة: ${note}` : ''}`,
-          html: `<div dir="rtl"><h2>تحديث حالة الطلب</h2><p>تعذر اعتماد طلبك كمعلم في الوقت الحالي.</p>${note ? `<p><strong>ملاحظة الإدارة:</strong> ${String(note).replace(/[<>&"]/g, '')}</p>` : ''}</div>`,
+          text: `تعذر اعتماد طلبك كمعلم في الوقت الحالي. ملاحظة الإدارة: ${note}`,
+          html: `<div dir="rtl"><h2>تحديث حالة الطلب</h2><p>تعذر اعتماد طلبك كمعلم في الوقت الحالي.</p><p><strong>ملاحظة الإدارة:</strong> ${String(note).replace(/[<>&"]/g, '')}</p></div>`,
         },
       }[action];
 
@@ -802,6 +1127,7 @@ router.put('/admin/:id/review', protect, authorize('admin'), async (req, res) =>
       success: true,
       teacher,
       applicationStatus: teacher.status,
+      gate: buildTeacherReviewGate(teacher),
     });
   } catch (error) {
     return res.status(400).json({ error: error.message });
@@ -913,6 +1239,9 @@ router.get('/admin/:id/document/:kind{/:index}', protect, authorize('admin'), as
     if (!allowed.includes(kind)) return res.status(400).json({ error: 'Invalid document type' });
 
     let stored = teacher.documents?.[kind];
+    if (kind === 'idCardFront' && (!stored || stored === 'not-provided')) {
+      stored = teacher.documents?.idCard;
+    }
     if (Array.isArray(stored)) {
       const index = Number(req.params.index || 0);
       stored = stored[index];
@@ -921,6 +1250,15 @@ router.get('/admin/:id/document/:kind{/:index}', protect, authorize('admin'), as
     if (!stored || stored === 'not-provided') {
       return res.status(404).json({ error: 'Document not found' });
     }
+
+    await logAdminAction({
+      req,
+      action: 'teacher.sensitive-document.viewed',
+      entityType: 'teacher',
+      entityId: teacher._id,
+      reason: String(req.query.reason || '').trim(),
+      metadata: { kind, index: req.params.index || null },
+    }).catch(() => {});
 
     res.setHeader('Cache-Control', 'private, no-store');
 
