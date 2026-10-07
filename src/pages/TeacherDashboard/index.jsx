@@ -126,6 +126,11 @@ export default function TeacherDashboard() {
   }, [ready, syncSessions]);
 
   useEffect(() => {
+    const requestedTab = searchParams.get('tab');
+    if (requestedTab && ['account', 'schedule', 'analytics', 'reviews', 'trials', 'sessions', 'evaluate', 'homework'].includes(requestedTab)) {
+      setTab(requestedTab);
+    }
+
     const requestedSessionId = searchParams.get('session');
     if (!requestedSessionId) return;
     const found = [...trials, ...pendingRegular, ...sessions]
