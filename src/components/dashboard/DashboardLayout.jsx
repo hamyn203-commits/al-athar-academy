@@ -3,19 +3,12 @@ import { Link } from 'react-router-dom';
 import BrandLogo from '../BrandLogo';
 import NotificationBell from '../NotificationBell';
 import { useI18n } from '../../i18n';
-import { localizedPath } from '../../lib/locale';
+import { dashboardPathForRole } from '../../lib/navigation';
 import '../../styles/dashboard-experience.css';
 
 export default function DashboardLayout({ title, user, onLogout, children }) {
   const { locale, isRTL } = useI18n();
-  const lp = (path) => localizedPath(path, locale);
-  const roleHome = {
-    student: '/student/dashboard',
-    teacher: '/teacher/dashboard',
-    guardian: '/guardian/dashboard',
-    admin: '/admin/dashboard',
-  }[user?.role] || '/';
-  const roleHomeHref = lp(roleHome);
+  const roleHomeHref = dashboardPathForRole(user?.role, locale);
 
   const greeting = locale === 'id'
     ? 'Halo, ' + (user?.name || '')
@@ -23,7 +16,29 @@ export default function DashboardLayout({ title, user, onLogout, children }) {
       ? 'مرحبًا، ' + (user?.name || '')
       : 'Welcome, ' + (user?.name || '');
 
-  const websiteLabel = locale === 'id' ? 'Dasbor' : locale === 'ar' ? 'لوحتي' : 'Dashboard';
+  const dashboardLabels = {
+    ar: {
+      student: 'لوحة الطالب',
+      teacher: 'لوحة المعلم',
+      guardian: 'لوحة ولي الأمر',
+      admin: 'لوحة الإدارة',
+    },
+    en: {
+      student: 'Student dashboard',
+      teacher: 'Teacher dashboard',
+      guardian: 'Guardian dashboard',
+      admin: 'Admin dashboard',
+    },
+    id: {
+      student: 'Dasbor Siswa',
+      teacher: 'Dasbor Guru',
+      guardian: 'Dasbor Wali',
+      admin: 'Dasbor Admin',
+    },
+  };
+  const websiteLabel = dashboardLabels[locale]?.[user?.role]
+    || dashboardLabels.en[user?.role]
+    || 'Dashboard';
   const logoutLabel = locale === 'id' ? 'Keluar' : locale === 'ar' ? 'خروج' : 'Logout';
 
   return (
