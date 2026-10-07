@@ -26,6 +26,19 @@ const {
 const { isMockMode } = require('../config/runtime');
 const isDBConnected = () => mongoose.connection.readyState === 1;
 
+function createTeacherApplicationStatusToken({ userId, teacherId, email }) {
+  return jwt.sign(
+    {
+      purpose: 'teacher-application-status',
+      userId: String(userId),
+      teacherId: String(teacherId),
+      email: String(email || '').trim().toLowerCase(),
+    },
+    process.env.JWT_SECRET || 'wahy-namaa-dev-access-secret-change-me',
+    { expiresIn: '7d' }
+  );
+}
+
 const publicUploadDir = path.join(__dirname, '..', 'uploads', 'teachers', 'public');
 const privateUploadDir = path.join(__dirname, '..', 'uploads', 'private', 'teachers');
 const privateFields = new Set(['idCard', 'idCardFront', 'idCardBack', 'graduationCertificate', 'tajweedCertificates', 'ijazat']);
@@ -375,6 +388,11 @@ router.post(
           success: true,
           message: 'تم إرسال طلب تسجيل المعلم بنجاح وهو الآن في انتظار موافقة الإدارة.',
           applicationStatus: 'pending',
+          applicationStatusToken: createTeacherApplicationStatusToken({
+            userId,
+            teacherId: mockT._id,
+            email: normalizedEmail,
+          }),
           teacher: mockT,
         });
       }
@@ -502,10 +520,70 @@ router.post(
       success: true,
       message: 'Teacher registration submitted successfully. Awaiting admin review.',
       applicationStatus: 'pending',
+      applicationStatusToken: createTeacherApplicationStatusToken({
+        userId,
+        teacherId: teacher._id,
+        email: String(email || '').trim().toLowerCase(),
+      }),
       teacher
     });
   } catch (error) {
     res.status(400).json({ error: error.message });
+  }
+});
+
+router.post('/application-status', async (req, res) => {
+  try {
+    const token = String(req.body?.token || '');
+    if (!token) {
+      return res.status(400).json({ error: 'Application status token is required' });
+    }
+
+    const payload = jwt.verify(
+      token,
+      process.env.JWT_SECRET || 'wahy-namaa-dev-access-secret-change-me'
+    );
+
+    if (
+      payload.purpose !== 'teacher-application-status' ||
+      !payload.userId ||
+      !payload.teacherId
+    ) {
+      return res.status(400).json({ error: 'Invalid application status token' });
+    }
+
+    if (isMockMode && !isDBConnected()) {
+      const teacher = findMockTeacherByUserId(payload.userId);
+      if (!teacher || String(teacher._id) !== String(payload.teacherId)) {
+        return res.status(404).json({ error: 'Teacher application not found' });
+      }
+      return res.json({
+        applicationStatus: teacher.status || 'pending',
+        approved: teacher.status === 'approved' && teacher.isVerified === true,
+      });
+    }
+
+    const teacher = await Teacher.findOne({
+      _id: payload.teacherId,
+      user: payload.userId,
+    }).select('status isVerified updatedAt').lean();
+
+    if (!teacher) {
+      return res.status(404).json({ error: 'Teacher application not found' });
+    }
+
+    return res.json({
+      applicationStatus: teacher.status || 'pending',
+      approved: teacher.status === 'approved' && teacher.isVerified === true,
+      updatedAt: teacher.updatedAt || null,
+    });
+  } catch (error) {
+    const status = error?.name === 'TokenExpiredError' ? 401 : 400;
+    return res.status(status).json({
+      error: error?.name === 'TokenExpiredError'
+        ? 'Application status token expired'
+        : 'Invalid application status token',
+    });
   }
 });
 
