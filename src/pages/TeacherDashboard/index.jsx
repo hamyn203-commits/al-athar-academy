@@ -110,6 +110,7 @@ export default function TeacherDashboard() {
       if (document.visibilityState === 'visible') syncSessions();
     };
 
+    refresh();
     const interval = window.setInterval(refresh, 15000);
     const onFocus = () => refresh();
     const onVisibility = () => refresh();
@@ -292,6 +293,26 @@ export default function TeacherDashboard() {
     <DashboardLayout title="لوحة تحكم المعلم" user={user} onLogout={logout}>
       {loading ? <div className="flex justify-center py-20"><div className="spinner spinner-lg" /></div> : (
         <>
+          {trials.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setTab('trials')}
+              className="w-full mb-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-right hover:bg-amber-100 transition"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="font-black text-amber-900">
+                    لديك {trials.length} {trials.length === 1 ? 'طلب حصة تجريبية جديد' : 'طلبات حصص تجريبية جديدة'}
+                  </p>
+                  <p className="text-sm text-amber-800 mt-1">
+                    اضغط هنا لمراجعة الطلب والقبول أو اقتراح موعد آخر.
+                  </p>
+                </div>
+                <Calendar className="text-amber-700 shrink-0" size={24} />
+              </div>
+            </button>
+          )}
+
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
             <StatCard label="رصيد مستحق" value={`${wallet.pendingEarnings || 0} ج.م`} icon={Wallet} color="yellow" />
             <StatCard label="حصص مكتملة" value={wallet.completedSessions || stats.totalSessions || 0} icon={Calendar} color="blue" />
