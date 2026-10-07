@@ -1,5 +1,7 @@
 const Notification = require('../models/Notification');
 const User = require('../models/User');
+const Guardian = require('../models/Guardian');
+const { publishRealtimeNotification } = require('../services/realtimeNotificationBus');
 
 async function notifyUser(userId, { type, title, message, data = {}, priority = 'medium', channels }) {
   const user = await User.findById(userId).select('preferences email phone pushToken telegramId');
@@ -13,7 +15,7 @@ async function notifyUser(userId, { type, title, message, data = {}, priority = 
     sms: { enabled: !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && user?.phone) },
   };
 
-  return Notification.createAndSend(userId, {
+  const notification = await Notification.createAndSend(userId, {
     type,
     title,
     message,
@@ -21,6 +23,39 @@ async function notifyUser(userId, { type, title, message, data = {}, priority = 
     priority,
     channels: channels || defaultChannels,
   });
+
+  publishRealtimeNotification(userId, {
+    type: 'notification',
+    notification: {
+      _id: notification._id,
+      type,
+      title,
+      message,
+      data,
+      priority,
+      createdAt: notification.createdAt,
+    },
+  }).catch(() => {});
+
+  return notification;
+}
+
+async function notifyGuardiansForStudent(studentId, payload) {
+  if (!studentId) return [];
+
+  const guardians = await Guardian.find({
+    isActive: true,
+    children: {
+      $elemMatch: {
+        student: studentId,
+        'permissions.receiveNotifications': { $ne: false },
+      },
+    },
+  }).select('user');
+
+  return Promise.allSettled(
+    guardians.map((guardian) => notifyUser(guardian.user, payload))
+  );
 }
 
 async function notifyTeacherForSessionRequest(session, teacherUserId) {
@@ -82,6 +117,7 @@ module.exports = {
   notifyUser,
   notifyTeacherForSessionRequest,
   notifySessionAccepted,
+  notifyGuardiansForStudent,
   notifyCourseEnrollment,
   notifyCertificateIssued,
 };
