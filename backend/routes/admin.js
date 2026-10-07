@@ -365,6 +365,13 @@ router.put('/teachers/:id', protect, authorize('admin'), async (req, res) => {
     if (!teacher) return res.status(404).json({ error: 'المعلم غير موجود' });
 
     const { name, hourlyRate, status, country, city, phone } = req.body;
+    if (status === 'approved') {
+      return res.status(409).json({
+        error: 'اعتماد المعلم يتم فقط من مركز المراجعة بعد إكمال Approval Gate',
+        code: 'USE_TEACHER_REVIEW_GATE',
+      });
+    }
+
     if (name) {
       await User.findByIdAndUpdate(teacher.user, { name, phone });
       teacher.personalInfo.fullName = name;
@@ -373,12 +380,6 @@ router.put('/teachers/:id', protect, authorize('admin'), async (req, res) => {
     if (country) teacher.personalInfo.country = country;
     if (city) teacher.personalInfo.city = city;
     if (hourlyRate != null) teacher.hourlyRate = hourlyRate;
-    if (status === 'approved') {
-      return res.status(409).json({
-        error: 'اعتماد المعلم يتم فقط من مركز المراجعة بعد إكمال Approval Gate',
-        code: 'USE_TEACHER_REVIEW_GATE',
-      });
-    }
     if (status) {
       teacher.status = status;
       teacher.isVerified = false;
