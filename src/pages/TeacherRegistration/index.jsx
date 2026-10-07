@@ -364,7 +364,7 @@ export default function TeacherRegistration() {
                       allowedExtensions={['.mp4', '.webm', '.mov']}
                       maxBytes={100 * 1024 * 1024}
                       captureKind="video"
-                      files={f.files.introductionVideo}
+                      file={f.files.introductionVideo}
                       onChange={(file) => f.setFile('introductionVideo', file)}
                     />
                   </div>
@@ -409,7 +409,7 @@ export default function TeacherRegistration() {
                       allowedExtensions={['.mp4', '.webm', '.mov']}
                       maxBytes={100 * 1024 * 1024}
                       captureKind="video"
-                      files={f.files.teachingMethodVideo}
+                      file={f.files.teachingMethodVideo}
                       onChange={(file) => f.setFile('teachingMethodVideo', file)}
                     />
                   </div>
