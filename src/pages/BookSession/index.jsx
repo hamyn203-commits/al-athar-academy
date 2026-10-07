@@ -23,6 +23,7 @@ export default function BookSession() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [existingTrial, setExistingTrial] = useState(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -32,8 +33,18 @@ export default function BookSession() {
       return;
     }
 
-    api.get('/api/teachers/' + teacherId)
-      .then(setTeacher)
+    Promise.all([
+      api.get('/api/teachers/' + teacherId),
+      api.get('/api/sessions/my-sessions?type=trial&limit=100', { auth: true }).catch(() => ({ sessions: [] })),
+    ])
+      .then(([teacherData, sessionData]) => {
+        setTeacher(teacherData);
+        const active = (sessionData.sessions || []).find((session) => {
+          const sessionTeacherId = String(session.teacher?._id || session.teacher || '');
+          return sessionTeacherId === String(teacherId) && ['pending', 'accepted'].includes(session.status);
+        });
+        setExistingTrial(active || null);
+      })
       .catch(() => setTeacher(null))
       .finally(() => setLoading(false));
   }, [teacherId, navigate, locale, authLoading, isAuthenticated]);
@@ -81,7 +92,12 @@ export default function BookSession() {
 
       navigate(localizedPath('/student/dashboard', locale));
     } catch (err) {
-      alert(err.message || (isAr ? 'تعذر إرسال طلب الحجز' : 'Unable to send booking request'));
+      if (err.code === 'TRIAL_ALREADY_EXISTS' && err.data?.existingSession) {
+        setExistingTrial(err.data.existingSession);
+        setShowConfirmation(false);
+      } else {
+        alert(err.message || (isAr ? 'تعذر إرسال طلب الحجز' : 'Unable to send booking request'));
+      }
     } finally {
       setSubmitting(false);
     }
@@ -124,6 +140,34 @@ export default function BookSession() {
             </div>
 
             <form onSubmit={submit} className="wn-booking-form">
+              {existingTrial && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle size={18} className="mt-0.5 shrink-0" />
+                    <div>
+                      <strong className="block">
+                        {existingTrial.status === 'accepted'
+                          ? (isAr ? 'لديك حصة تجريبية مقبولة بالفعل مع هذا المعلم' : 'You already have an accepted trial with this teacher')
+                          : (isAr ? 'لديك طلب حصة تجريبية قيد انتظار هذا المعلم' : 'You already have a pending trial request with this teacher')}
+                      </strong>
+                      {existingTrial.scheduledAt && (
+                        <p className="text-sm mt-1">
+                          {isAr ? 'الموعد: ' : 'Time: '}
+                          {new Date(existingTrial.scheduledAt).toLocaleString(isAr ? 'ar-EG' : 'en')}
+                        </p>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => navigate(localizedPath('/student/dashboard', locale))}
+                        className="mt-3 text-sm font-bold underline"
+                      >
+                        {isAr ? 'عرض حالة الطلب في لوحة الطالب' : 'View request status in student dashboard'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="wn-booking-note">
                 {isAr
                   ? 'أرسل الموعد المناسب لك. يصبح الموعد مؤكدًا بعد تحديث حالة الطلب من المعلم أو الأكاديمية.'
@@ -160,7 +204,15 @@ export default function BookSession() {
                 <textarea value={notes} onChange={(event) => setNotes(event.target.value)} rows={4} placeholder={isAr ? 'مثال: أريد التركيز على التجويد أو تحديد المستوى.' : 'Example: I want to focus on Tajweed or assess my level.'} />
               </div>
 
-              {showConfirmation ? (
+              {existingTrial ? (
+                <button
+                  type="button"
+                  onClick={() => navigate(localizedPath('/student/dashboard', locale))}
+                  className="wn-btn wn-btn--secondary wn-btn--lg wn-btn--block"
+                >
+                  {isAr ? 'اذهب إلى طلبك الحالي' : 'Go to your existing request'}
+                </button>
+              ) : showConfirmation ? (
                 <div className="wn-booking-confirm">
                   <div className="flex items-start gap-2">
                     <AlertCircle size={19} className="text-[var(--wn-gold-dark)] mt-0.5" />
