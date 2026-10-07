@@ -356,7 +356,36 @@ router.get('/admin/overview', protect, authorize('admin'), async (req, res) => {
 });
 
 // ==========================================
-// 5. PUT /api/finance/admin/payouts/:id/process
+// 5. GET /api/finance/admin/payouts
+// ==========================================
+router.get('/admin/payouts', protect, authorize('admin'), async (req, res) => {
+  try {
+    if (isMockMode) {
+      return res.json({ success: true, payouts: [] });
+    }
+
+    const status = String(req.query.status || 'all');
+    const filter = { type: 'payout' };
+    if (status !== 'all') filter.status = status;
+
+    const payouts = await TeacherLedger.find(filter)
+      .populate({
+        path: 'teacher',
+        select: 'personalInfo user',
+        populate: { path: 'user', select: 'name email phone' },
+      })
+      .sort({ createdAt: -1 })
+      .limit(200)
+      .lean();
+
+    return res.json({ success: true, payouts });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// ==========================================
+// 6. PUT /api/finance/admin/payouts/:id/process
 // ==========================================
 router.put('/admin/payouts/:id/process', protect, authorize('admin'), async (req, res) => {
   try {
