@@ -511,7 +511,8 @@ export default function TeacherDashboard() {
     .sort((a, b) => new Date(a.scheduledAt) - new Date(b.scheduledAt));
   const nextSession = upcomingSessions[0] || null;
   const submittedTasks = tasks.filter((task) => task.status === 'submitted');
-  const actionCount = trials.length + pendingRegular.length + submittedTasks.length;
+  const awaitingCompletion = sessions.filter((session) => new Date(session.scheduledAt) <= now);
+  const actionCount = trials.length + pendingRegular.length + submittedTasks.length + awaitingCompletion.length;
   const egpBalance = finance?.balances?.EGP || { available: 0, pending: 0, withdrawn: 0, totalEarned: 0 };
 
   return (
