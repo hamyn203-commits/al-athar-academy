@@ -988,6 +988,11 @@ export default function StudentDashboard() {
                           )}
                         </div>
                         {hw.description && <p className="text-sm text-gray-600 mt-1">{hw.description}</p>}
+                        {hw.teacherFeedback && (
+                          <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                            <strong>{locale === 'ar' ? 'ملاحظة المعلم:' : 'Tutor feedback:'}</strong> {hw.teacherFeedback}
+                          </div>
+                        )}
                         {hw.dueDate && (
                           <p className="text-xs text-gray-400 mt-1">
                             {locale === 'id' ? `Batas waktu: ${new Date(hw.dueDate).toLocaleDateString('id-ID')}` : locale === 'ar' ? `موعد: ${new Date(hw.dueDate).toLocaleDateString('ar-EG')}` : `Due: ${new Date(hw.dueDate).toLocaleDateString('en-US')}`}
