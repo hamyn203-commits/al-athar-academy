@@ -24,6 +24,17 @@ async function notifyUser(userId, { type, title, message, data = {}, priority = 
   });
 }
 
+async function notifyAdmins(payload) {
+  const admins = await User.find({
+    role: 'admin',
+    isActive: { $ne: false },
+  }).select('_id');
+
+  return Promise.allSettled(
+    admins.map((admin) => notifyUser(admin._id, payload))
+  );
+}
+
 async function notifyGuardiansForStudent(studentId, payload) {
   if (!studentId) return [];
 
@@ -103,6 +114,7 @@ async function notifyCertificateIssued(userId, certificate, course) {
 
 module.exports = {
   notifyUser,
+  notifyAdmins,
   notifyTeacherForSessionRequest,
   notifySessionAccepted,
   notifyGuardiansForStudent,
