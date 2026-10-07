@@ -15,6 +15,7 @@ const Guardian = require('../models/Guardian');
 const LiveSession = require('../models/LiveSession');
 const Notification = require('../models/Notification');
 const TeacherLedger = require('../models/TeacherLedger');
+const AdminAuditLog = require('../models/AdminAuditLog');
 const app = require('../app');
 const { generateAccessToken } = require('../middleware/auth');
 
@@ -191,6 +192,13 @@ const notifications = [];
 Notification.createAndSend = async (userId, payload) => {
   notifications.push({ userId: String(userId), ...payload });
   return { success: true };
+};
+
+const auditEntries = [];
+AdminAuditLog.create = async (payload) => {
+  const entry = { _id: oid(), ...payload, createdAt: new Date() };
+  auditEntries.push(entry);
+  return entry;
 };
 
 const auth = (id) => generateAccessToken(users.get(id));
