@@ -327,6 +327,28 @@ requireContains(
   /OVERLAPPING_AVAILABILITY_SLOTS/
 );
 
+// T10.5: booking must obey real teacher availability and conflict checks.
+requireContains(
+  'backend/routes/sessions.js',
+  'trial and regular booking must validate teacher availability',
+  /validateBookingSlot\(/
+);
+requireContains(
+  'backend/routes/sessions.js',
+  'teacher booking must expose conflict protection',
+  /TEACHER_SLOT_CONFLICT/
+);
+requireContains(
+  'backend/routes/sessions.js',
+  'student booking must use a canonical availability-slots endpoint',
+  /available-slots\/:teacherId/
+);
+requireContains(
+  'backend/services/sessionScheduling.js',
+  'timezone-safe scheduling must use IANA timezone conversion',
+  /localDateTimeToUtc/
+);
+
 // T03: direct uploads must keep metadata validation and single-MIME token scope.
 requireContains(
   'backend/routes/uploads.js',
