@@ -193,7 +193,27 @@ requireContains(
 requireContains(
   'src/App.jsx',
   'guardian dashboard must be guarded centrally',
-  /path=["']guardian\/dashboard["'][\s\S]{0,180}ProtectedRoute\s+roles=\{\[['"]guardian['"],\s*['"]admin['"]\]\}/
+  /path=["']guardian\/dashboard["'][\s\S]{0,180}ProtectedRoute\s+roles=\{\[['"]guardian['"]\]\}/
+);
+requireContains(
+  'src/App.jsx',
+  'legacy admin dashboard path must remain admin-only',
+  /path=["']admin\/dashboard["'][\s\S]{0,180}ProtectedRoute\s+roles=\{\[['"]admin['"]\]\}/
+);
+requireContains(
+  'src/components/dashboard/DashboardLayout.jsx',
+  'dashboard role navigation must use the centralized route helper',
+  /dashboardPathForRole\(user\?\.role,\s*locale\)/
+);
+requireAbsent(
+  'src/components/dashboard/DashboardLayout.jsx',
+  'dashboard layout must not hard-code a stale admin dashboard path',
+  /['"]\/admin\/dashboard['"]/
+);
+requireContains(
+  'src/pages/GuardianDashboard/index.jsx',
+  'guardian UI must not be shared with admin role',
+  /useRequireAuth\(\[['"]guardian['"]\]\)/
 );
 
 // T02: public circles must not expose member/contact PII and guardian joins need ownership.
