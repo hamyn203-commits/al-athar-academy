@@ -7,7 +7,8 @@ const WithdrawRequest = require('../models/WithdrawRequest');
 const TeacherLedger = require('../models/TeacherLedger');
 const { calculateTeacherBalance } = require('../services/teacherFinance');
 const { protect, authorize } = require('../middleware/auth');
-const { notifyAdmins } = require('../utils/notify');
+const { notifyAdmins, notifyUser } = require('../utils/notify');
+const { deleteStoredReference } = require('../utils/storageLifecycle');
 
 const SESSION_RATE = 50;
 const { isMockMode } = require('../config/runtime');
@@ -295,15 +296,71 @@ router.patch('/tasks/:id', protect, authorize('teacher'), async (req, res) => {
     const teacher = await Teacher.findOne({ user: req.user.id });
     if (!teacher) return res.status(404).json({ error: 'Teacher profile not found' });
 
-    const task = await TeacherTask.findOneAndUpdate(
-      { _id: req.params.id, teacher: teacher._id },
-      { status: req.body.status },
-      { new: true },
-    );
+    const task = await TeacherTask.findOne({
+      _id: req.params.id,
+      teacher: teacher._id,
+    });
     if (!task) return res.status(404).json({ error: 'Task not found' });
-    res.json({ success: true, task });
+
+    const action = req.body.action || (req.body.status === 'done' ? 'approve' : null);
+    const teacherFeedback = String(req.body.teacherFeedback || '').trim().slice(0, 1500);
+
+    if (action === 'approve') {
+      if (task.status !== 'submitted' && task.status !== 'done') {
+        return res.status(409).json({
+          error: 'لا يمكن اعتماد واجب لم يرسله الطالب بعد',
+          code: 'TASK_NOT_SUBMITTED',
+        });
+      }
+      task.status = 'done';
+      task.teacherFeedback = teacherFeedback;
+      task.reviewedAt = new Date();
+    } else if (action === 'request-revision') {
+      if (task.status !== 'submitted') {
+        return res.status(409).json({
+          error: 'لا يمكن طلب إعادة واجب غير مُسلّم',
+          code: 'TASK_NOT_SUBMITTED',
+        });
+      }
+
+      if (task.submissionFile) {
+        await deleteStoredReference({
+          reference: task.submissionFile,
+          purpose: 'homework',
+          owner: task.student,
+        });
+      }
+
+      task.submissionFile = '';
+      task.status = 'pending';
+      task.teacherFeedback = teacherFeedback || 'يرجى إعادة التسجيل بعد مراجعة ملاحظات المعلم.';
+      task.reviewedAt = new Date();
+    } else {
+      return res.status(400).json({ error: 'action يجب أن يكون approve أو request-revision' });
+    }
+
+    await task.save();
+
+    notifyUser(task.student, {
+      type: 'homework-assigned',
+      title: {
+        ar: action === 'approve' ? 'تم اعتماد واجبك' : 'مطلوب إعادة الواجب',
+        en: action === 'approve' ? 'Homework approved' : 'Homework revision requested',
+      },
+      message: {
+        ar: task.teacherFeedback || (action === 'approve' ? 'أحسنت، تم اعتماد الواجب.' : 'راجع ملاحظات المعلم وأعد التسليم.'),
+        en: action === 'approve' ? 'Your homework was approved.' : 'Please review the tutor feedback and resubmit.',
+      },
+      data: {
+        actionUrl: '/student/dashboard?tab=homework',
+        metadata: { taskId: String(task._id) },
+      },
+      priority: 'normal',
+    }).catch(() => {});
+
+    return res.json({ success: true, task });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    return res.status(400).json({ error: error.message });
   }
 });
 
