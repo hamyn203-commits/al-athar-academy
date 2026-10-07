@@ -67,6 +67,19 @@ const TeacherSchema = new mongoose.Schema({
     note: String,
     date: { type: Date, default: Date.now }
   }],
+  reviewChecklist: [{
+    key: { type: String, required: true, trim: true },
+    status: {
+      type: String,
+      enum: ['pending', 'approved', 'changes-requested', 'not-applicable'],
+      default: 'pending',
+    },
+    note: { type: String, default: '', trim: true, maxlength: 1000 },
+    reviewedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    reviewedAt: Date,
+  }],
+  reviewStartedAt: Date,
+  reviewCompletedAt: Date,
   rating: {
     average: { type: Number, default: 0, min: 0, max: 5 },
     count: { type: Number, default: 0 }
