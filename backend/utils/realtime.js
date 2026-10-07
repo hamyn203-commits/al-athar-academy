@@ -1,6 +1,8 @@
 'use strict';
 
-const { RoomServiceClient, DataPacket_Kind } = require('livekit-server-sdk');
+const { RoomServiceClient } = require('livekit-server-sdk');
+
+const RELIABLE_DATA_PACKET = 0;
 
 function liveKitHttpUrl() {
   const value = String(process.env.LIVEKIT_URL || '').trim();
@@ -45,7 +47,7 @@ async function emitRealtimeEvent(userId, event) {
     await roomService.sendData(
       realtimeRoomForUser(userId),
       payload,
-      DataPacket_Kind.RELIABLE,
+      RELIABLE_DATA_PACKET,
       { topic: 'wn-realtime' }
     );
 
