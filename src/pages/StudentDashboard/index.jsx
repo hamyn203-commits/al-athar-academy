@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Calendar, CheckCircle, FileText, Star, Trophy, BookOpen,
   Upload, Clock, Users, X, Award, Video, Gift, Copy,
-  Mic, Square, RotateCcw, Send, Sparkles, MoreHorizontal, UserRound
+  Mic, Square, RotateCcw, Send, Sparkles, MoreHorizontal, UserRound, Megaphone
 } from 'lucide-react';
 import { Link as RouterLink } from 'react-router-dom';
 import DashboardLayout, { StatCard } from '../../components/dashboard/DashboardLayout';
@@ -16,6 +16,7 @@ import { TASK_TYPES } from '../TeacherRegistration/constants';
 import { useI18n } from '../../i18n';
 import { localizedPath } from '../../lib/locale';
 import { localizeInternalHref } from '../../lib/navigation';
+import { apiUrl } from '../../config';
 import StudentTeacherMarketplace from './TeacherMarketplace';
 import SessionChatModal from '../../components/session/SessionChatModal';
 
@@ -193,6 +194,8 @@ export default function StudentDashboard() {
   const [certificates, setCertificates] = useState([]);
   const [recordings, setRecordings] = useState([]);
   const [referral, setReferral] = useState(null);
+  const [teacherUpdates, setTeacherUpdates] = useState([]);
+  const [teacherUpdateVideoUrls, setTeacherUpdateVideoUrls] = useState({});
   const [loading, setLoading] = useState(true);
 
   const [reviewModal, setReviewModal] = useState(null);
@@ -221,7 +224,7 @@ export default function StudentDashboard() {
 
   const load = useCallback(async () => {
     try {
-      const [prof, st, tr, sess, hw, tch, ev, rev, enrollments, ref, discovery] = await Promise.all([
+      const [prof, st, tr, sess, hw, tch, ev, rev, enrollments, ref, discovery, updateData] = await Promise.all([
         api.get('/api/students/dashboard/profile', { auth: true }),
         api.get('/api/students/dashboard/stats', { auth: true }),
         api.get('/api/sessions/my-sessions?type=trial&limit=50', { auth: true }),
@@ -233,6 +236,7 @@ export default function StudentDashboard() {
         api.get('/api/courses/my-courses', { auth: true }).catch(() => []),
         api.get('/api/referrals/my', { auth: true }).catch(() => ({ code: '', stats: {}, referrals: [] })),
         api.get('/api/teachers?limit=8&sortBy=rating&sortOrder=desc').catch(() => ({ teachers: [] })),
+        api.get('/api/teacher-updates/student', { auth: true }).catch(() => ({ updates: [] })),
       ]);
       setProfile(prof);
       setStats(st);
@@ -245,6 +249,7 @@ export default function StudentDashboard() {
       setReviews(Array.isArray(rev) ? rev : rev.reviews || []);
       setCourses(Array.isArray(enrollments) ? enrollments : []);
       setReferral(ref);
+      setTeacherUpdates(updateData.updates || []);
     } catch {
       toast.error(locale === 'id' ? 'Gagal memuat data dasbor siswa' : locale === 'ar' ? 'تعذر تحميل بيانات لوحة الطالب' : 'Failed to load student dashboard data');
     } finally {
@@ -301,6 +306,11 @@ export default function StudentDashboard() {
       ].includes(type)) {
         syncSessions();
       }
+      if (type === 'teacher-update') {
+        api.get('/api/teacher-updates/student', { auth: true })
+          .then((result) => setTeacherUpdates(result.updates || []))
+          .catch(() => {});
+      }
     };
 
     window.addEventListener('wn:realtime-notification', onRealtimeNotification);
@@ -309,7 +319,7 @@ export default function StudentDashboard() {
 
   useEffect(() => {
     const requestedTab = searchParams.get('tab');
-    const allowedTabs = ['overview', 'discover', 'trials', 'sessions', 'homework', 'evaluations', 'recordings', 'certificates', 'achievements', 'referral', 'account'];
+    const allowedTabs = ['overview', 'discover', 'trials', 'sessions', 'homework', 'teacher-updates', 'evaluations', 'recordings', 'certificates', 'achievements', 'referral', 'account'];
     if (requestedTab && allowedTabs.includes(requestedTab)) {
       setTab(requestedTab);
     }
@@ -389,6 +399,21 @@ export default function StudentDashboard() {
     || nextActiveSession?.teacher?.name
     || (locale === 'ar' ? 'معلم الأكاديمية' : 'Quran Tutor');
   const nextSessionDate = nextActiveSession ? new Date(nextActiveSession.scheduledAt) : null;
+
+  const loadTeacherUpdateVideo = async (updateId, index) => {
+    const key = `${updateId}-${index}`;
+    if (teacherUpdateVideoUrls[key]) return;
+
+    try {
+      const result = await api.post(`/api/teacher-updates/${updateId}/videos/${index}/access`, {}, { auth: true });
+      setTeacherUpdateVideoUrls((current) => ({
+        ...current,
+        [key]: apiUrl(result.streamUrl),
+      }));
+    } catch (error) {
+      toast.error(error.message || (locale === 'ar' ? 'تعذر فتح فيديو المعلم' : 'Could not open tutor video'));
+    }
+  };
 
   const submitHomework = async (homeworkId, file, sessionId) => {
     if (!file) return;
@@ -614,6 +639,13 @@ export default function StudentDashboard() {
 
   const secondaryNavItems = [
     {
+      id: 'teacher-updates',
+      label: locale === 'ar' ? 'رسائل المعلم' : 'Tutor updates',
+      icon: Megaphone,
+      badge: teacherUpdates.length,
+      description: locale === 'ar' ? 'فيديوهات وكلمات من معلمك' : 'Video messages from your tutor',
+    },
+    {
       id: 'evaluations',
       label: locale === 'id' ? 'Evaluasi' : locale === 'ar' ? 'التقييمات' : 'Evaluations',
       icon: Star,
@@ -837,9 +869,13 @@ export default function StudentDashboard() {
                         <FileText size={20} />
                         <span>{locale === 'ar' ? 'واجباتي' : 'Homework'}</span>
                       </button>
-                      <button type="button" onClick={() => setTab('achievements')} className="wn-student-quick-card">
-                        <Trophy size={20} />
-                        <span>{locale === 'ar' ? 'إنجازاتي' : 'Achievements'}</span>
+                      <button type="button" onClick={() => setTab(teacherUpdates.length ? 'teacher-updates' : 'achievements')} className="wn-student-quick-card">
+                        {teacherUpdates.length ? <Megaphone size={20} /> : <Trophy size={20} />}
+                        <span>
+                          {teacherUpdates.length
+                            ? (locale === 'ar' ? 'رسائل المعلم' : 'Tutor updates')
+                            : (locale === 'ar' ? 'إنجازاتي' : 'Achievements')}
+                        </span>
                       </button>
                     </div>
                   </aside>
@@ -851,6 +887,20 @@ export default function StudentDashboard() {
                   <StatCard label={locale === 'ar' ? 'حصص مكتملة' : 'Completed sessions'} value={stats.completedSessions || 0} icon={CheckCircle} />
                   <StatCard label={locale === 'ar' ? 'واجبات تم تسليمها' : 'Homework submitted'} value={stats.homeworkSubmitted || 0} icon={FileText} />
                 </div>
+
+                {teacherUpdates[0] && (
+                  <section className="wn-student-teacher-update-preview">
+                    <span className="wn-student-teacher-update-preview__icon"><Megaphone size={20} /></span>
+                    <div>
+                      <span>{locale === 'ar' ? 'رسالة جديدة من معلمك' : 'New tutor update'}</span>
+                      <h3>{teacherUpdates[0].title}</h3>
+                      <p>{teacherUpdates[0].message || (locale === 'ar' ? 'أرسل لك معلمك فيديو جديدًا.' : 'Your tutor shared a new video.')}</p>
+                    </div>
+                    <button type="button" onClick={() => setTab('teacher-updates')} className="wn-student-primary-action">
+                      {locale === 'ar' ? 'مشاهدة الرسالة' : 'View update'}
+                    </button>
+                  </section>
+                )}
 
                 <div className="wn-student-overview__lower">
                   <section className="wn-student-journey-card">
@@ -1231,6 +1281,71 @@ export default function StudentDashboard() {
                   </div>
                 ) : (
                   <p className="text-center text-gray-500 py-4">{locale === 'id' ? 'Bagikan tautan Anda dengan teman-teman untuk mulai mendapatkan poin' : locale === 'ar' ? 'شارك رابطك مع أصدقائك لبدء كسب النقاط' : 'Share your link with friends to start earning points'}</p>
+                )}
+              </div>
+            )}
+
+            {tab === 'teacher-updates' && (
+              <div className="wn-student-teacher-updates">
+                <div className="wn-student-teacher-updates__intro">
+                  <div>
+                    <span>{locale === 'ar' ? 'من معلمك' : 'From your tutor'}</span>
+                    <h3>{locale === 'ar' ? 'رسائل وفيديوهات تعليمية' : 'Tutor messages and videos'}</h3>
+                    <p>{locale === 'ar' ? 'كلمات قصيرة، توجيهات، أو مراجعات ينشرها معلمك لك داخل الأكاديمية.' : 'Short messages, guidance, and review videos shared by your tutor.'}</p>
+                  </div>
+                  <Megaphone size={28} />
+                </div>
+
+                {teacherUpdates.length === 0 ? (
+                  <div className="wn-student-empty-session">
+                    <Megaphone size={28} />
+                    <div>
+                      <h4>{locale === 'ar' ? 'لا توجد رسائل جديدة' : 'No tutor updates yet'}</h4>
+                      <p>{locale === 'ar' ? 'عندما ينشر معلمك رسالة أو فيديو ستظهر هنا.' : 'New tutor messages will appear here.'}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="wn-student-teacher-update-list">
+                    {teacherUpdates.map((update) => {
+                      const teacherName = update.teacher?.personalInfo?.fullName
+                        || update.teacher?.user?.name
+                        || (locale === 'ar' ? 'المعلم' : 'Tutor');
+
+                      return (
+                        <article key={update._id}>
+                          <div className="wn-student-teacher-update-list__head">
+                            <span className="wn-student-teacher-update-list__avatar">{teacherName.slice(0, 1)}</span>
+                            <div>
+                              <span>{teacherName}</span>
+                              <h4>{update.title}</h4>
+                              <small>{new Date(update.publishedAt || update.createdAt).toLocaleString(dateLocale)}</small>
+                            </div>
+                          </div>
+                          {update.message ? <p className="wn-student-teacher-update-list__message">{update.message}</p> : null}
+                          <div className="wn-student-teacher-update-videos">
+                            {(update.videos || []).map((video, index) => {
+                              const key = `${update._id}-${index}`;
+                              return (
+                                <div key={key}>
+                                  {teacherUpdateVideoUrls[key] ? (
+                                    <video src={teacherUpdateVideoUrls[key]} controls preload="metadata" />
+                                  ) : (
+                                    <button type="button" onClick={() => loadTeacherUpdateVideo(update._id, index)}>
+                                      <Video size={22} />
+                                      <span>
+                                        <strong>{locale === 'ar' ? `تشغيل الفيديو ${index + 1}` : `Play video ${index + 1}`}</strong>
+                                        <small>{video.name || (locale === 'ar' ? 'فيديو المعلم' : 'Tutor video')}</small>
+                                      </span>
+                                    </button>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
             )}
