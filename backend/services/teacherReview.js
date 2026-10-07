@@ -16,7 +16,13 @@ const REVIEW_ITEMS = Object.freeze([
 const VALID_STATUSES = new Set(['pending', 'approved', 'changes-requested', 'not-applicable']);
 
 function provided(value) {
-  return Boolean(value && value !== 'not-provided' && value !== '/default-teacher.png');
+  const normalized = String(value || '').trim();
+  return Boolean(
+    normalized
+    && normalized !== 'not-provided'
+    && normalized !== '/default-teacher.png'
+    && !normalized.toLowerCase().includes('placeholder')
+  );
 }
 
 function checklistMap(teacher) {
