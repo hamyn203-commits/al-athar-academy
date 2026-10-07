@@ -818,6 +818,63 @@ requireContains(
   /Admin audit log entries are append-only/
 );
 
+// T14: admin people intelligence must remain admin-only, privacy-aware and auditable.
+requireContains(
+  'backend/app.js',
+  'specific admin people routes must mount before the generic admin router',
+  /app\.use\(['"]\/api\/admin\/people['"][\s\S]{0,220}app\.use\(['"]\/api\/admin['"]/
+);
+requireContains(
+  'backend/routes/adminPeople.js',
+  'global people search and 360 dossiers must be admin-only',
+  /router\.use\(protect,\s*authorize\(['"]admin['"]\)\)/
+);
+requireContains(
+  'backend/routes/adminPeople.js',
+  'admin global search input must be bounded before regex matching',
+  /req\.query\.q[\s\S]{0,100}slice\(0,\s*120\)/
+);
+requireContains(
+  'backend/routes/adminPeople.js',
+  'Student 360 access must create an admin audit event',
+  /student\.360\.viewed/
+);
+requireContains(
+  'backend/routes/adminPeople.js',
+  'Family 360 access must create an admin audit event',
+  /guardian\.360\.viewed/
+);
+requireContains(
+  'backend/routes/adminPeople.js',
+  'guardian invitation phone numbers must be masked in admin dossier responses',
+  /phoneMasked:\s*maskPhone\(invitation\.guardianPhone\)/
+);
+requireContains(
+  'backend/routes/adminPeople.js',
+  'student homework storage references must be reduced to an availability flag',
+  /submissionAvailable:\s*Boolean\(task\.submissionFile\)/
+);
+requireAbsent(
+  'backend/routes/adminPeople.js',
+  'Student 360 must not expose a raw homework submissionFile property',
+  /\bsubmissionFile\s*:/
+);
+requireAbsent(
+  'backend/routes/adminPeople.js',
+  'Student 360 must not expose raw session meeting links',
+  /\bmeetingLink\s*:/
+);
+requireAbsent(
+  'backend/routes/adminPeople.js',
+  'Student 360 must not expose raw recording URLs',
+  /\brecordingUrl\s*:/
+);
+requireContains(
+  'backend/routes/homework.js',
+  'admin Student 360 homework audio reads must be audit logged',
+  /student\.homework-audio\.viewed/
+);
+
 if (failures.length) {
   console.error('Security contracts failed:');
   failures.forEach((failure) => console.error(`- ${failure}`));

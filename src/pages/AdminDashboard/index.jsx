@@ -14,6 +14,9 @@ import api from '../../lib/api';
 import { uploadFileDirect } from '../../lib/fileUpload';
 import TeacherReviewQueue from './TeacherReviewQueue';
 import TeacherReviewDossier from './TeacherReviewDossier';
+import AdminPeopleSearch from './AdminPeopleSearch';
+import Student360Dossier from './Student360Dossier';
+import Family360Dossier from './Family360Dossier';
 import LaunchReadinessPanel from './LaunchReadinessPanel';
 
 const STATUS_LABEL = { new: 'جديدة', read: 'مقروءة', replied: 'تم الرد', closed: 'مغلقة' };
@@ -59,6 +62,10 @@ export default function AdminDashboard() {
   const [auditEntries, setAuditEntries] = useState([]);
   const [teacherDossier, setTeacherDossier] = useState(null);
   const [teacherDossierLoading, setTeacherDossierLoading] = useState(false);
+  const [studentDossier, setStudentDossier] = useState(null);
+  const [studentDossierLoading, setStudentDossierLoading] = useState(false);
+  const [familyDossier, setFamilyDossier] = useState(null);
+  const [familyDossierLoading, setFamilyDossierLoading] = useState(false);
 
   const loadPendingTeachers = useCallback(async () => {
     const result = await api.get('/api/admin/teachers/pending', { auth: true });
@@ -277,6 +284,53 @@ export default function AdminDashboard() {
     }
   };
 
+  const openStudentDossier = async (studentId) => {
+    if (!studentId) return;
+    setFamilyDossier(null);
+    setStudentDossierLoading(true);
+    setStudentDossier({ student: { _id: studentId } });
+    try {
+      const result = await api.get(`/api/admin/people/students/${studentId}`, { auth: true });
+      setStudentDossier(result);
+    } catch (error) {
+      setStudentDossier(null);
+      toast.error(error.message || 'تعذر تحميل ملف الطالب الكامل');
+    } finally {
+      setStudentDossierLoading(false);
+    }
+  };
+
+  const openFamilyDossier = async (guardianId) => {
+    if (!guardianId) return;
+    setStudentDossier(null);
+    setFamilyDossierLoading(true);
+    setFamilyDossier({ guardian: { _id: guardianId } });
+    try {
+      const result = await api.get(`/api/admin/people/guardians/${guardianId}`, { auth: true });
+      setFamilyDossier(result);
+    } catch (error) {
+      setFamilyDossier(null);
+      toast.error(error.message || 'تعذر تحميل ملف الأسرة');
+    } finally {
+      setFamilyDossierLoading(false);
+    }
+  };
+
+  const openStudentHomeworkAudio = async (taskId) => {
+    try {
+      const response = await api.request(
+        `/api/homework/tasks/${taskId}/file?reason=student-360-review`,
+        { auth: true, json: false, method: 'GET' }
+      );
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank', 'noopener,noreferrer');
+      window.setTimeout(() => URL.revokeObjectURL(url), 120000);
+    } catch (error) {
+      toast.error(error.message || 'تعذر فتح تسليم الطالب');
+    }
+  };
+
   const openTeacherDocument = async (teacherId, kind, index) => {
     try {
       const suffix = Number.isInteger(index) ? `/${index}` : '';
@@ -442,6 +496,12 @@ export default function AdminDashboard() {
 
   return (
     <DashboardLayout title="لوحة تحكم الإدارة" user={user} onLogout={logout}>
+      <AdminPeopleSearch
+        onOpenStudent={openStudentDossier}
+        onOpenGuardian={openFamilyDossier}
+        onOpenTeacher={openTeacherDossier}
+        onOpenPayments={() => navigate('payments')}
+      />
       <TabBar tabs={tabs} active={tab} onChange={setTab} />
 
       {loading && tab !== 'overview' ? (
@@ -971,6 +1031,26 @@ export default function AdminDashboard() {
           onReview={review}
           onOpenDocument={openTeacherDocument}
           onOpenMedia={openTeacherMedia}
+        />
+      )}
+
+      {studentDossier && (
+        <Student360Dossier
+          dossier={studentDossier}
+          loading={studentDossierLoading}
+          onClose={() => setStudentDossier(null)}
+          onOpenGuardian={openFamilyDossier}
+          onOpenTeacher={openTeacherDossier}
+          onOpenHomeworkAudio={openStudentHomeworkAudio}
+        />
+      )}
+
+      {familyDossier && (
+        <Family360Dossier
+          dossier={familyDossier}
+          loading={familyDossierLoading}
+          onClose={() => setFamilyDossier(null)}
+          onOpenStudent={openStudentDossier}
         />
       )}
     </DashboardLayout>

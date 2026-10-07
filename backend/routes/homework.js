@@ -8,6 +8,7 @@ const Teacher = require('../models/Teacher');
 const objectStorage = require('../services/objectStorage');
 const { deleteStoredReference } = require('../utils/storageLifecycle');
 const { protect, authorize } = require('../middleware/auth');
+const { logAdminAction } = require('../services/adminAudit');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -182,6 +183,18 @@ router.get('/submissions/:id/file', protect, async (req, res) => {
     }
 
     if (!allowed) return res.status(403).json({ error: 'Not authorized to access this file' });
+
+    if (req.user.role === 'admin') {
+      await logAdminAction({
+        req,
+        action: 'student.homework-submission.viewed',
+        entityType: 'student',
+        entityId: submission.student,
+        reason: String(req.query.reason || 'student-360-review'),
+        metadata: { submissionId: String(submission._id), sessionId: String(submission.sessionId || '') },
+      });
+    }
+
     return streamPrivateFile(res, req, submission.filePath);
   } catch (error) {
     console.error('Homework file download failed:', error.message);
@@ -202,6 +215,18 @@ router.get('/tasks/:id/file', protect, async (req, res) => {
     }
 
     if (!allowed) return res.status(403).json({ error: 'Not authorized to access this file' });
+
+    if (req.user.role === 'admin') {
+      await logAdminAction({
+        req,
+        action: 'student.homework-audio.viewed',
+        entityType: 'student',
+        entityId: task.student,
+        reason: String(req.query.reason || 'student-360-review'),
+        metadata: { taskId: String(task._id), teacherId: String(task.teacher || '') },
+      });
+    }
+
     return streamPrivateFile(res, req, task.submissionFile);
   } catch (error) {
     console.error('Task file download failed:', error.message);
