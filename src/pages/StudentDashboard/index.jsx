@@ -199,6 +199,12 @@ export default function StudentDashboard() {
   const [reviewForm, setReviewForm] = useState(emptyReview);
   const [bookModal, setBookModal] = useState(null);
   const [bookForm, setBookForm] = useState(emptyBook);
+  const [bookAvailability, setBookAvailability] = useState({
+    loading: false,
+    configured: false,
+    teacherTimezone: '',
+    slots: [],
+  });
   const [chatSession, setChatSession] = useState(null);
   const [booking, setBooking] = useState(false);
 
@@ -504,9 +510,32 @@ export default function StudentDashboard() {
     }
   };
 
-  const openBook = (teacher) => {
+  const openBook = async (teacher) => {
     setBookModal(teacher);
     setBookForm(emptyBook);
+    setBookAvailability({
+      loading: true,
+      configured: false,
+      teacherTimezone: '',
+      slots: [],
+    });
+
+    try {
+      const availability = await api.get(`/api/sessions/available-slots/${teacher._id}?days=14`);
+      setBookAvailability({
+        loading: false,
+        configured: Boolean(availability?.configured),
+        teacherTimezone: availability?.teacherTimezone || '',
+        slots: Array.isArray(availability?.slots) ? availability.slots : [],
+      });
+    } catch {
+      setBookAvailability({
+        loading: false,
+        configured: false,
+        teacherTimezone: '',
+        slots: [],
+      });
+    }
   };
 
   const bookRegular = async (e) => {
@@ -514,10 +543,15 @@ export default function StudentDashboard() {
     if (!bookModal || !bookForm.date || !bookForm.time) return;
     setBooking(true);
     try {
+      const localTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const scheduledAt = bookAvailability.configured
+        ? bookForm.time
+        : `${bookForm.date}T${bookForm.time}:00`;
+
       await api.post('/api/sessions/regular', {
         teacherId: bookModal._id,
-        scheduledAt: new Date(`${bookForm.date}T${bookForm.time}`),
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        scheduledAt,
+        timezone: localTimezone,
         notes: bookForm.notes,
       }, { auth: true });
       toast.success(locale === 'id' ? 'Permintaan sesi berhasil dikirim ke guru' : locale === 'ar' ? 'تم إرسال طلب الحصة للمعلم' : 'Session request sent to tutor');
@@ -551,6 +585,24 @@ export default function StudentDashboard() {
   };
 
   const hasReviewed = (sessionId) => reviews.some((r) => r.session === sessionId || r.session?._id === sessionId);
+
+  const bookingTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const bookingDateKey = (value) => {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: bookingTimezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(new Date(value));
+    const get = (type) => parts.find((part) => part.type === type)?.value || '';
+    return `${get('year')}-${get('month')}-${get('day')}`;
+  };
+  const bookAvailableDates = bookAvailability.configured
+    ? [...new Set(bookAvailability.slots.map((slot) => bookingDateKey(slot.startsAt)))]
+    : [];
+  const bookSlotsForDate = bookAvailability.configured
+    ? bookAvailability.slots.filter((slot) => bookingDateKey(slot.startsAt) === bookForm.date)
+    : [];
 
   const primaryNavItems = [
     { id: 'overview', label: locale === 'id' ? 'Beranda' : locale === 'ar' ? 'الرئيسية' : 'Overview', icon: Sparkles },
@@ -1288,10 +1340,70 @@ export default function StudentDashboard() {
       {bookModal && (
         <Modal title={locale === 'id' ? `Pesan Sesi Kelas — ${bookModal.name}` : locale === 'ar' ? `حجز حصة — ${bookModal.name}` : `Book Session — ${bookModal.name}`} onClose={() => setBookModal(null)}>
           <form onSubmit={bookRegular} className="space-y-3">
-            <input type="date" required className="input-field w-full" value={bookForm.date}
-              onChange={(e) => setBookForm((p) => ({ ...p, date: e.target.value }))} />
-            <input type="time" required className="input-field w-full" value={bookForm.time}
-              onChange={(e) => setBookForm((p) => ({ ...p, time: e.target.value }))} />
+            {bookAvailability.loading ? (
+              <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-sm text-emerald-900">
+                {locale === 'ar' ? 'جاري تحميل مواعيد المعلم المتاحة...' : 'Loading tutor availability...'}
+              </div>
+            ) : bookAvailability.configured ? (
+              <>
+                <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-xs text-emerald-900">
+                  {locale === 'ar'
+                    ? `المواعيد التالية متاحة فعليًا في جدول المعلم، وتظهر بتوقيت جهازك (${bookingTimezone}).`
+                    : `These slots are currently available and shown in your timezone (${bookingTimezone}).`}
+                </div>
+                <select
+                  required
+                  className="input-field w-full"
+                  value={bookForm.date}
+                  onChange={(event) => setBookForm((current) => ({ ...current, date: event.target.value, time: '' }))}
+                >
+                  <option value="">{locale === 'ar' ? 'اختر اليوم' : 'Choose a date'}</option>
+                  {bookAvailableDates.map((date) => {
+                    const representative = bookAvailability.slots.find((slot) => bookingDateKey(slot.startsAt) === date);
+                    return (
+                      <option key={date} value={date}>
+                        {new Date(representative.startsAt).toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en', {
+                          timeZone: bookingTimezone,
+                          weekday: 'long',
+                          day: 'numeric',
+                          month: 'long',
+                        })}
+                      </option>
+                    );
+                  })}
+                </select>
+                <select
+                  required
+                  disabled={!bookForm.date}
+                  className="input-field w-full"
+                  value={bookForm.time}
+                  onChange={(event) => setBookForm((current) => ({ ...current, time: event.target.value }))}
+                >
+                  <option value="">{locale === 'ar' ? 'اختر الوقت' : 'Choose a time'}</option>
+                  {bookSlotsForDate.map((slot) => (
+                    <option key={slot.startsAt} value={slot.startsAt}>
+                      {new Date(slot.startsAt).toLocaleTimeString(locale === 'ar' ? 'ar-EG' : 'en', {
+                        timeZone: bookingTimezone,
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </option>
+                  ))}
+                </select>
+              </>
+            ) : (
+              <>
+                <div className="rounded-xl border border-amber-100 bg-amber-50 p-3 text-xs text-amber-900">
+                  {locale === 'ar'
+                    ? 'المعلم لم يحدد جدول توفر بعد؛ أرسل موعدًا مقترحًا وسيؤكده أو يقترح بديلًا.'
+                    : 'The tutor has not configured availability yet. Send a preferred time for confirmation.'}
+                </div>
+                <input type="date" required className="input-field w-full" value={bookForm.date}
+                  onChange={(e) => setBookForm((p) => ({ ...p, date: e.target.value }))} />
+                <input type="time" required className="input-field w-full" value={bookForm.time}
+                  onChange={(e) => setBookForm((p) => ({ ...p, time: e.target.value }))} />
+              </>
+            )}
             <textarea className="input-field w-full" rows={2} placeholder={locale === 'id' ? 'Catatan (opsional)' : locale === 'ar' ? 'ملاحظات (اختياري)' : 'Notes (optional)'}
               value={bookForm.notes} onChange={(e) => setBookForm((p) => ({ ...p, notes: e.target.value }))} />
             <button type="submit" disabled={booking} className="btn-primary w-full">
