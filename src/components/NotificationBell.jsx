@@ -32,7 +32,7 @@ export default function NotificationBell() {
     fetchNotifications();
     const interval = setInterval(() => {
       if (document.visibilityState === 'visible') fetchNotifications();
-    }, 30000);
+    }, 5000);
 
     const onFocus = () => fetchNotifications();
     const onVisibility = () => {
