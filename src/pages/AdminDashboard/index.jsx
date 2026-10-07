@@ -99,8 +99,29 @@ export default function AdminDashboard() {
   }, []);
 
   const loadWithdrawals = useCallback(async () => {
-    const r = await api.get('/api/admin/withdrawals?status=all', { auth: true });
-    setWithdrawals(r.withdrawals || []);
+    const [ledgerResult, legacyResult] = await Promise.all([
+      api.get('/api/finance/admin/payouts?status=all', { auth: true }),
+      api.get('/api/admin/withdrawals?status=all', { auth: true }),
+    ]);
+
+    const ledger = (ledgerResult.payouts || []).map((item) => ({
+      ...item,
+      source: 'ledger',
+      method: item.payoutMethod,
+      accountInfo:
+        item.payoutDetails?.ipaAddress
+        || item.payoutDetails?.phone
+        || [item.payoutDetails?.bankName, item.payoutDetails?.bankAccountNumber].filter(Boolean).join(' — ')
+        || item.payoutDetails?.paypalEmail
+        || '',
+    }));
+
+    const legacy = (legacyResult.withdrawals || []).map((item) => ({
+      ...item,
+      source: 'legacy',
+    }));
+
+    setWithdrawals([...ledger, ...legacy].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
   }, []);
 
   const loadGrowth = useCallback(async () => {
@@ -306,10 +327,16 @@ export default function AdminDashboard() {
     } catch (e) { toast.error(e.message); }
   };
 
-  const reviewWithdraw = async (id, action) => {
+  const reviewWithdraw = async (withdrawal, action) => {
     try {
-      await api.patch(`/api/admin/withdrawals/${id}`, { action }, { auth: true });
-      toast.success(action === 'approve' ? 'تم تحويل المبلغ' : 'تم رفض الطلب');
+      if (withdrawal.source === 'ledger') {
+        await api.put(`/api/finance/admin/payouts/${withdrawal._id}/process`, {
+          action,
+        }, { auth: true });
+      } else {
+        await api.patch(`/api/admin/withdrawals/${withdrawal._id}`, { action }, { auth: true });
+      }
+      toast.success(action === 'approve' ? 'تم اعتماد تحويل المبلغ' : 'تم رفض الطلب');
       loadWithdrawals();
     } catch (e) { toast.error(e.message); }
   };
@@ -329,7 +356,7 @@ export default function AdminDashboard() {
     { id: 'overview', label: 'نظرة عامة' },
     { id: 'messages', label: `الرسائل (${messages.filter(m => m.status === 'new').length || '…'})` },
     { id: 'teachers', label: `المعلمون (${pending.length})` },
-    { id: 'withdrawals', label: `السحوبات (${withdrawals.filter(w => w.status === 'pending').length || '…'})` },
+    { id: 'withdrawals', label: `السحوبات (${withdrawals.filter(w => ['pending', 'processing'].includes(w.status)).length || '…'})` },
     { id: 'courses', label: 'الدورات' },
     { id: 'blog', label: 'المدونة' },
     { id: 'growth', label: 'التحليلات والنمو' },
@@ -612,22 +639,30 @@ export default function AdminDashboard() {
                   <div>
                     <p className="font-bold">{w.teacher?.user?.name || w.teacher?.personalInfo?.fullName || 'معلم'}</p>
                     <p className="text-sm text-gray-500">{w.teacher?.user?.email}</p>
-                    <p className="text-lg font-bold text-emerald-700 mt-1">{w.amount} ج.م — {w.method}</p>
+                    <p className="text-lg font-bold text-emerald-700 mt-1">{w.amount} {w.currency || 'EGP'} — {w.method}</p>
+                    <p className="text-[11px] text-slate-400">{w.source === 'ledger' ? 'السجل المالي الموحد' : 'طلب قديم قيد الترحيل'}</p>
                     <p className="text-sm text-gray-600">{w.accountInfo}</p>
                     <p className="text-xs text-gray-400 mt-1">{new Date(w.createdAt).toLocaleString('ar-EG')}</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className={`text-xs px-2 py-1 rounded ${
-                      w.status === 'approved' ? 'bg-green-100 text-green-700'
+                      ['approved', 'completed'].includes(w.status) ? 'bg-green-100 text-green-700'
                         : w.status === 'rejected' ? 'bg-red-100 text-red-700'
+                        : w.status === 'processing' ? 'bg-blue-100 text-blue-700'
                         : 'bg-yellow-100 text-yellow-700'
                     }`}>
-                      {w.status === 'approved' ? 'تم التحويل' : w.status === 'rejected' ? 'مرفوض' : 'قيد المراجعة'}
+                      {['approved', 'completed'].includes(w.status)
+                        ? 'تم التحويل'
+                        : w.status === 'rejected'
+                          ? 'مرفوض'
+                          : w.status === 'processing'
+                            ? 'جاري التحويل'
+                            : 'قيد المراجعة'}
                     </span>
                     {w.status === 'pending' && (
                       <>
-                        <button onClick={() => reviewWithdraw(w._id, 'approve')} className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-sm">موافقة</button>
-                        <button onClick={() => reviewWithdraw(w._id, 'reject')} className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-sm">رفض</button>
+                        <button onClick={() => reviewWithdraw(w, 'approve')} className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-sm">موافقة</button>
+                        <button onClick={() => reviewWithdraw(w, 'reject')} className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-sm">رفض</button>
                       </>
                     )}
                   </div>

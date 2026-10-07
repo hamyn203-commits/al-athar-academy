@@ -14,6 +14,8 @@ const TeacherTaskSchema = new mongoose.Schema({
   dueDate: { type: Date },
   status: { type: String, enum: ['pending', 'submitted', 'done'], default: 'pending' },
   submissionFile: { type: String, default: '' },
+  teacherFeedback: { type: String, default: '', trim: true },
+  reviewedAt: { type: Date },
 }, { timestamps: true });
 
 TeacherTaskSchema.index({ teacher: 1, createdAt: -1 });

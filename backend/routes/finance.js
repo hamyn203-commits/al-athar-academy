@@ -5,67 +5,18 @@ const Teacher = require('../models/Teacher');
 const Session = require('../models/Session');
 const User = require('../models/User');
 const { protect, authorize } = require('../middleware/auth');
+const {
+  MIN_PAYOUT_EGP,
+  MIN_PAYOUT_USD,
+  calculateTeacherBalance,
+  ensureSessionEarning,
+  listTeacherTransactions,
+} = require('../services/teacherFinance');
 
 // Constants for academic financial rules (V7.6)
 const STUDENT_RATE_EGP = 20; // 20 ج للمصريين لكل طالب في الحلقة
 const STUDENT_RATE_USD = 1;  // 1$ للمغتربين لكل طالب في الحلقة
-const MIN_PAYOUT_EGP = 100;  // الحد الأدنى للسحب بالجنيه المصري
-const MIN_PAYOUT_USD = 10;   // الحد الأدنى للسحب بالدولار
-
 const { isMockMode } = require('../config/runtime');
-
-/**
- * Helper: Calculate teacher balance across currencies
- */
-async function calculateTeacherBalance(teacherId) {
-  const teacher = await Teacher.findById(teacherId);
-  if (!teacher) return null;
-
-  const ledgerEntries = await TeacherLedger.find({ teacher: teacherId });
-
-  const balances = {
-    EGP: { available: 0, pending: 0, withdrawn: 0, totalEarned: 0 },
-    USD: { available: 0, pending: 0, withdrawn: 0, totalEarned: 0 },
-  };
-
-  for (const entry of ledgerEntries) {
-    const curr = entry.currency === 'USD' ? 'USD' : 'EGP';
-    const amount = Number(entry.amount) || 0;
-
-    if (entry.type === 'session_earning' || entry.type === 'bonus') {
-      if (entry.status === 'completed') {
-        balances[curr].totalEarned += amount;
-      }
-    } else if (entry.type === 'adjustment') {
-      if (entry.status === 'completed') {
-        balances[curr].totalEarned += amount;
-      }
-    } else if (entry.type === 'payout') {
-      if (entry.status === 'pending' || entry.status === 'processing') {
-        balances[curr].pending += amount;
-      } else if (entry.status === 'completed') {
-        balances[curr].withdrawn += amount;
-      }
-    }
-  }
-
-  // Backward compatibility with legacy earnings fields if ledger is empty for EGP
-  if (balances.EGP.totalEarned === 0 && balances.EGP.withdrawn === 0 && teacher.earnings) {
-    const legacyTotal = Number(teacher.earnings.totalEarned) || 0;
-    const legacyPending = Number(teacher.earnings.pendingEarnings) || 0;
-    const legacyWithdrawn = Number(teacher.earnings.withdrawnEarnings) || 0;
-    if (legacyTotal > 0 || legacyPending > 0 || legacyWithdrawn > 0) {
-      balances.EGP.totalEarned = legacyTotal + legacyPending;
-      balances.EGP.withdrawn = legacyWithdrawn;
-      balances.EGP.pending = 0;
-    }
-  }
-
-  balances.EGP.available = Math.max(0, balances.EGP.totalEarned - balances.EGP.withdrawn - balances.EGP.pending);
-  balances.USD.available = Math.max(0, balances.USD.totalEarned - balances.USD.withdrawn - balances.USD.pending);
-
-  return balances;
-}
 
 /**
  * Helper: Determine if user/student is in Egyptian market
@@ -135,48 +86,8 @@ router.get('/teacher/transactions', protect, authorize('teacher'), async (req, r
       return res.status(404).json({ error: 'لم يتم العثور على ملف المعلم' });
     }
 
-    const { type, currency, status, startDate, endDate } = req.query;
-    const page = Math.max(1, parseInt(req.query.page) || 1);
-    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
-    const skip = (page - 1) * limit;
-
-    const filter = { teacher: teacher._id };
-
-    if (type && type !== 'all') {
-      filter.type = type;
-    }
-    if (currency && currency !== 'all') {
-      filter.currency = currency.toUpperCase();
-    }
-    if (status && status !== 'all') {
-      filter.status = status;
-    }
-    if (startDate || endDate) {
-      filter.createdAt = {};
-      if (startDate) filter.createdAt.$gte = new Date(startDate);
-      if (endDate) filter.createdAt.$lte = new Date(endDate);
-    }
-
-    const [transactions, total] = await Promise.all([
-      TeacherLedger.find(filter)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .populate('session', 'scheduledAt duration type')
-        .lean(),
-      TeacherLedger.countDocuments(filter),
-    ]);
-
-    res.json({
-      success: true,
-      transactions,
-      pagination: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit) || 1,
-      },
-    });
+    const result = await listTeacherTransactions(teacher._id, req.query);
+    res.json({ success: true, ...result });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -445,7 +356,36 @@ router.get('/admin/overview', protect, authorize('admin'), async (req, res) => {
 });
 
 // ==========================================
-// 5. PUT /api/finance/admin/payouts/:id/process
+// 5. GET /api/finance/admin/payouts
+// ==========================================
+router.get('/admin/payouts', protect, authorize('admin'), async (req, res) => {
+  try {
+    if (isMockMode) {
+      return res.json({ success: true, payouts: [] });
+    }
+
+    const status = String(req.query.status || 'all');
+    const filter = { type: 'payout' };
+    if (status !== 'all') filter.status = status;
+
+    const payouts = await TeacherLedger.find(filter)
+      .populate({
+        path: 'teacher',
+        select: 'personalInfo user',
+        populate: { path: 'user', select: 'name email phone' },
+      })
+      .sort({ createdAt: -1 })
+      .limit(200)
+      .lean();
+
+    return res.json({ success: true, payouts });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// ==========================================
+// 6. PUT /api/finance/admin/payouts/:id/process
 // ==========================================
 router.put('/admin/payouts/:id/process', protect, authorize('admin'), async (req, res) => {
   try {
@@ -513,23 +453,7 @@ router.put('/admin/payouts/:id/process', protect, authorize('admin'), async (req
   }
 });
 
-// ==========================================
-// 6. Helper: Credit session earning to TeacherLedger
-// ==========================================
-async function recordSessionEarning({ sessionId, teacherId, amount, currency = 'EGP', attendeesCount = 0, notes = '' }) {
-  return await TeacherLedger.create({
-    teacher: teacherId,
-    session: sessionId,
-    type: 'session_earning',
-    amount,
-    currency,
-    attendeesCount,
-    status: 'completed',
-    notes,
-    description: `مستحقات حلقة تعليمية (${attendeesCount} طلاب) - ${amount} ${currency}`,
-  });
-}
-
+// Backwards-compatible exports for scripts that still import helpers from this route.
 module.exports = router;
 module.exports.calculateTeacherBalance = calculateTeacherBalance;
-module.exports.recordSessionEarning = recordSessionEarning;
+module.exports.recordSessionEarning = ensureSessionEarning;

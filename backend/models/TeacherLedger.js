@@ -13,6 +13,13 @@ const TeacherLedgerSchema = new mongoose.Schema({
     required: [true, 'Transaction type is required'],
     index: true,
   },
+  idempotencyKey: {
+    type: String,
+    trim: true,
+    unique: true,
+    sparse: true,
+    index: true,
+  },
   amount: {
     type: Number,
     required: [true, 'Amount is required'],

@@ -6,6 +6,7 @@ const Teacher = require('../models/Teacher');
 const GroupCircle = require('../models/GroupCircle');
 const { protect, authorize } = require('../middleware/auth');
 const meetingService = require('../services/meetingService');
+const { ensureSessionEarning } = require('../services/teacherFinance');
 const {
   notifyTeacherForSessionRequest,
   notifySessionAccepted,
@@ -363,34 +364,90 @@ router.put('/:id/complete', protect, authorize('teacher'), async (req, res) => {
     const session = await Session.findOne({
       _id: req.params.id,
       teacher: teacher._id,
-      status: 'accepted'
+      status: { $in: ['accepted', 'completed'] },
     });
 
     if (!session) {
-      return res.status(404).json({ error: 'Session not found or not accepted' });
+      return res.status(404).json({ error: 'Session not found or unavailable for completion' });
     }
 
     const SESSION_RATE = 50;
-    session.status = 'completed';
-    session.duration = 60;
-    session.teacherEvaluation = evaluation;
-    session.earnings.amount = SESSION_RATE;
-    session.earnings.status = 'pending';
-    
-    await session.save();
+    const scheduledAt = new Date(session.scheduledAt);
+    const now = new Date();
+
+    if (session.status !== 'completed' && scheduledAt.getTime() > now.getTime()) {
+      return res.status(409).json({
+        error: 'لا يمكن إنهاء الحصة قبل موعد بدايتها',
+        code: 'SESSION_NOT_STARTED',
+        scheduledAt: session.scheduledAt,
+      });
+    }
+
+    const blockedAttendance = session.student
+      ? session.attendance?.find((entry) => (
+          entry.student
+          && String(entry.student) === String(session.student)
+          && ['absent', 'excused'].includes(entry.status)
+        ))
+      : null;
+
+    if (session.status !== 'completed' && blockedAttendance) {
+      return res.status(409).json({
+        error: 'لا يمكن اعتماد الحصة كحصة مكتملة لأن حالة الطالب غياب/اعتذار',
+        code: 'SESSION_ATTENDANCE_NOT_ELIGIBLE',
+        attendanceStatus: blockedAttendance.status,
+      });
+    }
+
+    const wasAlreadyCompleted = session.status === 'completed';
+
+    if (!wasAlreadyCompleted) {
+      session.status = 'completed';
+      session.teacherEvaluation = evaluation || {};
+      session.earnings.amount = SESSION_RATE;
+      session.earnings.status = 'pending';
+      await session.save();
+    }
+
+    // Ledger is the canonical source of truth for all new teacher earnings.
+    await ensureSessionEarning({
+      sessionId: session._id,
+      teacherId: teacher._id,
+      amount: session.earnings?.amount || SESSION_RATE,
+      currency: 'EGP',
+      attendeesCount: session.student ? 1 : Math.max(1, session.attendance?.length || 0),
+      notes: session.type === 'trial' ? 'حصة تجريبية مكتملة' : 'حصة منتظمة مكتملة',
+    });
+
+    // Keep non-financial teacher counters deterministic and retry-safe.
+    const [completedCount, durationAgg] = await Promise.all([
+      Session.countDocuments({ teacher: teacher._id, status: 'completed' }),
+      Session.aggregate([
+        { $match: { teacher: teacher._id, status: 'completed' } },
+        { $group: { _id: null, totalMinutes: { $sum: { $ifNull: ['$duration', 60] } } } },
+      ]),
+    ]);
+
+    await Teacher.findByIdAndUpdate(teacher._id, {
+      $set: {
+        'stats.totalSessions': completedCount,
+        'stats.totalHours': Math.round(((durationAgg[0]?.totalMinutes || 0) / 60) * 100) / 100,
+      },
+    });
+
+    if (wasAlreadyCompleted) {
+      return res.json({
+        success: true,
+        session,
+        alreadyCompleted: true,
+        message: 'الحصة مكتملة بالفعل وتم التحقق من استحقاقها المالي',
+      });
+    }
 
     const { processReferralFirstSession } = require('./referrals');
     if (session.student) {
       processReferralFirstSession(session.student.toString()).catch(() => {});
     }
-
-    await Teacher.findByIdAndUpdate(teacher._id, {
-      $inc: {
-        'stats.totalSessions': 1,
-        'stats.totalHours': 1,
-        'earnings.pendingEarnings': SESSION_RATE,
-      },
-    });
 
     try {
       const isTrial = session.type === 'trial';
@@ -403,7 +460,7 @@ router.put('/:id/complete', protect, authorize('teacher'), async (req, res) => {
         message: {
           ar: isTrial
             ? 'يمكنك الآن الاستمرار مع نفس المعلم أو تجربة معلم آخر.'
-            : 'تم تسجيل الحصة كتجربة مكتملة ويمكنك مراجعة التقييم والواجب.',
+            : 'تم تسجيل الحصة كمكتملة ويمكنك مراجعة التقييم والواجب.',
           en: isTrial
             ? 'You can now continue with this tutor or try another tutor.'
             : 'The session is complete. Review your evaluation and homework.',
@@ -417,22 +474,24 @@ router.put('/:id/complete', protect, authorize('teacher'), async (req, res) => {
         priority: 'high',
       };
 
-      await notifyUser(session.student, payload);
-      await notifyGuardiansForStudent(session.student, {
-        ...payload,
-        title: {
-          ar: isTrial ? 'اكتملت الحصة التجريبية للطالب' : 'اكتملت حصة الطالب',
-          en: isTrial ? 'Student trial session completed' : 'Student session completed',
-        },
-        data: { ...payload.data, actionUrl: '/guardian/dashboard' },
-      });
+      if (session.student) {
+        await notifyUser(session.student, payload);
+        await notifyGuardiansForStudent(session.student, {
+          ...payload,
+          title: {
+            ar: isTrial ? 'اكتملت الحصة التجريبية للطالب' : 'اكتملت حصة الطالب',
+            en: isTrial ? 'Student trial session completed' : 'Student session completed',
+          },
+          data: { ...payload.data, actionUrl: '/guardian/dashboard' },
+        });
+      }
     } catch (e) {
       console.warn('Session completion notification:', e.message);
     }
 
-    res.json({ success: true, session });
+    return res.json({ success: true, session });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    return res.status(400).json({ error: error.message });
   }
 });
 
