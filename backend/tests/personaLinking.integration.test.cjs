@@ -7,7 +7,6 @@ process.env.NODE_ENV = 'development';
 process.env.DISABLE_RATE_LIMIT = 'true';
 
 const mongoose = require('mongoose');
-mongoose.connection.readyState = 1;
 
 const User = require('../models/User');
 const Teacher = require('../models/Teacher');
@@ -15,6 +14,10 @@ const Session = require('../models/Session');
 const Guardian = require('../models/Guardian');
 const LiveSession = require('../models/LiveSession');
 const Notification = require('../models/Notification');
+
+// Models must compile while disconnected; after compilation we simulate an
+// available database because all model IO below is replaced with in-memory stubs.
+mongoose.connection.readyState = 1;
 
 const oid = () => new mongoose.Types.ObjectId().toString();
 const ids = {
