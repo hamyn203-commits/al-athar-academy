@@ -463,7 +463,10 @@ export default function TeacherDashboard() {
         }))
         .filter((day) => day.slots.length);
 
-      await api.put('/api/teachers/dashboard/availability', { availability }, { auth: true });
+      await api.put('/api/teachers/dashboard/availability', {
+        availability,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      }, { auth: true });
       toast.success('تم حفظ أوقات التوفر');
     } catch (error) {
       toast.error(error.message || 'فشل حفظ الجدول');
