@@ -157,7 +157,7 @@ function RoleAwareHome() {
 
 function GlobalWidgets() {
   const location = useLocation();
-  const path = location.pathname.replace(/^\/(ar|en|id)(?=\/|$)/, '') || '/';
+  const path = location.pathname.replace(/^\/(ar|en|id|fr|de|tr|ur|ms|ku)(?=\/|$)/, '') || '/';
   const isWorkspace = /^\/(student|teacher|guardian|admin|live|meeting)(\/|$)/.test(path);
 
   return (
