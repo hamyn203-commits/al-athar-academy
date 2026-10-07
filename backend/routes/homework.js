@@ -158,6 +158,8 @@ router.get('/student', protect, authorize('student'), async (req, res) => {
         dueDate: t.dueDate,
         status: t.status,
         type: t.type,
+        teacherFeedback: t.teacherFeedback || '',
+        reviewedAt: t.reviewedAt,
       });
     });
 
