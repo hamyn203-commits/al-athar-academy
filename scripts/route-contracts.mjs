@@ -133,6 +133,9 @@ assert.match(liveSessions, /localizedPath\(\`\/live\/\$\{roomId\}\`,\s*locale\)/
 const studentDashboard = read('src/pages/StudentDashboard/index.jsx');
 assert.match(studentDashboard, /localizeInternalHref\(session\.meetingLink,\s*locale\)/);
 assert.match(studentDashboard, /localizedPath\(\`\/meeting\/\$\{session\._id\}\`,\s*locale\)/);
+assert.match(studentDashboard, /useState\(['"]overview['"]\)/);
+assert.match(studentDashboard, /tab\s*===\s*['"]overview['"]/);
+assert.match(studentDashboard, /\[\.\.\.upcomingSessions,\s*\.\.\.upcomingTrials\][\s\S]{0,160}sort/);
 
 const errorBoundary = read('src/components/shared/ErrorBoundary.jsx');
 assert.match(errorBoundary, /localizedPath\(['\"]\/['\"],\s*locale\)/);
