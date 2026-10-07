@@ -150,6 +150,39 @@ export default function StudentDashboard() {
 
   useEffect(() => { if (ready) load(); }, [ready, load]);
 
+  const syncSessions = useCallback(async () => {
+    if (!ready) return;
+    try {
+      const result = await api.get('/api/sessions/my-sessions?limit=100', { auth: true });
+      const all = result.sessions || [];
+      setTrials(all.filter((item) => item.type === 'trial'));
+      setSessions(all.filter((item) => item.type === 'regular'));
+    } catch {
+      // Keep the current dashboard stable during a transient sync failure.
+    }
+  }, [ready]);
+
+  useEffect(() => {
+    if (!ready) return undefined;
+
+    const refresh = () => {
+      if (document.visibilityState === 'visible') syncSessions();
+    };
+
+    const interval = window.setInterval(refresh, 15000);
+    const onFocus = () => refresh();
+    const onVisibility = () => refresh();
+
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [ready, syncSessions]);
+
   useEffect(() => {
     const requestedSessionId = searchParams.get('session');
     if (!requestedSessionId) return;
