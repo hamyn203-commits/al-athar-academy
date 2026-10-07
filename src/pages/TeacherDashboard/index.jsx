@@ -1376,6 +1376,180 @@ export default function TeacherDashboard() {
               </div>
             )}
 
+            {tab === 'updates' && (
+              <div className="wn-teacher-updates">
+                <div className="wn-teacher-updates__intro">
+                  <div>
+                    <span>رسائل لطلابي</span>
+                    <h3>شارك كلمة أو توجيهًا بالفيديو</h3>
+                    <p>يمكنك إرفاق حتى 5 فيديوهات في الرسالة الواحدة، وإرسالها لكل طلابك النشطين أو لطلاب تختارهم.</p>
+                  </div>
+                  <Megaphone size={30} />
+                </div>
+
+                <div className="wn-teacher-updates__grid">
+                  <form onSubmit={publishTeacherUpdate} className="wn-teacher-update-composer">
+                    <div className="wn-teacher-section-heading">
+                      <div><span>رسالة جديدة</span><h3>انشر تحديثًا لطلابك</h3></div>
+                    </div>
+
+                    <input
+                      className="input-field w-full"
+                      maxLength={140}
+                      required
+                      placeholder="العنوان — مثال: كلمة قبل مراجعة سورة الملك"
+                      value={updateForm.title}
+                      onChange={(event) => setUpdateForm((current) => ({ ...current, title: event.target.value }))}
+                    />
+
+                    <textarea
+                      className="input-field w-full"
+                      rows={4}
+                      maxLength={2000}
+                      placeholder="اكتب رسالة قصيرة أو تعليمات مع الفيديو..."
+                      value={updateForm.message}
+                      onChange={(event) => setUpdateForm((current) => ({ ...current, message: event.target.value }))}
+                    />
+
+                    <div className="wn-teacher-update-audience">
+                      <label>
+                        <input
+                          type="radio"
+                          name="teacher-update-audience"
+                          checked={updateForm.audienceMode === 'all-active'}
+                          onChange={() => setUpdateForm((current) => ({ ...current, audienceMode: 'all-active', studentIds: [] }))}
+                        />
+                        <span><strong>كل طلابي النشطين</strong><small>تصل الرسالة لكل الطلاب المرتبطين بك</small></span>
+                      </label>
+                      <label>
+                        <input
+                          type="radio"
+                          name="teacher-update-audience"
+                          checked={updateForm.audienceMode === 'selected'}
+                          onChange={() => setUpdateForm((current) => ({ ...current, audienceMode: 'selected' }))}
+                        />
+                        <span><strong>طلاب محددون</strong><small>اختر طالبًا أو أكثر</small></span>
+                      </label>
+                    </div>
+
+                    {updateForm.audienceMode === 'selected' && (
+                      <div className="wn-teacher-update-students">
+                        {activeStudents.length === 0 ? (
+                          <p>لا يوجد طلاب نشطون للاختيار.</p>
+                        ) : activeStudents.map((student) => (
+                          <label key={student._id} className={updateForm.studentIds.includes(student._id) ? 'is-selected' : ''}>
+                            <input
+                              type="checkbox"
+                              checked={updateForm.studentIds.includes(student._id)}
+                              onChange={() => toggleUpdateStudent(student._id)}
+                            />
+                            <span className="wn-teacher-avatar">{(student.name || 'ط').slice(0, 1)}</span>
+                            <span><strong>{student.name}</strong><small>{student.completedSessions || 0} حصة مكتملة</small></span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+
+                    <label className="wn-teacher-update-upload">
+                      <Upload size={22} />
+                      <span>
+                        <strong>اختر فيديوهات</strong>
+                        <small>MP4 / WebM / MOV — حتى 5 فيديوهات، 100MB لكل فيديو</small>
+                      </span>
+                      <input
+                        type="file"
+                        accept="video/mp4,video/webm,video/quicktime"
+                        multiple
+                        onChange={(event) => {
+                          const files = Array.from(event.target.files || []).slice(0, 5);
+                          setUpdateForm((current) => ({ ...current, files }));
+                        }}
+                      />
+                    </label>
+
+                    {updateForm.files.length > 0 && (
+                      <div className="wn-teacher-update-files">
+                        {updateForm.files.map((file, index) => (
+                          <div key={`${file.name}-${index}`}>
+                            <Video size={16} />
+                            <span><strong>{file.name}</strong><small>{(file.size / (1024 * 1024)).toFixed(1)} MB</small></span>
+                            <button
+                              type="button"
+                              onClick={() => setUpdateForm((current) => ({
+                                ...current,
+                                files: current.files.filter((_, currentIndex) => currentIndex !== index),
+                              }))}
+                              aria-label="حذف الفيديو"
+                            >
+                              <X size={15} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <button
+                      type="submit"
+                      disabled={publishingUpdate || !updateForm.files.length}
+                      className="wn-teacher-primary-action"
+                    >
+                      <Send size={16} />
+                      {publishingUpdate ? 'جاري رفع الفيديوهات والنشر...' : 'نشر وإشعار الطلاب'}
+                    </button>
+                  </form>
+
+                  <section className="wn-teacher-update-history">
+                    <div className="wn-teacher-section-heading">
+                      <div><span>سجل النشر</span><h3>رسائلك السابقة</h3></div>
+                      <strong>{teacherUpdates.length}</strong>
+                    </div>
+
+                    {teacherUpdates.length === 0 ? (
+                      <div className="wn-teacher-empty-state compact">
+                        <Megaphone size={24} />
+                        <div><strong>لم تنشر رسالة بعد</strong><p>أول رسالة فيديو ستظهر هنا.</p></div>
+                      </div>
+                    ) : (
+                      <div className="wn-teacher-update-list">
+                        {teacherUpdates.map((update) => (
+                          <article key={update._id}>
+                            <div className="wn-teacher-update-list__heading">
+                              <div>
+                                <span>{update.audience?.mode === 'selected' ? 'طلاب محددون' : 'كل الطلاب النشطين'}</span>
+                                <h4>{update.title}</h4>
+                                <small>{new Date(update.publishedAt || update.createdAt).toLocaleString('ar-EG')}</small>
+                              </div>
+                              <button type="button" onClick={() => deleteTeacherUpdate(update._id)} aria-label="حذف الرسالة">
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                            {update.message ? <p>{update.message}</p> : null}
+                            <div className="wn-teacher-update-videos">
+                              {(update.videos || []).map((video, index) => {
+                                const key = `${update._id}-${index}`;
+                                return (
+                                  <div key={key}>
+                                    {updateVideoUrls[key] ? (
+                                      <video src={updateVideoUrls[key]} controls preload="metadata" />
+                                    ) : (
+                                      <button type="button" onClick={() => loadTeacherUpdateVideo(update._id, index)}>
+                                        <Video size={20} />
+                                        <span><strong>تشغيل الفيديو {index + 1}</strong><small>{video.name || 'فيديو المعلم'}</small></span>
+                                      </button>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </article>
+                        ))}
+                      </div>
+                    )}
+                  </section>
+                </div>
+              </div>
+            )}
+
             {tab === 'homework' && (
               <div className="wn-teacher-homework">
                 <div className="wn-teacher-homework__intro">
