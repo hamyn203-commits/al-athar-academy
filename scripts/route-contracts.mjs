@@ -136,6 +136,10 @@ assert.match(studentDashboard, /localizedPath\(\`\/meeting\/\$\{session\._id\}\`
 assert.match(studentDashboard, /useState\(['"]overview['"]\)/);
 assert.match(studentDashboard, /tab\s*===\s*['"]overview['"]/);
 assert.match(studentDashboard, /\[\.\.\.upcomingSessions,\s*\.\.\.upcomingTrials\][\s\S]{0,160}sort/);
+assert.match(studentDashboard, /function\s+StudentCommandBar\s*\(/);
+assert.match(studentDashboard, /primaryNavItems/);
+assert.match(studentDashboard, /secondaryNavItems/);
+assert.doesNotMatch(studentDashboard, /<TabBar\s/);
 
 const errorBoundary = read('src/components/shared/ErrorBoundary.jsx');
 assert.match(errorBoundary, /localizedPath\(['\"]\/['\"],\s*locale\)/);

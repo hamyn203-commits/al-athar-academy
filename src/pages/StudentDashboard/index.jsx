@@ -3,10 +3,10 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Calendar, CheckCircle, FileText, Star, Trophy, BookOpen,
   Upload, Clock, Users, X, Award, Video, Gift, Copy,
-  Mic, Square, RotateCcw, Send, Sparkles
+  Mic, Square, RotateCcw, Send, Sparkles, MoreHorizontal, UserRound
 } from 'lucide-react';
 import { Link as RouterLink } from 'react-router-dom';
-import DashboardLayout, { StatCard, TabBar } from '../../components/dashboard/DashboardLayout';
+import DashboardLayout, { StatCard } from '../../components/dashboard/DashboardLayout';
 import { useRequireAuth } from '../../hooks/useRequireAuth';
 import { useGamificationApi } from '../../hooks/useGamificationApi';
 import { useToast } from '../../context/ToastProvider';
@@ -21,6 +21,104 @@ import SessionChatModal from '../../components/session/SessionChatModal';
 
 const emptyReview = { rating: 5, comment: '', wouldContinue: true };
 const emptyBook = { date: '', time: '', notes: '' };
+
+
+function StudentCommandBar({ primaryItems, secondaryItems, active, onChange, locale }) {
+  const [moreOpen, setMoreOpen] = useState(false);
+  const secondaryActiveItem = secondaryItems.find((item) => item.id === active);
+  const isAr = locale === 'ar';
+
+  const selectItem = (id) => {
+    onChange(id);
+    setMoreOpen(false);
+  };
+
+  return (
+    <div className="wn-student-command-shell">
+      <nav className="wn-student-command" aria-label={isAr ? 'التنقل داخل لوحة الطالب' : 'Student dashboard navigation'}>
+        <div className="wn-student-command__identity" aria-hidden="true">
+          <span className="wn-student-command__identity-icon"><Sparkles size={17} /></span>
+          <div>
+            <strong>{isAr ? 'مساحتك التعليمية' : 'Your learning space'}</strong>
+            <small>{isAr ? 'كل رحلتك من مكان واحد' : 'Your journey in one place'}</small>
+          </div>
+        </div>
+
+        <div className="wn-student-command__primary">
+          {primaryItems.map(({ id, label, icon: Icon, badge }) => {
+            const selected = active === id;
+            return (
+              <button
+                type="button"
+                key={id}
+                onClick={() => selectItem(id)}
+                className={'wn-student-command__item ' + (selected ? 'is-active' : '')}
+                aria-current={selected ? 'page' : undefined}
+              >
+                <span className="wn-student-command__item-icon"><Icon size={18} /></span>
+                <span className="wn-student-command__item-copy">
+                  <strong>{label}</strong>
+                </span>
+                {badge ? <span className="wn-student-command__badge">{badge}</span> : null}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="wn-student-command__more">
+          <button
+            type="button"
+            onClick={() => setMoreOpen((value) => !value)}
+            className={'wn-student-command__item wn-student-command__more-button ' + (secondaryActiveItem ? 'is-active' : '')}
+            aria-expanded={moreOpen}
+            aria-haspopup="menu"
+          >
+            <span className="wn-student-command__item-icon"><MoreHorizontal size={19} /></span>
+            <span className="wn-student-command__item-copy">
+              <strong>{isAr ? 'المزيد' : 'More'}</strong>
+              {secondaryActiveItem ? <small>{secondaryActiveItem.label}</small> : null}
+            </span>
+          </button>
+
+          {moreOpen && (
+            <div className="wn-student-command__more-panel" role="menu">
+              <div className="wn-student-command__more-heading">
+                <div>
+                  <span>{isAr ? 'أدوات إضافية' : 'More tools'}</span>
+                  <strong>{isAr ? 'كل ما تحتاجه في رحلتك' : 'Everything else you need'}</strong>
+                </div>
+                <button type="button" onClick={() => setMoreOpen(false)} aria-label={isAr ? 'إغلاق' : 'Close'}>
+                  <X size={17} />
+                </button>
+              </div>
+              <div className="wn-student-command__more-grid">
+                {secondaryItems.map(({ id, label, icon: Icon, badge, description }) => {
+                  const selected = active === id;
+                  return (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      key={id}
+                      onClick={() => selectItem(id)}
+                      className={'wn-student-command__more-item ' + (selected ? 'is-active' : '')}
+                    >
+                      <span className="wn-student-command__more-icon"><Icon size={18} /></span>
+                      <span>
+                        <strong>{label}</strong>
+                        {description ? <small>{description}</small> : null}
+                      </span>
+                      {badge ? <b>{badge}</b> : null}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      </nav>
+    </div>
+  );
+}
 
 const getStatusLabel = (status, locale) => {
   const labels = {
@@ -454,18 +552,51 @@ export default function StudentDashboard() {
 
   const hasReviewed = (sessionId) => reviews.some((r) => r.session === sessionId || r.session?._id === sessionId);
 
-  const tabs = [
-    { id: 'overview', label: locale === 'id' ? 'Beranda' : locale === 'ar' ? 'الرئيسية' : 'Overview' },
-    { id: 'discover', label: locale === 'id' ? 'Cari Guru' : locale === 'ar' ? 'اختر معلمك' : 'Find a Tutor' },
-    { id: 'trials', label: locale === 'id' ? `Uji Coba (${pendingTrials.length + upcomingTrials.length})` : locale === 'ar' ? `التجريبية (${pendingTrials.length + upcomingTrials.length})` : `Trials (${pendingTrials.length + upcomingTrials.length})` },
-    { id: 'sessions', label: locale === 'id' ? `Sesi (${upcomingSessions.length + pendingSessions.length})` : locale === 'ar' ? `حصصي (${upcomingSessions.length + pendingSessions.length})` : `Sessions (${upcomingSessions.length + pendingSessions.length})` },
-    { id: 'homework', label: locale === 'id' ? `Tugas (${stats.homeworkPending || 0})` : locale === 'ar' ? `واجباتي (${stats.homeworkPending || 0})` : `Homework (${stats.homeworkPending || 0})` },
-    { id: 'evaluations', label: locale === 'id' ? 'Evaluasi' : locale === 'ar' ? 'التقييمات' : 'Evaluations' },
-    { id: 'recordings', label: locale === 'id' ? 'Rekaman' : locale === 'ar' ? 'التسجيلات' : 'Recordings' },
-    { id: 'certificates', label: locale === 'id' ? 'Sertifikat' : locale === 'ar' ? 'الشهادات' : 'Certificates' },
-    { id: 'achievements', label: locale === 'id' ? 'Pencapaian' : locale === 'ar' ? 'الإنجازات' : 'Achievements' },
-    { id: 'referral', label: locale === 'id' ? 'Afiliasi' : locale === 'ar' ? 'السفراء' : 'Referral' },
-    { id: 'account', label: locale === 'id' ? 'Akun' : locale === 'ar' ? 'حسابي' : 'Account' },
+  const primaryNavItems = [
+    { id: 'overview', label: locale === 'id' ? 'Beranda' : locale === 'ar' ? 'الرئيسية' : 'Overview', icon: Sparkles },
+    { id: 'discover', label: locale === 'id' ? 'Cari Guru' : locale === 'ar' ? 'اختر معلمك' : 'Find a Tutor', icon: BookOpen },
+    { id: 'trials', label: locale === 'id' ? 'Uji Coba' : locale === 'ar' ? 'التجريبية' : 'Trials', icon: Clock, badge: pendingTrials.length + upcomingTrials.length },
+    { id: 'sessions', label: locale === 'id' ? 'Sesi' : locale === 'ar' ? 'حصصي' : 'Sessions', icon: Calendar, badge: upcomingSessions.length + pendingSessions.length },
+    { id: 'homework', label: locale === 'id' ? 'Tugas' : locale === 'ar' ? 'واجباتي' : 'Homework', icon: FileText, badge: stats.homeworkPending || 0 },
+  ];
+
+  const secondaryNavItems = [
+    {
+      id: 'evaluations',
+      label: locale === 'id' ? 'Evaluasi' : locale === 'ar' ? 'التقييمات' : 'Evaluations',
+      icon: Star,
+      description: locale === 'ar' ? 'ملاحظات المعلم وتقييماتك' : 'Tutor feedback and evaluations',
+    },
+    {
+      id: 'recordings',
+      label: locale === 'id' ? 'Rekaman' : locale === 'ar' ? 'التسجيلات' : 'Recordings',
+      icon: Mic,
+      description: locale === 'ar' ? 'تسجيلات الحصص والتلاوة' : 'Session and recitation recordings',
+    },
+    {
+      id: 'certificates',
+      label: locale === 'id' ? 'Sertifikat' : locale === 'ar' ? 'الشهادات' : 'Certificates',
+      icon: Award,
+      description: locale === 'ar' ? 'شهاداتك المعتمدة' : 'Your earned certificates',
+    },
+    {
+      id: 'achievements',
+      label: locale === 'id' ? 'Pencapaian' : locale === 'ar' ? 'الإنجازات' : 'Achievements',
+      icon: Trophy,
+      description: locale === 'ar' ? 'النقاط والشارات والتقدم' : 'Points, badges, and progress',
+    },
+    {
+      id: 'referral',
+      label: locale === 'id' ? 'Afiliasi' : locale === 'ar' ? 'السفراء' : 'Referral',
+      icon: Gift,
+      description: locale === 'ar' ? 'شارك الخير واكسب نقاطاً' : 'Invite friends and earn points',
+    },
+    {
+      id: 'account',
+      label: locale === 'id' ? 'Akun' : locale === 'ar' ? 'حسابي' : 'Account',
+      icon: UserRound,
+      description: locale === 'ar' ? 'بياناتك ومعلموك ودوراتك' : 'Profile, tutors, and courses',
+    },
   ];
 
   return (
@@ -564,7 +695,13 @@ export default function StudentDashboard() {
           )}
 
           <div className="wn-dashboard-surface wn-student-surface">
-            <TabBar tabs={tabs} active={tab} onChange={setTab} />
+            <StudentCommandBar
+              primaryItems={primaryNavItems}
+              secondaryItems={secondaryNavItems}
+              active={tab}
+              onChange={setTab}
+              locale={locale}
+            />
 
             {tab === 'overview' && (
               <div className="wn-student-overview">
