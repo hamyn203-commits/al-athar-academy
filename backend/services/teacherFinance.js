@@ -71,12 +71,26 @@ async function ensureLegacyOpeningEntries(teacherId) {
   const legacyWithdrawn = Number(teacher.earnings.withdrawnEarnings) || 0;
   const openingEarned = Math.max(0, legacyTotal + legacyPending);
 
+  const safeOpeningUpsert = async (filter, update) => {
+    try {
+      await TeacherLedger.findOneAndUpdate(
+        filter,
+        update,
+        { upsert: true, new: true, setDefaultsOnInsert: true },
+      );
+    } catch (error) {
+      if (error?.code !== 11000) throw error;
+      // Another concurrent request created the same idempotency key first.
+    }
+  };
+
   if (openingEarned > 0) {
-    await TeacherLedger.findOneAndUpdate(
-      { idempotencyKey: `legacy-opening:${teacherId}:earned` },
+    const idempotencyKey = `legacy-opening:${teacherId}:earned`;
+    await safeOpeningUpsert(
+      { idempotencyKey },
       {
         $setOnInsert: {
-          idempotencyKey: `legacy-opening:${teacherId}:earned`,
+          idempotencyKey,
           teacher: teacherId,
           type: 'adjustment',
           amount: openingEarned,
@@ -86,16 +100,16 @@ async function ensureLegacyOpeningEntries(teacherId) {
           description: 'رصيد افتتاحي مرحّل من نظام مستحقات المعلم القديم',
         },
       },
-      { upsert: true, new: true, setDefaultsOnInsert: true },
     );
   }
 
   if (legacyWithdrawn > 0) {
-    await TeacherLedger.findOneAndUpdate(
-      { idempotencyKey: `legacy-opening:${teacherId}:withdrawn` },
+    const idempotencyKey = `legacy-opening:${teacherId}:withdrawn`;
+    await safeOpeningUpsert(
+      { idempotencyKey },
       {
         $setOnInsert: {
-          idempotencyKey: `legacy-opening:${teacherId}:withdrawn`,
+          idempotencyKey,
           teacher: teacherId,
           type: 'payout',
           amount: legacyWithdrawn,
@@ -107,7 +121,6 @@ async function ensureLegacyOpeningEntries(teacherId) {
           processedAt: new Date(),
         },
       },
-      { upsert: true, new: true, setDefaultsOnInsert: true },
     );
   }
 }
