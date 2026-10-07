@@ -11,7 +11,7 @@ const { protect, authorize } = require('../middleware/auth');
 const objectStorage = require('../services/objectStorage');
 const { resolveOwnedTeacherAssets } = require('../utils/teacherAssetLifecycle');
 const { sendEmail } = require('../services/notificationDispatcher');
-const { notifyRole } = require('../utils/notify');
+const { notifyRole, notifyUser } = require('../utils/notify');
 const multer = require('multer');
 const {
   addMockUser,
@@ -766,6 +766,48 @@ router.put('/admin/:id/review', protect, authorize('admin'), async (req, res) =>
       { $inc: { refreshTokenVersion: 1 } },
       { new: true }
     ).select('name email');
+
+    if (teacherUser?._id) {
+      const reviewNotification = {
+        approve: {
+          title: { ar: 'تم قبول طلبك كمعلم', en: 'Teacher application approved' },
+          message: {
+            ar: 'تم اعتماد حسابك. يمكنك الآن الدخول إلى لوحة المعلم.',
+            en: 'Your teacher account was approved. You can now access the teacher dashboard.',
+          },
+          actionUrl: '/teacher/dashboard',
+        },
+        'request-changes': {
+          title: { ar: 'طلبك يحتاج استكمال', en: 'Teacher application needs changes' },
+          message: {
+            ar: note || 'تحتاج الإدارة إلى استكمال أو تعديل بعض البيانات.',
+            en: note || 'The administration requested changes to your application.',
+          },
+          actionUrl: '/teacher/register',
+        },
+        reject: {
+          title: { ar: 'تحديث حالة طلب المعلم', en: 'Teacher application update' },
+          message: {
+            ar: note || 'تعذر اعتماد طلبك كمعلم في الوقت الحالي.',
+            en: note || 'Your teacher application was not approved at this time.',
+          },
+          actionUrl: '/teacher/register',
+        },
+      }[action];
+
+      if (reviewNotification) {
+        notifyUser(teacherUser._id, {
+          type: 'system',
+          title: reviewNotification.title,
+          message: reviewNotification.message,
+          data: {
+            actionUrl: reviewNotification.actionUrl,
+            metadata: { teacherId: teacher._id, applicationStatus: teacher.status },
+          },
+          priority: 'high',
+        }).catch((error) => console.warn('Teacher review notification:', error.message));
+      }
+    }
 
     if (teacherUser?.email) {
       const notification = {
