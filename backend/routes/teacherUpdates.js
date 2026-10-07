@@ -41,7 +41,7 @@ async function teacherHasStudent(teacherId, studentId) {
   }));
 }
 
-function presentUpdate(update) {
+function presentUpdate(update, { includeAudienceStudents = true } = {}) {
   const raw = update?.toObject ? update.toObject() : update;
   return {
     _id: raw._id,
@@ -55,7 +55,10 @@ function presentUpdate(update) {
       size: video.size,
       contentType: video.contentType,
     })),
-    audience: raw.audience,
+    audience: {
+      mode: raw.audience?.mode || 'all-active',
+      ...(includeAudienceStudents ? { students: raw.audience?.students || [] } : {}),
+    },
     isPublished: raw.isPublished,
     publishedAt: raw.publishedAt,
     createdAt: raw.createdAt,
@@ -293,7 +296,7 @@ router.get('/student', authorize('student'), async (req, res) => {
     const visible = [];
     for (const update of updates) {
       if (await canStudentAccessUpdate(update, req.user.id)) {
-        visible.push(presentUpdate(update));
+        visible.push(presentUpdate(update, { includeAudienceStudents: false }));
       }
     }
 
