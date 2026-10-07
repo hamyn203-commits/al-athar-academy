@@ -7,7 +7,7 @@ import {
   Clock3, History, ChevronLeft, CreditCard, UserCheck,
 } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar, Cell, PieChart, Pie, Legend } from 'recharts';
-import DashboardLayout, { StatCard, TabBar } from '../../components/dashboard/DashboardLayout';
+import { StatCard } from '../../components/dashboard/DashboardLayout';
 import { useRequireAuth } from '../../hooks/useRequireAuth';
 import { useToast } from '../../context/ToastProvider';
 import api from '../../lib/api';
@@ -17,6 +17,7 @@ import TeacherReviewDossier from './TeacherReviewDossier';
 import AdminPeopleSearch from './AdminPeopleSearch';
 import Student360Dossier from './Student360Dossier';
 import Family360Dossier from './Family360Dossier';
+import AdminDashboardShell from './AdminDashboardShell';
 import LaunchReadinessPanel from './LaunchReadinessPanel';
 
 const STATUS_LABEL = { new: 'جديدة', read: 'مقروءة', replied: 'تم الرد', closed: 'مغلقة' };
@@ -185,7 +186,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const requestedTab = searchParams.get('tab');
-    const allowed = ['overview', 'messages', 'teachers', 'withdrawals', 'courses', 'blog', 'growth', 'audit'];
+    const allowed = ['overview', 'people', 'messages', 'teachers', 'withdrawals', 'courses', 'blog', 'growth', 'audit'];
     if (requestedTab && allowed.includes(requestedTab)) {
       setTab(requestedTab);
     }
@@ -466,18 +467,7 @@ export default function AdminDashboard() {
     } catch (e) { toast.error(e.message); }
   };
 
-  const tabs = [
-    { id: 'overview', label: 'نظرة عامة' },
-    { id: 'messages', label: `الرسائل (${messages.filter(m => m.status === 'new').length || '…'})` },
-    { id: 'teachers', label: `المعلمون (${pending.length})` },
-    { id: 'withdrawals', label: `السحوبات (${withdrawals.filter(w => ['pending', 'processing'].includes(w.status)).length || '…'})` },
-    { id: 'courses', label: 'الدورات' },
-    { id: 'blog', label: 'المدونة' },
-    { id: 'growth', label: 'التحليلات والنمو' },
-    { id: 'audit', label: 'سجل الإدارة' },
-  ];
-
-  const COLORS = ['#f43f5e', '#3b82f6', '#8b5cf6', '#10b981'];
+  const COLORS = ['#d5a83d', '#2563eb', '#16a56f', '#7c3aed'];
 
   const donationPieData = Object.entries(growthSummary.donationsByCategory || {}).map(([name, value]) => ({
     name: name === 'student' ? 'كفالة طالب' : name === 'teacher' ? 'كفالة معلم' : name === 'halaqa' ? 'كفالة حلقة' : 'تبرع عام',
@@ -494,15 +484,24 @@ export default function AdminDashboard() {
     'الاشتراكات': e.count
   }));
 
+  const adminSearch = (
+    <AdminPeopleSearch
+      onOpenStudent={openStudentDossier}
+      onOpenGuardian={openFamilyDossier}
+      onOpenTeacher={openTeacherDossier}
+      onOpenPayments={() => navigate('payments')}
+    />
+  );
+
   return (
-    <DashboardLayout title="لوحة تحكم الإدارة" user={user} onLogout={logout}>
-      <AdminPeopleSearch
-        onOpenStudent={openStudentDossier}
-        onOpenGuardian={openFamilyDossier}
-        onOpenTeacher={openTeacherDossier}
-        onOpenPayments={() => navigate('payments')}
-      />
-      <TabBar tabs={tabs} active={tab} onChange={setTab} />
+    <AdminDashboardShell
+      user={user}
+      active={tab}
+      onChange={setTab}
+      onNavigate={navigate}
+      onLogout={logout}
+      search={adminSearch}
+    >
 
       {loading && tab !== 'overview' ? (
         <div className="flex justify-center py-20"><div className="spinner spinner-lg" /></div>
@@ -557,11 +556,12 @@ export default function AdminDashboard() {
                 </div>
               </section>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                <StatCard label="الطلاب" value={stats.totalStudents || 0} icon={Users} />
-                <StatCard label="المعلمون" value={stats.totalTeachers || 0} icon={BookOpen} color="blue" />
-                <StatCard label="الحصص" value={stats.totalSessions || 0} icon={Calendar} color="purple" />
-                <StatCard label="الأرباح" value={`${stats.totalEarnings || 0} ج.م`} icon={DollarSign} color="yellow" />
+              <div className="wn-admin-kpi-grid">
+                <StatCard label="إجمالي الطلاب" value={stats.totalStudents || 0} icon={Users} />
+                <StatCard label="المعلمون النشطون" value={stats.totalTeachers || 0} icon={BookOpen} />
+                <StatCard label="إجمالي الحصص" value={stats.totalSessions || 0} icon={Calendar} />
+                <StatCard label="إجمالي الإيرادات" value={`${stats.totalEarnings || 0} ج.م`} icon={DollarSign} />
+                <StatCard label="يحتاج تدخل الإدارة" value={commandCenter.summary?.totalPendingActions || 0} icon={AlertTriangle} />
               </div>
               <LaunchReadinessPanel />
 
@@ -594,6 +594,33 @@ export default function AdminDashboard() {
                 compact
               />
             </>
+          )}
+
+          {tab === 'people' && (
+            <section className="wn-admin-people-home">
+              <div className="wn-admin-people-home__intro">
+                <span>STUDENT & FAMILY INTELLIGENCE</span>
+                <h2>الطلاب والأسر من نقطة واحدة</h2>
+                <p>استخدم البحث الشامل أعلى اللوحة للوصول إلى Student 360 أو Family 360 بالاسم أو البريد أو الهاتف أو الـID.</p>
+              </div>
+              <div className="wn-admin-people-home__cards">
+                <div>
+                  <Users size={22} />
+                  <strong>Student 360</strong>
+                  <p>الحصص، الحضور، تقارير المعلم، الواجبات، المدفوعات، ولي الأمر، والتنبيهات.</p>
+                </div>
+                <div>
+                  <ShieldCheck size={22} />
+                  <strong>Family 360</strong>
+                  <p>ولي الأمر، الأبناء، طلبات الربط، حالة كل طفل والحصة القادمة.</p>
+                </div>
+                <div>
+                  <History size={22} />
+                  <strong>Audit Trail</strong>
+                  <p>كل وصول إداري للبيانات الحساسة يتم تسجيله تلقائيًا.</p>
+                </div>
+              </div>
+            </section>
           )}
 
           {tab === 'messages' && (
@@ -1053,6 +1080,6 @@ export default function AdminDashboard() {
           onOpenStudent={openStudentDossier}
         />
       )}
-    </DashboardLayout>
+    </AdminDashboardShell>
   );
 }
