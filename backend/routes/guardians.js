@@ -60,15 +60,30 @@ router.delete('/remove-child/:studentId', protect, authorize('guardian'), async 
 
     await guardian.removeChild(req.params.studentId);
 
-    await Promise.all([
-      User.findByIdAndUpdate(req.user.id, {
-        $pull: { children: req.params.studentId },
-      }),
-      User.updateOne(
+    await User.findByIdAndUpdate(req.user.id, {
+      $pull: { children: req.params.studentId },
+    });
+
+    // The legacy User.guardian field is only a compatibility pointer. If this
+    // guardian owned that pointer, move it to another active guardian link when
+    // possible instead of deleting a valid family relationship.
+    const alternateGuardian = await Guardian.findOne({
+      user: { $ne: req.user.id },
+      'children.student': req.params.studentId,
+      isActive: { $ne: false },
+    }).select('user');
+
+    if (alternateGuardian?.user) {
+      await User.updateOne(
         { _id: req.params.studentId, guardian: req.user.id },
-        { $unset: { guardian: 1, guardianLinkCode: 1 } }
-      ),
-    ]);
+        { $set: { guardian: alternateGuardian.user } }
+      );
+    } else {
+      await User.updateOne(
+        { _id: req.params.studentId, guardian: req.user.id },
+        { $unset: { guardian: 1 } }
+      );
+    }
 
     res.json({ message: 'Child removed successfully' });
   } catch (error) {

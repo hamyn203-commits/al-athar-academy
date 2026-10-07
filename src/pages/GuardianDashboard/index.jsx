@@ -10,14 +10,29 @@ import { useToast } from '../../context/ToastProvider';
 import api from '../../lib/api';
 import GuardianOverviewCenter from './GuardianOverviewCenter';
 
+function relationshipLabel(value) {
+  const labels = { father: 'ابن / ابنة', mother: 'ابن / ابنة', guardian: 'تحت الرعاية', other: 'تحت الرعاية' };
+  return labels[value] || 'ابن / ابنة';
+}
+
+function taskStatusLabel(status) {
+  const labels = { pending: 'مطلوب', submitted: 'تم التسليم — قيد التصحيح', done: 'تم الاعتماد' };
+  return labels[status] || status;
+}
+
 export default function GuardianDashboard() {
   const { user, ready, logout } = useRequireAuth(['guardian']);
   const toast = useToast();
 
   const [children, setChildren] = useState([]);
-  const [selectedChildId, setSelectedChildId] = useState(null);
+  const [selectedChildId, setSelectedChildId] = useState('family');
+  const [familyOverview, setFamilyOverview] = useState({
+    summary: { totalChildren: 0, upcomingSessions: 0, pendingHomework: 0, needsAttention: 0 },
+    children: [],
+  });
   const [upcomingSessions, setUpcomingSessions] = useState([]);
   const [reports, setReports] = useState([]);
+  const [homeworkTasks, setHomeworkTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('overview');
 
@@ -48,34 +63,43 @@ export default function GuardianDashboard() {
   const [excuseReason, setExcuseReason] = useState('');
   const [submittingRsvp, setSubmittingRsvp] = useState(false);
 
-  // Fetch all guardian children and sessions
+  // Fetch the family summary once. Child switching is local and must not
+  // refetch the whole dashboard for every sibling selection.
   const loadDashboardData = useCallback(async () => {
     if (!ready) return;
     setLoading(true);
     try {
-      // 1. Fetch children
-      const childrenRes = await api.get('/api/guardian/children', { auth: true })
-        .catch(() => ({ children: [] }));
-      
+      const [childrenRes, familyRes, sessionsRes] = await Promise.all([
+        api.get('/api/guardian/children', { auth: true }).catch(() => ({ children: [] })),
+        api.get('/api/guardian/family-overview', { auth: true }).catch(() => ({
+          summary: { totalChildren: 0, upcomingSessions: 0, pendingHomework: 0, needsAttention: 0 },
+          children: [],
+        })),
+        api.get('/api/guardian/upcoming-sessions', { auth: true }).catch(() => ({ sessions: [] })),
+      ]);
+
       const kidsList = childrenRes.children || [];
       setChildren(kidsList);
-
-      if (kidsList.length > 0 && !selectedChildId) {
-        setSelectedChildId(kidsList[0].studentId);
-      }
-
-      // 2. Fetch upcoming sessions
-      const sessionsRes = await api.get('/api/guardian/upcoming-sessions', { auth: true })
-        .catch(() => ({ sessions: [] }));
+      setFamilyOverview({
+        summary: familyRes.summary || { totalChildren: kidsList.length, upcomingSessions: 0, pendingHomework: 0, needsAttention: 0 },
+        children: familyRes.children || [],
+      });
       setUpcomingSessions(sessionsRes.sessions || []);
 
+      setSelectedChildId((current) => {
+        if (!kidsList.length) return 'family';
+        if (current && current !== 'family' && kidsList.some((child) => String(child.studentId) === String(current))) {
+          return current;
+        }
+        return kidsList.length > 1 ? 'family' : String(kidsList[0].studentId);
+      });
     } catch (err) {
       console.error('Failed to load guardian dashboard:', err);
       toast.error('حدث خطأ أثناء تحميل بيانات لوحة ولي الأمر');
     } finally {
       setLoading(false);
     }
-  }, [ready, selectedChildId, toast]);
+  }, [ready, toast]);
 
   useEffect(() => {
     loadDashboardData();
@@ -91,11 +115,27 @@ export default function GuardianDashboard() {
     }
   }, [ready]);
 
+  const refreshFamilyOverview = useCallback(async () => {
+    if (!ready) return;
+    try {
+      const familyRes = await api.get('/api/guardian/family-overview', { auth: true });
+      setFamilyOverview({
+        summary: familyRes.summary || { totalChildren: children.length, upcomingSessions: 0, pendingHomework: 0, needsAttention: 0 },
+        children: familyRes.children || [],
+      });
+    } catch {
+      // Preserve the last known family summary during transient failures.
+    }
+  }, [ready, children.length]);
+
   useEffect(() => {
     if (!ready) return undefined;
 
     const refresh = () => {
-      if (document.visibilityState === 'visible') syncUpcomingSessions();
+      if (document.visibilityState === 'visible') {
+        syncUpcomingSessions();
+        refreshFamilyOverview();
+      }
     };
 
     const interval = window.setInterval(refresh, 15000);
@@ -110,7 +150,7 @@ export default function GuardianDashboard() {
       window.removeEventListener('focus', onFocus);
       document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [ready, syncUpcomingSessions]);
+  }, [ready, syncUpcomingSessions, refreshFamilyOverview]);
 
   useEffect(() => {
     if (!ready) return undefined;
@@ -125,24 +165,40 @@ export default function GuardianDashboard() {
         'session-reminder',
       ].includes(type)) {
         syncUpcomingSessions();
+        refreshFamilyOverview();
+      }
+
+      if (type === 'homework-assigned') {
+        refreshFamilyOverview();
+        if (selectedChildId && selectedChildId !== 'family') {
+          api.get(`/api/guardian/homework/${selectedChildId}`, { auth: true })
+            .then((res) => setHomeworkTasks(res.tasks || []))
+            .catch(() => {});
+        }
       }
     };
 
     window.addEventListener('wn:realtime-notification', onRealtimeNotification);
     return () => window.removeEventListener('wn:realtime-notification', onRealtimeNotification);
-  }, [ready, syncUpcomingSessions]);
+  }, [ready, syncUpcomingSessions, refreshFamilyOverview, selectedChildId]);
 
-  // Fetch reports when selected child changes or tab is reports
+  // Fetch only the selected child's private data. Family mode never mixes
+  // reports or homework between siblings.
   useEffect(() => {
-    if (!ready || !selectedChildId) return;
+    if (!ready || !selectedChildId || selectedChildId === 'family') {
+      setReports([]);
+      setHomeworkTasks([]);
+      return;
+    }
+
     api.get(`/api/guardian/reports/${selectedChildId}`, { auth: true })
-      .then((res) => {
-        setReports(res.reports || []);
-      })
-      .catch(() => {
-        setReports([]);
-      });
-  }, [ready, selectedChildId, tab]);
+      .then((res) => setReports(res.reports || []))
+      .catch(() => setReports([]));
+
+    api.get(`/api/guardian/homework/${selectedChildId}`, { auth: true })
+      .then((res) => setHomeworkTasks(res.tasks || []))
+      .catch(() => setHomeworkTasks([]));
+  }, [ready, selectedChildId]);
 
   // Link child handler
   const handleLinkChild = async (e) => {
@@ -199,12 +255,20 @@ export default function GuardianDashboard() {
 
   if (!ready) return null;
 
-  const currentChild = children.find(c => c.studentId === selectedChildId) || children[0] || null;
-  const selectedChildSessions = upcomingSessions.filter((session) => {
-    const childId = session.child?.id || session.childId;
-    return !selectedChildId || String(childId || '') === String(selectedChildId);
-  });
+  const isFamilyMode = selectedChildId === 'family';
+  const currentChild = isFamilyMode
+    ? null
+    : children.find((child) => String(child.studentId) === String(selectedChildId)) || null;
+  const selectedChildSessions = isFamilyMode
+    ? []
+    : upcomingSessions.filter((session) => {
+        const childId = session.child?.id || session.childId;
+        return String(childId || '') === String(selectedChildId);
+      });
   const nextChildSession = selectedChildSessions[0] || null;
+  const familyChildById = new Map(
+    (familyOverview.children || []).map((child) => [String(child.studentId), child])
+  );
 
   return (
     <DashboardLayout title="لوحة متابعة ولي الأمر" user={user} onLogout={logout}>
@@ -248,13 +312,28 @@ export default function GuardianDashboard() {
             {children.length > 0 && (
               <div className="mt-6 pt-5 border-t border-emerald-700/60 flex flex-wrap items-center gap-3">
                 <span className="text-xs text-emerald-200/90 font-medium font-arabic">الأبناء المسجلون:</span>
+                {children.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => { setSelectedChildId('family'); setTab('overview'); }}
+                    className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-sm font-arabic transition-all ${
+                      isFamilyMode
+                        ? 'bg-white text-emerald-900 font-bold shadow-md ring-2 ring-emerald-300'
+                        : 'bg-emerald-800/80 text-emerald-100 hover:bg-emerald-700/80'
+                    }`}
+                  >
+                    <Users size={15} />
+                    <span>كل الأبناء</span>
+                    <b className="min-w-5 h-5 px-1 rounded-full bg-emerald-600 text-white text-[10px] grid place-items-center">{children.length}</b>
+                  </button>
+                )}
                 {children.map((child) => {
-                  const isSelected = child.studentId === selectedChildId;
+                  const isSelected = String(child.studentId) === String(selectedChildId);
                   return (
                     <button
                       key={child.studentId}
                       type="button"
-                      onClick={() => setSelectedChildId(child.studentId)}
+                      onClick={() => { setSelectedChildId(String(child.studentId)); setTab('overview'); }}
                       className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-sm font-arabic transition-all ${
                         isSelected
                           ? 'bg-white text-emerald-900 font-bold shadow-md scale-105 ring-2 ring-emerald-300'
@@ -277,8 +356,77 @@ export default function GuardianDashboard() {
             )}
           </div>
 
-          {/* Quick Metrics of the Selected Child */}
-          {currentChild ? (
+          {/* Family command center or selected child metrics */}
+          {isFamilyMode && children.length > 0 ? (
+            <div className="wn-guardian-family-hub">
+              <div className="wn-guardian-family-summary">
+                <div>
+                  <span>نظرة عامة</span>
+                  <strong>{familyOverview.summary?.totalChildren || children.length}</strong>
+                  <small>أبناء مرتبطون</small>
+                </div>
+                <div>
+                  <span>الحصص القادمة</span>
+                  <strong>{familyOverview.summary?.upcomingSessions || 0}</strong>
+                  <small>لكل الأبناء</small>
+                </div>
+                <div>
+                  <span>واجبات معلقة</span>
+                  <strong>{familyOverview.summary?.pendingHomework || 0}</strong>
+                  <small>تحتاج متابعة</small>
+                </div>
+                <div className={(familyOverview.summary?.needsAttention || 0) > 0 ? 'is-alert' : ''}>
+                  <span>تحتاج انتباهك</span>
+                  <strong>{familyOverview.summary?.needsAttention || 0}</strong>
+                  <small>طلبات أو واجبات</small>
+                </div>
+              </div>
+
+              <div className="wn-guardian-family-grid">
+                {children.map((child) => {
+                  const familyChild = familyChildById.get(String(child.studentId)) || {};
+                  const next = familyChild.nextSession;
+                  return (
+                    <button
+                      type="button"
+                      key={child.studentId}
+                      onClick={() => { setSelectedChildId(String(child.studentId)); setTab('overview'); }}
+                      className="wn-guardian-child-card"
+                    >
+                      <div className="wn-guardian-child-card__top">
+                        <span className="wn-guardian-child-avatar">{child.name?.charAt(0) || 'ط'}</span>
+                        <div>
+                          <strong>{child.name}</strong>
+                          <small>{relationshipLabel(child.relationship)}</small>
+                        </div>
+                        {(familyChild.attentionCount || 0) > 0 ? <b>{familyChild.attentionCount}</b> : null}
+                      </div>
+
+                      <div className="wn-guardian-child-card__metrics">
+                        <div><span>الحصة القادمة</span><strong>{next ? new Date(next.scheduledAt).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' }) : '—'}</strong></div>
+                        <div><span>واجبات معلقة</span><strong>{familyChild.pendingHomework ?? '—'}</strong></div>
+                        <div><span>آخر حفظ</span><strong>{familyChild.latestReport?.memorizationScore != null ? familyChild.latestReport.memorizationScore + '/10' : '—'}</strong></div>
+                      </div>
+
+                      {next ? (
+                        <div className="wn-guardian-child-card__next">
+                          <Clock size={14} />
+                          <span>{new Date(next.scheduledAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })} · {next.teacherName}</span>
+                        </div>
+                      ) : (
+                        <div className="wn-guardian-child-card__next is-empty">
+                          <CalendarCheck size={14} />
+                          <span>لا توجد حصة قادمة</span>
+                        </div>
+                      )}
+
+                      <span className="wn-guardian-child-card__open">فتح متابعة {child.name} <ChevronLeft size={15} /></span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : currentChild ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="wn-dashboard-mini-card rounded-xl p-4 border flex items-center gap-3">
                 <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
@@ -354,11 +502,13 @@ export default function GuardianDashboard() {
             <GuardianOverviewCenter child={currentChild} nextSession={nextChildSession} />
           )}
 
-          {/* Tab Navigation */}
+          {/* Child-specific navigation */}
+          {currentChild && (
           <div className="wn-dashboard-surface">
             <TabBar
               tabs={[
                 { id: 'overview', label: 'الحصص والمتابعة' },
+                { id: 'homework', label: 'الواجبات' },
                 { id: 'reports', label: 'تقارير الحفظ والتجويد' },
                 { id: 'attendance', label: 'الحضور والصلاحيات' }
               ]}
@@ -398,7 +548,7 @@ export default function GuardianDashboard() {
                         const sessionChildId = session.child?.id || session.childId || selectedChildId;
 
                         return (
-                          <div key={session._id} className="border border-emerald-100/80 rounded-xl p-5 bg-white shadow-sm hover:shadow-md transition">
+                          <div key={session.instanceKey || `${session._id}:${sessionChildId}`} className="border border-emerald-100/80 rounded-xl p-5 bg-white shadow-sm hover:shadow-md transition">
                             <div className="flex items-start justify-between gap-3 mb-3">
                               <div>
                                 <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 mb-1">
@@ -468,13 +618,17 @@ export default function GuardianDashboard() {
                               ) : (
                                 <div className="w-full flex items-center justify-between text-xs text-gray-500">
                                   <span>تم تسجيل ردك بنجاح في سجل الحلقة</span>
-                                  <a
-                                    href={session.meetingLink || session.meetingUrl || `/live/session-${session._id}?role=guardian&observer=true`}
-                                    className="inline-flex items-center gap-1 text-emerald-700 font-bold hover:underline"
-                                  >
-                                    <span>دخول الغرفة كمراقب صامت</span>
-                                    <ArrowRight size={14} />
-                                  </a>
+                                  {(session.meetingLink || session.meetingUrl) ? (
+                                    <a
+                                      href={session.meetingLink || session.meetingUrl}
+                                      className="inline-flex items-center gap-1 text-emerald-700 font-bold hover:underline"
+                                    >
+                                      <span>دخول الغرفة كمراقب صامت</span>
+                                      <ArrowRight size={14} />
+                                    </a>
+                                  ) : (
+                                    <span className="text-slate-400">تتاح غرفة المتابعة عند بدء الحصة</span>
+                                  )}
                                 </div>
                               )}
                             </div>
@@ -567,6 +721,50 @@ export default function GuardianDashboard() {
                         <span>{currentChild.latestEvaluation.notes}</span>
                       </div>
                     )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* HOMEWORK */}
+            {tab === 'homework' && (
+              <div className="space-y-4 mt-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <span className="text-xs font-bold text-emerald-700">متابعة الواجب</span>
+                    <h3 className="font-bold text-gray-800 text-lg font-arabic">واجبات {currentChild?.name}</h3>
+                  </div>
+                  <span className="text-xs text-gray-500">
+                    {homeworkTasks.filter((task) => task.status === 'pending').length} مطلوب · {homeworkTasks.filter((task) => task.status === 'submitted').length} قيد التصحيح
+                  </span>
+                </div>
+
+                {homeworkTasks.length === 0 ? (
+                  <div className="text-center py-12 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                    <BookOpen className="mx-auto text-gray-300 mb-3" size={38} />
+                    <p className="text-gray-500 font-medium">لا توجد واجبات لهذا الطالب حتى الآن</p>
+                  </div>
+                ) : (
+                  <div className="wn-guardian-homework-list">
+                    {homeworkTasks.map((task) => (
+                      <article key={task._id} className={`wn-guardian-homework-card is-${task.status}`}>
+                        <div>
+                          <span>{taskStatusLabel(task.status)}</span>
+                          <h4>{task.title}</h4>
+                          <p>{task.description || 'بدون تعليمات إضافية'}</p>
+                        </div>
+                        <div className="wn-guardian-homework-card__meta">
+                          <span><Users size={14} /> {task.teacherName || 'معلم الأكاديمية'}</span>
+                          <span><Calendar size={14} /> {task.dueDate ? new Date(task.dueDate).toLocaleDateString('ar-EG') : 'بدون موعد تسليم'}</span>
+                        </div>
+                        {task.teacherFeedback ? (
+                          <div className="wn-guardian-homework-feedback">
+                            <MessageCircle size={15} />
+                            <div><strong>ملاحظة المعلم</strong><p>{task.teacherFeedback}</p></div>
+                          </div>
+                        ) : null}
+                      </article>
+                    ))}
                   </div>
                 )}
               </div>
@@ -693,6 +891,7 @@ export default function GuardianDashboard() {
             )}
 
           </div>
+          )}
 
         </div>
       )}
@@ -716,7 +915,7 @@ export default function GuardianDashboard() {
             </div>
 
             <p className="text-sm text-gray-600 mb-4 font-arabic">
-              اطلب من الطالب كود ربط ولي الأمر الموجود في لوحة حسابه، ثم أدخله هنا. الكود يُستخدم مرة واحدة فقط:
+              اطلب كود ربط ولي الأمر من حساب الطالب ثم أدخله هنا. يمكنك تكرار العملية لأي عدد من الأبناء، وكل ابن له كود مستقل:
             </p>
 
             <form onSubmit={handleLinkChild} className="space-y-4">

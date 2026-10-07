@@ -8,12 +8,71 @@ const Session = require('../models/Session');
 const GroupCircle = require('../models/GroupCircle');
 const LiveSession = require('../models/LiveSession');
 const Progress = require('../models/Progress');
+const TeacherTask = require('../models/TeacherTask');
 const { protect, authorize } = require('../middleware/auth');
 const { findChildAccess, hasChildPermission } = require('../utils/guardianSafeguarding');
 
 
 const isDBConnected = () => mongoose.connection.readyState === 1;
 const isValidObjectId = (id) => id && mongoose.Types.ObjectId.isValid(id);
+
+async function getGuardianProfile(userId, { populateChildren = false } = {}) {
+  let query = Guardian.findOne({ user: userId });
+  if (populateChildren) {
+    query = query.populate({
+      path: 'children.student',
+      select: 'name email avatar circle currentLevel preferredTrack',
+    });
+  }
+
+  let guardian = await query;
+  if (guardian?.children?.length) return guardian;
+
+  // One-time compatibility bridge for accounts created before Guardian became
+  // the canonical relationship store.
+  const legacyUser = await User.findById(userId).select('children');
+  if (!legacyUser?.children?.length) return guardian;
+
+  if (!guardian) guardian = new Guardian({ user: userId, children: [] });
+  const existing = new Set((guardian.children || []).map((entry) => String(entry.student)));
+
+  for (const childId of legacyUser.children) {
+    if (!existing.has(String(childId))) {
+      guardian.children.push({
+        student: childId,
+        relationship: 'guardian',
+        permissions: {
+          viewProgress: true,
+          viewGrades: true,
+          viewAttendance: true,
+          receiveNotifications: true,
+          approveEnrollments: false,
+        },
+      });
+    }
+  }
+
+  await guardian.save();
+  if (populateChildren) {
+    await guardian.populate({
+      path: 'children.student',
+      select: 'name email avatar circle currentLevel preferredTrack',
+    });
+  }
+  return guardian;
+}
+
+function childMatchesSession(child, session) {
+  if (!child?._id || !session) return false;
+  const childId = String(child._id);
+  if (session.student && String(session.student) === childId) return true;
+  if ((session.attendance || []).some((entry) => entry.student && String(entry.student) === childId)) return true;
+  if (child.circle && session.circle) {
+    const sessionCircleId = session.circle?._id || session.circle;
+    if (String(child.circle) === String(sessionCircleId)) return true;
+  }
+  return false;
+}
 
 /**
  * @route   GET /api/guardian/children
@@ -195,6 +254,207 @@ router.get('/children', protect, authorize('guardian', 'admin'), async (req, res
 });
 
 /**
+ * @route   GET /api/guardian/family-overview
+ * @desc    Lightweight multi-child family command center
+ * @access  Private (Guardian)
+ */
+router.get('/family-overview', protect, authorize('guardian'), async (req, res) => {
+  try {
+    if (!isDBConnected() || !isValidObjectId(req.user.id)) {
+      return res.status(503).json({ error: 'Guardian data is temporarily unavailable' });
+    }
+
+    const guardian = await getGuardianProfile(req.user.id, { populateChildren: true });
+    const entries = (guardian?.children || []).filter((entry) => entry.student?._id);
+    if (!entries.length) {
+      return res.json({
+        success: true,
+        summary: { totalChildren: 0, upcomingSessions: 0, pendingHomework: 0, needsAttention: 0 },
+        children: [],
+      });
+    }
+
+    const childIds = entries.map((entry) => entry.student._id);
+    const circleIds = entries.map((entry) => entry.student.circle).filter(Boolean);
+    const now = new Date();
+
+    const [futureSessions, tasks, recentCompleted] = await Promise.all([
+      Session.find({
+        $or: [
+          { student: { $in: childIds } },
+          { circle: { $in: circleIds } },
+          { 'attendance.student': { $in: childIds } },
+        ],
+        scheduledAt: { $gte: now },
+        status: { $in: ['pending', 'accepted'] },
+      })
+        .populate({
+          path: 'teacher',
+          select: 'personalInfo.fullName media.profilePhoto user',
+          populate: { path: 'user', select: 'name avatar' },
+        })
+        .populate('circle', 'name')
+        .sort({ scheduledAt: 1 })
+        .limit(100)
+        .lean(),
+      TeacherTask.find({
+        student: { $in: childIds },
+        status: { $in: ['pending', 'submitted'] },
+      })
+        .select('student title type dueDate status teacherFeedback createdAt updatedAt')
+        .sort({ dueDate: 1, createdAt: -1 })
+        .lean(),
+      Session.find({
+        $or: [
+          { student: { $in: childIds } },
+          { 'studentReports.student': { $in: childIds } },
+        ],
+        status: 'completed',
+      })
+        .select('student scheduledAt attendance studentReports')
+        .sort({ scheduledAt: -1 })
+        .limit(200)
+        .lean(),
+    ]);
+
+    const cards = entries.map((entry) => {
+      const student = entry.student;
+      const studentId = String(student._id);
+      const permissions = findChildAccess(guardian, studentId)?.permissions || {};
+
+      const childSessions = futureSessions.filter((session) => childMatchesSession(student, session));
+      const childTasks = tasks.filter((task) => String(task.student) === studentId);
+      const pendingHomework = permissions.viewProgress
+        ? childTasks.filter((task) => task.status === 'pending').length
+        : null;
+      const submittedHomework = permissions.viewProgress
+        ? childTasks.filter((task) => task.status === 'submitted').length
+        : null;
+
+      let latestReport = null;
+      if (permissions.viewGrades) {
+        for (const session of recentCompleted) {
+          const report = (session.studentReports || []).find(
+            (item) => item.student && String(item.student) === studentId,
+          );
+          if (report) {
+            latestReport = {
+              date: session.scheduledAt,
+              memorizationScore: report.memorizationScore,
+              tajweedScore: report.tajweedScore,
+              surahRecited: report.surahRecited,
+              nextHomework: report.nextHomework,
+            };
+            break;
+          }
+        }
+      }
+
+      const next = childSessions[0] || null;
+      const nextTeacherName =
+        next?.teacher?.user?.name
+        || next?.teacher?.personalInfo?.fullName
+        || 'معلم الأكاديمية';
+
+      const overdueHomework = permissions.viewProgress
+        ? childTasks.filter((task) => (
+          task.status === 'pending'
+          && task.dueDate
+          && new Date(task.dueDate) < now
+        )).length
+        : 0;
+
+      const attentionCount =
+        overdueHomework
+        + (submittedHomework || 0)
+        + (next?.status === 'pending' ? 1 : 0);
+
+      return {
+        studentId: student._id,
+        name: student.name,
+        avatar: student.avatar,
+        relationship: entry.relationship,
+        permissions,
+        level: student.currentLevel,
+        preferredTrack: student.preferredTrack,
+        nextSession: next ? {
+          _id: next._id,
+          scheduledAt: next.scheduledAt,
+          status: next.status,
+          type: next.type,
+          teacherName: nextTeacherName,
+          circleName: next.circle?.name || null,
+        } : null,
+        upcomingSessions: childSessions.length,
+        pendingHomework,
+        submittedHomework,
+        overdueHomework: permissions.viewProgress ? overdueHomework : null,
+        latestReport,
+        attentionCount,
+      };
+    });
+
+    return res.json({
+      success: true,
+      summary: {
+        totalChildren: cards.length,
+        upcomingSessions: cards.reduce((sum, child) => sum + child.upcomingSessions, 0),
+        pendingHomework: cards.reduce((sum, child) => sum + (child.pendingHomework || 0), 0),
+        needsAttention: cards.reduce((sum, child) => sum + child.attentionCount, 0),
+      },
+      children: cards,
+    });
+  } catch (error) {
+    console.error('Get guardian family overview error:', error);
+    return res.status(500).json({ error: 'تعذر تحميل ملخص الأسرة' });
+  }
+});
+
+/**
+ * @route   GET /api/guardian/homework/:studentId
+ * @desc    Homework status for one linked child
+ * @access  Private (Guardian)
+ */
+router.get('/homework/:studentId', protect, authorize('guardian'), async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    if (!isValidObjectId(studentId)) {
+      return res.status(400).json({ error: 'معرف الطالب غير صالح' });
+    }
+
+    const guardian = await Guardian.findOne({ user: req.user.id });
+    if (!guardian || !hasChildPermission(guardian, studentId, 'viewProgress')) {
+      return res.status(403).json({ error: 'غير مصرح بمتابعة واجبات هذا الطالب' });
+    }
+
+    const tasks = await TeacherTask.find({ student: studentId })
+      .populate({
+        path: 'teacher',
+        select: 'personalInfo.fullName user',
+        populate: { path: 'user', select: 'name' },
+      })
+      .select('teacher type title description dueDate status teacherFeedback reviewedAt createdAt updatedAt')
+      .sort({ createdAt: -1 })
+      .limit(100)
+      .lean();
+
+    return res.json({
+      success: true,
+      tasks: tasks.map((task) => ({
+        ...task,
+        teacherName:
+          task.teacher?.user?.name
+          || task.teacher?.personalInfo?.fullName
+          || 'معلم الأكاديمية',
+      })),
+    });
+  } catch (error) {
+    console.error('Get guardian child homework error:', error);
+    return res.status(500).json({ error: 'تعذر تحميل واجبات الطالب' });
+  }
+});
+
+/**
  * @route   POST /api/guardian/link-child
  * @desc    ربط حساب طالب بحساب ولي الأمر بواسطة كود الطالب أو إيميله
  * @access  Private (Guardian, Admin)
@@ -221,10 +481,6 @@ router.post('/link-child', protect, authorize('guardian', 'admin'), async (req, 
       return res.status(404).json({ error: 'كود الربط غير صحيح أو تم استخدامه من قبل' });
     }
 
-    if (student.guardian && String(student.guardian) !== String(req.user.id)) {
-      return res.status(409).json({ error: 'هذا الطالب مرتبط بالفعل بولي أمر آخر' });
-    }
-
     let guardianProfile = await Guardian.findOne({ user: req.user.id });
     if (!guardianProfile) {
       guardianProfile = new Guardian({ user: req.user.id, children: [] });
@@ -245,7 +501,10 @@ router.post('/link-child', protect, authorize('guardian', 'admin'), async (req, 
       receiveNotifications: true
     });
 
-    student.guardian = req.user.id;
+    // Guardian.children is the canonical relationship. Keep the legacy
+    // single guardian field only as a compatibility pointer and never use it
+    // to block a second parent/guardian from linking the same student.
+    if (!student.guardian) student.guardian = req.user.id;
     student.guardianLinkCode = undefined;
     await student.save();
 
@@ -260,7 +519,8 @@ router.post('/link-child', protect, authorize('guardian', 'admin'), async (req, 
         id: student._id,
         name: student.name,
         relationship
-      }
+      },
+      totalChildren: guardianProfile.children.length
     });
   } catch (error) {
     console.error('Link child error:', error);
@@ -361,15 +621,20 @@ router.get('/upcoming-sessions', protect, authorize('guardian', 'admin'), async 
       return res.status(503).json({ error: 'Guardian sessions are temporarily unavailable' });
     }
 
-    let guardian = await Guardian.findOne({ user: req.user.id });
-    let childIds = [];
-    if (guardian && guardian.children && guardian.children.length > 0) {
-      childIds = guardian.children.map(c => c.student);
-    } else {
-      const user = await User.findById(req.user.id);
-      if (user && user.children && user.children.length > 0) {
-        childIds = user.children;
+    const guardian = await getGuardianProfile(req.user.id);
+    let childIds = (guardian?.children || []).map((entry) => entry.student);
+
+    const requestedStudentId = String(req.query.studentId || '').trim();
+    if (requestedStudentId) {
+      if (!isValidObjectId(requestedStudentId)) {
+        return res.status(400).json({ error: 'معرف الطالب غير صالح' });
       }
+
+      const linked = childIds.some((childId) => String(childId) === requestedStudentId);
+      if (!linked) {
+        return res.status(403).json({ error: 'هذا الطالب غير مرتبط بحساب ولي الأمر' });
+      }
+      childIds = [requestedStudentId];
     }
 
     if (childIds.length === 0) {
@@ -408,7 +673,7 @@ router.get('/upcoming-sessions', protect, authorize('guardian', 'admin'), async 
     })
     .populate('circle', 'name level schedule capacity')
     .sort({ scheduledAt: 1 })
-    .limit(10)
+    .limit(requestedStudentId ? 25 : 100)
     .lean();
 
     const liveSessions = await LiveSession.find({
@@ -419,18 +684,11 @@ router.get('/upcoming-sessions', protect, authorize('guardian', 'admin'), async 
       liveSessions.map((live) => [String(live.session), live.roomId])
     );
 
-    const formattedSessions = upcoming.map(sess => {
-      // Determine which child this belongs to
-      let child = null;
-      if (sess.student) {
-        child = childrenUsers.find(c => c._id.toString() === sess.student.toString());
-      } else if (sess.circle) {
-        child = childrenUsers.find(c => c.circle && c.circle.toString() === sess.circle._id.toString());
-      }
-
-      // Check RSVP / attendance status
-      const att = sess.attendance?.find(a => child && a.student && a.student.toString() === child._id.toString());
-      
+    // Expand a shared circle session once per linked child. The old implementation
+    // picked the first matching child, which made siblings in the same circle
+    // disappear from the guardian dashboard.
+    const formattedSessions = upcoming.flatMap((sess) => {
+      const affectedChildren = childrenUsers.filter((child) => childMatchesSession(child, sess));
       const teacherName =
         sess.teacher?.user?.name ||
         sess.teacher?.personalInfo?.fullName ||
@@ -439,28 +697,35 @@ router.get('/upcoming-sessions', protect, authorize('guardian', 'admin'), async 
       const diffMs = new Date(sess.scheduledAt).getTime() - now.getTime();
       const diffHours = diffMs / (1000 * 60 * 60);
 
-      return {
-        _id: sess._id,
-        scheduledAt: sess.scheduledAt,
-        duration: sess.duration,
-        meetingLink: liveRoomBySession.get(String(sess._id))
-          ? `/live/${liveRoomBySession.get(String(sess._id))}`
-          : null,
-        type: sess.type,
-        status: sess.status,
-        circleName: sess.circle?.name || (sess.type === 'trial' ? 'حصة تجريبية مجانية' : 'حلقة فردية'),
-        child: child ? { id: child._id, name: child.name } : null,
-        teacher: {
-          id: sess.teacher?._id || null,
-          name: teacherName,
-          avatar: sess.teacher?.media?.profilePhoto || sess.teacher?.user?.avatar || null
-        },
-        rsvp: child && attendancePermissionByChild.get(String(child._id))
-          ? (att ? att.status : 'pending')
-          : null,
-        canExcuseWithCompensation: diffHours >= 6,
-        hoursUntilSession: Math.round(diffHours * 10) / 10
-      };
+      return affectedChildren.map((child) => {
+        const att = sess.attendance?.find(
+          (entry) => entry.student && String(entry.student) === String(child._id)
+        );
+
+        return {
+          _id: sess._id,
+          instanceKey: `${sess._id}:${child._id}`,
+          scheduledAt: sess.scheduledAt,
+          duration: sess.duration,
+          meetingLink: liveRoomBySession.get(String(sess._id))
+            ? `/live/${liveRoomBySession.get(String(sess._id))}`
+            : null,
+          type: sess.type,
+          status: sess.status,
+          circleName: sess.circle?.name || (sess.type === 'trial' ? 'حصة تجريبية مجانية' : 'حلقة فردية'),
+          child: { id: child._id, name: child.name },
+          teacher: {
+            id: sess.teacher?._id || null,
+            name: teacherName,
+            avatar: sess.teacher?.media?.profilePhoto || sess.teacher?.user?.avatar || null
+          },
+          rsvp: attendancePermissionByChild.get(String(child._id))
+            ? (att ? att.status : 'pending')
+            : null,
+          canExcuseWithCompensation: diffHours >= 6,
+          hoursUntilSession: Math.round(diffHours * 10) / 10
+        };
+      });
     });
 
     res.json({ success: true, sessions: formattedSessions });
