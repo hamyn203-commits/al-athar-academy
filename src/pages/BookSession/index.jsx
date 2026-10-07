@@ -24,6 +24,7 @@ export default function BookSession() {
   const [submitting, setSubmitting] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [existingTrial, setExistingTrial] = useState(null);
+  const [availabilityData, setAvailabilityData] = useState({ configured: false, teacherTimezone: '', slots: [] });
 
   useEffect(() => {
     if (authLoading) return;
@@ -36,9 +37,19 @@ export default function BookSession() {
     Promise.all([
       api.get('/api/teachers/' + teacherId),
       api.get('/api/sessions/my-sessions?type=trial&limit=100', { auth: true }).catch(() => ({ sessions: [] })),
+      api.get('/api/sessions/available-slots/' + teacherId + '?days=14').catch(() => ({
+        configured: false,
+        teacherTimezone: '',
+        slots: [],
+      })),
     ])
-      .then(([teacherData, sessionData]) => {
+      .then(([teacherData, sessionData, availability]) => {
         setTeacher(teacherData);
+        setAvailabilityData({
+          configured: Boolean(availability?.configured),
+          teacherTimezone: availability?.teacherTimezone || teacherData?.availabilityTimezone || '',
+          slots: Array.isArray(availability?.slots) ? availability.slots : [],
+        });
         const active = (sessionData.sessions || []).find((session) => {
           const sessionTeacherId = String(session.teacher?._id || session.teacher || '');
           return sessionTeacherId === String(teacherId) && ['pending', 'accepted'].includes(session.status);
@@ -49,17 +60,38 @@ export default function BookSession() {
       .finally(() => setLoading(false));
   }, [teacherId, navigate, locale, authLoading, isAuthenticated]);
 
-  const dates = Array.from({ length: 14 }, (_, index) => {
+  const dateKeyInTimezone = (value, zone) => {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: zone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(new Date(value));
+    const get = (type) => parts.find((part) => part.type === type)?.value || '';
+    return `${get('year')}-${get('month')}-${get('day')}`;
+  };
+
+  const fallbackDates = Array.from({ length: 14 }, (_, index) => {
     const date = new Date();
     date.setDate(date.getDate() + index + 1);
     return date.toISOString().split('T')[0];
   });
 
-  const times = [];
+  const availableDates = availabilityData.configured
+    ? [...new Set(
+        availabilityData.slots.map((slot) => dateKeyInTimezone(slot.startsAt, timezone)),
+      )]
+    : fallbackDates;
+
+  const fallbackTimes = [];
   for (let hour = 8; hour <= 20; hour += 1) {
-    times.push(String(hour).padStart(2, '0') + ':00');
-    times.push(String(hour).padStart(2, '0') + ':30');
+    fallbackTimes.push(String(hour).padStart(2, '0') + ':00');
+    fallbackTimes.push(String(hour).padStart(2, '0') + ':30');
   }
+
+  const slotsForSelectedDate = availabilityData.configured
+    ? availabilityData.slots.filter((slot) => dateKeyInTimezone(slot.startsAt, timezone) === selectedDate)
+    : [];
 
   const timezones = [
     ['Africa/Cairo', isAr ? 'القاهرة' : 'Cairo'],
@@ -83,9 +115,13 @@ export default function BookSession() {
 
     setSubmitting(true);
     try {
+      const scheduledAt = availabilityData.configured
+        ? selectedTime
+        : `${selectedDate}T${selectedTime}:00`;
+
       await api.post('/api/sessions/trial', {
         teacherId,
-        scheduledAt: new Date(selectedDate + 'T' + selectedTime),
+        scheduledAt,
         timezone,
         notes,
       }, { auth: true });
@@ -169,32 +205,67 @@ export default function BookSession() {
               )}
 
               <div className="wn-booking-note">
-                {isAr
-                  ? 'أرسل الموعد المناسب لك. يصبح الموعد مؤكدًا بعد تحديث حالة الطلب من المعلم أو الأكاديمية.'
-                  : 'Send your preferred time. The session is confirmed after the teacher or academy updates the request status.'}
+                {availabilityData.configured
+                  ? (isAr
+                    ? `المواعيد التالية مأخوذة مباشرة من جدول المعلم (${availabilityData.teacherTimezone || 'توقيت المعلم'})، وتظهر لك حسب المنطقة الزمنية التي تختارها.`
+                    : `These times come directly from the tutor schedule (${availabilityData.teacherTimezone || 'tutor timezone'}) and are shown in your selected timezone.`)
+                  : (isAr
+                    ? 'لم يحدد المعلم جدول توفر بعد؛ أرسل الوقت المقترح وسيقوم المعلم بتأكيده أو اقتراح بديل.'
+                    : 'The tutor has not configured availability yet; send a preferred time for confirmation.')}
               </div>
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="wn-booking-field">
                   <label><Calendar size={15} className="inline ml-1" /> {isAr ? 'التاريخ' : 'Date'}</label>
-                  <select value={selectedDate} onChange={(event) => setSelectedDate(event.target.value)} required>
+                  <select value={selectedDate} onChange={(event) => {
+                    setSelectedDate(event.target.value);
+                    setSelectedTime('');
+                  }} required>
                     <option value="">{isAr ? 'اختر تاريخًا' : 'Choose a date'}</option>
-                    {dates.map((date) => <option key={date} value={date}>{new Date(date).toLocaleDateString(isAr ? 'ar-EG' : 'en', { weekday:'long', month:'long', day:'numeric' })}</option>)}
+                    {availableDates.map((date) => {
+                      const representative = availabilityData.configured
+                        ? availabilityData.slots.find((slot) => dateKeyInTimezone(slot.startsAt, timezone) === date)?.startsAt
+                        : date + 'T12:00:00';
+                      return (
+                        <option key={date} value={date}>
+                          {new Date(representative).toLocaleDateString(isAr ? 'ar-EG' : 'en', {
+                            timeZone: availabilityData.configured ? timezone : undefined,
+                            weekday: 'long',
+                            month: 'long',
+                            day: 'numeric',
+                          })}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
 
                 <div className="wn-booking-field">
                   <label><Clock size={15} className="inline ml-1" /> {isAr ? 'الوقت' : 'Time'}</label>
-                  <select value={selectedTime} onChange={(event) => setSelectedTime(event.target.value)} required>
+                  <select value={selectedTime} onChange={(event) => setSelectedTime(event.target.value)} required disabled={!selectedDate}>
                     <option value="">{isAr ? 'اختر وقتًا' : 'Choose a time'}</option>
-                    {times.map((time) => <option key={time} value={time}>{time}</option>)}
+                    {availabilityData.configured
+                      ? slotsForSelectedDate.map((slot) => (
+                          <option key={slot.startsAt} value={slot.startsAt}>
+                            {new Date(slot.startsAt).toLocaleTimeString(isAr ? 'ar-EG' : 'en', {
+                              timeZone: timezone,
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </option>
+                        ))
+                      : fallbackTimes.map((time) => <option key={time} value={time}>{time}</option>)}
                   </select>
                 </div>
               </div>
 
               <div className="wn-booking-field">
                 <label><Globe size={15} className="inline ml-1" /> {isAr ? 'المنطقة الزمنية' : 'Timezone'}</label>
-                <select value={timezone} onChange={(event) => setTimezone(event.target.value)} required>
+                <select value={timezone} onChange={(event) => {
+                  setTimezone(event.target.value);
+                  setSelectedDate('');
+                  setSelectedTime('');
+                }} required>
                   {timezones.map(([value,label]) => <option key={value} value={value}>{label} — {value}</option>)}
                 </select>
               </div>
@@ -220,8 +291,22 @@ export default function BookSession() {
                       <strong className="text-[var(--wn-emerald-deep)]">{isAr ? 'راجع طلبك قبل الإرسال' : 'Review your request'}</strong>
                       <div className="wn-booking-summary">
                         <span><b>{isAr ? 'المعلم:' : 'Teacher:'}</b> {name}</span>
-                        <span><b>{isAr ? 'التاريخ:' : 'Date:'}</b> {selectedDate}</span>
-                        <span><b>{isAr ? 'الوقت:' : 'Time:'}</b> {selectedTime}</span>
+                        <span>
+                          <b>{isAr ? 'التاريخ:' : 'Date:'}</b>{' '}
+                          {availabilityData.configured && selectedTime
+                            ? new Date(selectedTime).toLocaleDateString(isAr ? 'ar-EG' : 'en', { timeZone: timezone })
+                            : selectedDate}
+                        </span>
+                        <span>
+                          <b>{isAr ? 'الوقت:' : 'Time:'}</b>{' '}
+                          {availabilityData.configured && selectedTime
+                            ? new Date(selectedTime).toLocaleTimeString(isAr ? 'ar-EG' : 'en', {
+                                timeZone: timezone,
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })
+                            : selectedTime}
+                        </span>
                         <span><b>{isAr ? 'المنطقة:' : 'Timezone:'}</b> {timezone}</span>
                       </div>
                     </div>
