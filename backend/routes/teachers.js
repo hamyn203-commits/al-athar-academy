@@ -11,6 +11,7 @@ const { protect, authorize } = require('../middleware/auth');
 const objectStorage = require('../services/objectStorage');
 const { resolveOwnedTeacherAssets } = require('../utils/teacherAssetLifecycle');
 const { sendEmail } = require('../services/notificationDispatcher');
+const { notifyAdmins } = require('../utils/notify');
 const multer = require('multer');
 const {
   addMockUser,
@@ -504,6 +505,22 @@ router.post(
     });
 
     await User.findByIdAndUpdate(userId, { role: 'teacher' });
+
+    notifyAdmins({
+      type: 'system',
+      title: { ar: 'طلب انضمام معلم جديد', en: 'New tutor application' },
+      message: {
+        ar: `وصل طلب معلم جديد من ${parsedPersonal.fullName || 'معلم جديد'} ويحتاج مراجعة المستندات والاعتماد.`,
+        en: `A new tutor application from ${parsedPersonal.fullName || 'a new tutor'} requires document review and approval.`,
+      },
+      data: {
+        actionUrl: '/admin?tab=teachers',
+        metadata: { teacherId: String(teacher._id) },
+      },
+      priority: 'high',
+    }).catch((error) => {
+      console.warn('Admin teacher application notification failed:', error.message);
+    });
 
     if (email) {
       sendEmail({
