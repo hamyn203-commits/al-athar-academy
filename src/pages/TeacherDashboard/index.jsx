@@ -126,6 +126,20 @@ export default function TeacherDashboard() {
   }, [ready, syncSessions]);
 
   useEffect(() => {
+    if (!ready) return undefined;
+
+    const onRealtimeNotification = (event) => {
+      const type = event?.detail?.type;
+      if (['session-request', 'session-chat-message'].includes(type)) {
+        syncSessions();
+      }
+    };
+
+    window.addEventListener('wn:realtime-notification', onRealtimeNotification);
+    return () => window.removeEventListener('wn:realtime-notification', onRealtimeNotification);
+  }, [ready, syncSessions]);
+
+  useEffect(() => {
     const requestedTab = searchParams.get('tab');
     if (requestedTab && ['account', 'schedule', 'analytics', 'reviews', 'trials', 'sessions', 'evaluate', 'homework'].includes(requestedTab)) {
       setTab(requestedTab);
