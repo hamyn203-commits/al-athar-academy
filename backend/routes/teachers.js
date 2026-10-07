@@ -381,10 +381,24 @@ router.post(
         });
       }
 
+      if (!hasDirectOrLegacy(uploadedFiles.introductionVideo, req.files?.introductionVideo)) {
+        return res.status(400).json({
+          error: 'Introduction video is required',
+          code: 'TEACHER_INTRODUCTION_VIDEO_REQUIRED',
+        });
+      }
+
       if (!hasDirectOrLegacyList(uploadedFiles.recitationVideo, req.files?.recitationVideo)) {
         return res.status(400).json({
           error: 'At least one recitation video is required',
           code: 'TEACHER_RECITATION_VIDEO_REQUIRED',
+        });
+      }
+
+      if (!hasDirectOrLegacy(uploadedFiles.teachingMethodVideo, req.files?.teachingMethodVideo)) {
+        return res.status(400).json({
+          error: 'Teaching method video is required',
+          code: 'TEACHER_TEACHING_METHOD_VIDEO_REQUIRED',
         });
       }
 
@@ -581,9 +595,9 @@ router.post(
 
       const media = {
         profilePhoto: profilePhoto || '/default-teacher.png',
-        introductionVideo: directPublic(uploadedFiles.introductionVideo) || publicMediaPath(req.files?.introductionVideo?.[0]) || mainVideo,
+        introductionVideo: directPublic(uploadedFiles.introductionVideo) || publicMediaPath(req.files?.introductionVideo?.[0]),
         recitationVideo: mainVideo,
-        teachingMethodVideo: directPublic(uploadedFiles.teachingMethodVideo) || publicMediaPath(req.files?.teachingMethodVideo?.[0]) || mainVideo,
+        teachingMethodVideo: directPublic(uploadedFiles.teachingMethodVideo) || publicMediaPath(req.files?.teachingMethodVideo?.[0]),
         additionalVideos: [
           ...directRecitations.slice(1).map(directPublic),
           ...(uploadedFiles.additionalVideos?.map(directPublic) || []),
