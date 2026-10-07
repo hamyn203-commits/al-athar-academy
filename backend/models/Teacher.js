@@ -83,6 +83,7 @@ const TeacherSchema = new mongoose.Schema({
     withdrawnEarnings: { type: Number, default: 0 }
   },
   hourlyRate: { type: Number, default: 50 },
+  availabilityTimezone: { type: String, default: 'Africa/Cairo', trim: true },
   availability: [{
     day: { type: String, enum: ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] },
     slots: [{

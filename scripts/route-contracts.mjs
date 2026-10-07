@@ -138,10 +138,15 @@ assert.match(teacherDashboard, /\/api\/finance\/teacher\/balance/);
 assert.match(teacherDashboard, /\/api\/live\/sessions/);
 assert.doesNotMatch(teacherDashboard, /<TabBar\s/);
 
+const bookSessionPage = read('src/pages/BookSession/index.jsx');
+assert.match(bookSessionPage, /\/api\/sessions\/available-slots\//);
+assert.match(bookSessionPage, /availabilityData\.configured/);
+
 const studentDashboard = read('src/pages/StudentDashboard/index.jsx');
 assert.match(studentDashboard, /localizeInternalHref\(session\.meetingLink,\s*locale\)/);
 assert.match(studentDashboard, /localizedPath\(\`\/meeting\/\$\{session\._id\}\`,\s*locale\)/);
 assert.match(studentDashboard, /useState\(['"]overview['"]\)/);
+assert.match(studentDashboard, /\/api\/sessions\/available-slots\//);
 assert.match(studentDashboard, /tab\s*===\s*['"]overview['"]/);
 assert.match(studentDashboard, /\[\.\.\.upcomingSessions,\s*\.\.\.upcomingTrials\][\s\S]{0,160}sort/);
 assert.match(studentDashboard, /function\s+StudentCommandBar\s*\(/);
