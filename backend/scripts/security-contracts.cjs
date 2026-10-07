@@ -425,6 +425,42 @@ requireContains(
   /latestEvaluation:\s*permissions\.viewGrades\s*\?/
 );
 
+requireContains(
+  'backend/routes/guardian.js',
+  'guardian family overview must be guardian-only and multi-child aware',
+  /router\.get\(['"]\/family-overview['"],\s*protect,\s*authorize\(['"]guardian['"]\)/
+);
+requireContains(
+  'backend/routes/guardian.js',
+  'guardian family overview must snapshot each child independently',
+  /entries\.map\(\(entry\)\s*=>[\s\S]{0,2000}pendingHomework[\s\S]{0,1600}attentionCount/
+);
+requireContains(
+  'backend/routes/guardian.js',
+  'guardian child homework must require viewProgress permission',
+  /router\.get\(['"]\/homework\/:studentId['"][\s\S]{0,700}hasChildPermission\(guardian,\s*studentId,\s*['"]viewProgress['"]\)/
+);
+requireContains(
+  'backend/routes/guardian.js',
+  'guardian child-specific upcoming sessions must verify linked membership',
+  /requestedStudentId[\s\S]{0,700}childIds\.some[\s\S]{0,300}هذا الطالب غير مرتبط/
+);
+requireContains(
+  'backend/routes/guardian.js',
+  'shared circle sessions must expand per linked child rather than selecting the first sibling',
+  /upcoming\.flatMap\(\(sess\)[\s\S]{0,500}affectedChildren\.map/
+);
+requireAbsent(
+  'backend/routes/guardian.js',
+  'legacy single guardian pointer must not block another valid guardian link',
+  /هذا الطالب مرتبط بالفعل بولي أمر آخر/
+);
+requireContains(
+  'backend/routes/guardians.js',
+  'unlinking one guardian must preserve an alternate guardian relationship',
+  /alternateGuardian[\s\S]{0,800}guardian:\s*alternateGuardian\.user/
+);
+
 requireAbsent(
   'backend/routes/guardian.js',
   'guardian session payload must not expose teacher phone numbers now that communication is moving in-platform',
