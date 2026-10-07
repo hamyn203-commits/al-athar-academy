@@ -81,6 +81,37 @@ export default function GuardianDashboard() {
     loadDashboardData();
   }, [loadDashboardData]);
 
+  const syncUpcomingSessions = useCallback(async () => {
+    if (!ready) return;
+    try {
+      const sessionsRes = await api.get('/api/guardian/upcoming-sessions', { auth: true });
+      setUpcomingSessions(sessionsRes.sessions || []);
+    } catch {
+      // Preserve the last known guardian view during transient connectivity failures.
+    }
+  }, [ready]);
+
+  useEffect(() => {
+    if (!ready) return undefined;
+
+    const refresh = () => {
+      if (document.visibilityState === 'visible') syncUpcomingSessions();
+    };
+
+    const interval = window.setInterval(refresh, 15000);
+    const onFocus = () => refresh();
+    const onVisibility = () => refresh();
+
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [ready, syncUpcomingSessions]);
+
   // Fetch reports when selected child changes or tab is reports
   useEffect(() => {
     if (!ready || !selectedChildId) return;
