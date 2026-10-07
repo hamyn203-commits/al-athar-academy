@@ -6,7 +6,12 @@ const Teacher = require('../models/Teacher');
 const GroupCircle = require('../models/GroupCircle');
 const { protect, authorize } = require('../middleware/auth');
 const meetingService = require('../services/meetingService');
-const { notifyTeacherForSessionRequest, notifySessionAccepted, notifyUser } = require('../utils/notify');
+const {
+  notifyTeacherForSessionRequest,
+  notifySessionAccepted,
+  notifyUser,
+  notifyGuardiansForStudent,
+} = require('../utils/notify');
 
 const { isMockMode } = require('../config/runtime');
 const isDBConnected = () => mongoose.connection.readyState === 1;
@@ -262,7 +267,23 @@ router.put('/:id/respond', protect, authorize('teacher'), async (req, res) => {
             ar: `اقترح المعلم موعدًا جديدًا: ${proposedDate.toLocaleString('ar-EG')}`,
             en: `Your tutor proposed a new time: ${proposedDate.toLocaleString('en-US')}`,
           },
-          data: { session: newSession._id },
+          data: {
+            session: newSession._id,
+            actionUrl: `/student/dashboard?tab=sessions&session=${newSession._id}`,
+          },
+          priority: 'high',
+        });
+        await notifyGuardiansForStudent(session.student, {
+          type: 'session-rescheduled',
+          title: { ar: 'تم اقتراح موعد جديد لحصة ابنك', en: 'A new session time was proposed' },
+          message: {
+            ar: `الموعد المقترح الجديد: ${proposedDate.toLocaleString('ar-EG')}`,
+            en: `Proposed new time: ${proposedDate.toLocaleString('en-US')}`,
+          },
+          data: {
+            session: newSession._id,
+            actionUrl: '/guardian/dashboard',
+          },
           priority: 'high',
         });
       } catch (e) {
@@ -277,6 +298,16 @@ router.put('/:id/respond', protect, authorize('teacher'), async (req, res) => {
     try {
       if (action === 'accept') {
         await notifySessionAccepted(session, session.student, session.meetingLink);
+        await notifyGuardiansForStudent(session.student, {
+          type: 'session-accepted',
+          title: { ar: 'تم تأكيد حصة ابنك', en: 'Your child session was confirmed' },
+          message: {
+            ar: `تم تأكيد الحصة بتاريخ ${new Date(session.scheduledAt).toLocaleString('ar-EG')}`,
+            en: `The session was confirmed for ${new Date(session.scheduledAt).toLocaleString('en-US')}`,
+          },
+          data: { session: session._id, actionUrl: '/guardian/dashboard' },
+          priority: 'high',
+        });
       } else if (action === 'reject') {
         await notifyUser(session.student, {
           type: 'session-rejected',
@@ -285,7 +316,16 @@ router.put('/:id/respond', protect, authorize('teacher'), async (req, res) => {
             ar: reason || 'لم يتم قبول طلب الحصة',
             en: reason || 'Your session request was not accepted',
           },
-          data: { session: session._id },
+          data: { session: session._id, actionUrl: '/student/dashboard?tab=trials' },
+        });
+        await notifyGuardiansForStudent(session.student, {
+          type: 'session-rejected',
+          title: { ar: 'تم تحديث حصة ابنك', en: 'Your child session was updated' },
+          message: {
+            ar: reason || 'لم يتم قبول طلب الحصة',
+            en: reason || 'The session request was not accepted',
+          },
+          data: { session: session._id, actionUrl: '/guardian/dashboard' },
         });
       }
     } catch (e) {
@@ -338,6 +378,44 @@ router.put('/:id/complete', protect, authorize('teacher'), async (req, res) => {
         'earnings.pendingEarnings': SESSION_RATE,
       },
     });
+
+    try {
+      await notifyUser(session.student, {
+        type: 'session-completed',
+        title: {
+          ar: session.type === 'trial' ? 'انتهت حصتك التجريبية' : 'تم إكمال الحصة',
+          en: session.type === 'trial' ? 'Your trial session is complete' : 'Session completed',
+        },
+        message: {
+          ar: session.type === 'trial'
+            ? 'اختر الآن: الاستمرار مع هذا المعلم أو تجربة معلم آخر.'
+            : 'تم تسجيل إكمال الحصة وتحديث تقدمك.',
+          en: session.type === 'trial'
+            ? 'Choose your next step: continue with this tutor or try another tutor.'
+            : 'Your session completion and progress were recorded.',
+        },
+        data: {
+          session: session._id,
+          actionUrl: session.type === 'trial'
+            ? `/student/dashboard?tab=trials&postTrial=${session._id}`
+            : '/student/dashboard?tab=sessions',
+        },
+        priority: 'high',
+      });
+
+      await notifyGuardiansForStudent(session.student, {
+        type: 'session-completed',
+        title: { ar: 'اكتملت حصة ابنك', en: 'Your child session is complete' },
+        message: {
+          ar: 'تم إنهاء الحصة وتحديث التقييم والمتابعة.',
+          en: 'The session was completed and progress was updated.',
+        },
+        data: { session: session._id, actionUrl: '/guardian/dashboard' },
+        priority: 'high',
+      });
+    } catch (notificationError) {
+      console.warn('Session completion notification:', notificationError.message);
+    }
 
     res.json({ success: true, session });
   } catch (error) {
