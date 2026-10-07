@@ -65,6 +65,7 @@ if (process.env.FILE_STORAGE_DRIVER !== 'external') {
 const externalStorage = process.env.FILE_STORAGE_DRIVER === 'external';
 
 async function streamAdminTeacherAsset(reference, res, { fallbackContentType = 'application/octet-stream' } = {}) {
+  reference = objectStorage.unwrapPublicProxyReference(reference);
   if (!reference || reference === 'not-provided' || reference === '/default-teacher.png') {
     return res.status(404).json({ error: 'Asset not found' });
   }
