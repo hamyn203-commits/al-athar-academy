@@ -150,6 +150,17 @@ export default function StudentDashboard() {
 
   useEffect(() => { if (ready) load(); }, [ready, load]);
 
+  useEffect(() => {
+    const requestedTab = searchParams.get('tab');
+    const allowedTabs = new Set([
+      'discover', 'account', 'trials', 'sessions', 'homework',
+      'certificates', 'recordings', 'achievements', 'referral', 'evaluations',
+    ]);
+    if (requestedTab && allowedTabs.has(requestedTab)) {
+      setTab(requestedTab);
+    }
+  }, [searchParams]);
+
   const syncSessions = useCallback(async () => {
     if (!ready) return;
     try {
