@@ -98,7 +98,7 @@ export default function TeacherDashboard() {
 
   const load = useCallback(async () => {
     try {
-      const [prof, st, tr, pendReg, sess, stud, tsk, balance, tx] = await Promise.all([
+      const [prof, st, tr, pendReg, sess, stud, tsk, balance, tx, analyticsData] = await Promise.all([
         api.get('/api/teachers/dashboard/profile', { auth: true }),
         api.get('/api/teachers/dashboard/stats', { auth: true }),
         api.get('/api/sessions/my-sessions?type=trial&status=pending', { auth: true }),
@@ -108,6 +108,7 @@ export default function TeacherDashboard() {
         api.get('/api/teachers/dashboard/tasks', { auth: true }),
         api.get('/api/finance/teacher/balance', { auth: true }),
         api.get('/api/finance/teacher/transactions?limit=20', { auth: true }),
+        api.get('/api/teachers/dashboard/analytics', { auth: true }),
       ]);
       setProfile(prof);
       setStats(st);
@@ -124,6 +125,7 @@ export default function TeacherDashboard() {
         limits: { minPayoutEGP: 100, minPayoutUSD: 10 },
       });
       setTransactions(tx.transactions || []);
+      setAnalytics(analyticsData || null);
     } catch {
       toast.error('تعذر تحميل بيانات لوحة المعلم');
     } finally {
@@ -133,6 +135,12 @@ export default function TeacherDashboard() {
 
   useEffect(() => { if (ready) load(); }, [ready, load]);
 
+  useEffect(() => {
+    return () => {
+      if (homeworkAudio.url) URL.revokeObjectURL(homeworkAudio.url);
+    };
+  }, [homeworkAudio.url]);
+
   const syncSessions = useCallback(async () => {
     if (!ready) return;
     try {
@@ -140,7 +148,11 @@ export default function TeacherDashboard() {
       const all = result.sessions || [];
       setTrials(all.filter((item) => item.type === 'trial' && item.status === 'pending'));
       setPendingRegular(all.filter((item) => item.type === 'regular' && item.status === 'pending'));
-      setSessions(all.filter((item) => item.status === 'accepted'));
+      setSessions(
+        all
+          .filter((item) => item.status === 'accepted')
+          .sort((a, b) => new Date(a.scheduledAt) - new Date(b.scheduledAt)),
+      );
     } catch {
       // Keep the current dashboard stable during a transient sync failure.
     }
