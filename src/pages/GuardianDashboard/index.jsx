@@ -132,7 +132,10 @@ export default function GuardianDashboard() {
     if (!ready) return undefined;
 
     const refresh = () => {
-      if (document.visibilityState === 'visible') syncUpcomingSessions();
+      if (document.visibilityState === 'visible') {
+        syncUpcomingSessions();
+        refreshFamilyOverview();
+      }
     };
 
     const interval = window.setInterval(refresh, 15000);
@@ -147,7 +150,7 @@ export default function GuardianDashboard() {
       window.removeEventListener('focus', onFocus);
       document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [ready, syncUpcomingSessions, refreshFamilyOverview, selectedChildId]);
+  }, [ready, syncUpcomingSessions, refreshFamilyOverview]);
 
   useEffect(() => {
     if (!ready) return undefined;
@@ -177,7 +180,7 @@ export default function GuardianDashboard() {
 
     window.addEventListener('wn:realtime-notification', onRealtimeNotification);
     return () => window.removeEventListener('wn:realtime-notification', onRealtimeNotification);
-  }, [ready, syncUpcomingSessions]);
+  }, [ready, syncUpcomingSessions, refreshFamilyOverview, selectedChildId]);
 
   // Fetch only the selected child's private data. Family mode never mixes
   // reports or homework between siblings.
