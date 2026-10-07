@@ -17,7 +17,7 @@ const manualPayments = require('../config/manualPayments');
 const objectStorage = require('../services/objectStorage');
 const { processPaymobWebhook } = require('../services/paymentSettlement');
 const { processManualPaymentReview } = require('../services/manualPaymentSettlement');
-const { notifyCourseEnrollment } = require('../utils/notify');
+const { notifyCourseEnrollment, notifyRole, notifyUser } = require('../utils/notify');
 
 const SUPPORTED_LOCALES = new Set(['ar', 'en', 'fr', 'de', 'tr', 'ur', 'id', 'ms', 'ku']);
 
@@ -307,6 +307,20 @@ router.post('/course/:slug/manual', protect, authorize('student'), async (req, r
       },
     });
 
+    notifyRole('admin', {
+      type: 'payment-received',
+      title: { ar: 'إثبات دفع جديد يحتاج مراجعة', en: 'New payment proof requires review' },
+      message: {
+        ar: 'تم رفع إثبات دفع يدوي جديد ويحتاج تأكيد الإدارة.',
+        en: 'A new manual payment proof was submitted and requires admin confirmation.',
+      },
+      data: {
+        actionUrl: '/admin/payments',
+        metadata: { paymentId: payment._id },
+      },
+      priority: 'urgent',
+    }).catch((error) => console.warn('Admin payment notification:', error.message));
+
     return res.status(201).json({
       paymentId: String(payment._id),
       provider: 'manual',
@@ -402,6 +416,21 @@ router.patch('/admin/manual/:id/review', protect, authorize('admin'), async (req
     if (result?.enrollmentCreated && result.studentId && result.courseId) {
       const course = await Course.findById(result.courseId).select('title slug').lean();
       if (course) notifyCourseEnrollment(result.studentId, course).catch(() => {});
+    } else if (result?.studentId) {
+      notifyUser(result.studentId, {
+        type: 'system',
+        title: { ar: 'تمت مراجعة الدفع', en: 'Payment review completed' },
+        message: {
+          ar: result.paymentStatus === 'failed'
+            ? 'لم يتم اعتماد عملية الدفع. راجع التفاصيل أو تواصل مع الإدارة.'
+            : 'تم تحديث حالة عملية الدفع.',
+          en: result.paymentStatus === 'failed'
+            ? 'The payment was not approved. Review the details or contact support.'
+            : 'Your payment status was updated.',
+        },
+        data: { actionUrl: '/student/dashboard' },
+        priority: 'high',
+      }).catch(() => {});
     }
 
     return res.json({

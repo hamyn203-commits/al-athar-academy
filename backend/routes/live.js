@@ -7,6 +7,7 @@ const Teacher = require('../models/Teacher');
 const Guardian = require('../models/Guardian');
 const GroupCircle = require('../models/GroupCircle');
 const { verifyAccessToken, requireRole } = require('../middleware/auth');
+const { realtimeRoomForUser } = require('../utils/realtime');
 
 const LIVEKIT_API_KEY = process.env.LIVEKIT_API_KEY || '';
 const LIVEKIT_API_SECRET = process.env.LIVEKIT_API_SECRET || '';
@@ -141,6 +142,45 @@ async function canManageRoom(roomId, user) {
 
 router.get('/status', (_req, res) => {
   res.json({ configured: isLiveKitConfigured() });
+});
+
+router.post('/realtime-token', verifyAccessToken, async (req, res) => {
+  try {
+    if (!isLiveKitConfigured()) {
+      return res.status(503).json({ message: 'Realtime service is not configured' });
+    }
+
+    const rawConnectionId = String(req.body?.connectionId || '').trim();
+    const connectionId = rawConnectionId.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
+    if (!connectionId) {
+      return res.status(400).json({ message: 'connectionId is required' });
+    }
+
+    const roomName = realtimeRoomForUser(req.user.id);
+    const identity = `realtime:${req.user.id}:${connectionId}`;
+    const at = new AccessToken(LIVEKIT_API_KEY, LIVEKIT_API_SECRET, {
+      identity,
+      name: String(req.user.email || req.user.role || 'user').slice(0, 80),
+      ttl: '6h',
+    });
+
+    at.addGrant({
+      room: roomName,
+      roomJoin: true,
+      canPublish: false,
+      canSubscribe: true,
+      canPublishData: false,
+    });
+
+    return res.json({
+      token: await at.toJwt(),
+      url: LIVEKIT_URL,
+      roomName,
+    });
+  } catch (error) {
+    console.error('Realtime token generation error:', error.message);
+    return res.status(500).json({ message: 'Failed to generate realtime token' });
+  }
 });
 
 router.post('/demo-room', verifyAccessToken, requireRole('admin'), async (req, res) => {

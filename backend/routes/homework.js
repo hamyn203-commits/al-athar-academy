@@ -8,6 +8,7 @@ const Teacher = require('../models/Teacher');
 const objectStorage = require('../services/objectStorage');
 const { deleteStoredReference } = require('../utils/storageLifecycle');
 const { protect, authorize } = require('../middleware/auth');
+const { notifyUser } = require('../utils/notify');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -90,6 +91,14 @@ async function streamPrivateFile(res, req, reference) {
 
   res.setHeader('Cache-Control', 'private, no-store');
   return res.sendFile(absolute);
+}
+
+async function notifyTeacherProfile(teacherId, payload) {
+  if (!teacherId) return;
+  const teacher = await Teacher.findById(teacherId).select('user');
+  if (teacher?.user) {
+    await notifyUser(teacher.user, payload);
+  }
 }
 
 async function teacherProfileIdForUser(userId) {
@@ -363,6 +372,20 @@ router.post('/:homeworkId/submit', protect, authorize('student'), upload.single(
         task.submissionFile = submittedFile.path;
         await task.save();
 
+        notifyTeacherProfile(task.teacher, {
+          type: 'homework-submitted',
+          title: { ar: 'تم تسليم واجب جديد', en: 'Homework submitted' },
+          message: {
+            ar: 'أرسل الطالب واجبًا جديدًا للمراجعة.',
+            en: 'A student submitted homework for your review.',
+          },
+          data: {
+            actionUrl: '/teacher/dashboard?tab=homework',
+            metadata: { taskId: task._id, studentId: req.user.id },
+          },
+          priority: 'high',
+        }).catch((error) => console.warn('Homework submission notification:', error.message));
+
         return res.json({ success: true, message: 'تم تسليم الواجب', task });
       }
     }
@@ -391,6 +414,21 @@ router.post('/:homeworkId/submit', protect, authorize('student'), upload.single(
       session.teacherEvaluation.assignedHomework[parsed.index].status = 'submitted';
       await session.save();
 
+      notifyTeacherProfile(session.teacher, {
+        type: 'homework-submitted',
+        title: { ar: 'تم تسليم واجب الحصة', en: 'Session homework submitted' },
+        message: {
+          ar: 'أرسل الطالب تسجيل الواجب للمراجعة.',
+          en: 'A student submitted the session homework for review.',
+        },
+        data: {
+          session: session._id,
+          actionUrl: '/teacher/dashboard?tab=homework',
+          metadata: { submissionId: submission._id, studentId: req.user.id },
+        },
+        priority: 'high',
+      }).catch((error) => console.warn('Session homework notification:', error.message));
+
       return res.json({
         success: true,
         message: 'تم تسليم الواجب بنجاح',
@@ -403,7 +441,7 @@ router.post('/:homeworkId/submit', protect, authorize('student'), upload.single(
       return res.status(400).json({ error: 'Invalid homework reference' });
     }
 
-    const ownedSession = await Session.findOne({ _id: sessionId, student: req.user.id }).select('_id');
+    const ownedSession = await Session.findOne({ _id: sessionId, student: req.user.id }).select('_id teacher');
     if (!ownedSession) {
       return res.status(403).json({ error: 'This session does not belong to the authenticated student' });
     }
@@ -416,6 +454,21 @@ router.post('/:homeworkId/submit', protect, authorize('student'), upload.single(
       fileName: submittedFile.originalname,
       fileSize: submittedFile.size,
     });
+
+    notifyTeacherProfile(ownedSession.teacher, {
+      type: 'homework-submitted',
+      title: { ar: 'تم تسليم واجب جديد', en: 'Homework submitted' },
+      message: {
+        ar: 'أرسل الطالب واجبًا جديدًا للمراجعة.',
+        en: 'A student submitted homework for your review.',
+      },
+      data: {
+        session: ownedSession._id,
+        actionUrl: '/teacher/dashboard?tab=homework',
+        metadata: { submissionId: submission._id, studentId: req.user.id },
+      },
+      priority: 'high',
+    }).catch((error) => console.warn('Homework submission notification:', error.message));
 
     res.json({
       success: true,

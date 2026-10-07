@@ -65,12 +65,16 @@ export default function NotificationBell() {
       if (document.visibilityState === 'visible') fetchNotifications();
     };
 
+    const onRealtime = () => fetchNotifications();
+
     window.addEventListener('focus', onFocus);
+    window.addEventListener('wn:realtime', onRealtime);
     document.addEventListener('visibilitychange', onVisibility);
 
     return () => {
       clearInterval(interval);
       window.removeEventListener('focus', onFocus);
+      window.removeEventListener('wn:realtime', onRealtime);
       document.removeEventListener('visibilitychange', onVisibility);
     };
   }, []);

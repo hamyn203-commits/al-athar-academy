@@ -153,6 +153,10 @@ Session.find = (filter = {}) => {
 Session.countDocuments = async (filter = {}) => sessions.filter((s) => matchSession(s, filter)).length;
 
 Guardian.findOne = (filter = {}) => query(String(filter.user) === ids.guardian ? guardian : null);
+Guardian.find = (filter = {}) => {
+  const studentId = filter['children.student'];
+  return query(studentId && String(studentId) === ids.student ? [guardian] : []);
+};
 LiveSession.find = () => query([]);
 const notifications = [];
 Notification.createAndSend = async (userId, payload) => {

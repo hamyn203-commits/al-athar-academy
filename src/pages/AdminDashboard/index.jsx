@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Users, BookOpen, Calendar, DollarSign, CheckCircle, XCircle, Eye,
   Mail, MessageSquare, Plus, Trash2, Upload, Video, Edit3, Send,
@@ -24,6 +24,7 @@ function Empty({ text }) {
 export default function AdminDashboard() {
   const { user, ready, logout } = useRequireAuth(['admin']);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const toast = useToast();
   const [tab, setTab] = useState('overview');
   const [loading, setLoading] = useState(true);
@@ -139,6 +140,17 @@ export default function AdminDashboard() {
   useEffect(() => { if (ready) load(); }, [ready, load]);
 
   useEffect(() => {
+    const requestedTab = searchParams.get('tab');
+    const allowedTabs = new Set([
+      'overview', 'teachers', 'courses', 'messages', 'blog',
+      'withdrawals', 'growth',
+    ]);
+    if (requestedTab && allowedTabs.has(requestedTab)) {
+      setTab(requestedTab);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
     if (!ready || !['overview', 'teachers'].includes(tab)) return undefined;
 
     const refreshQueue = () => {
@@ -150,16 +162,22 @@ export default function AdminDashboard() {
     const interval = window.setInterval(refreshQueue, 12000);
     const onFocus = () => refreshQueue();
     const onVisibility = () => refreshQueue();
+    const onRealtime = () => {
+      load().catch(() => {});
+      loadPendingTeachers().catch(() => {});
+    };
 
     window.addEventListener('focus', onFocus);
+    window.addEventListener('wn:realtime', onRealtime);
     document.addEventListener('visibilitychange', onVisibility);
 
     return () => {
       window.clearInterval(interval);
       window.removeEventListener('focus', onFocus);
+      window.removeEventListener('wn:realtime', onRealtime);
       document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [ready, tab, loadPendingTeachers]);
+  }, [ready, tab, loadPendingTeachers, load]);
 
   if (!ready) return null;
 

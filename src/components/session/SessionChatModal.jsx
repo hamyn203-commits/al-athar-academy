@@ -102,8 +102,25 @@ export default function SessionChatModal({ session, onClose, locale = 'ar' }) {
   useEffect(() => {
     loadMessages();
     const poll = window.setInterval(() => loadMessages({ silent: true }), 5000);
-    return () => window.clearInterval(poll);
-  }, [loadMessages]);
+
+    const onRealtime = (event) => {
+      const notification = event.detail?.notification;
+      const realtimeSessionId = notification?.data?.session;
+      if (
+        event.detail?.event === 'notification' &&
+        notification?.type === 'session-chat-message' &&
+        String(realtimeSessionId || '') === String(sessionId || '')
+      ) {
+        loadMessages({ silent: true });
+      }
+    };
+
+    window.addEventListener('wn:realtime', onRealtime);
+    return () => {
+      window.clearInterval(poll);
+      window.removeEventListener('wn:realtime', onRealtime);
+    };
+  }, [loadMessages, sessionId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
