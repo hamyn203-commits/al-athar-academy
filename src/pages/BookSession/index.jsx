@@ -6,6 +6,7 @@ import GlobalFooter from '../../components/GlobalFooter';
 import { useI18n } from '../../i18n';
 import { localizedPath } from '../../lib/locale';
 import api from '../../lib/api';
+import { teacherPublicImage, teacherImageFallback } from '../../lib/teacherMedia';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import '../../styles/session-experience.css';
 
@@ -156,7 +157,7 @@ export default function BookSession() {
   }
 
   const name = teacher.user?.name || teacher.personalInfo?.fullName || (isAr ? 'معلم قرآن' : 'Quran teacher');
-  const photo = teacher.media?.profilePhoto || '/default-teacher.png';
+  const photo = teacherPublicImage(teacher.media?.profilePhoto || teacher.user?.avatar);
 
   return (
     <>
@@ -167,7 +168,7 @@ export default function BookSession() {
             <div className="wn-booking-head">
               <span className="wn-auth-visual__eyebrow"><Sparkles size={14} /> {isAr ? 'حجز جلسة تعريفية' : 'BOOK AN INTRODUCTORY SESSION'}</span>
               <div className="wn-booking-teacher mt-4">
-                <img src={photo} alt={name} />
+                <img src={photo} alt={name} onError={teacherImageFallback} />
                 <div>
                   <h1>{isAr ? 'اختر موعدًا مناسبًا' : 'Choose a suitable time'}</h1>
                   <p>{isAr ? 'مع ' + name : 'With ' + name}</p>
