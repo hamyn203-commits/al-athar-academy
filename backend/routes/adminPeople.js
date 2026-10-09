@@ -186,6 +186,56 @@ router.get('/search', async (req, res) => {
   }
 });
 
+router.get('/guardian-links', async (req, res) => {
+  try {
+    const status = String(req.query.status || 'pending').trim();
+    const allowed = new Set(['pending', 'accepted', 'rejected', 'cancelled', 'expired', 'all']);
+    if (!allowed.has(status)) {
+      return res.status(400).json({ error: 'Invalid guardian invitation status' });
+    }
+
+    const filter = status === 'all' ? {} : { status };
+    if (status === 'pending') filter.expiresAt = { $gt: new Date() };
+
+    const invitations = await GuardianInvitation.find(filter)
+      .select('+guardianPhone')
+      .populate('student', 'name email phone avatar currentLevel preferredTrack isActive')
+      .populate('respondedBy', 'name email role')
+      .sort({ createdAt: -1 })
+      .limit(150)
+      .lean();
+
+    await logAdminAction({
+      req,
+      action: 'guardian-links.viewed',
+      entityType: 'guardian-links',
+      entityId: status,
+      reason: `Admin opened guardian link requests: ${status}`,
+      metadata: { status, resultCount: invitations.length },
+    }).catch(() => {});
+
+    return res.json({
+      status,
+      count: invitations.length,
+      invitations: invitations.map((invitation) => ({
+        _id: invitation._id,
+        student: invitation.student,
+        relationship: invitation.relationship,
+        status: invitation.status,
+        source: invitation.source,
+        phoneMasked: maskPhone(invitation.guardianPhone),
+        respondedBy: invitation.respondedBy,
+        respondedAt: invitation.respondedAt,
+        expiresAt: invitation.expiresAt,
+        createdAt: invitation.createdAt,
+        updatedAt: invitation.updatedAt,
+      })),
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
 router.get('/students/:id', async (req, res) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
