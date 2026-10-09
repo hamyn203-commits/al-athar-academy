@@ -5,13 +5,14 @@ const path = require('path');
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const Teacher = require('../models/Teacher');
+const TeacherProfileChangeRequest = require('../models/TeacherProfileChangeRequest');
 const User = require('../models/User');
 const Session = require('../models/Session');
 const { protect, authorize } = require('../middleware/auth');
 const objectStorage = require('../services/objectStorage');
 const { resolveOwnedTeacherAssets } = require('../utils/teacherAssetLifecycle');
 const { sendEmail } = require('../services/notificationDispatcher');
-const { notifyAdmins } = require('../utils/notify');
+const { notifyAdmins, notifyUser } = require('../utils/notify');
 const AdminAuditLog = require('../models/AdminAuditLog');
 const { logAdminAction } = require('../services/adminAudit');
 const {
@@ -21,6 +22,7 @@ const {
   itemRequiredForTeacher,
   coreMediaAreDistinct,
 } = require('../services/teacherReview');
+const { mergeTeacherMedia, applyTeacherProfileChange } = require('../services/teacherProfileChange');
 const multer = require('multer');
 const {
   addMockUser,
@@ -121,7 +123,7 @@ async function streamAdminTeacherAsset(reference, res, { fallbackContentType = '
   return res.sendFile(absolutePath);
 }
 
-function teacherDossierPayload(teacher, gate, auditEntries = [], activity = {}) {
+function teacherDossierPayload(teacher, gate, auditEntries = [], activity = {}, profileChange = null) {
   const raw = teacher.toObject ? teacher.toObject() : teacher;
   const documents = raw.documents || {};
   const media = raw.media || {};
@@ -179,6 +181,28 @@ function teacherDossierPayload(teacher, gate, auditEntries = [], activity = {}) 
       actor: entry.actor,
       createdAt: entry.createdAt,
     })),
+    profileChange: profileChange ? {
+      _id: profileChange._id,
+      status: profileChange.status,
+      changedFields: profileChange.changedFields || [],
+      proposed: {
+        personalInfo: profileChange.proposed?.personalInfo || {},
+        academicInfo: profileChange.proposed?.academicInfo || {},
+        quranInfo: profileChange.proposed?.quranInfo || {},
+        user: profileChange.proposed?.user || {},
+        media: {
+          profilePhoto: Boolean(profileChange.proposed?.media?.profilePhoto),
+          introductionVideo: Boolean(profileChange.proposed?.media?.introductionVideo),
+          recitationVideo: Boolean(profileChange.proposed?.media?.recitationVideo),
+          teachingMethodVideo: Boolean(profileChange.proposed?.media?.teachingMethodVideo),
+        },
+      },
+      adminNote: profileChange.adminNote || '',
+      reviewedBy: profileChange.reviewedBy || null,
+      reviewedAt: profileChange.reviewedAt || null,
+      createdAt: profileChange.createdAt,
+      updatedAt: profileChange.updatedAt,
+    } : null,
   };
 }
 
@@ -869,6 +893,144 @@ router.get('/featured', async (req, res) => {
   }
 });
 
+router.get('/admin/profile-changes/pending', protect, authorize('admin'), async (_req, res) => {
+  try {
+    const requests = await TeacherProfileChangeRequest.find({ status: 'pending' })
+      .populate({
+        path: 'teacher',
+        select: 'personalInfo status user',
+        populate: { path: 'user', select: 'name email' },
+      })
+      .sort({ createdAt: 1 })
+      .limit(100)
+      .lean();
+
+    return res.json({
+      requests: requests.map((request) => ({
+        _id: request._id,
+        teacher: request.teacher,
+        changedFields: request.changedFields || [],
+        createdAt: request.createdAt,
+      })),
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/admin/:id/profile-change/media/:kind', protect, authorize('admin'), async (req, res) => {
+  try {
+    const allowedKinds = new Set(['profilePhoto', 'introductionVideo', 'recitationVideo', 'teachingMethodVideo']);
+    if (!allowedKinds.has(req.params.kind)) {
+      return res.status(400).json({ error: 'Invalid profile change media kind' });
+    }
+
+    const request = await TeacherProfileChangeRequest.findOne({
+      teacher: req.params.id,
+      status: 'pending',
+    }).sort({ createdAt: -1 }).lean();
+
+    const reference = request?.proposed?.media?.[req.params.kind];
+    if (!reference) return res.status(404).json({ error: 'Proposed media not found' });
+
+    await logAdminAction({
+      req,
+      action: 'teacher.profile-change.media-opened',
+      entityType: 'teacher',
+      entityId: req.params.id,
+      reason: String(req.query.reason || 'profile-change-review').slice(0, 240),
+      metadata: { requestId: String(request._id), kind: req.params.kind },
+    }).catch(() => {});
+
+    return streamAdminTeacherAsset(reference, res, {
+      fallbackContentType: req.params.kind === 'profilePhoto' ? 'image/jpeg' : 'video/mp4',
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+router.put('/admin/:id/profile-change/review', protect, authorize('admin'), async (req, res) => {
+  try {
+    const action = String(req.body?.action || '');
+    const note = String(req.body?.note || '').trim().slice(0, 1500);
+    if (!['approve', 'reject'].includes(action)) {
+      return res.status(400).json({ error: 'Invalid profile change review action' });
+    }
+    if (action === 'reject' && !note) {
+      return res.status(400).json({ error: 'اكتب سبب رفض التعديل', code: 'PROFILE_CHANGE_REJECT_NOTE_REQUIRED' });
+    }
+
+    const teacher = await Teacher.findById(req.params.id);
+    if (!teacher) return res.status(404).json({ error: 'Teacher not found' });
+
+    const request = await TeacherProfileChangeRequest.findOne({
+      teacher: teacher._id,
+      status: 'pending',
+    }).sort({ createdAt: -1 });
+
+    if (!request) {
+      return res.status(404).json({ error: 'No pending profile change request', code: 'NO_PENDING_PROFILE_CHANGE' });
+    }
+
+    const userDoc = await User.findById(teacher.user);
+    if (!userDoc) return res.status(404).json({ error: 'Teacher account not found' });
+
+    if (action === 'approve') {
+      const mergedMedia = mergeTeacherMedia(teacher.media?.toObject?.() || teacher.media || {}, request.proposed?.media || {});
+      if (!coreMediaAreDistinct(mergedMedia)) {
+        return res.status(409).json({
+          error: 'لا يمكن نشر التعديل لأن فيديوهات التعريف والتلاوة وطريقة التدريس يجب أن تكون ملفات مختلفة',
+          code: 'TEACHER_CORE_MEDIA_MUST_BE_DISTINCT',
+        });
+      }
+
+      applyTeacherProfileChange(teacher, userDoc, request.proposed || {});
+      await Promise.all([teacher.save(), userDoc.save()]);
+      request.status = 'approved';
+    } else {
+      request.status = 'rejected';
+    }
+
+    request.adminNote = note;
+    request.reviewedBy = req.user.id;
+    request.reviewedAt = new Date();
+    await request.save();
+
+    await logAdminAction({
+      req,
+      action: `teacher.profile-change.${action}`,
+      entityType: 'teacher',
+      entityId: teacher._id,
+      reason: note || 'Teacher public profile change reviewed.',
+      metadata: {
+        requestId: String(request._id),
+        changedFields: request.changedFields || [],
+      },
+    }).catch(() => {});
+
+    await notifyUser(request.user, {
+      type: 'system',
+      title: action === 'approve'
+        ? { ar: 'تم اعتماد تعديل ملفك', en: 'Your profile changes were approved' }
+        : { ar: 'تعديل ملفك يحتاج مراجعة', en: 'Your profile changes need revision' },
+      message: action === 'approve'
+        ? { ar: 'تمت مراجعة التعديلات ونشرها في ملفك العام.', en: 'Your changes were reviewed and published to your public profile.' }
+        : { ar: `لم يتم نشر التعديلات. ملاحظة الإدارة: ${note}`, en: `The changes were not published. Admin note: ${note}` },
+      data: { actionUrl: '/teacher/dashboard?tab=account', metadata: { profileChangeRequestId: String(request._id) } },
+      priority: 'high',
+    }).catch((error) => console.warn('Teacher profile change result notification failed:', error.message));
+
+    return res.json({
+      success: true,
+      request,
+      teacher: action === 'approve' ? sanitizePublicTeacher(teacher) : undefined,
+    });
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+});
+
 router.get('/admin/:id/review-dossier', protect, authorize('admin'), async (req, res) => {
   try {
     const teacher = await Teacher.findById(req.params.id)
@@ -878,7 +1040,7 @@ router.get('/admin/:id/review-dossier', protect, authorize('admin'), async (req,
 
     if (!teacher) return res.status(404).json({ error: 'Teacher not found' });
 
-    const [auditEntries, activityAgg, distinctStudents] = await Promise.all([
+    const [auditEntries, activityAgg, distinctStudents, profileChange] = await Promise.all([
       AdminAuditLog.find({ entityType: 'teacher', entityId: String(teacher._id) })
         .populate('actor', 'name email')
         .sort({ createdAt: -1 })
@@ -896,6 +1058,10 @@ router.get('/admin/:id/review-dossier', protect, authorize('admin'), async (req,
         },
       ]),
       Session.find({ teacher: teacher._id, student: { $ne: null } }).distinct('student'),
+      TeacherProfileChangeRequest.findOne({ teacher: teacher._id })
+        .sort({ createdAt: -1 })
+        .populate('reviewedBy', 'name email')
+        .lean(),
     ]);
 
     const gate = buildTeacherReviewGate(teacher);
@@ -909,6 +1075,7 @@ router.get('/admin/:id/review-dossier', protect, authorize('admin'), async (req,
         acceptedSessions: activityAgg[0]?.acceptedSessions || 0,
         distinctStudents: distinctStudents.length,
       },
+      profileChange,
     ));
   } catch (error) {
     return res.status(500).json({ error: error.message });

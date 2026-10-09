@@ -43,6 +43,7 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState({});
   const [pending, setPending] = useState([]);
   const [approved, setApproved] = useState([]);
+  const [pendingProfileChanges, setPendingProfileChanges] = useState([]);
   const [teacherQuery, setTeacherQuery] = useState('');
   const [messages, setMessages] = useState([]);
   const [courses, setCourses] = useState([]);
@@ -80,12 +81,13 @@ export default function AdminDashboard() {
   }, []);
 
   const loadCore = useCallback(async () => {
-    const [statsResult, pendingResult, approvedResult, healthResult, commandResult] = await Promise.allSettled([
+    const [statsResult, pendingResult, approvedResult, healthResult, commandResult, profileChangesResult] = await Promise.allSettled([
       api.get('/api/admin/stats', { auth: true }),
       api.get('/api/admin/teachers/pending', { auth: true }),
       api.get('/api/admin/teachers/approved', { auth: true }),
       api.get('/api/health'),
       api.get('/api/admin/command-center', { auth: true }),
+      api.get('/api/teachers/admin/profile-changes/pending', { auth: true }),
     ]);
 
     if (statsResult.status === 'fulfilled') setStats(statsResult.value || {});
@@ -101,6 +103,7 @@ export default function AdminDashboard() {
     if (commandResult.status === 'fulfilled') {
       setCommandCenter(commandResult.value || { summary: {}, actions: [], recentTeachers: [], recentAudit: [] });
     }
+    if (profileChangesResult.status === 'fulfilled') setPendingProfileChanges(profileChangesResult.value?.requests || []);
 
     if (pendingResult.status === 'rejected') {
       throw new Error('تعذر تحميل طلبات المعلمين المعلقة');
@@ -367,6 +370,43 @@ export default function AdminDashboard() {
       window.setTimeout(() => URL.revokeObjectURL(url), 120000);
     } catch (error) {
       toast.error(error.message || 'تعذر فتح ملف المعلم');
+    }
+  };
+
+  const openTeacherProfileChangeMedia = async (teacherId, kind) => {
+    try {
+      const response = await api.request(
+        `/api/teachers/admin/${teacherId}/profile-change/media/${kind}?reason=profile-change-review`,
+        { auth: true, json: false, method: 'GET' }
+      );
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank', 'noopener,noreferrer');
+      window.setTimeout(() => URL.revokeObjectURL(url), 120000);
+    } catch (error) {
+      toast.error(error.message || 'تعذر فتح الوسيط المقترح');
+    }
+  };
+
+  const reviewTeacherProfileChange = async (teacherId, action, suppliedNote = '') => {
+    let note = suppliedNote;
+    if (action === 'reject' && !note) {
+      note = window.prompt('اكتب سبب رفض التعديل أو المطلوب من المعلم:', '') ?? '';
+      if (!note.trim()) return;
+    }
+
+    try {
+      await api.put(
+        `/api/teachers/admin/${teacherId}/profile-change/review`,
+        { action, note: note.trim() },
+        { auth: true }
+      );
+      toast.success(action === 'approve' ? 'تم اعتماد ونشر تعديل ملف المعلم' : 'تم رفض التعديل وإبلاغ المعلم');
+      setPendingProfileChanges((current) => current.filter((item) => String(item.teacher?._id || item.teacher) !== String(teacherId)));
+      await openTeacherDossier(teacherId);
+      await loadCore();
+    } catch (error) {
+      toast.error(error.message || 'تعذر مراجعة تعديل الملف');
     }
   };
 
@@ -663,6 +703,33 @@ export default function AdminDashboard() {
 
           {tab === 'teachers' && (
             <div className="space-y-6">
+              {pendingProfileChanges.length > 0 && (
+                <section className="wn-dashboard-surface border-amber-200 bg-amber-50/40">
+                  <div className="flex items-start justify-between gap-3 mb-4">
+                    <div>
+                      <h3 className="font-bold text-amber-950">طلبات تعديل ملفات المعلمين ({pendingProfileChanges.length})</h3>
+                      <p className="text-xs text-amber-800 mt-1">لن تظهر أي تعديلات للطلاب قبل اعتمادها من الإدارة.</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    {pendingProfileChanges.map((request) => {
+                      const teacher = request.teacher || {};
+                      return (
+                        <article key={request._id} className="rounded-xl border border-amber-200 bg-white p-4 flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <strong className="block">{teacher.personalInfo?.fullName || teacher.user?.name || 'معلم'}</strong>
+                            <small className="block text-slate-500">{teacher.user?.email || ''}</small>
+                            <small className="block text-slate-500 mt-1">{(request.changedFields || []).length} تعديل · {request.createdAt ? new Date(request.createdAt).toLocaleString('ar-EG') : ''}</small>
+                          </div>
+                          <button type="button" className="wn-btn wn-btn--primary" onClick={() => openTeacherDossier(teacher._id)}>
+                            مراجعة التعديلات
+                          </button>
+                        </article>
+                      );
+                    })}
+                  </div>
+                </section>
+              )}
               <TeacherReviewQueue
                 teachers={pending}
                 loading={loading}
@@ -1084,6 +1151,8 @@ export default function AdminDashboard() {
           onReview={review}
           onOpenDocument={openTeacherDocument}
           onOpenMedia={openTeacherMedia}
+          onOpenProfileChangeMedia={openTeacherProfileChangeMedia}
+          onProfileChangeReview={reviewTeacherProfileChange}
           onPreviewPublic={previewPublicTeacher}
         />
       )}

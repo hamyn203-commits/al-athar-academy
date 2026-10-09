@@ -3,6 +3,7 @@ const path = require('path');
 const router = express.Router();
 const Session = require('../models/Session');
 const Teacher = require('../models/Teacher');
+const TeacherProfileChangeRequest = require('../models/TeacherProfileChangeRequest');
 const TeacherTask = require('../models/TeacherTask');
 const User = require('../models/User');
 const WithdrawRequest = require('../models/WithdrawRequest');
@@ -11,6 +12,8 @@ const { calculateTeacherBalance } = require('../services/teacherFinance');
 const { protect, authorize } = require('../middleware/auth');
 const { notifyAdmins, notifyUser, notifyGuardiansForStudent } = require('../utils/notify');
 const { deleteStoredReference } = require('../utils/storageLifecycle');
+const objectStorage = require('../services/objectStorage');
+const { sanitizeTeacherProfileChange, listChangedFields } = require('../services/teacherProfileChange');
 
 const SESSION_RATE = 50;
 const HOMEWORK_UPLOAD_ROOT = path.resolve(process.cwd(), 'uploads', 'homework');
@@ -49,7 +52,7 @@ if (isMockMode) {
 router.get('/profile', protect, authorize('teacher'), async (req, res) => {
   try {
     const teacher = await Teacher.findOne({ user: req.user.id })
-      .populate('user', 'name email phone avatar');
+      .populate('user', 'name email phone avatar bio');
     if (!teacher) return res.status(404).json({ error: 'Teacher profile not found' });
 
     res.json({
@@ -65,6 +68,104 @@ router.get('/profile', protect, authorize('teacher'), async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/profile-change', protect, authorize('teacher'), async (req, res) => {
+  try {
+    if (isMockMode && require('mongoose').connection.readyState !== 1) {
+      return res.json({ request: null });
+    }
+
+    const teacher = await Teacher.findOne({ user: req.user.id }).select('_id status isVerified');
+    if (!teacher) return res.status(404).json({ error: 'Teacher profile not found' });
+
+    const request = await TeacherProfileChangeRequest.findOne({ teacher: teacher._id })
+      .sort({ createdAt: -1 })
+      .populate('reviewedBy', 'name email')
+      .lean();
+
+    return res.json({ request: request || null });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/profile-change', protect, authorize('teacher'), async (req, res) => {
+  try {
+    if (isMockMode && require('mongoose').connection.readyState !== 1) {
+      return res.status(201).json({
+        success: true,
+        request: { _id: 'mock-profile-change', status: 'pending', proposed: req.body?.changes || {}, createdAt: new Date() },
+      });
+    }
+
+    const teacher = await Teacher.findOne({ user: req.user.id }).select('_id status isVerified media');
+    if (!teacher) return res.status(404).json({ error: 'Teacher profile not found' });
+    if (teacher.status !== 'approved' || teacher.isVerified !== true) {
+      return res.status(403).json({ error: 'Only approved tutors can submit public profile changes', code: 'TEACHER_NOT_APPROVED' });
+    }
+
+    const existing = await TeacherProfileChangeRequest.findOne({ teacher: teacher._id, status: 'pending' }).lean();
+    if (existing) {
+      return res.status(409).json({
+        error: 'لديك طلب تعديل قيد مراجعة الإدارة بالفعل',
+        code: 'TEACHER_PROFILE_CHANGE_PENDING',
+        request: existing,
+      });
+    }
+
+    const proposed = sanitizeTeacherProfileChange(req.body?.changes || {});
+    const incomingMedia = req.body?.media || {};
+    const mediaKinds = ['profilePhoto', 'introductionVideo', 'recitationVideo', 'teachingMethodVideo'];
+
+    for (const kind of mediaKinds) {
+      const value = incomingMedia[kind];
+      if (!value) continue;
+      const reference = value?.url || value?.pathname || String(value || '');
+      if (
+        !reference
+        || !objectStorage.referenceMatches(reference, 'teacher-public', req.user.id)
+        || (objectStorage.getDriver() === 'vercel-blob' && !objectStorage.isVercelBlobReference(reference))
+      ) {
+        return res.status(400).json({
+          error: 'One or more profile media files do not belong to this tutor account',
+          code: 'INVALID_TEACHER_PROFILE_MEDIA',
+        });
+      }
+      proposed.media[kind] = objectStorage.publicProxyUrl(reference);
+    }
+
+    const changedFields = listChangedFields(proposed);
+    if (!changedFields.length) {
+      return res.status(400).json({ error: 'No profile changes were supplied', code: 'NO_PROFILE_CHANGES' });
+    }
+
+    const request = await TeacherProfileChangeRequest.create({
+      teacher: teacher._id,
+      user: req.user.id,
+      proposed,
+      changedFields,
+      status: 'pending',
+    });
+
+    notifyAdmins({
+      type: 'system',
+      title: { ar: 'طلب تعديل ملف معلم', en: 'Tutor profile change request' },
+      message: {
+        ar: 'أرسل معلم معتمد تعديلات جديدة على ملفه العام وتحتاج مراجعة الإدارة قبل النشر.',
+        en: 'An approved tutor submitted public profile changes that require admin review before publishing.',
+      },
+      data: {
+        actionUrl: '/admin?tab=teachers',
+        metadata: { teacherId: String(teacher._id), profileChangeRequestId: String(request._id) },
+      },
+      priority: 'high',
+    }).catch((error) => console.warn('Teacher profile change admin notification failed:', error.message));
+
+    return res.status(201).json({ success: true, request });
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
   }
 });
 
