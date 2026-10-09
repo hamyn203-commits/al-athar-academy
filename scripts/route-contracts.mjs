@@ -269,6 +269,14 @@ assert.match(adminDashboardShell, /onChange\?\.\(['"]system['"]\)/);
 assert.match(teacherReviewQueue, /فتح ملف المراجعة الكامل/);
 assert.doesNotMatch(teacherReviewQueue, /onReview\(/);
 assert.match(teacherReviewDossier, /Teacher 360 Review Dossier/);
+// T21 — Approved teacher management stays in admin, with distinct public preview.
+assert.match(adminDashboard, /filteredApprovedTeachers\.map/);
+assert.match(adminDashboard, /openTeacherDossier\(teacher\._id\)/);
+assert.match(adminDashboard, /previewPublicTeacher\(teacher\._id\)/);
+assert.doesNotMatch(adminDashboard, /navigate\(`\/teachers\/\$\{t\._id\}\`\)/);
+assert.match(teacherReviewDossier, /!approved \? <section className="wn-admin-review-gate">/);
+assert.match(teacherReviewDossier, /!approved \? <footer className="wn-admin-dossier__footer">/);
+assert.match(teacherReviewDossier, /onPreviewPublic/);
 assert.match(teacherReviewDossier, /approvalReady/);
 assert.match(teacherReviewDossier, /onOpenDocument/);
 assert.match(teacherReviewDossier, /onOpenMedia/);
