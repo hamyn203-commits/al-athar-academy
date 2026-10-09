@@ -741,6 +741,16 @@ requireContains(
   'existing circle placement must match student gender age track and level',
   /gender:\s*expectedGender[\s\S]{0,180}targetAgeGroup:\s*expectedAgeGroup[\s\S]{0,180}track:\s*expectedTrack[\s\S]{0,180}level:\s*expectedLevel/
 );
+requireContains(
+  'backend/routes/payments.js',
+  'subscription payment review must notify the student about placement or retry',
+  /result\?\.subscriptionId[\s\S]{0,1800}notifyUser\(result\.studentId[\s\S]{0,900}awaiting placement/
+);
+requireContains(
+  'backend/routes/subscriptions.js',
+  'subscription placement must notify the learner lifecycle state',
+  /subscriptionStatus\s*===\s*['"]active['"][\s\S]{0,2400}notifyUser\(result\.studentId/
+);
 
 // T07.2d: manual transfer approval must remain private, admin-only and transactional.
 requireContains(
