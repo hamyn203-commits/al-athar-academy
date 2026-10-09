@@ -4,10 +4,11 @@ import { useRequireAuth } from '../../hooks/useRequireAuth';
 import { useI18n } from '../../i18n';
 import { dashboardPathForRole, isSafeInternalRedirect } from '../../lib/navigation';
 import { useAuth } from '../../hooks/useAuth.jsx';
+import { uploadFileDirect } from '../../lib/fileUpload';
 
 export default function ProfileSetup() {
   const { user, ready } = useRequireAuth(['student', 'guardian', 'teacher']);
-  const { saveOnboarding } = useAuth();
+  const { saveOnboarding, updateProfile } = useAuth();
   const { locale } = useI18n();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -17,6 +18,8 @@ export default function ProfileSetup() {
   const [data, setData] = useState({ name: '', phone: '', age: '', gender: '', whatsappPhone: '', preferredTrack: 'memorization', currentLevel: 'beginner', memorizedJuz: 0, memorizationDetails: '', bio: '', guardianContact: { name: '', phone: '', relationship: '' } });
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarNotice, setAvatarNotice] = useState('');
   useEffect(() => { if (user) setData(prev => ({ ...prev, ...Object.fromEntries(Object.keys(prev).filter(k => user[k] !== undefined && user[k] !== null).map(k => [k, user[k]])) })); }, [user]);
   useEffect(() => {
     // A returning student with a completed profile should not be asked to fill it again.
@@ -32,10 +35,21 @@ export default function ProfileSetup() {
     setSaving(true); setError('');
     try {
       const payload = { name: data.name, phone: data.phone, whatsappPhone: data.whatsappPhone, bio: data.bio };
-      if (user.role === 'student') Object.assign(payload, { age: data.age ? Number(data.age) : undefined, gender: data.gender || undefined, memorizedJuz: Number(data.memorizedJuz), preferredTrack: data.preferredTrack, currentLevel: data.currentLevel, memorizationDetails: data.memorizationDetails });
+      if (user.role === 'student') Object.assign(payload, { age: data.age ? Number(data.age) : undefined, gender: data.gender || undefined, memorizedJuz: Number(data.memorizedJuz), currentLevel: data.currentLevel, memorizationDetails: data.memorizationDetails });
       if (user.role === 'student') payload.guardianContact = data.guardianContact;
       const saved = await saveOnboarding(payload);
       if (!saved.onboarding?.completed) throw new Error('لم تكتمل البيانات بعد، تحقق من الحقول المطلوبة');
+
+      if (user.role === 'student' && avatarFile) {
+        try {
+          const uploaded = await uploadFileDirect(avatarFile, 'student-avatar');
+          const avatarResult = await updateProfile({ avatar: uploaded.url });
+          if (!avatarResult?.success) throw new Error(avatarResult?.error || 'تعذر حفظ الصورة');
+        } catch {
+          window.alert('تم حفظ بياناتك، لكن تعذر حفظ الصورة الشخصية. يمكنك إضافتها لاحقًا.');
+        }
+      }
+
       // The authenticated PATCH response is the server's confirmation of persistence.
       // A second GET can be served from an older edge/browser cache and cause an endless loop.
       navigate(destination, { replace: true, state: { profileJustSaved: true } });
@@ -48,6 +62,28 @@ export default function ProfileSetup() {
     <p className="text-sm text-slate-600 mb-6">بياناتك محفوظة ويمكنك استكمالها لاحقًا. {user.role === 'teacher' ? 'لا يمكنك التدريس أو الظهور للطلاب قبل اعتماد الإدارة.' : ''}</p>
     <form className="space-y-4" onSubmit={save}>
       {field('الاسم الكامل', 'name')}<label className="block text-sm font-semibold">رقم الهاتف (مطلوب)<input className="input-field w-full mt-2" type="tel" autoComplete="tel" required value={data.phone || ''} onChange={event => setData(prev => ({ ...prev, phone: event.target.value }))}/><span className="block text-xs font-normal text-slate-500 mt-1">اكتب رقمًا صحيحًا، مثال: 01012345678</span></label>{field('واتساب (اختياري)', 'whatsappPhone', 'tel')}
+      {user.role === 'student' && <div className="rounded-xl border border-slate-200 p-4">
+        <label htmlFor="student-profile-avatar" className="block text-sm font-semibold">الصورة الشخصية (اختيارية)</label>
+        <input
+          id="student-profile-avatar"
+          type="file"
+          accept="image/jpeg,image/png,.jpg,.jpeg,.png"
+          className="block w-full mt-2 text-sm min-h-11"
+          onChange={event => {
+            const file = event.target.files?.[0] || null;
+            if (file && (!['image/jpeg', 'image/png'].includes(file.type) || file.size > 5 * 1024 * 1024)) {
+              setAvatarFile(null);
+              event.target.value = '';
+              setAvatarNotice('اختر JPG أو PNG بحجم لا يتجاوز 5 ميجابايت.');
+              return;
+            }
+            setAvatarFile(file);
+            setAvatarNotice(file ? file.name : '');
+          }}
+        />
+        <p className="text-xs text-slate-500 mt-2">يمكنك المتابعة بدون صورة وإضافتها لاحقًا.</p>
+        {avatarNotice ? <p role="status" className="text-xs text-emerald-800 mt-1">{avatarNotice}</p> : null}
+      </div>}
       {user.role === 'student' && <>{field('العمر', 'age', 'number')}<label className="block text-sm">الجنس<select className="input-field w-full mt-2" value={data.gender} onChange={e => setData(p => ({...p, gender:e.target.value}))}><option value="">غير محدد</option><option value="male">ذكر</option><option value="female">أنثى</option></select></label><label className="block text-sm font-semibold">مستواك الحالي (تقييم مبدئي)
           <select className="input-field w-full mt-2" value={data.currentLevel || 'beginner'} onChange={e => setData(p => ({ ...p, currentLevel: e.target.value }))}>
             <option value="beginner">مبتدئ</option>
@@ -78,8 +114,8 @@ export default function ProfileSetup() {
       </div>}
       {field('نبذة مختصرة (اختياري)', 'bio')}
 
-      <button disabled={saving || !data.name.trim()} className="w-full rounded-xl bg-emerald-800 text-white p-3 font-bold">{saving ? 'جاري الحفظ...' : 'حفظ والمتابعة'}</button>
-      <button type="button" className="w-full text-slate-600 underline" onClick={() => navigate(dashboardDestination, { replace: true })}>استكمل لاحقًا</button>
+      <button disabled={saving || !data.name.trim()} className="w-full min-h-11 rounded-xl bg-emerald-800 text-white p-3 font-bold">{saving ? 'جاري الحفظ...' : 'حفظ والمتابعة'}</button>
+      <button type="button" className="w-full min-h-11 text-slate-600 underline" onClick={() => navigate(dashboardDestination, { replace: true })}>استكمل لاحقًا</button>
     </form>
   </section></main>;
 }
