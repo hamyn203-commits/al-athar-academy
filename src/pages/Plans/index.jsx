@@ -202,7 +202,7 @@ export default function PlansPage() {
         page={{
           title: pageTitle,
           description: isAr
-            ? 'خطط مرنة لتعلّم القرآن تبدأ من 10 جنيه للحصة مع حلقات جماعية، مجموعات مركزة، وحصص فردية، وقسم نسائي مستقل.'
+            ? 'خطط مرنة لتعلّم القرآن تبدأ من 10 جنيه للحصة مع حلقات جماعية، مجموعات مركزة، وحصص فردية، وقسم سيدات مستقل.'
             : 'Flexible Quran learning plans starting from 10 EGP per session, with group, focused, private, and women-only learning options.',
           url: '/plans',
           type: 'website',
