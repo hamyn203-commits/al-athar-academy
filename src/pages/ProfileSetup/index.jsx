@@ -13,7 +13,8 @@ export default function ProfileSetup() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const next = searchParams.get('next');
-  const destination = isSafeInternalRedirect(next) ? next : dashboardPathForRole(user?.role, locale);
+  const dashboardDestination = dashboardPathForRole(user?.role, locale);
+  const destination = isSafeInternalRedirect(next) ? next : dashboardDestination;
   const [data, setData] = useState({ name: '', phone: '', age: '', gender: '', whatsappPhone: '', preferredTrack: 'memorization', currentLevel: 'beginner', memorizedJuz: 0, memorizationDetails: '', bio: '' });
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -40,7 +41,7 @@ export default function ProfileSetup() {
       {field('نبذة مختصرة (اختياري)', 'bio')}
       {error && <p role="alert" className="text-red-700">{error}</p>}
       <button disabled={saving || !data.name.trim()} className="w-full rounded-xl bg-emerald-800 text-white p-3 font-bold">{saving ? 'جاري الحفظ...' : 'حفظ والمتابعة'}</button>
-      <button type="button" className="w-full text-slate-600 underline" onClick={() => navigate(destination)}>استكمل لاحقًا</button>
+      <button type="button" className="w-full text-slate-600 underline" onClick={() => navigate(dashboardDestination, { replace: true })}>استكمل لاحقًا</button>
     </form>
   </section></main>;
 }
