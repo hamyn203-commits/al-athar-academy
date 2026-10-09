@@ -115,9 +115,8 @@ function buildTeacherReviewGate(teacher) {
 
   const requiredItems = items.filter((item) => item.requiredForTeacher);
   const mediaDistinct = coreMediaAreDistinct(teacher.media || {});
-  const completedChecklist = requiredItems.filter((item) => item.satisfied).length;
-  const requiredCount = requiredItems.length + 1;
-  const completedRequired = completedChecklist + (mediaDistinct ? 1 : 0);
+  const completedRequired = requiredItems.filter((item) => item.satisfied).length;
+  const requiredCount = requiredItems.length;
   const readiness = requiredCount
     ? Math.round((completedRequired / requiredCount) * 100)
     : 100;
