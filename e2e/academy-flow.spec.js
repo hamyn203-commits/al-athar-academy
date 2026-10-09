@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { accounts, login } from './helpers.js';
 
-test.describe.serial('Wahy Wa Namaa core academy journey', () => {
+test.describe('Wahy Wa Namaa core academy journey', () => {
   test('student registration works through the real UI', async ({ page }) => {
     const email = `e2e.registration.${Date.now()}@example.test`;
 
