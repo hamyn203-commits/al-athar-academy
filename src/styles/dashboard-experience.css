@@ -7187,7 +7187,7 @@
 }
 
 
-/* T18 — Readable navy-and-gold sidebar and persistent compact rail */
+/* T18 — Readable navy-and-gold sidebar with persistent hide/show toggle */
 .wn-admin-sidebar {
   transition: width .24s ease, transform .24s ease;
 }
@@ -7259,58 +7259,13 @@
 .wn-admin-topbar__date {font-size: .67rem;}
 .wn-admin-topbar__locale {font-size: .72rem;}
 
-/* Desktop: icon-only rail without hiding access to destinations. */
+/* Desktop: free the full workspace; toggle remains available in topbar. */
 @media (min-width: 901px) {
-  .wn-admin-app.is-sidebar-collapsed .wn-admin-sidebar {width: 78px;}
-  .wn-admin-app.is-sidebar-collapsed .wn-admin-stage {margin-left: 78px;}
-  .wn-admin-app.is-sidebar-collapsed .wn-admin-sidebar__brand {
-    min-height: 95px;
-    padding: .75rem .3rem;
+  .wn-admin-app.is-sidebar-collapsed .wn-admin-sidebar {
+    transform: translateX(-105%);
   }
-  .wn-admin-app.is-sidebar-collapsed .wn-admin-sidebar__divider {margin-inline: .75rem;}
-  .wn-admin-app.is-sidebar-collapsed .wn-admin-sidebar__nav {
-    padding: .8rem .5rem;
-    gap: .3rem;
-  }
-  .wn-admin-app.is-sidebar-collapsed .wn-admin-sidebar__nav button,
-  .wn-admin-app.is-sidebar-collapsed .wn-admin-sidebar__system button,
-  .wn-admin-app.is-sidebar-collapsed .wn-admin-sidebar__system a {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 44px;
-    gap: 0;
-    padding: .55rem;
-    border-radius: 12px;
-  }
-  .wn-admin-app.is-sidebar-collapsed .wn-admin-sidebar__nav button span,
-  .wn-admin-app.is-sidebar-collapsed .wn-admin-sidebar__system button span,
-  .wn-admin-app.is-sidebar-collapsed .wn-admin-sidebar__system a span {
-    display: none;
-  }
-  .wn-admin-app.is-sidebar-collapsed .wn-admin-sidebar__nav svg,
-  .wn-admin-app.is-sidebar-collapsed .wn-admin-sidebar__system svg {
-    width: 20px;
-    height: 20px;
-    flex-shrink: 0;
-  }
-  .wn-admin-app.is-sidebar-collapsed .wn-admin-sidebar__system {
-    padding: .6rem .5rem;
-  }
-  .wn-admin-app.is-sidebar-collapsed .wn-admin-sidebar__profile {
-    display: flex;
-    flex-direction: column;
-    gap: .4rem;
-    margin: .4rem .4rem .7rem;
-    padding: .58rem .3rem;
-    border-radius: 12px;
-  }
-  .wn-admin-app.is-sidebar-collapsed .wn-admin-sidebar__profile > div:nth-child(2) {
-    display: none;
-  }
-  .wn-admin-app.is-sidebar-collapsed .wn-admin-sidebar__avatar {
-    width: 34px;
-    height: 34px;
+  .wn-admin-app.is-sidebar-collapsed .wn-admin-stage {
+    margin-left: 0;
   }
 }
 
