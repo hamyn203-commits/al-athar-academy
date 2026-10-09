@@ -21,7 +21,7 @@ const TeacherRegistration = lazy(() => import('./pages/TeacherRegistration'));
 const Teachers = lazy(() => import('./pages/Teachers'));
 const TeacherProfile = lazy(() => import('./pages/TeacherProfile'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
-const TeacherDashboard = lazy(() => import('./pages/TeacherDashboard'));
+const TeacherDashboard = lazy(() => import('./pages/TeacherDashboard/TeacherDashboardGate'));
 const StudentDashboard = lazy(() => import('./pages/StudentDashboard'));
 const GuardianDashboard = lazy(() => import('./pages/GuardianDashboard'));
 const BookSession = lazy(() => import('./pages/BookSession'));
