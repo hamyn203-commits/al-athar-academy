@@ -131,8 +131,12 @@ test.describe('Wahy Wa Namaa core academy journey', () => {
     await expect(studentPage.getByText(/480 EGP/)).toBeVisible();
     await expect(studentPage.getByText('e2e@instapay', { exact: true })).toBeVisible();
     await expect(studentPage.getByText('عايز تدرس مع مين؟', { exact: true })).toBeVisible();
-    const teacherSelect = studentPage.locator('select').filter({ has: studentPage.locator('option') }).nth(0);
-    await expect(studentPage.getByRole('option', { name: /E2E Teacher One/ })).toBeVisible();
+    const teacherSelect = studentPage.getByRole('combobox', { name: 'اختيار الشيخ أو المعلمة' });
+    await expect(teacherSelect).toBeVisible();
+    await expect(teacherSelect.locator('option')).toContainText(['اختر الشيخ أو المعلمة', 'E2E Teacher One']);
+    const e2eTeacherOption = teacherSelect.locator('option').filter({ hasText: 'E2E Teacher One' });
+    await teacherSelect.selectOption(await e2eTeacherOption.getAttribute('value'));
+    await expect(teacherSelect.locator('option:checked')).toContainText('E2E Teacher One');
 
     await studentContext.close();
   });
