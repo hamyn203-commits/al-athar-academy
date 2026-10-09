@@ -787,7 +787,11 @@ router.get('/', async (req, res) => {
       filter['personalInfo.country'] = country;
     }
     if (gender) filter['personalInfo.gender'] = gender;
-    if (specialization) filter['quranInfo.specializations'] = specialization;
+    if (specialization) {
+      const specialties = String(specialization).split(',').map(value => value.trim()).filter(value => /^[a-z_]{2,30}$/.test(value)).slice(0, 10);
+      if (!specialties.length) return res.status(400).json({ error: 'Invalid specialization' });
+      filter['quranInfo.specializations'] = { $in: specialties };
+    }
     if (language) filter.languages = language;
     if (minRating) filter['rating.average'] = { $gte: parseFloat(minRating) };
     if (minExperience) filter['quranInfo.teachingExperience'] = { $gte: parseInt(minExperience) };
@@ -823,7 +827,12 @@ router.get('/', async (req, res) => {
     ]);
 
     res.json({
-      teachers: teachers.map(sanitizePublicTeacher),
+      teachers: teachers.map(item => {
+        const teacher = sanitizePublicTeacher(item);
+        // Discovery needs one thumbnail, not full video/audio payloads or private metadata.
+        teacher.media = { profilePhoto: teacher.media?.profilePhoto || '' };
+        return teacher;
+      }),
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
