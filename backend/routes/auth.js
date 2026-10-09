@@ -15,6 +15,7 @@ const { addMockUser, findMockUserByEmail, findMockUserById, updateMockUser } = r
 const { sendEmail } = require('../services/notificationDispatcher');
 const { getTeacherAccessDecision } = require('../utils/teacherAccess');
 const { normalizePhone } = require('../utils/phone');
+const storage = require('../services/objectStorage');
 const { createGuardianInvitation } = require('../services/guardianInvitations');
 
 const { isMockMode } = require('../config/runtime');
@@ -376,6 +377,14 @@ router.patch('/me', verifyAccessToken, async (req, res) => {
       return res.status(400).json({ 
         error: 'Invalid update fields' 
       });
+    }
+
+    if (Object.prototype.hasOwnProperty.call(req.body, 'avatar') && req.user.role === 'student') {
+      const value = String(req.body.avatar || '');
+      if (value && (!storage.referenceMatches(value, 'student-avatar', req.user.id) ||
+          (storage.getDriver() === 'vercel-blob' && !storage.isVercelBlobReference(value)))) {
+        return res.status(400).json({ error: 'Invalid student avatar reference' });
+      }
     }
 
     let user;
