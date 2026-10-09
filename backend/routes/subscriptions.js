@@ -61,6 +61,12 @@ router.get('/me', protect, authorize('student'), async (req, res) => {
     const subscriptions = await StudentSubscription.find({ student: req.user.id })
       .sort({ createdAt: -1 })
       .limit(20)
+      .populate({
+        path: 'preferredTeacher',
+        select: 'personalInfo user',
+        populate: { path: 'user', select: 'name avatar' },
+      })
+      .populate('circle', 'name code status capacity students schedule timezone')
       .lean();
 
     return res.json({
