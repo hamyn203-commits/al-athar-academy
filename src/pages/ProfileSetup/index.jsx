@@ -4,6 +4,7 @@ import { useRequireAuth } from '../../hooks/useRequireAuth';
 import { useI18n } from '../../i18n';
 import { dashboardPathForRole, isSafeInternalRedirect } from '../../lib/navigation';
 import { useAuth } from '../../hooks/useAuth.jsx';
+import api from '../../lib/api';
 
 export default function ProfileSetup() {
   const { user, ready } = useRequireAuth(['student', 'guardian', 'teacher']);
@@ -28,6 +29,11 @@ export default function ProfileSetup() {
       if (user.role === 'student') payload.guardianContact = data.guardianContact;
       const saved = await saveOnboarding(payload);
       if (!saved.onboarding?.completed) throw new Error('لم تكتمل البيانات بعد، تحقق من الحقول المطلوبة');
+      // Verify persistence before navigation: never enter a redirect loop on stale data.
+      const confirmed = await api.get('/api/auth/me', { auth: true });
+      if (!confirmed?.user?.onboarding?.completed) {
+        throw new Error('تعذر تأكيد حفظ الملف على السيرفر. حاول مرة أخرى.');
+      }
       navigate(destination, { replace: true });
     } catch (e) { setError(e.message); } finally { setSaving(false); }
   };
