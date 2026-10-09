@@ -106,6 +106,23 @@ export function AuthProvider({ children }) {
     }
   }, [saveAuthenticatedSession]);
 
+  const googleLogin = useCallback(async (credential) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/google`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Google sign-in failed');
+      saveAuthenticatedSession(data);
+      return { success: true, user: data.user };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }, [saveAuthenticatedSession]);
+
   const register = useCallback(async (userData) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
@@ -205,6 +222,7 @@ export function AuthProvider({ children }) {
     isLoading,
     accessToken: getAccessToken(),
     login,
+    googleLogin,
     register,
     logout,
     updateProfile,
