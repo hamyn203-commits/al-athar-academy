@@ -4,6 +4,15 @@ const TeacherLedger = require('../models/TeacherLedger');
 const MIN_PAYOUT_EGP = 100;
 const MIN_PAYOUT_USD = 10;
 
+function calculateSessionEarning(hourlyRate = 50, durationMinutes = 60) {
+  const rate = Number(hourlyRate);
+  const duration = Number(durationMinutes);
+  if (!Number.isFinite(rate) || rate < 0 || !Number.isFinite(duration) || duration <= 0) {
+    throw new Error('Invalid session earning inputs');
+  }
+  return Math.round((rate * duration / 60) * 100) / 100;
+}
+
 async function calculateTeacherBalance(teacherId) {
   const teacher = await Teacher.findById(teacherId);
   if (!teacher) return null;
@@ -220,6 +229,7 @@ module.exports = {
   MIN_PAYOUT_USD,
   calculateTeacherBalance,
   ensureLegacyOpeningEntries,
+  calculateSessionEarning,
   ensureSessionEarning,
   listTeacherTransactions,
 };
