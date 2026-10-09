@@ -11,6 +11,14 @@ import { useAuth } from '../../hooks/useAuth.jsx';
 import { formatSessionDateTime, sessionTimeZone } from '../../lib/sessionTime';
 import '../../styles/session-experience.css';
 
+const DEVICE_TIMEZONE = (() => {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'Africa/Cairo';
+  } catch {
+    return 'Africa/Cairo';
+  }
+})();
+
 export default function BookSession() {
   const { teacherId } = useParams();
   const navigate = useNavigate();
@@ -20,7 +28,7 @@ export default function BookSession() {
   const [teacher, setTeacher] = useState(null);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
-  const [timezone, setTimezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone);
+  const [timezone, setTimezone] = useState(DEVICE_TIMEZONE);
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -108,7 +116,7 @@ export default function BookSession() {
     ? availabilityData.slots.filter((slot) => dateKeyInTimezone(slot.startsAt, timezone) === selectedDate)
     : [];
 
-  const timezones = [
+  const baseTimezones = [
     ['Africa/Cairo', isAr ? 'القاهرة' : 'Cairo'],
     ['Asia/Riyadh', isAr ? 'الرياض' : 'Riyadh'],
     ['Asia/Dubai', isAr ? 'دبي' : 'Dubai'],
@@ -120,6 +128,9 @@ export default function BookSession() {
     ['Europe/Paris', 'Paris'],
     ['America/New_York', 'New York'],
   ];
+  const timezones = baseTimezones.some(([value]) => value === DEVICE_TIMEZONE)
+    ? baseTimezones
+    : [[DEVICE_TIMEZONE, isAr ? 'توقيت جهازك' : 'Your device timezone'], ...baseTimezones];
 
   const submit = async (event) => {
     event.preventDefault();
