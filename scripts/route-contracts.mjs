@@ -250,11 +250,11 @@ assert.ok(
 // T20 — Admin readability at 150% scale, scoped to admin pages only.
 const adminReadableCss = read('src/styles/dashboard-experience.css');
 assert.match(adminReadableCss, /T20 — Admin 150% typography/);
-assert.match(adminReadableCss, /--wn-admin-type-scale:\\s*1\\.5/);
-assert.match(adminReadableCss, /font-size:\\s*1\\.245rem/);
-assert.match(adminReadableCss, /font-size:\\s*1\\.3125rem/);
-assert.match(adminReadableCss, /\\.wn-admin-app\\s+\\.wn-admin-sidebar\\s*\\{\\s*width:\\s*298px/);
-assert.match(adminReadableCss, /\\.wn-admin-payment-readable/);
+assert.match(adminReadableCss, /--wn-admin-type-scale:\s*1\.5/);
+assert.match(adminReadableCss, /font-size:\s*1\.245rem/);
+assert.match(adminReadableCss, /font-size:\s*1\.3125rem/);
+assert.match(adminReadableCss, /\.wn-admin-app\s+\.wn-admin-sidebar\s*\{\s*width:\s*298px/);
+assert.match(adminReadableCss, /\.wn-admin-payment-readable/);
 assert.match(adminPayments, /wn-admin-payment-readable/);
 assert.match(adminDashboardShell, /wn-admin-topbar__sidebar-toggle/);
 assert.match(adminDashboardShell, /is-sidebar-collapsed/);
