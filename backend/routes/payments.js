@@ -20,7 +20,7 @@ const manualPayments = require('../config/manualPayments');
 const objectStorage = require('../services/objectStorage');
 const { processPaymobWebhook } = require('../services/paymentSettlement');
 const { processManualPaymentReview } = require('../services/manualPaymentSettlement');
-const { notifyCourseEnrollment, notifyAdmins } = require('../utils/notify');
+const { notifyCourseEnrollment, notifyAdmins, notifyUser } = require('../utils/notify');
 
 const SUPPORTED_LOCALES = new Set(['ar', 'en', 'fr', 'de', 'tr', 'ur', 'id', 'ms', 'ku']);
 
@@ -627,6 +627,36 @@ router.patch('/admin/manual/:id/review', protect, authorize('admin'), async (req
     if (result?.enrollmentCreated && result.studentId && result.courseId) {
       const course = await Course.findById(result.courseId).select('title slug').lean();
       if (course) notifyCourseEnrollment(result.studentId, course).catch(() => {});
+    }
+
+    if (result?.subscriptionId && result.studentId) {
+      const approved = result.paymentStatus === 'succeeded' && result.awaitingPlacement;
+      notifyUser(result.studentId, {
+        type: 'system',
+        title: approved
+          ? { ar: 'تم اعتماد تحويل الاشتراك', en: 'Subscription payment approved' }
+          : { ar: 'تعذر اعتماد تحويل الاشتراك', en: 'Subscription payment not approved' },
+        message: approved
+          ? {
+              ar: 'تم التأكد من وصول المبلغ. طلبك الآن في مرحلة التسكين مع المعلم الذي اخترته.',
+              en: 'Your payment was verified. Your request is now waiting for placement with your selected tutor.',
+            }
+          : {
+              ar: 'لم يتم اعتماد التحويل. يمكنك مراجعة البيانات ورفع إثبات جديد.',
+              en: 'The transfer was not approved. You can review the details and submit a new proof.',
+            },
+        data: {
+          actionUrl: approved
+            ? '/student/dashboard'
+            : `/payment/manual?subscription=${result.subscriptionId}`,
+          metadata: {
+            subscriptionId: result.subscriptionId,
+            paymentId: result.paymentId,
+            paymentStatus: result.paymentStatus,
+          },
+        },
+        priority: 'high',
+      }).catch(() => {});
     }
 
     return res.json({
