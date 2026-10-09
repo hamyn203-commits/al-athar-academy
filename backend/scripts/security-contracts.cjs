@@ -718,8 +718,13 @@ requireContains(
 );
 requireContains(
   'backend/services/manualPaymentSettlement.js',
-  'approved subscription payments must move to placement instead of direct activation',
-  /payment\.kind\s*===\s*['"]subscription['"][\s\S]{0,700}subscription\.status\s*=\s*['"]awaiting_placement['"]/
+  'new subscription payments must move to placement while early renewals queue',
+  /subscription\.renewalOf[\s\S]{0,1800}subscription\.status\s*=\s*['"]renewal_queued['"][\s\S]{0,2200}subscription\.status\s*=\s*['"]awaiting_placement['"]/
+);
+requireContains(
+  'backend/routes/subscriptions.js',
+  'renewal pricing must remain server-authoritative and reuse the current plan',
+  /router\.post\(['"]\/:id\/renew['"][\s\S]{0,1800}quoteSubscription\(\{\s*planKey:\s*source\.planKey,\s*sessionCount\s*\}\)[\s\S]{0,1800}preferredTeacher:\s*source\.preferredTeacher[\s\S]{0,300}circle:\s*source\.circle/
 );
 requireContains(
   'backend/routes/subscriptions.js',
@@ -768,6 +773,16 @@ requireContains(
 );
 requireContains(
   'backend/routes/sessions.js',
+  'group attendance updates must be teacher/admin protected',
+  /router\.put\(['"]\/:id\/attendance['"],\s*protect,\s*authorize\(['"]teacher['"],\s*['"]admin['"]\)[\s\S]{0,2400}\[['"]attended['"],\s*['"]absent['"]\]\.includes\(status\)/
+);
+requireContains(
+  'backend/routes/sessions.js',
+  'group completion must fail closed until attendance is finalized',
+  /session\.type\s*===\s*['"]group_circle['"][\s\S]{0,700}ATTENDANCE_INCOMPLETE/
+);
+requireContains(
+  'backend/routes/sessions.js',
   'group completion must settle subscription credits idempotently',
   /session\.type\s*===\s*['"]group_circle['"][\s\S]{0,160}settleSubscriptionUsageForSession\(session\)/
 );
@@ -775,6 +790,11 @@ requireContains(
   'backend/services/subscriptionUsage.js',
   'eligible early excuses must preserve the package credit',
   /status\s*===\s*['"]excused['"]\s*&&\s*eligible[\s\S]{0,160}outcome:\s*['"]compensated['"]/
+);
+requireContains(
+  'backend/services/subscriptionUsage.js',
+  'a paid queued renewal must activate when the previous package reaches zero',
+  /renewalOf:\s*subscription\._id[\s\S]{0,220}status:\s*['"]renewal_queued['"][\s\S]{0,500}queuedRenewal\.status\s*=\s*['"]active['"]/
 );
 requireContains(
   'backend/services/subscriptionUsage.js',
