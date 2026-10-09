@@ -340,6 +340,7 @@ app.use('/api/careers', require('./routes/careers'));
 app.use('/api/women', require('./routes/women'));
 app.use('/api/system', require('./routes/system'));
 app.use('/api/circles', require('./routes/circles'));
+app.use('/api/subscriptions', require('./routes/subscriptions'));
 app.use('/api/trials', require('./routes/trials'));
 app.use('/api/finance', require('./routes/finance'));
 app.use('/api/cron', require('./routes/cron'));
