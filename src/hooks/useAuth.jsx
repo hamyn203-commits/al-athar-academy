@@ -148,6 +148,13 @@ export function AuthProvider({ children }) {
     return data.user;
   }, []);
 
+  const saveOnboarding = useCallback(async (updates) => {
+    const data = await api.patch('/api/auth/onboarding', updates, { auth: true });
+    if (!data?.user) throw new Error('لم يتم تأكيد حفظ البيانات');
+    setUser(data.user);
+    return data.user;
+  }, []);
+
   const updateProfile = useCallback(async (updates) => {
     try {
       const data = await api.patch('/api/auth/me', updates, { auth: true });
@@ -233,6 +240,7 @@ export function AuthProvider({ children }) {
     logout,
     updateProfile,
     refreshUser,
+    saveOnboarding,
     changePassword,
     forgotPassword,
     authFetch,
