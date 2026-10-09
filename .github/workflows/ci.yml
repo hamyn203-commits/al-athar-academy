@@ -29,6 +29,11 @@ jobs:
       - name: Install
         run: npm install --no-audit --no-fund
 
+      - name: Lockfile consistency
+        run: |
+          git diff -- package-lock.json
+          git diff --exit-code -- package-lock.json
+
       - name: Production safety scan
         run: npm run safety:production
 
