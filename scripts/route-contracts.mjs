@@ -172,6 +172,7 @@ assert.match(studentDashboard, /submitGuardianInvitation/);
 assert.match(studentDashboard, /copyInvitationCode/);
 assert.match(studentDashboard, /trialAllowance/);
 assert.match(studentDashboard, /اشتراك/);
+assert.match(studentDashboard, /navigate\(lp\(['"]\/plans['"]\)\)/);
 assert.match(studentDashboard, /تجريبيات متبقية/);
 assert.match(studentDashboard, /formatSessionDateTime\([\s\S]{0,240}sessionTimeZone/);
 assert.doesNotMatch(studentDashboard, /<TabBar\s/);
@@ -187,6 +188,16 @@ assert.match(studentDashboardRoutes, /trialAllowance:[\s\S]{0,180}remaining/);
 assert.match(teacherDashboard, /الحصص المكتملة وتقاريرها/);
 assert.match(teacherDashboard, /role="radiogroup"/);
 assert.match(teacherDashboard, /surahRecited:\s*evaluation\.surahRecited/);
+
+const plansPage = read('src/pages/Plans/index.jsx');
+assert.match(plansPage, /الحلقة الاقتصادية الكبرى/);
+assert.match(plansPage, /من 10 إلى 15 طالب/);
+assert.match(plansPage, /الحلقة الجماعية/);
+assert.match(plansPage, /من 5 إلى 10 طلاب/);
+assert.match(plansPage, /القسم الحريمي/);
+assert.match(plansPage, /sessionsPerMonth/);
+assert.ok(fs.existsSync(path.join(root, 'public/images/plans/plan-community.svg')));
+assert.ok(fs.existsSync(path.join(root, 'public/images/plans/plan-women.svg')));
 
 const errorBoundary = read('src/components/shared/ErrorBoundary.jsx');
 assert.match(errorBoundary, /localizedPath\(['\"]\/['\"],\s*locale\)/);
@@ -348,6 +359,7 @@ assert.match(
   app,
   /path=["']\/:locale["'][\s\S]{0,260}path=["']\*["'][\s\S]{0,120}<NotFoundPage\s*\/>/
 );
+assert.match(app, /path=["']plans["'][\s\S]{0,100}<PlansPage\s*\/>/);
 assert.match(
   app,
   /path=["']payment\/return["'][\s\S]{0,180}<ProtectedRoute\s+roles=\{\[['"]student['"],\s*['"]admin['"]\]\}/
