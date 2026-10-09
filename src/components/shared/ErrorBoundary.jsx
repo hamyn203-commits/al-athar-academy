@@ -96,7 +96,7 @@ export default class ErrorBoundary extends Component {
               واجهنا مشكلة في تحميل الصفحة. يرجى المحاولة مرة أخرى أو العودة للصفحة الرئيسية.
             </p>
 
-            {process.env.NODE_ENV === 'development' && this.state.error && (
+            {import.meta.env.DEV && this.state.error && (
               <details style={{
                 textAlign: 'right',
                 marginBottom: '24px',
