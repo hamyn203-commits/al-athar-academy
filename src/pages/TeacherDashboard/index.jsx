@@ -374,6 +374,61 @@ export default function TeacherDashboard() {
     setHomeworkList([]);
   };
 
+  const openAttendanceManager = (session) => {
+    const draft = {};
+    for (const entry of session?.attendance || []) {
+      const studentId = entry.student?._id || entry.student;
+      if (!studentId) continue;
+      draft[String(studentId)] = ['attended', 'absent', 'excused'].includes(entry.status)
+        ? entry.status
+        : '';
+    }
+    setAttendanceDraft(draft);
+    setAttendanceModal(session);
+  };
+
+  const saveGroupAttendance = async () => {
+    if (!attendanceModal) return;
+
+    const roster = attendanceModal.attendance || [];
+    const unresolved = roster.filter((entry) => {
+      const studentId = String(entry.student?._id || entry.student || '');
+      return !attendanceDraft[studentId];
+    });
+
+    if (unresolved.length) {
+      return toast.error(`حدد حالة الحضور لكل الطلاب أولًا (${unresolved.length} متبقي)`);
+    }
+
+    setSavingAttendance(true);
+    try {
+      const records = roster.map((entry) => {
+        const studentId = String(entry.student?._id || entry.student);
+        return {
+          studentId,
+          status: attendanceDraft[studentId],
+          excuseReason: attendanceDraft[studentId] === 'excused'
+            ? (entry.excuseReason || 'اعتذار مسجل بواسطة المعلم')
+            : '',
+        };
+      });
+
+      const result = await api.patch(
+        `/api/sessions/${attendanceModal._id}/attendance`,
+        { records },
+        { auth: true }
+      );
+
+      toast.success('تم حفظ الحضور النهائي للحلقة');
+      setAttendanceModal((current) => current ? { ...current, attendance: result.attendance || current.attendance } : current);
+      await load();
+    } catch (error) {
+      toast.error(error.message || 'فشل حفظ الحضور');
+    } finally {
+      setSavingAttendance(false);
+    }
+  };
+
   const addHomework = () => {
     setHomeworkList((p) => [...p, { ...emptyHomework }]);
   };
