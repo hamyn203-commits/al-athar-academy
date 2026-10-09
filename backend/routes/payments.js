@@ -518,11 +518,18 @@ router.post('/subscription/:id/manual', protect, authorize('student'), async (re
 
   notifyAdmins({
     type: 'payment-received',
-    title: { ar: 'إثبات دفع اشتراك جديد', en: 'New subscription payment proof' },
-    message: {
-      ar: 'طالب رفع إثبات تحويل لاشتراك واختار المعلم. راجع وصول المبلغ ثم أرسل الطلب للتسكين.',
-      en: 'A student submitted a subscription transfer proof and selected a tutor. Verify funds before placement.',
-    },
+    title: subscription.renewalOf
+      ? { ar: 'إثبات دفع تجديد باقة', en: 'Package renewal payment proof' }
+      : { ar: 'إثبات دفع اشتراك جديد', en: 'New subscription payment proof' },
+    message: subscription.renewalOf
+      ? {
+          ar: 'طالب رفع إثبات تحويل لتجديد نفس الجروب والمعلم. راجع وصول المبلغ فقط.',
+          en: 'A learner submitted proof for renewing the same circle and tutor. Verify the funds.',
+        }
+      : {
+          ar: 'طالب رفع إثبات تحويل لاشتراك واختار المعلم. راجع وصول المبلغ ثم أرسل الطلب للتسكين.',
+          en: 'A student submitted a subscription transfer proof and selected a tutor. Verify funds before placement.',
+        },
     data: {
       actionUrl: '/admin/payments',
       metadata: {
@@ -567,7 +574,7 @@ router.get('/admin/manual', protect, authorize('admin'), async (req, res) => {
       .populate('course', 'title slug price currency')
       .populate({
         path: 'subscription',
-        select: 'planKey section sessionCount sessionsRemaining status preferredTeacher pricingSnapshot',
+        select: 'planKey section sessionCount sessionsRemaining status preferredTeacher renewalOf circle pricingSnapshot',
         populate: {
           path: 'preferredTeacher',
           select: 'personalInfo user',
