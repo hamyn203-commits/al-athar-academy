@@ -186,7 +186,7 @@ export default function PlansPage() {
                 >
                   <Heart size={18} />
                   <span>
-                    <strong>{isAr ? 'القسم الحريمي' : 'Women’s section'}</strong>
+                    <strong>{isAr ? 'القسم النسائي' : 'Women’s section'}</strong>
                     <small>{isAr ? 'معلمات متخصصات وبيئة مريحة' : 'Female tutors in a comfortable environment'}</small>
                   </span>
                 </button>
