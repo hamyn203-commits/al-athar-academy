@@ -87,7 +87,7 @@ test.describe('Wahy Wa Namaa core academy journey', () => {
 
     await expect(modal).toBeHidden();
     await expect(teacherPage.getByText('الحصص المكتملة وتقاريرها')).toBeVisible();
-    await expect(teacherPage.getByText('سورة الفاتحة')).toBeVisible();
+    await expect(teacherPage.getByText('السورة / المقطع: سورة الفاتحة', { exact: true })).toBeVisible();
 
     await teacherContext.close();
 
@@ -95,13 +95,14 @@ test.describe('Wahy Wa Namaa core academy journey', () => {
     const studentPage = await studentContext.newPage();
     await login(studentPage, accounts.postTrialStudent);
 
-    await expect(studentPage.getByText('أكملت الحصة التجريبية بنجاح')).toBeVisible();
-    await expect(studentPage.getByRole('button', { name: 'اشتراك', exact: true })).toBeVisible();
-    await expect(studentPage.getByText(/2 متبقية/)).toBeVisible();
+    const postTrialStep = studentPage.locator('section.wn-student-next-step');
+    await expect(postTrialStep.getByText('أكملت الحصة التجريبية بنجاح')).toBeVisible();
+    await expect(postTrialStep.getByRole('button', { name: 'اشتراك', exact: true })).toBeVisible();
+    await expect(postTrialStep.getByText(/2 متبقية/)).toBeVisible();
 
     await studentPage.goto('/ar/student/dashboard?tab=evaluations');
-    await expect(studentPage.getByText('سورة الفاتحة')).toBeVisible();
-    await expect(studentPage.getByText('مراجعة سورة الفاتحة')).toBeVisible();
+    await expect(studentPage.getByText('السورة / المقطع: سورة الفاتحة', { exact: true })).toBeVisible();
+    await expect(studentPage.getByText('الهدف / الواجب القادم: مراجعة سورة الفاتحة', { exact: true })).toBeVisible();
     await expect(studentPage.getByText('تقرير Playwright آلي للتحقق من دورة الحصة')).toBeVisible();
     await expect(studentPage.getByText(/Africa\/Cairo/)).toBeVisible();
 
@@ -111,10 +112,11 @@ test.describe('Wahy Wa Namaa core academy journey', () => {
   test('three-trial limit is visible in the student UI', async ({ page }) => {
     await login(page, accounts.trialLimitStudent);
 
-    await expect(page.getByText('أكملت الحصة التجريبية بنجاح')).toBeVisible();
-    await expect(page.getByText(/3 مستخدمة من 3/)).toBeVisible();
-    await expect(page.getByText('استخدمت الحصص التجريبية الثلاث')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'استخدم تجريبية أخرى' })).toHaveCount(0);
-    await expect(page.getByRole('button', { name: 'اشتراك', exact: true })).toBeVisible();
+    const postTrialStep = page.locator('section.wn-student-next-step');
+    await expect(postTrialStep.getByText('أكملت الحصة التجريبية بنجاح')).toBeVisible();
+    await expect(postTrialStep.getByText(/3 مستخدمة من 3/)).toBeVisible();
+    await expect(postTrialStep.getByText('استخدمت الحصص التجريبية الثلاث')).toBeVisible();
+    await expect(postTrialStep.getByRole('button', { name: 'استخدم تجريبية أخرى' })).toHaveCount(0);
+    await expect(postTrialStep.getByRole('button', { name: 'اشتراك', exact: true })).toBeVisible();
   });
 });
