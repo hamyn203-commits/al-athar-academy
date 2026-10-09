@@ -57,7 +57,7 @@ function sanitizeUserResponse(user) {
 
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, password, phone, role, guardianPhone, guardianRelationship } = req.body;
+    const { name, email, password, phone, role, guardianPhone, guardianRelationship, whatsappPhone, age, gender, currentLevel, preferredTrack, memorizedJuz, memorizationDetails, customLevel } = req.body;
     const normalizedEmail = String(email || '').trim().toLowerCase();
     const allowedRoles = ['student', 'guardian'];
 
@@ -112,6 +112,16 @@ router.post('/register', async (req, res) => {
         phone,
         phoneNormalized: normalizedPhone || undefined,
         role: assignedRole,
+        ...(assignedRole === 'student' ? {
+          whatsappPhone: String(whatsappPhone || '').trim(),
+          ...(age ? { age: Number(age) } : {}),
+          ...(gender ? { gender } : {}),
+          currentLevel: ['beginner', 'intermediate', 'advanced', 'ijazah'].includes(currentLevel) ? currentLevel : 'beginner',
+          preferredTrack: ['memorization', 'tajweed_ijazah', 'kids_foundation'].includes(preferredTrack) ? preferredTrack : 'memorization',
+          memorizedJuz: Math.max(0, Math.min(30, Math.trunc(Number(memorizedJuz) || 0))),
+          memorizationDetails: String(memorizationDetails || '').trim().slice(0, 500),
+          customLevel: String(customLevel || '').trim().slice(0, 120),
+        } : {}),
       });
 
       if (req.body.referralCode && user.role === 'student') {

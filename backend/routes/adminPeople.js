@@ -277,7 +277,7 @@ router.get('/students/:id', async (req, res) => {
     }
 
     const student = await User.findOne({ _id: req.params.id, role: 'student' })
-      .select('name email phone whatsappPhone gender age currentLevel preferredTrack circle avatar bio isActive emailVerified lastLogin preferences createdAt updatedAt')
+      .select('name email phone whatsappPhone gender age currentLevel customLevel memorizedJuz memorizationDetails preferredTrack circle avatar bio isActive emailVerified lastLogin preferences createdAt updatedAt')
       .populate('circle', 'name status')
       .lean();
 

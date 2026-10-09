@@ -42,6 +42,14 @@ export default function Register() {
     phone: '',
     guardianPhone: '',
     guardianRelationship: 'father',
+    whatsappPhone: '',
+    age: '',
+    gender: '',
+    currentLevel: 'beginner',
+    preferredTrack: 'memorization',
+    memorizedJuz: '0',
+    memorizationDetails: '',
+    customLevel: '',
     password: '',
     confirmPassword: ''
   });
@@ -78,6 +86,16 @@ export default function Register() {
         name: formData.name,
         email: formData.email,
         phone: formData.phone,
+        ...(role === 'student' ? {
+          whatsappPhone: formData.whatsappPhone,
+          age: formData.age,
+          gender: formData.gender,
+          currentLevel: formData.currentLevel === 'other' ? 'beginner' : formData.currentLevel,
+          customLevel: formData.currentLevel === 'other' ? formData.customLevel : '',
+          preferredTrack: formData.preferredTrack,
+          memorizedJuz: Number(formData.memorizedJuz),
+          memorizationDetails: formData.memorizationDetails,
+        } : {}),
         password: formData.password,
         role,
         ...(role === 'student' && formData.guardianPhone.trim()
@@ -430,6 +448,44 @@ export default function Register() {
                   />
                 </div>
               </div>
+
+              {role === 'student' && (
+                <section className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-4 space-y-4">
+                  <h3 className="font-bold text-emerald-900">{locale === 'ar' ? 'مستواك الحالي في القرآن الكريم' : 'Your current Quran level'}</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <label className="text-sm font-semibold">{locale === 'ar' ? 'العمر' : 'Age'}
+                      <input className="block w-full rounded-xl border p-3 mt-1" type="number" min="4" max="100" name="age" value={formData.age} onChange={handleChange} />
+                    </label>
+                    <label className="text-sm font-semibold">{locale === 'ar' ? 'النوع' : 'Gender'}
+                      <select className="block w-full rounded-xl border p-3 mt-1" name="gender" value={formData.gender} onChange={handleChange}>
+                        <option value="">{locale === 'ar' ? 'اختر' : 'Select'}</option><option value="male">{locale === 'ar' ? 'ذكر' : 'Male'}</option><option value="female">{locale === 'ar' ? 'أنثى' : 'Female'}</option>
+                      </select>
+                    </label>
+                    <label className="text-sm font-semibold">{locale === 'ar' ? 'المسار التعليمي' : 'Learning track'}
+                      <select className="block w-full rounded-xl border p-3 mt-1" name="preferredTrack" value={formData.preferredTrack} onChange={handleChange}>
+                        <option value="memorization">{locale === 'ar' ? 'حفظ القرآن' : 'Memorization'}</option>
+                        <option value="tajweed_ijazah">{locale === 'ar' ? 'التجويد والإجازة' : 'Tajweed / Ijazah'}</option>
+                        <option value="kids_foundation">{locale === 'ar' ? 'تأسيس الأطفال' : 'Foundation'}</option>
+                      </select>
+                    </label>
+                    <label className="text-sm font-semibold">{locale === 'ar' ? 'مستواك' : 'Level'}
+                      <select className="block w-full rounded-xl border p-3 mt-1" name="currentLevel" value={formData.currentLevel} onChange={handleChange}>
+                        <option value="beginner">{locale === 'ar' ? 'مبتدئ' : 'Beginner'}</option><option value="intermediate">{locale === 'ar' ? 'متوسط' : 'Intermediate'}</option><option value="advanced">{locale === 'ar' ? 'متقدم' : 'Advanced'}</option><option value="ijazah">{locale === 'ar' ? 'طالب إجازة' : 'Ijazah'}</option><option value="other">{locale === 'ar' ? 'أخرى — اكتب مستواك' : 'Other — specify'}</option>
+                      </select>
+                    </label>
+                    {formData.currentLevel === 'other' && <label className="text-sm font-semibold sm:col-span-2">{locale === 'ar' ? 'اكتب مستواك' : 'Describe your level'}<input required maxLength="120" className="block w-full rounded-xl border p-3 mt-1" name="customLevel" value={formData.customLevel} onChange={handleChange} /></label>}
+                    <label className="text-sm font-semibold">{locale === 'ar' ? 'كم جزءًا تحفظ؟ (0 إلى 30)' : 'Memorized Juz (0–30)'}
+                      <input type="number" min="0" max="30" step="1" required className="block w-full rounded-xl border p-3 mt-1" name="memorizedJuz" value={formData.memorizedJuz} onChange={handleChange} />
+                    </label>
+                    <label className="text-sm font-semibold">{locale === 'ar' ? 'واتساب للتواصل (اختياري)' : 'WhatsApp (optional)'}
+                      <input type="tel" className="block w-full rounded-xl border p-3 mt-1" name="whatsappPhone" value={formData.whatsappPhone} onChange={handleChange} placeholder="+201000000000" />
+                    </label>
+                  </div>
+                  <label className="block text-sm font-semibold">{locale === 'ar' ? 'تفاصيل الحفظ — السور أو الأجزاء التي تحفظها، أو خطة أخرى' : 'Memorization details / custom plan'}
+                    <textarea name="memorizationDetails" maxLength="500" rows="3" value={formData.memorizationDetails} onChange={handleChange} className="block w-full rounded-xl border p-3 mt-1" placeholder={locale === 'ar' ? 'مثال: أحفظ جزء عم وتبارك، وأريد البدء من سورة البقرة' : 'Example: I memorized Juz Amma and Tabarak'} />
+                  </label>
+                </section>
+              )}
 
               {/* Phone Number */}
               <div>
