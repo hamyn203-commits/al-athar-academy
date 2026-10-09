@@ -173,8 +173,8 @@ export default function PlansPage() {
                 >
                   <Users size={18} />
                   <span>
-                    <strong>{isAr ? 'الحلقات العامة' : 'General circles'}</strong>
-                    <small>{isAr ? 'أولاد ورجال حسب العمر والمستوى' : 'Boys and men by age and level'}</small>
+                    <strong>{isAr ? 'قسم الرجال والأطفال' : 'General circles'}</strong>
+                    <small>{isAr ? 'رجال وأطفال حسب العمر والمستوى' : 'Boys and men by age and level'}</small>
                   </span>
                 </button>
                 <button
