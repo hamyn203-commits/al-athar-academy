@@ -31,6 +31,11 @@ const PURPOSES = Object.freeze({
     types: ['image/jpeg', 'image/png', 'application/pdf', 'video/mp4', 'video/webm'],
     maxBytes: 200 * 1024 * 1024,
   },
+  'student-avatar': {
+    roles: ['student'],
+    types: ['image/jpeg', 'image/png'],
+    maxBytes: 5 * 1024 * 1024,
+  },
   'teacher-public': {
     roles: ['teacher', 'admin', 'teacher-registration'],
     types: ['image/jpeg', 'image/png', 'video/mp4', 'video/webm', 'video/quicktime', 'audio/mpeg', 'audio/wav'],
