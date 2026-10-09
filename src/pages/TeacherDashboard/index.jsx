@@ -15,7 +15,7 @@ import { uploadFileDirect } from '../../lib/fileUpload';
 import { apiUrl } from '../../config';
 import { TASK_TYPES } from '../TeacherRegistration/constants';
 import SessionChatModal from '../../components/session/SessionChatModal';
-import { sessionJoinWindow } from '../../lib/sessionTime';
+import { sessionJoinWindow, formatSessionDateTime, sessionTimeZone } from '../../lib/sessionTime';
 import { teacherPublicImage, teacherImageFallback } from '../../lib/teacherMedia';
 import { useI18n } from '../../i18n';
 import { localizedPath } from '../../lib/locale';
@@ -326,6 +326,7 @@ export default function TeacherDashboard() {
         provider: action === 'accept' ? meetingProvider : undefined,
         reason,
         rescheduledDate: extra.rescheduledDate,
+        rescheduleTimezone: extra.rescheduleTimezone,
       }, { auth: true });
 
       const labels = {
@@ -346,12 +347,12 @@ export default function TeacherDashboard() {
     if (!rescheduleModal || !rescheduleDate) {
       return toast.error('اختر الموعد الجديد');
     }
-    const proposed = new Date(rescheduleDate);
-    if (Number.isNaN(proposed.getTime()) || proposed <= new Date()) {
-      return toast.error('اختر موعدًا مستقبليًا صحيحًا');
+    if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(rescheduleDate)) {
+      return toast.error('اختر موعدًا صحيحًا');
     }
     await respondTrial(rescheduleModal._id, 'reschedule', {
-      rescheduledDate: proposed.toISOString(),
+      rescheduledDate: rescheduleDate,
+      rescheduleTimezone: sessionTimeZone(rescheduleModal, teacher?.availabilityTimezone || 'Africa/Cairo'),
     });
   };
 
@@ -809,7 +810,7 @@ export default function TeacherDashboard() {
                         {upcomingSessions.slice(0, 3).map((session, index) => (
                           <div key={session._id} className={'wn-teacher-agenda__item ' + (index === 0 ? 'is-next' : '')}>
                             <div className="wn-teacher-agenda__time">
-                              <strong>{new Date(session.scheduledAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</strong>
+                              <strong>{formatSessionDateTime(session, 'ar-EG', { hour: '2-digit', minute: '2-digit' })}</strong>
                               <small>{new Date(session.scheduledAt).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' })}</small>
                             </div>
                             <div className="wn-teacher-agenda__student">
@@ -1384,8 +1385,8 @@ export default function TeacherDashboard() {
                       .map((session) => (
                         <article key={session._id} className="wn-teacher-request-card">
                           <div className="wn-teacher-request-card__date">
-                            <strong>{new Date(session.scheduledAt).toLocaleDateString('ar-EG', { day: '2-digit' })}</strong>
-                            <span>{new Date(session.scheduledAt).toLocaleDateString('ar-EG', { month: 'short' })}</span>
+                            <strong>{formatSessionDateTime(session, 'ar-EG', { day: '2-digit' })}</strong>
+                            <span>{formatSessionDateTime(session, 'ar-EG', { month: 'short' })}</span>
                           </div>
                           <div className="wn-teacher-request-card__body">
                             <span className={'wn-teacher-request-kind ' + (session.requestKind === 'trial' ? 'is-trial' : 'is-regular')}>
@@ -1441,7 +1442,7 @@ export default function TeacherDashboard() {
                           <article key={session._id} className={'wn-teacher-session-card ' + (hasStarted ? 'is-due' : '')}>
                             <div className="wn-teacher-session-card__time">
                               <strong>{new Date(session.scheduledAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</strong>
-                              <span>{new Date(session.scheduledAt).toLocaleDateString('ar-EG', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
+                              <span>{formatSessionDateTime(session, 'ar-EG', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
                             </div>
                             <div className="wn-teacher-session-card__student">
                               <span>{session.type === 'trial' ? 'تجريبية' : 'فردية'}</span>
