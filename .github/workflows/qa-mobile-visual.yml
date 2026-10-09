@@ -1,0 +1,216 @@
+name: Production Mobile Visual QA
+
+on:
+  push:
+    branches:
+      - qa/mobile-visual-20261009
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mobile-visual:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Run production responsive audit
+        run: |
+          mkdir -p qa-mobile-artifacts
+          cat > qa-mobile.mjs <<'NODE'
+          import { chromium } from 'playwright';
+          import fs from 'node:fs';
+
+          const origin = 'https://wahy-wa-namaa-academy.vercel.app';
+          const routes = [
+            ['/ar', 'home'],
+            ['/ar/courses', 'courses'],
+            ['/ar/teachers', 'teachers'],
+            ['/ar/teachers/6ac5560e0ab8f4b60343c30c', 'teacher-profile'],
+            ['/ar/about', 'about'],
+            ['/ar/contact', 'contact'],
+            ['/ar/login', 'login'],
+            ['/ar/register/student', 'register-student'],
+            ['/ar/register/teacher', 'register-teacher'],
+          ];
+          const viewports = [
+            { name: 'mobile390', width: 390, height: 844, isMobile: true, hasTouch: true },
+            { name: 'tablet768', width: 768, height: 1024, isMobile: true, hasTouch: true },
+          ];
+
+          const browser = await chromium.launch();
+          const results = [];
+          let hardFailures = 0;
+
+          for (const vp of viewports) {
+            for (const [route, slug] of routes) {
+              const page = await browser.newPage({
+                viewport: { width: vp.width, height: vp.height },
+                isMobile: vp.isMobile,
+                hasTouch: vp.hasTouch,
+              });
+
+              const consoleErrors = [];
+              const pageErrors = [];
+              page.on('console', (msg) => {
+                if (msg.type() === 'error') consoleErrors.push(msg.text().slice(0, 500));
+              });
+              page.on('pageerror', (error) => pageErrors.push(String(error.message || error).slice(0, 500)));
+
+              let status = null;
+              let finalUrl = '';
+              let navigationError = '';
+              try {
+                const response = await page.goto(origin + route, { waitUntil: 'networkidle', timeout: 60000 });
+                status = response?.status() ?? null;
+                finalUrl = page.url();
+                await page.waitForTimeout(800);
+              } catch (error) {
+                navigationError = String(error.message || error).slice(0, 800);
+                finalUrl = page.url();
+              }
+
+              const metrics = await page.evaluate(() => {
+                const root = document.documentElement;
+                const body = document.body;
+                const visible = (el) => {
+                  const style = getComputedStyle(el);
+                  const r = el.getBoundingClientRect();
+                  return style.visibility !== 'hidden' && style.display !== 'none' && r.width > 0 && r.height > 0;
+                };
+                const interactive = [...document.querySelectorAll('a,button,input,select,textarea,[role="button"]')]
+                  .filter(visible)
+                  .map((el) => {
+                    const r = el.getBoundingClientRect();
+                    return {
+                      tag: el.tagName.toLowerCase(),
+                      text: (el.getAttribute('aria-label') || el.textContent || el.getAttribute('placeholder') || '').trim().replace(/\s+/g,' ').slice(0,90),
+                      width: Math.round(r.width),
+                      height: Math.round(r.height),
+                    };
+                  });
+                const smallTargets = interactive
+                  .filter((x) => x.width < 44 || x.height < 44)
+                  .slice(0, 40);
+
+                const offenders = [...document.querySelectorAll('body *')]
+                  .filter(visible)
+                  .map((el) => {
+                    const r = el.getBoundingClientRect();
+                    return {
+                      tag: el.tagName.toLowerCase(),
+                      cls: String(el.className || '').slice(0, 120),
+                      text: (el.textContent || '').trim().replace(/\s+/g,' ').slice(0,90),
+                      left: Math.round(r.left),
+                      right: Math.round(r.right),
+                      width: Math.round(r.width),
+                    };
+                  })
+                  .filter((x) => x.left < -4 || x.right > root.clientWidth + 4)
+                  .slice(0, 30);
+
+                const menuButton = [...document.querySelectorAll('button')].find((el) => {
+                  const label=(el.getAttribute('aria-label')||'').toLowerCase();
+                  return label.includes('القائمة') || label.includes('menu');
+                });
+
+                return {
+                  title: document.title,
+                  lang: root.lang,
+                  dir: root.dir || getComputedStyle(body).direction,
+                  clientWidth: root.clientWidth,
+                  scrollWidth: root.scrollWidth,
+                  horizontalOverflow: Math.max(0, root.scrollWidth - root.clientWidth),
+                  bodyFont: getComputedStyle(body).fontFamily,
+                  h1Font: document.querySelector('h1') ? getComputedStyle(document.querySelector('h1')).fontFamily : '',
+                  h1Text: document.querySelector('h1')?.textContent?.trim().replace(/\s+/g,' ').slice(0,140) || '',
+                  interactiveCount: interactive.length,
+                  smallTargetCount: smallTargets.length,
+                  smallTargets,
+                  overflowOffenders: offenders,
+                  mobileMenuButtonVisible: Boolean(menuButton && visible(menuButton)),
+                };
+              }).catch(() => ({
+                clientWidth: vp.width,
+                scrollWidth: vp.width,
+                horizontalOverflow: 0,
+                smallTargetCount: 0,
+                overflowOffenders: [],
+              }));
+
+              if (navigationError || (status && status >= 400) || metrics.horizontalOverflow > 4 || pageErrors.length) {
+                hardFailures += 1;
+              }
+
+              const screenshot = `qa-mobile-artifacts/${slug}-${vp.name}.png`;
+              await page.screenshot({ path: screenshot, fullPage: true }).catch(()=>{});
+
+              const row = {
+                route,
+                slug,
+                viewport: vp.name,
+                width: vp.width,
+                height: vp.height,
+                status,
+                finalUrl,
+                navigationError,
+                consoleErrors,
+                pageErrors,
+                ...metrics,
+              };
+              results.push(row);
+              console.log('QA_RESULT ' + JSON.stringify({
+                route,
+                viewport: vp.name,
+                status,
+                finalUrl,
+                overflow: metrics.horizontalOverflow,
+                smallTargets: metrics.smallTargetCount,
+                pageErrors,
+                consoleErrors: consoleErrors.slice(0,3),
+                dir: metrics.dir,
+                menu: metrics.mobileMenuButtonVisible,
+              }));
+              await page.close();
+            }
+          }
+
+          await browser.close();
+          fs.writeFileSync('qa-mobile-artifacts/results.json', JSON.stringify(results, null, 2));
+
+          const md = [
+            '# Production Mobile Visual QA',
+            '',
+            '| Route | Viewport | HTTP | Overflow px | Small targets | JS page errors | RTL | Menu |',
+            '|---|---:|---:|---:|---:|---:|---|---|',
+            ...results.map((r) => `| ${r.route} | ${r.viewport} | ${r.status ?? '—'} | ${r.horizontalOverflow} | ${r.smallTargetCount} | ${r.pageErrors.length} | ${r.dir || '—'} | ${r.mobileMenuButtonVisible ? 'yes' : 'no'} |`),
+          ].join('\n');
+          fs.writeFileSync('qa-mobile-artifacts/summary.md', md);
+          console.log(md);
+
+          if (hardFailures) {
+            console.log(`Hard responsive/navigation findings: ${hardFailures}. See artifact; this QA job reports findings without blocking product CI.`);
+          }
+          NODE
+          node qa-mobile.mjs
+
+      - name: Upload mobile QA
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-mobile-visual-qa
+          path: qa-mobile-artifacts
+          if-no-files-found: error
+          retention-days: 3
