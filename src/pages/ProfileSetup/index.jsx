@@ -4,18 +4,17 @@ import { useRequireAuth } from '../../hooks/useRequireAuth';
 import { useI18n } from '../../i18n';
 import { dashboardPathForRole, isSafeInternalRedirect } from '../../lib/navigation';
 import { useAuth } from '../../hooks/useAuth.jsx';
-import api from '../../lib/api';
 
 export default function ProfileSetup() {
   const { user, ready } = useRequireAuth(['student', 'guardian', 'teacher']);
-  const { refreshUser } = useAuth();
+  const { saveOnboarding } = useAuth();
   const { locale } = useI18n();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const next = searchParams.get('next');
   const dashboardDestination = dashboardPathForRole(user?.role, locale);
   const destination = isSafeInternalRedirect(next) ? next : dashboardDestination;
-  const [data, setData] = useState({ name: '', phone: '', age: '', gender: '', whatsappPhone: '', preferredTrack: 'memorization', currentLevel: 'beginner', memorizedJuz: 0, memorizationDetails: '', bio: '' });
+  const [data, setData] = useState({ name: '', phone: '', age: '', gender: '', whatsappPhone: '', preferredTrack: 'memorization', currentLevel: 'beginner', memorizedJuz: 0, memorizationDetails: '', bio: '', guardianContact: { name: '', phone: '', relationship: '' } });
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   useEffect(() => { if (user) setData(prev => ({ ...prev, ...Object.fromEntries(Object.keys(prev).filter(k => user[k] !== undefined && user[k] !== null).map(k => [k, user[k]])) })); }, [user]);
@@ -26,8 +25,9 @@ export default function ProfileSetup() {
     try {
       const payload = { name: data.name, phone: data.phone, whatsappPhone: data.whatsappPhone, bio: data.bio };
       if (user.role === 'student') Object.assign(payload, { age: data.age ? Number(data.age) : undefined, gender: data.gender || undefined, memorizedJuz: Number(data.memorizedJuz), preferredTrack: data.preferredTrack, currentLevel: data.currentLevel, memorizationDetails: data.memorizationDetails });
-      await api.patch('/api/auth/onboarding', payload, { auth: true });
-      await refreshUser();
+      if (user.role === 'student') payload.guardianContact = data.guardianContact;
+      const saved = await saveOnboarding(payload);
+      if (!saved.onboarding?.completed) throw new Error('لم تكتمل البيانات بعد، تحقق من الحقول المطلوبة');
       navigate(destination, { replace: true });
     } catch (e) { setError(e.message); } finally { setSaving(false); }
   };
@@ -38,6 +38,25 @@ export default function ProfileSetup() {
     <form className="space-y-4" onSubmit={save}>
       {field('الاسم الكامل', 'name')}{field('رقم الهاتف', 'phone', 'tel')}{field('واتساب (اختياري)', 'whatsappPhone', 'tel')}
       {user.role === 'student' && <>{field('العمر', 'age', 'number')}<label className="block text-sm">الجنس<select className="input-field w-full mt-2" value={data.gender} onChange={e => setData(p => ({...p, gender:e.target.value}))}><option value="">غير محدد</option><option value="male">ذكر</option><option value="female">أنثى</option></select></label>{field('عدد الأجزاء المحفوظة (0–30)', 'memorizedJuz', 'number')}{field('تفاصيل الحفظ', 'memorizationDetails')}</>}
+
+      {user.role === 'student' && <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 space-y-3">
+        <h2 className="font-bold text-emerald-950">بيانات ولي الأمر</h2>
+        <p className="text-sm text-slate-600">مطلوبة لمن عمره أقل من 18 سنة، واختيارية للبالغين. لا يتم ربط الحسابات تلقائيًا.</p>
+        {['name', 'phone'].map(key => <label key={key} className="block text-sm font-semibold">
+          {key === 'name' ? 'اسم ولي الأمر' : 'هاتف ولي الأمر'}
+          <input className="input-field w-full mt-2" value={data.guardianContact?.[key] || ''} type={key === 'phone' ? 'tel' : 'text'}
+            required={Number(data.age) > 0 && Number(data.age) < 18}
+            onChange={event => setData(prev => ({ ...prev, guardianContact: { ...prev.guardianContact, [key]: event.target.value } }))}/>
+        </label>)}
+        <label className="block text-sm font-semibold">صلة القرابة
+          <select className="input-field w-full mt-2" value={data.guardianContact?.relationship || ''}
+            required={Number(data.age) > 0 && Number(data.age) < 18}
+            onChange={event => setData(prev => ({ ...prev, guardianContact: { ...prev.guardianContact, relationship: event.target.value } }))}>
+            <option value="">اختر صلة القرابة</option><option value="father">الأب</option>
+            <option value="mother">الأم</option><option value="guardian">ولي أمر</option><option value="other">أخرى</option>
+          </select>
+        </label>
+      </div>}
       {field('نبذة مختصرة (اختياري)', 'bio')}
       {error && <p role="alert" className="text-red-700">{error}</p>}
       <button disabled={saving || !data.name.trim()} className="w-full rounded-xl bg-emerald-800 text-white p-3 font-bold">{saving ? 'جاري الحفظ...' : 'حفظ والمتابعة'}</button>

@@ -49,6 +49,11 @@ const UserSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   }],
+  guardianContact: {
+    name: { type: String, trim: true, maxlength: 100, default: '' },
+    phone: { type: String, trim: true, default: '' },
+    relationship: { type: String, enum: ['', 'father', 'mother', 'guardian', 'other'], default: '' },
+  },
   onboarding: {
     required: { type: Boolean, default: false },
     completed: { type: Boolean, default: false },
