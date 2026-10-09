@@ -73,6 +73,7 @@ export default function AdminPayments() {
 
   return (
     <DashboardLayout title="مراجعة المدفوعات اليدوية" user={user} onLogout={logout}>
+      <div className="wn-admin-payment-readable">
       <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
         <button onClick={() => navigate('..')} className="wn-btn wn-btn--secondary">
           <ArrowRight size={16} /> لوحة الإدارة
@@ -136,6 +137,7 @@ export default function AdminPayments() {
           ))}
         </div>
       )}
+      </div>
     </DashboardLayout>
   );
 }

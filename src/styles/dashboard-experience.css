@@ -7500,3 +7500,464 @@
 @media (prefers-reduced-motion: reduce) {
   .wn-admin-welcome__actions button { transition: none; }
 }
+
+
+/* T20 — Admin 150% typography. Explicit sizes are scaled from the prior rules.
+   Tiny labels have a 12px floor; all changes stay inside .wn-admin-app. */
+
+.wn-admin-app {
+  --wn-admin-type-scale: 1.5;
+  font-size: 1.25rem;
+  line-height: 1.65;
+}
+
+.wn-admin-app :is(button, input, select, textarea) {
+  font-size: 1.125rem;
+  font-family: inherit;
+}
+
+.wn-admin-app :is(button, a, label, p, small, span, strong, h1, h2, h3, h4) {
+  overflow-wrap: anywhere;
+}
+
+.wn-admin-app [class~="text-xs"] { font-size: 1.125rem; line-height: 1.55; }
+.wn-admin-app [class~="text-sm"] { font-size: 1.3125rem; line-height: 1.55; }
+.wn-admin-app [class~="text-base"] { font-size: 1.5rem; line-height: 1.55; }
+.wn-admin-app [class~="text-lg"] { font-size: 1.6875rem; line-height: 1.45; }
+.wn-admin-app [class~="text-xl"] { font-size: 1.875rem; line-height: 1.4; }
+.wn-admin-app [class~="text-2xl"] { font-size: 2.25rem; line-height: 1.35; }
+.wn-admin-app [class~="text-[11px]"] { font-size: .75rem; line-height: 1.55; }
+.wn-admin-app [class~="text-[10px]"] { font-size: .75rem; line-height: 1.55; }
+.wn-admin-app [class~="text-[12px]"] { font-size: 1.125rem; line-height: 1.55; }
+.wn-admin-app .wn-btn { font-size: 1.40625rem; }
+
+.wn-admin-app .wn-admin-command-center__heading span,
+.wn-admin-app .wn-admin-audit-list strong,
+.wn-admin-app .wn-admin-welcome__ornament span {
+  font-size: 0.81rem;
+}
+
+.wn-admin-app .wn-admin-command-center__heading h2,
+.wn-admin-app .wn-admin-dossier__header h2 {
+  font-size: 1.575rem;
+}
+
+.wn-admin-app .wn-admin-command-center__heading p,
+.wn-admin-app .wn-admin-global-search__group strong,
+.wn-admin-app .wn-admin-360-list strong,
+.wn-admin-app .wn-admin-homework-list h4,
+.wn-admin-app .wn-admin-people-home__intro p,
+.wn-admin-app .wn-admin-exec-shortcut strong {
+  font-size: 0.87rem;
+}
+
+.wn-admin-app .wn-admin-command-center__score strong,
+.wn-admin-app .wn-stat-card__value {
+  font-size: 1.725rem;
+}
+
+.wn-admin-app .wn-admin-command-center__score small,
+.wn-admin-app .wn-admin-command-center__actions small,
+.wn-admin-app .wn-admin-review-gate__summary > div:first-child span,
+.wn-admin-app .wn-admin-review-gate__summary > div:first-child small,
+.wn-admin-app .wn-admin-review-checklist__label small,
+.wn-admin-app .wn-admin-review-checklist__label p,
+.wn-admin-app .wn-admin-review-checklist__actions button,
+.wn-admin-app .wn-admin-dossier__value span,
+.wn-admin-app .wn-admin-dossier__asset-grid small,
+.wn-admin-app .wn-admin-dossier__privacy,
+.wn-admin-app .wn-admin-audit-list small,
+.wn-admin-app .wn-admin-global-search__results-head span,
+.wn-admin-app .wn-admin-global-search__group > span,
+.wn-admin-app .wn-admin-global-search__group small,
+.wn-admin-app .wn-admin-global-search__group code,
+.wn-admin-app .wn-admin-360-summary small,
+.wn-admin-app .wn-admin-360__info span,
+.wn-admin-app .wn-admin-360-list small,
+.wn-admin-app .wn-admin-360-list > button > span:last-child,
+.wn-admin-app .wn-admin-360-subsection > div,
+.wn-admin-app .wn-admin-session-timeline article > div:first-child > span,
+.wn-admin-app .wn-admin-session-timeline article > div:first-child > small,
+.wn-admin-app .wn-admin-session-timeline__actions button,
+.wn-admin-app .wn-admin-session-timeline__actions span,
+.wn-admin-app .wn-admin-session-report span,
+.wn-admin-app .wn-admin-session-report p,
+.wn-admin-app .wn-admin-homework-list article > div > span,
+.wn-admin-app .wn-admin-homework-list small,
+.wn-admin-app .wn-admin-homework-list p,
+.wn-admin-app .wn-admin-homework-list > article > button,
+.wn-admin-app .wn-admin-360-columns > div > small,
+.wn-admin-app .wn-admin-360-columns > div > div,
+.wn-admin-app .wn-admin-360-table small,
+.wn-admin-app .wn-admin-360-feed span,
+.wn-admin-app .wn-admin-360-feed p,
+.wn-admin-app .wn-admin-360-feed small,
+.wn-admin-app .wn-admin-family-grid > button > span:nth-child(2) small,
+.wn-admin-app .wn-admin-family-grid > button > div small,
+.wn-admin-app .wn-admin-family-grid > button > p,
+.wn-admin-app .wn-admin-people-home__intro > span,
+.wn-admin-app .wn-admin-people-home__cards p,
+.wn-admin-app .wn-admin-exec-live,
+.wn-admin-app .wn-admin-exec-priority-list small,
+.wn-admin-app .wn-admin-exec-priority-list b,
+.wn-admin-app .wn-admin-exec-system__ring small,
+.wn-admin-app .wn-admin-exec-system__features > span,
+.wn-admin-app .wn-admin-exec-activity__list strong,
+.wn-admin-app .wn-admin-exec-activity__list small,
+.wn-admin-app .wn-admin-exec-activity__list time,
+.wn-admin-app .wn-admin-exec-shortcut small,
+.wn-admin-app .wn-admin-exec-shortcut > button,
+.wn-admin-app .wn-admin-exec-empty,
+.wn-admin-app .wn-admin-exec-quick-actions small,
+.wn-admin-app .wn-admin-session-control__hero > div > span,
+.wn-admin-app .wn-admin-guardian-links > header > div > span,
+.wn-admin-app .wn-admin-system-center__hero > div > span,
+.wn-admin-app .wn-admin-session-control__hero p,
+.wn-admin-app .wn-admin-guardian-links > header p,
+.wn-admin-app .wn-admin-system-center__hero p,
+.wn-admin-app .wn-admin-session-control__hero > button,
+.wn-admin-app .wn-admin-guardian-links > header > button,
+.wn-admin-app .wn-admin-session-control__filters button,
+.wn-admin-app .wn-admin-session-control__stats span,
+.wn-admin-app .wn-admin-session-control__date small,
+.wn-admin-app .wn-admin-session-control__date span,
+.wn-admin-app .wn-admin-session-control__people strong,
+.wn-admin-app .wn-admin-session-control__people small,
+.wn-admin-app .wn-admin-session-control__meta span,
+.wn-admin-app .wn-admin-session-control__list code,
+.wn-admin-app .wn-admin-session-control__empty,
+.wn-admin-app .wn-admin-session-control__loading,
+.wn-admin-app .wn-admin-session-control__error,
+.wn-admin-app .wn-admin-guardian-links__empty,
+.wn-admin-app .wn-admin-guardian-links__list strong,
+.wn-admin-app .wn-admin-guardian-links__list small,
+.wn-admin-app .wn-admin-guardian-links__list > article > button,
+.wn-admin-app .wn-admin-system-center__hero > strong,
+.wn-admin-app .wn-admin-system-center__features strong,
+.wn-admin-app .wn-admin-system-center__features small {
+  font-size: 0.75rem;
+}
+
+.wn-admin-app .wn-admin-command-center__actions strong,
+.wn-admin-app .wn-admin-family-grid > button > span:nth-child(2) strong {
+  font-size: 0.885rem;
+}
+
+.wn-admin-app .wn-admin-command-center__actions b,
+.wn-admin-app .wn-admin-global-search__bar > button:last-child,
+.wn-admin-app .wn-admin-360-columns > div > strong,
+.wn-admin-app .wn-admin-360-feed h4,
+.wn-admin-app .wn-admin-family-grid > button > div > span,
+.wn-admin-app .wn-admin-exec-health-score {
+  font-size: 0.84rem;
+}
+
+.wn-admin-app .wn-admin-dossier__header > div > span,
+.wn-admin-app .wn-admin-review-gate__state,
+.wn-admin-app .wn-admin-360-table strong,
+.wn-admin-app .wn-admin-welcome__copy > span,
+.wn-admin-app .wn-admin-exec-quick-actions strong,
+.wn-admin-app .wn-admin-system-center__features > div > span {
+  font-size: 0.78rem;
+}
+
+.wn-admin-app .wn-admin-dossier__header p,
+.wn-admin-app .wn-admin-dossier__asset-grid strong,
+.wn-admin-app .wn-admin-dossier__empty,
+.wn-admin-app .wn-admin-dossier__footer button,
+.wn-admin-app .wn-admin-exec-priority-list strong {
+  font-size: 0.825rem;
+}
+
+.wn-admin-app .wn-admin-dossier__loading,
+.wn-admin-app .wn-admin-family-avatar,
+.wn-admin-app .wn-admin-exec-hero__copy > span,
+.wn-admin-app .wn-admin-exec-panel__head > div > span,
+.wn-admin-app .wn-admin-exec-section-title > div > span {
+  font-size: 1.05rem;
+}
+
+.wn-admin-app .wn-admin-review-gate__summary > div:first-child strong {
+  font-size: 2.025rem;
+}
+
+.wn-admin-app .wn-admin-review-checklist__label strong,
+.wn-admin-app .wn-admin-global-search__results-head strong,
+.wn-admin-app .wn-admin-session-timeline article > div:first-child > h4 {
+  font-size: 0.9rem;
+}
+
+.wn-admin-app .wn-admin-dossier__section-title h3,
+.wn-admin-app .wn-admin-sidebar__avatar,
+.wn-admin-app .wn-admin-topbar__date,
+.wn-admin-app .wn-admin-exec-metric__body > small {
+  font-size: 1.08rem;
+}
+
+.wn-admin-app .wn-admin-dossier__value strong,
+.wn-admin-app .wn-admin-360__info strong,
+.wn-admin-app .wn-admin-360-subsection > strong {
+  font-size: 0.855rem;
+}
+
+.wn-admin-app .wn-admin-global-search__bar input {
+  font-size: 1.005rem;
+}
+
+.wn-admin-app .wn-admin-360-summary strong,
+.wn-admin-app .wn-admin-sidebar__profile strong,
+.wn-admin-app .wn-admin-exec-system__ring strong,
+.wn-admin-app .wn-admin-welcome--illustrated .wn-admin-welcome__eyebrow {
+  font-size: 1.17rem;
+}
+
+.wn-admin-app .wn-admin-sidebar__nav button,
+.wn-admin-app .wn-admin-sidebar__system button,
+.wn-admin-app .wn-admin-sidebar__system a {
+  font-size: 1.245rem;
+}
+
+.wn-admin-app .wn-admin-sidebar__profile small {
+  font-size: 0.96rem;
+}
+
+.wn-admin-app .wn-admin-topbar__locale,
+.wn-admin-app .wn-admin-page-heading > span {
+  font-size: 1.125rem;
+}
+
+.wn-admin-app .wn-admin-welcome__copy h1 {
+  font-size: clamp(1.575rem,3vw,2.25rem);
+}
+
+.wn-admin-app .wn-admin-welcome__copy p {
+  font-size: 0.93rem;
+}
+
+.wn-admin-app .wn-admin-people-home__intro h2,
+.wn-admin-app .wn-admin-exec-hero__copy h2 {
+  font-size: 1.5rem;
+}
+
+.wn-admin-app .wn-admin-people-home__cards strong,
+.wn-admin-app .wn-admin-exec-count {
+  font-size: 0.975rem;
+}
+
+.wn-admin-app .wn-admin-exec-hero__copy p,
+.wn-admin-app .wn-admin-exec-panel__head p,
+.wn-admin-app .wn-admin-exec-section-title p {
+  font-size: 1.185rem;
+}
+
+.wn-admin-app .wn-admin-exec-hero__status strong {
+  font-size: 1.26rem;
+}
+
+.wn-admin-app .wn-admin-exec-hero__status small {
+  font-size: 1.11rem;
+}
+
+.wn-admin-app .wn-admin-exec-metric__badge {
+  font-size: 0.915rem;
+}
+
+.wn-admin-app .wn-admin-exec-metric__body > span,
+.wn-admin-app .wn-admin-exec-section-title > button {
+  font-size: 1.2rem;
+}
+
+.wn-admin-app .wn-admin-exec-metric__body > strong {
+  font-size: clamp(1.83rem, 2.4vw, 2.25rem);
+}
+
+.wn-admin-app .wn-admin-exec-panel__head h3,
+.wn-admin-app .wn-admin-exec-section-title h3 {
+  font-size: 1.53rem;
+}
+
+.wn-admin-app .wn-admin-session-control__hero h2,
+.wn-admin-app .wn-admin-guardian-links > header h3,
+.wn-admin-app .wn-admin-system-center__hero h2,
+.wn-admin-app .wn-admin-topbar__search .wn-admin-global-search__bar input {
+  font-size: 1.23rem;
+}
+
+.wn-admin-app .wn-admin-session-control__stats strong {
+  font-size: 1.35rem;
+}
+
+.wn-admin-app .wn-admin-topbar__search .wn-admin-global-search__bar > button:last-child {
+  font-size: 1.035rem;
+}
+
+.wn-admin-app .wn-admin-welcome--illustrated .wn-admin-welcome__copy h1 {
+  font-size: clamp(2.4rem, 3.975vw, 3.525rem);
+}
+
+.wn-admin-app .wn-admin-welcome--illustrated .wn-admin-welcome__copy p {
+  font-size: clamp(1.305rem, 1.725vw, 1.5rem);
+}
+
+.wn-admin-app .wn-admin-welcome__actions button {
+  font-size: 1.275rem;
+}
+
+.wn-admin-app .wn-admin-welcome__scroll {
+  font-size: 1.095rem;
+}
+
+.wn-admin-app .wn-admin-page-heading h1 {
+  font-size: clamp(1.65rem, 3vw, 2.175rem);
+}
+
+
+/* Room for larger Arabic navigation, labels, input fields and KPI values. */
+@media (min-width: 901px) {
+  .wn-admin-app .wn-admin-sidebar { width: 298px; }
+  .wn-admin-app .wn-admin-stage { margin-left: 298px; }
+  .wn-admin-app.is-sidebar-collapsed .wn-admin-stage { margin-left: 0; }
+}
+.wn-admin-app .wn-admin-sidebar__nav button,
+.wn-admin-app .wn-admin-sidebar__system button,
+.wn-admin-app .wn-admin-sidebar__system a {
+  min-height: 55px;
+  grid-template-columns: 24px minmax(0,1fr);
+  gap: .85rem;
+  line-height: 1.4;
+  padding: .7rem .85rem;
+}
+.wn-admin-app .wn-admin-sidebar__nav svg,
+.wn-admin-app .wn-admin-sidebar__system svg { width: 22px; height: 22px; }
+.wn-admin-app .wn-admin-sidebar__nav {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(211,163,60,.4) transparent;
+}
+.wn-admin-app .wn-admin-sidebar__profile {
+  gap: .5rem;
+  padding: .85rem .6rem;
+}
+.wn-admin-app .wn-admin-sidebar__profile strong,
+.wn-admin-app .wn-admin-sidebar__profile small {
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+}
+.wn-admin-app .wn-admin-topbar { min-height: 82px; }
+.wn-admin-app .wn-admin-topbar__search .wn-admin-global-search__bar { min-height: 48px; }
+.wn-admin-app .wn-admin-topbar__search input { min-width: 0; }
+.wn-admin-app .wn-admin-exec-quick-actions {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 195px), 1fr));
+  gap: .8rem;
+}
+.wn-admin-app .wn-admin-exec-metrics {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 185px), 1fr));
+  gap: .8rem;
+}
+.wn-admin-app .wn-admin-exec-metric,
+.wn-admin-app .wn-admin-exec-quick-actions > button { min-height: 135px; }
+.wn-admin-app .wn-admin-exec-grid,
+.wn-admin-app .wn-admin-exec-grid--secondary {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 390px), 1fr));
+}
+.wn-admin-app .wn-admin-exec-priority-list > button,
+.wn-admin-app .wn-admin-global-search__group button,
+.wn-admin-app .wn-admin-360-list > button { min-height: 52px; }
+.wn-admin-app .wn-admin-exec-priority-list > button {
+  grid-template-columns: auto minmax(0,1fr) auto auto;
+}
+.wn-admin-app .wn-admin-session-control__list > article,
+.wn-admin-app .wn-admin-guardian-links__list > article {
+  min-width: 0;
+}
+.wn-admin-app .wn-admin-session-control__list > article {
+  grid-template-columns: 150px minmax(0,1fr);
+}
+.wn-admin-app .wn-admin-session-control__meta,
+.wn-admin-app .wn-admin-session-control__list code { grid-column: 2; }
+.wn-admin-app .wn-dashboard-surface,
+.wn-admin-app .wn-admin-exec-panel,
+.wn-admin-app .wn-admin-dossier,
+.wn-admin-app .wn-admin-global-search__results { min-width: 0; }
+.wn-admin-app .recharts-cartesian-axis-tick-value {
+  font-size: 15px !important;
+}
+.wn-admin-app .wn-admin-welcome--illustrated {
+  min-height: 330px;
+  padding-block: 2rem;
+}
+.wn-admin-app .wn-admin-welcome--illustrated .wn-admin-welcome__copy {
+  width: min(100%, 660px);
+}
+.wn-admin-app .wn-admin-welcome__scroll {
+  max-width: 48%;
+}
+@media (max-width: 900px) {
+  .wn-admin-app .wn-admin-sidebar { width: min(298px, 88vw); }
+  .wn-admin-app .wn-admin-stage { margin-left: 0; }
+  .wn-admin-app.is-sidebar-collapsed .wn-admin-sidebar { width: min(298px, 88vw); }
+  .wn-admin-app .wn-admin-exec-quick-actions {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 195px), 1fr));
+  }
+  .wn-admin-app .wn-admin-exec-metrics {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 185px), 1fr));
+  }
+}
+@media (max-width: 700px) {
+  .wn-admin-app .wn-admin-session-control__list > article,
+  .wn-admin-app .wn-admin-guardian-links__list > article,
+  .wn-admin-app .wn-admin-session-control__people { grid-template-columns: minmax(0,1fr); }
+  .wn-admin-app .wn-admin-session-control__meta,
+  .wn-admin-app .wn-admin-session-control__list code { grid-column: auto; }
+}
+@media (max-width: 640px) {
+  .wn-admin-app .wn-admin-welcome--illustrated { min-height: 340px; padding: 1.4rem 1.05rem 3.3rem; }
+  .wn-admin-app .wn-admin-welcome--illustrated .wn-admin-welcome__copy h1 { font-size: 2.175rem; line-height: 1.35; }
+  .wn-admin-app .wn-admin-welcome--illustrated .wn-admin-welcome__copy p { font-size: 1.29rem; line-height: 1.7; }
+  .wn-admin-app .wn-admin-welcome__actions button { font-size: 1.17rem; }
+  .wn-admin-app .wn-admin-welcome__scroll { font-size: 1.02rem; }
+  .wn-admin-app .wn-admin-exec-metrics,
+  .wn-admin-app .wn-admin-exec-quick-actions { grid-template-columns: minmax(0,1fr); }
+  .wn-admin-app .wn-admin-exec-priority-list > button {
+    grid-template-columns: auto minmax(0,1fr) auto;
+  }
+  .wn-admin-app .wn-admin-exec-priority-list > button > svg:last-child { display: none; }
+  .wn-admin-app .wn-admin-topbar { min-height: 72px; }
+}
+
+
+/* T20 — Branding and the separate manual-payments screen follow the same scale. */
+.wn-admin-app .wn-admin-sidebar__brand { min-height: 176px; }
+.wn-admin-app .wn-admin-sidebar__brand .font-naskh {
+  font-size: 27px;
+  line-height: 1.35;
+}
+.wn-admin-app .wn-admin-sidebar__brand [class~="text-[9px]"] {
+  font-size: 13.5px;
+  line-height: 1.5;
+  letter-spacing: .03em;
+}
+.wn-admin-payment-readable {
+  font-size: 1.5rem;
+  line-height: 1.6;
+  min-width: 0;
+}
+.wn-admin-payment-readable :is(button, input, select, textarea) {
+  font-size: 1.25rem;
+  font-family: inherit;
+  min-height: 44px;
+}
+.wn-admin-payment-readable [class~="text-xs"] { font-size: 1.125rem; line-height: 1.55; }
+.wn-admin-payment-readable [class~="text-sm"] { font-size: 1.3125rem; line-height: 1.55; }
+.wn-admin-payment-readable [class~="text-lg"] { font-size: 1.6875rem; line-height: 1.45; }
+.wn-admin-payment-readable [class~="text-xl"] { font-size: 1.875rem; line-height: 1.4; }
+.wn-admin-payment-readable .wn-btn { font-size: 1.40625rem; }
+.wn-admin-payment-readable .wn-dashboard-surface {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.wn-admin-payment-readable .wn-dashboard-surface .flex { min-width: 0; }
+@media (max-width: 640px) {
+  .wn-admin-app .wn-admin-sidebar__brand { min-height: 170px; }
+  .wn-admin-payment-readable > .flex { align-items: stretch; }
+  .wn-admin-payment-readable > .flex > div { flex-wrap: wrap; }
+}
