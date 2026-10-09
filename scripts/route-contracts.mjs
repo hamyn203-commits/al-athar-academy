@@ -170,7 +170,23 @@ assert.match(studentDashboard, /\/api\/teacher-updates\/student/);
 assert.match(studentDashboard, /\/api\/students\/dashboard\/guardian-invitations/);
 assert.match(studentDashboard, /submitGuardianInvitation/);
 assert.match(studentDashboard, /copyInvitationCode/);
+assert.match(studentDashboard, /trialAllowance/);
+assert.match(studentDashboard, /اشتراك/);
+assert.match(studentDashboard, /تجريبيات متبقية/);
+assert.match(studentDashboard, /formatSessionDateTime\([\s\S]{0,240}sessionTimeZone/);
 assert.doesNotMatch(studentDashboard, /<TabBar\s/);
+
+const sessionModel = read('backend/models/Session.js');
+const sessionRoutes = read('backend/routes/sessions.js');
+const studentDashboardRoutes = read('backend/routes/studentDashboard.js');
+assert.match(sessionModel, /teacherEvaluation:[\s\S]{0,500}surahRecited:[\s\S]{0,220}nextHomework:/);
+assert.match(sessionRoutes, /MAX_TRIAL_SESSIONS_PER_STUDENT\s*=\s*3/);
+assert.match(sessionRoutes, /TRIAL_LIMIT_REACHED/);
+assert.match(sessionRoutes, /trialAllowance:[\s\S]{0,180}remaining/);
+assert.match(studentDashboardRoutes, /trialAllowance:[\s\S]{0,180}remaining/);
+assert.match(teacherDashboard, /الحصص المكتملة وتقاريرها/);
+assert.match(teacherDashboard, /role="radiogroup"/);
+assert.match(teacherDashboard, /surahRecited:\s*evaluation\.surahRecited/);
 
 const errorBoundary = read('src/components/shared/ErrorBoundary.jsx');
 assert.match(errorBoundary, /localizedPath\(['\"]\/['\"],\s*locale\)/);
