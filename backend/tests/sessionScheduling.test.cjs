@@ -75,3 +75,14 @@ test('slot generation respects weekly availability and session duration', () => 
     ['18:00', '18:30', '19:00'],
   );
 });
+
+
+test('Cairo wall time converts to the correct UTC instant during October DST', () => {
+  const parsed = parseRequestedDateTime('2026-10-12T18:30', 'Africa/Cairo');
+  assert.ok(parsed instanceof Date);
+  assert.equal(parsed.toISOString(), '2026-10-12T15:30:00.000Z');
+
+  const parts = zonedParts(parsed, 'Africa/Cairo');
+  assert.equal(parts.hour, 18);
+  assert.equal(parts.minute, 30);
+});
