@@ -8,6 +8,14 @@ const Session = require('../models/Session');
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/wahy_playwright';
 const PASSWORD = 'Playwright123!';
 
+function assertSafeTestDatabase(uri) {
+  const withoutQuery = String(uri || '').split('?')[0];
+  const databaseName = withoutQuery.slice(withoutQuery.lastIndexOf('/') + 1);
+  if (!/(playwright|e2e|test)/i.test(databaseName)) {
+    throw new Error(`Refusing to reset unsafe database "${databaseName || '(missing)'}". Use a database name containing playwright, e2e, or test.`);
+  }
+}
+
 const DAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 const availability = DAYS.map((day) => ({
   day,
@@ -92,6 +100,7 @@ async function createTeacher(index) {
 }
 
 async function main() {
+  assertSafeTestDatabase(MONGODB_URI);
   await mongoose.connect(MONGODB_URI);
   await mongoose.connection.dropDatabase();
 
