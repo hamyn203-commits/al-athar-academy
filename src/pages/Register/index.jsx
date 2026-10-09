@@ -376,7 +376,6 @@ export default function Register() {
           className="wn-register-form-card lg:col-span-7 p-6 md:p-10 flex flex-col justify-between"
         >
           <div>
-            <GoogleSignIn context="signup" />
             {/* Role Switcher Tabs */}
             <div className="flex bg-slate-100 p-1 rounded-xl mb-6 border border-slate-200">
               <button
@@ -402,8 +401,9 @@ export default function Register() {
               >
                 <Users size={15} />
                 <span>{locale === 'ar' ? 'حساب ولي أمر' : 'Guardian Account'}</span>
-              </button>
+              </button>              <button type="button" onClick={() => setRole('teacher')} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${role === 'teacher' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}>{locale === 'ar' ? 'حساب معلم' : 'Teacher'}</button>
             </div>
+            <GoogleSignIn context="signup" role={role} />
 
             <div className="mb-6">
               <h2 className="font-naskh text-2xl md:text-3xl font-bold text-[var(--athar-text)]">
