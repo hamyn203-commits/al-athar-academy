@@ -45,6 +45,13 @@ const SessionSchema = new mongoose.Schema({
     comment: String,
     wouldContinue: Boolean
   },
+  studentFeedbacks: [{
+    student: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    rating: { type: Number, min: 1, max: 5 },
+    comment: String,
+    wouldContinue: Boolean,
+    submittedAt: { type: Date, default: Date.now }
+  }],
   teacherEvaluation: {
     attendance: { type: Number, min: 1, max: 5 },
     memorization: { type: Number, min: 1, max: 5 },
