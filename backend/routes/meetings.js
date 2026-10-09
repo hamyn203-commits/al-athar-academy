@@ -5,6 +5,7 @@ const Teacher = require('../models/Teacher');
 const GroupCircle = require('../models/GroupCircle');
 const { protect, authorize } = require('../middleware/auth');
 const meetingService = require('../services/meetingService');
+const { sessionParticipantWindow } = require('../services/sessionAccess');
 
 async function sessionIncludesStudent(session, studentId) {
   if (!session || !studentId) return false;
@@ -52,8 +53,23 @@ router.get('/session/:id', protect, async (req, res) => {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    if (session.status !== 'accepted' && session.status !== 'completed') {
-      return res.status(400).json({ error: 'Meeting available only for accepted sessions' });
+    if (req.user.role === 'admin') {
+      if (!['accepted', 'completed'].includes(session.status)) {
+        return res.status(400).json({ error: 'Meeting available only for accepted sessions' });
+      }
+    } else {
+      if (session.status !== 'accepted') {
+        return res.status(400).json({ error: 'Meeting available only for accepted sessions' });
+      }
+      const accessWindow = sessionParticipantWindow(session);
+      if (!accessWindow.within) {
+        return res.status(403).json({
+          error: 'Meeting access is available only near the scheduled session time',
+          code: 'MEETING_OUTSIDE_JOIN_WINDOW',
+          opensAt: accessWindow.opensAt,
+          closesAt: accessWindow.closesAt,
+        });
+      }
     }
 
     const meeting = session.meetingLink
