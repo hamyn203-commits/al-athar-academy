@@ -410,6 +410,19 @@ router.put('/:id/respond', protect, authorize('teacher'), async (req, res) => {
       return res.status(404).json({ error: 'Session not found' });
     }
 
+    // Only pending requests can be accepted, rejected, or rescheduled.
+    // Replaying an accepted action must not send the student another notification.
+    if (session.status !== 'pending') {
+      if (action === 'accept' && session.status === 'accepted') {
+        return res.json({ success: true, session, alreadyAccepted: true });
+      }
+      return res.status(409).json({
+        error: 'لا يمكن تعديل قرار الحصة بعد تغيّر حالتها',
+        code: 'SESSION_ALREADY_DECIDED',
+        status: session.status,
+      });
+    }
+
     if (action === 'accept') {
       session.status = 'accepted';
       const provider = req.body.provider || process.env.DEFAULT_MEETING_PROVIDER || 'jitsi';
