@@ -283,6 +283,7 @@ export default function ManualPayment() {
                     </span>
                     <select
                       required
+                      aria-label={isAr ? 'اختيار الشيخ أو المعلمة' : 'Choose tutor'}
                       value={preferredTeacherId}
                       onChange={(event) => setPreferredTeacherId(event.target.value)}
                       className="mt-2 w-full border rounded-xl px-3 py-3"
