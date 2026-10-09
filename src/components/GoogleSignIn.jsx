@@ -33,7 +33,7 @@ export default function GoogleSignIn({ context = 'signin', role = 'student' }) {
           if (!active) return;
           if (!result.success) return setError(result.error || 'Google sign-in failed');
           if (result.user?.onboarding?.required && !result.user?.onboarding?.completed) {
-            navigate(localizedPath('/profile/setup', locale), { replace: true });
+            navigate(localizedPath('/profile/setup', locale) + (searchParams.get('redirect') ? '?next=' + encodeURIComponent(searchParams.get('redirect')) : ''), { replace: true });
             return;
           }
           navigate(postAuthDestination({
