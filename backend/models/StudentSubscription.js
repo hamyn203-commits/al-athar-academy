@@ -54,9 +54,14 @@ const StudentSubscriptionSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending_payment', 'active', 'paused', 'completed', 'cancelled', 'expired'],
+    enum: ['pending_payment', 'payment_review', 'awaiting_placement', 'placed', 'active', 'paused', 'completed', 'cancelled', 'expired'],
     default: 'pending_payment',
     index: true,
+  },
+  preferredTeacher: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Teacher',
+    default: null,
   },
   circle: {
     type: mongoose.Schema.Types.ObjectId,
@@ -82,6 +87,8 @@ const StudentSubscriptionSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  paidAt: Date,
+  placedAt: Date,
   startedAt: Date,
   completedAt: Date,
 }, { timestamps: true });
