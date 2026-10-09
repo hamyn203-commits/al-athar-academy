@@ -1552,6 +1552,9 @@ export default function TeacherDashboard() {
                               ) : (
                                 <div className="mt-2 space-y-2">
                                   <small>{session.attendance?.length || 0} طالب · {session.duration || 60} دقيقة</small>
+                                  {!hasStarted ? (
+                                    <p className="text-xs font-semibold text-slate-500">تسجيل الحضور يفتح عند بداية موعد الحلقة.</p>
+                                  ) : null}
                                   <div className="space-y-1.5">
                                     {(session.attendance || []).map((entry) => {
                                       const studentId = entry.student?._id || entry.student;
@@ -1568,7 +1571,7 @@ export default function TeacherDashboard() {
                                               </span>
                                               <button
                                                 type="button"
-                                                disabled={isUpdating}
+                                                disabled={isUpdating || !hasStarted}
                                                 onClick={() => updateGroupAttendance(session, studentId, 'attended')}
                                                 className="rounded-lg bg-emerald-50 px-2.5 py-1 font-bold text-emerald-700"
                                               >
@@ -1579,7 +1582,7 @@ export default function TeacherDashboard() {
                                             <>
                                               <button
                                                 type="button"
-                                                disabled={isUpdating}
+                                                disabled={isUpdating || !hasStarted}
                                                 onClick={() => updateGroupAttendance(session, studentId, 'attended')}
                                                 className={
                                                   'rounded-lg px-2.5 py-1 font-bold ' +
@@ -1592,7 +1595,7 @@ export default function TeacherDashboard() {
                                               </button>
                                               <button
                                                 type="button"
-                                                disabled={isUpdating}
+                                                disabled={isUpdating || !hasStarted}
                                                 onClick={() => updateGroupAttendance(session, studentId, 'absent')}
                                                 className={
                                                   'rounded-lg px-2.5 py-1 font-bold ' +
@@ -1602,19 +1605,6 @@ export default function TeacherDashboard() {
                                                 }
                                               >
                                                 غاب
-                                              </button>
-                                              <button
-                                                type="button"
-                                                disabled={isUpdating}
-                                                onClick={() => updateGroupAttendance(session, studentId, 'excused')}
-                                                className={
-                                                  'rounded-lg px-2.5 py-1 font-bold ' +
-                                                  (entry.status === 'excused'
-                                                    ? 'bg-amber-500 text-white'
-                                                    : 'bg-amber-50 text-amber-700')
-                                                }
-                                              >
-                                                معتذر
                                               </button>
                                             </>
                                           )}
