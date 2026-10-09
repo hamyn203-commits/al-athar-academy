@@ -73,6 +73,40 @@ function studentSessionRow(session, studentId) {
 
 router.use(protect, authorize('admin'));
 
+// Admin-only directory. Paginated and intentionally excludes sensitive family data.
+router.get('/directory', async (req, res) => {
+  try {
+    const role = ['student', 'guardian'].includes(req.query.role) ? req.query.role : 'all';
+    const status = ['active', 'inactive'].includes(req.query.status) ? req.query.status : 'all';
+    const q = String(req.query.q || '').trim().slice(0, 120);
+    const page = Math.max(1, Math.min(100000, Number.parseInt(req.query.page, 10) || 1));
+    const limit = Math.max(1, Math.min(50, Number.parseInt(req.query.limit, 10) || 15));
+    const filter = {
+      role: role === 'all' ? { $in: ['student', 'guardian'] } : role,
+      ...(status === 'active' ? { isActive: { $ne: false } } : {}),
+      ...(status === 'inactive' ? { isActive: false } : {}),
+    };
+    if (q) {
+      const regex = new RegExp(escapeRegex(q), 'i');
+      filter.$or = [{ name: regex }, { email: regex }, { phone: regex }];
+      if (mongoose.Types.ObjectId.isValid(q)) filter.$or.push({ _id: q });
+    }
+    const [people, total, studentCount, guardianCount] = await Promise.all([
+      User.find(filter).select('_id name email role isActive createdAt lastLogin')
+        .sort({ createdAt: -1, _id: -1 }).skip((page - 1) * limit).limit(limit).lean(),
+      User.countDocuments(filter),
+      User.countDocuments({ role: 'student' }),
+      User.countDocuments({ role: 'guardian' }),
+    ]);
+    return res.json({
+      people, total, page, limit, pages: Math.max(1, Math.ceil(total / limit)),
+      counts: { student: studentCount, guardian: guardianCount },
+    });
+  } catch (error) {
+    return res.status(500).json({ error: 'Failed to load people directory' });
+  }
+});
+
 router.get('/search', async (req, res) => {
   try {
     const q = String(req.query.q || '').trim().slice(0, 120);

@@ -15,6 +15,7 @@ import { uploadFileDirect } from '../../lib/fileUpload';
 import TeacherReviewQueue from './TeacherReviewQueue';
 import TeacherReviewDossier from './TeacherReviewDossier';
 import AdminPeopleSearch from './AdminPeopleSearch';
+import AdminPeopleDirectory from './AdminPeopleDirectory';
 import Student360Dossier from './Student360Dossier';
 import Family360Dossier from './Family360Dossier';
 import AdminDashboardShell from './AdminDashboardShell';
@@ -554,6 +555,7 @@ export default function AdminDashboard() {
               {focus === 'guardian-links' ? (
                 <AdminGuardianLinksPanel onOpenStudent={openStudentDossier} />
               ) : null}
+              <AdminPeopleDirectory onOpenStudent={openStudentDossier} onOpenGuardian={openFamilyDossier} />
               <section className="wn-admin-people-home">
               <div className="wn-admin-people-home__intro">
                 <span>STUDENT & FAMILY INTELLIGENCE</span>
