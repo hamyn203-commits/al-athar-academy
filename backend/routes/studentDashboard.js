@@ -198,15 +198,21 @@ router.get('/stats', protect, authorize('student'), async (req, res) => {
         completedSessions: 0,
         homeworkPending: 0,
         homeworkSubmitted: 0,
+        trialAllowance: { limit: 3, used: 0, remaining: 3 },
       });
     }
 
-    const [pendingTrials, upcomingSessions, completedSessions, homeworkPending, homeworkSubmitted] = await Promise.all([
+    const [pendingTrials, upcomingSessions, completedSessions, homeworkPending, homeworkSubmitted, trialUsed] = await Promise.all([
       Session.countDocuments({ student: req.user.id, type: 'trial', status: 'pending' }),
       Session.countDocuments({ student: req.user.id, status: 'accepted', scheduledAt: { $gte: new Date() } }),
       Session.countDocuments({ student: req.user.id, status: 'completed' }),
       TeacherTask.countDocuments({ student: req.user.id, status: 'pending' }),
       TeacherTask.countDocuments({ student: req.user.id, status: { $in: ['submitted', 'done'] } }),
+      Session.countDocuments({
+        student: req.user.id,
+        type: 'trial',
+        status: { $in: ['pending', 'accepted', 'completed'] },
+      }),
     ]);
 
     res.json({
@@ -215,6 +221,11 @@ router.get('/stats', protect, authorize('student'), async (req, res) => {
       completedSessions,
       homeworkPending,
       homeworkSubmitted,
+      trialAllowance: {
+        limit: 3,
+        used: trialUsed,
+        remaining: Math.max(0, 3 - trialUsed),
+      },
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -439,10 +450,11 @@ router.get('/teachers', protect, authorize('student'), async (req, res) => {
           name: s.teacher.user?.name || s.teacher.personalInfo?.fullName,
           avatar: s.teacher.user?.avatar || s.teacher.profilePhoto,
           country: s.teacher.personalInfo?.country,
-          rating: s.teacher.rating?.average || 0,
+          rating: Number(s.teacher.rating?.count || 0) > 0 ? Number(s.teacher.rating?.average || 0) : 0,
+          ratingCount: Number(s.teacher.rating?.count || 0),
           sessionCount: 0,
           lastSession: s.scheduledAt,
-          canBookRegular: s.status === 'completed' || s.type === 'trial',
+          canBookRegular: s.status === 'completed',
         };
       }
       map[id].sessionCount++;
