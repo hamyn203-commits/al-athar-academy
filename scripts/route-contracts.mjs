@@ -230,6 +230,9 @@ assert.match(courseDetail, /localizedPath\(['"]\/payment\/manual['"],\s*locale\)
 const manualPayment = read('src/pages/ManualPayment/index.jsx');
 assert.match(manualPayment, /uploadFileDirect\(proof,\s*['"]payment-proof['"]\)/);
 assert.match(manualPayment, /\/api\/payments\/course\/'\s*\+\s*encodeURIComponent\(slug\)\s*\+\s*'\/manual/);
+assert.match(manualPayment, /\/api\/payments\/subscription\/'\s*\+\s*encodeURIComponent\(subscriptionId\)\s*\+\s*'\/manual/);
+assert.match(manualPayment, /عايز تدرس مع مين/);
+assert.match(manualPayment, /\/api\/teachers/);
 
 // T22: Teacher public media is rendered through same-origin routes.
 const teacherMedia = read('src/lib/teacherMedia.js');
@@ -245,8 +248,14 @@ assert.match(teacherProfilePage, /media\.additionalVideos/);
 assert.match(teacherDirectoryPage, /teacherPublicImage\(teacher\.media\?\.profilePhoto\)/);
 assert.match(read('backend/routes/uploads.js'), /uploads\/teacher-public\//);
 const adminPayments = read('src/pages/AdminPayments/index.jsx');
+const adminSubscriptions = read('src/pages/AdminSubscriptions/index.jsx');
 assert.match(adminPayments, /\/api\/payments\/admin\/manual/);
 assert.match(adminPayments, /\/review/);
+assert.match(adminPayments, /المعلم المختار/);
+assert.match(adminSubscriptions, /\/api\/subscriptions\/admin\/placements/);
+assert.match(adminSubscriptions, /\/api\/subscriptions\/admin\/'\s*\+\s*encodeURIComponent\(item\._id\)\s*\+\s*'\/place/);
+assert.match(adminSubscriptions, /جروب موجود/);
+assert.match(adminSubscriptions, /جروب جديد/);
 
 
 const adminDashboard = read('src/pages/AdminDashboard/index.jsx');
@@ -291,6 +300,7 @@ assert.doesNotMatch(adminDashboard, /<TabBar/);
 assert.match(adminDashboardShell, /wn-admin-sidebar/);
 assert.match(adminDashboardShell, /wn-admin-topbar/);
 assert.match(adminDashboardShell, /مركز القيادة/);
+assert.match(adminDashboardShell, /الاشتراكات والتسكين/);
 assert.match(adminDashboardShell, /السحوبات والمالية/);
 assert.match(adminDashboardShell, /التحليلات والنمو/);
 // T19 — Illustrated first screen with navigable actions and scrolled detail.
@@ -389,6 +399,10 @@ assert.match(
 assert.match(
   app,
   /path=["']admin\/payments["'][\s\S]{0,180}<ProtectedRoute\s+roles=\{\[['"]admin['"]\]\}/
+);
+assert.match(
+  app,
+  /path=["']admin\/subscriptions["'][\s\S]{0,180}<ProtectedRoute\s+roles=\{\[['"]admin['"]\]\}/
 );
 
 console.log('Route navigation contracts passed.');
