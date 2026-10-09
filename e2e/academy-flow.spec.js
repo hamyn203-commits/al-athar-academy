@@ -112,7 +112,15 @@ test.describe('Wahy Wa Namaa core academy journey', () => {
     await expect(studentPage).toHaveURL(/\/ar\/plans/);
     await expect(studentPage.getByRole('heading', { name: /ابدأ رحلتك مع القرآن من 10 جنيه/ })).toBeVisible();
     await expect(studentPage.getByRole('heading', { name: 'الحلقة الجماعية' })).toBeVisible();
+    await expect(studentPage.getByText('من ساعة إلى ساعتين', { exact: true }).first()).toBeVisible();
+    await expect(studentPage.getByText('ساعة ونصف', { exact: true })).toBeVisible();
+    await expect(studentPage.getByText('ساعة أو أقل', { exact: true }).first()).toBeVisible();
     await expect(studentPage.getByRole('tab', { name: /القسم الحريمي/ })).toBeVisible();
+
+    await studentPage.getByRole('button', { name: '24 حصص' }).click();
+    const privatePlan = studentPage.locator('article').filter({ hasText: 'الحصة الفردية' }).first();
+    await expect(privatePlan.getByText('24 حصص في الباقة')).toBeVisible();
+    await expect(privatePlan.getByText(/2400 ج/)).toBeVisible();
 
     await studentContext.close();
   });
