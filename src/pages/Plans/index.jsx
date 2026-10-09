@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, ArrowRight, BadgeCheck, BookOpenCheck, Check, Clock3,
   Crown, Heart, ShieldCheck, Sparkles, Users, UserRound
@@ -8,6 +9,10 @@ import GlobalFooter from '../../components/GlobalFooter';
 import SEOHead from '../../components/SEOHead';
 import LocalizedLink from '../../components/LocalizedLink';
 import { useI18n } from '../../i18n';
+import { useAuth } from '../../hooks/useAuth.jsx';
+import { useToast } from '../../context/ToastProvider';
+import api from '../../lib/api';
+import { localizedPath } from '../../lib/locale';
 import './plans.css';
 
 const PLAN_DEFS = [
@@ -97,15 +102,95 @@ const PLAN_DEFS = [
 
 export default function PlansPage() {
   const { locale } = useI18n();
+  const { user, isAuthenticated, isLoading } = useAuth();
+  const toast = useToast();
+  const navigate = useNavigate();
   const isAr = locale === 'ar';
   const ArrowIcon = isAr ? ArrowLeft : ArrowRight;
   const [audience, setAudience] = useState('general');
-  const [sessionsPerMonth, setSessionsPerMonth] = useState(8);
+  const [sessionCount, setSessionCount] = useState(8);
+  const [catalog, setCatalog] = useState(null);
+  const [selection, setSelection] = useState(null);
+  const [selectingPlan, setSelectingPlan] = useState('');
 
-  const plans = useMemo(() => PLAN_DEFS.map((plan) => ({
-    ...plan,
-    monthly: plan.price * sessionsPerMonth,
-  })), [sessionsPerMonth]);
+  useEffect(() => {
+    let cancelled = false;
+
+    api.get('/api/subscriptions/plans')
+      .then((data) => {
+        if (!cancelled) setCatalog(data);
+      })
+      .catch(() => {
+        // Keep the embedded catalog as a resilient display fallback.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const serverPlans = useMemo(
+    () => new Map((catalog?.plans || []).map((plan) => [plan.key, plan])),
+    [catalog]
+  );
+
+  const packageOptions = Array.isArray(catalog?.sessionPacks) && catalog.sessionPacks.length
+    ? catalog.sessionPacks
+    : [4, 8, 12, 24];
+
+  const plans = useMemo(() => PLAN_DEFS.map((plan) => {
+    const serverPlan = serverPlans.get(plan.id);
+    const price = serverPlan ? serverPlan.pricePerSessionMinor / 100 : plan.price;
+    const minStudents = serverPlan?.minStudents;
+    const maxStudents = serverPlan?.maxStudents;
+
+    return {
+      ...plan,
+      price,
+      studentsAr: minStudents && maxStudents
+        ? (minStudents === maxStudents ? `${minStudents === 1 ? 'طالب واحد' : minStudents + ' طلاب'}` : `من ${minStudents} إلى ${maxStudents} طالب`)
+        : plan.studentsAr,
+      studentsEn: minStudents && maxStudents
+        ? (minStudents === maxStudents ? `${minStudents} student` : `${minStudents}–${maxStudents} students`)
+        : plan.studentsEn,
+      durationAr: serverPlan?.durationLabel?.ar || plan.durationAr,
+      durationEn: serverPlan?.durationLabel?.en || plan.durationEn,
+      packageTotal: price * sessionCount,
+    };
+  }), [serverPlans, sessionCount]);
+
+  const handlePlanSelect = async (plan) => {
+    if (isLoading) return;
+
+    if (!isAuthenticated) {
+      const returnTo = localizedPath('/plans', locale);
+      navigate(localizedPath('/login', locale) + '?redirect=' + encodeURIComponent(returnTo));
+      return;
+    }
+
+    if (user?.role !== 'student') {
+      toast.warning(isAr ? 'اختيار باقات الطلاب متاح من حساب الطالب.' : 'Student packages can only be selected from a student account.');
+      return;
+    }
+
+    setSelectingPlan(plan.id);
+    try {
+      const data = await api.post('/api/subscriptions/select', {
+        planKey: plan.id,
+        section: audience === 'women' ? 'ladies' : 'men_children',
+        sessionCount,
+      }, { auth: true });
+
+      setSelection(data.subscription || null);
+      toast.success(isAr
+        ? 'تم حفظ اختيارك. لن يتم أي خصم قبل إتمام خطوة الدفع.'
+        : 'Your selection is saved. No charge is made before checkout.');
+    } catch (error) {
+      toast.error(error.message || (isAr ? 'تعذر حفظ اختيار الباقة.' : 'Could not save the package selection.'));
+    } finally {
+      setSelectingPlan('');
+    }
+  };
 
   const pageTitle = isAr
     ? 'خطط الاشتراك | أكاديمية وحي ونماء'
@@ -148,7 +233,7 @@ export default function PlansPage() {
               <img
                 src={audience === 'women' ? '/images/plans/plan-women.svg' : '/images/plans/plan-community.svg'}
                 alt={isAr
-                  ? (audience === 'women' ? 'حلقة قرآن للقسم النسائي' : 'طلاب في حلقة قرآن جماعية')
+                  ? (audience === 'women' ? 'حلقة قرآن لقسم السيدات' : 'طلاب في حلقة قرآن جماعية')
                   : (audience === 'women' ? 'Women Quran learning circle' : 'Students in a group Quran circle')}
               />
               <div className="wn-plans-hero__price">
@@ -194,12 +279,12 @@ export default function PlansPage() {
 
               <div className="wn-plans-frequency" aria-label={isAr ? 'عدد الحصص في الباقة' : 'Sessions in package'}>
                 <span>{isAr ? 'عدد الحصص' : 'Sessions'}</span>
-                {[4, 8, 12, 24].map((count) => (
+                {packageOptions.map((count) => (
                   <button
                     type="button"
                     key={count}
-                    className={sessionsPerMonth === count ? 'is-active' : ''}
-                    onClick={() => setSessionsPerMonth(count)}
+                    className={sessionCount === count ? 'is-active' : ''}
+                    onClick={() => setSessionCount(count)}
                   >
                     {count} {isAr ? (count === 12 ? 'حصة' : 'حصص') : 'sessions'}
                   </button>
@@ -207,11 +292,25 @@ export default function PlansPage() {
               </div>
             </div>
 
+            {selection && (
+              <aside className="wn-plans-selection" role="status">
+                <BadgeCheck size={22} />
+                <div>
+                  <strong>{isAr ? 'تم حفظ اختيار الباقة' : 'Package selection saved'}</strong>
+                  <p>
+                    {isAr
+                      ? `${selection.sessionCount} حصة · الإجمالي ${selection.totalAmountMinor / 100} جنيه · لم يتم الدفع بعد`
+                      : `${selection.sessionCount} sessions · total ${selection.totalAmountMinor / 100} EGP · payment not completed`}
+                  </p>
+                </div>
+              </aside>
+            )}
+
             {audience === 'women' && (
               <aside className="wn-plans-women-banner">
                 <div className="wn-plans-women-banner__icon"><Heart size={24} /></div>
                 <div>
-                  <span>{isAr ? 'قسم نسائي متكامل' : 'Dedicated women’s section'}</span>
+                  <span>{isAr ? 'قسم السيدات' : 'Women’s section'}</span>
                   <h2>{isAr ? 'نفس الخطط والأسعار — مع معلمات فقط' : 'Same plans and pricing — female tutors only'}</h2>
                   <p>{isAr ? 'يتم توزيع الطالبات حسب السن والمستوى، مع الحفاظ على الخصوصية وجودة المتابعة.' : 'Learners are grouped by age and level with privacy and consistent academic follow-up.'}</p>
                 </div>
@@ -262,8 +361,8 @@ export default function PlansPage() {
                     </div>
 
                     <div className="wn-plan-card__monthly">
-                      <span>{sessionsPerMonth} {isAr ? (sessionsPerMonth === 12 ? 'حصة في الباقة' : 'حصص في الباقة') : 'sessions in package'}</span>
-                      <strong>{plan.from && (isAr ? 'من ' : 'from ')}{plan.monthly} {isAr ? 'ج' : 'EGP'}</strong>
+                      <span>{sessionCount} {isAr ? (sessionCount === 12 ? 'حصة في الباقة' : 'حصص في الباقة') : 'sessions in package'}</span>
+                      <strong>{plan.from && (isAr ? 'من ' : 'from ')}{plan.packageTotal} {isAr ? 'ج' : 'EGP'}</strong>
                     </div>
 
                     <ul>
@@ -272,14 +371,17 @@ export default function PlansPage() {
                       ))}
                     </ul>
 
-                    <LocalizedLink
-                      to={'/contact?plan=' + encodeURIComponent(plan.id) + '&section=' + audience}
-                      locale={locale}
+                    <button
+                      type="button"
                       className="wn-plan-card__cta"
+                      onClick={() => handlePlanSelect(plan)}
+                      disabled={selectingPlan === plan.id}
                     >
-                      {isAr ? 'اختيار الخطة' : 'Choose plan'}
+                      {selectingPlan === plan.id
+                        ? (isAr ? 'جاري الحفظ...' : 'Saving...')
+                        : (isAr ? 'اختيار الخطة' : 'Choose plan')}
                       <ArrowIcon size={17} />
-                    </LocalizedLink>
+                    </button>
                   </div>
                 </article>
               ))}
