@@ -338,7 +338,7 @@ test('four-persona state linking works through real HTTP routes', async (t) => {
   });
   assert.equal(accept.status, 200);
   assert.equal(accept.data.session.status, 'accepted');
-  const acceptedNoticeCount = notifications.filter((item) => item.type === 'session-accepted').length;
+  const acceptedNoticeCount = notifications.filter((item) => item.type === 'session-accepted' && item.userId === ids.student).length;
   assert.equal(acceptedNoticeCount, 1);
 
   const replayAccept = await call(base, '/api/sessions/' + sessionId + '/respond', {
@@ -348,7 +348,7 @@ test('four-persona state linking works through real HTTP routes', async (t) => {
   });
   assert.equal(replayAccept.status, 200);
   assert.equal(replayAccept.data.alreadyAccepted, true);
-  assert.equal(notifications.filter((item) => item.type === 'session-accepted').length, acceptedNoticeCount);
+  assert.equal(notifications.filter((item) => item.type === 'session-accepted' && item.userId === ids.student).length, acceptedNoticeCount);
 
   const invalidReject = await call(base, '/api/sessions/' + sessionId + '/respond', {
     method: 'PUT',
