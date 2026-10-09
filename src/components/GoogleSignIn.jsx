@@ -29,7 +29,13 @@ export default function GoogleSignIn({ context = 'signin', role = 'student' }) {
         auto_select: false,
         callback: async (response) => {
           if (!active || !response?.credential) return;
-          const result = await googleLogin(response.credential, role, context);
+          let result;
+          try {
+            result = await googleLogin(response.credential, role, context);
+          } catch (error) {
+            if (active) setError(error?.message || 'Google sign-in failed');
+            return;
+          }
           if (!active) return;
           if (!result.success) return setError(result.error || 'Google sign-in failed');
           if (result.user?.onboarding?.required && !result.user?.onboarding?.completed) {
@@ -58,9 +64,11 @@ export default function GoogleSignIn({ context = 'signin', role = 'student' }) {
       script.defer = true;
       document.head.appendChild(script);
     }
+    const onScriptError = () => { if (active) setError(locale === 'ar' ? 'تعذر تحميل تسجيل الدخول بجوجل. جرّب تحديث الصفحة.' : 'Could not load Google sign-in. Refresh the page.'); };
     script.addEventListener('load', start);
+    script.addEventListener('error', onScriptError);
     if (window.google?.accounts?.id) start();
-    return () => { active = false; script?.removeEventListener('load', start); };
+    return () => { active = false; script?.removeEventListener('load', start); script?.removeEventListener('error', onScriptError); };
   }, [context, googleLogin, locale, navigate, searchParams, role]);
 
   if (!GOOGLE_CLIENT_ID) return null;
