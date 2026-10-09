@@ -123,6 +123,14 @@ test.describe('Wahy Wa Namaa core academy journey', () => {
     await expect(privatePlan.getByText('24 حصص في الباقة')).toBeVisible();
     await expect(privatePlan.getByText(/2400 ج/)).toBeVisible();
 
+    const groupPlan = studentPage.locator('article').filter({ hasText: 'الحلقة الجماعية' }).first();
+    await groupPlan.getByRole('button', { name: 'اختيار الخطة', exact: true }).click();
+    const savedSelection = studentPage.getByRole('status').filter({ hasText: 'تم حفظ اختيار الباقة' });
+    await expect(savedSelection).toBeVisible();
+    await expect(savedSelection.getByText(/24 حصة/)).toBeVisible();
+    await expect(savedSelection.getByText(/480 جنيه/)).toBeVisible();
+    await expect(savedSelection.getByText(/لم يتم الدفع بعد/)).toBeVisible();
+
     await studentContext.close();
   });
 

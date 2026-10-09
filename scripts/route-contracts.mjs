@@ -200,9 +200,22 @@ assert.match(plansPage, /من ساعة إلى ساعتين/);
 assert.match(plansPage, /ساعة ونصف/);
 assert.match(plansPage, /ساعة أو أقل/);
 assert.match(plansPage, /\[4, 8, 12, 24\]/);
-assert.match(plansPage, /sessionsPerMonth/);
+assert.match(plansPage, /sessionCount/);
+assert.match(plansPage, /\/api\/subscriptions\/plans/);
+assert.match(plansPage, /\/api\/subscriptions\/select/);
+assert.match(plansPage, /men_children/);
+assert.match(plansPage, /ladies/);
+assert.match(plansPage, /لم يتم الدفع بعد/);
 assert.ok(fs.existsSync(path.join(root, 'public/images/plans/plan-community.svg')));
 assert.ok(fs.existsSync(path.join(root, 'public/images/plans/plan-women.svg')));
+
+const subscriptionRoutes = read('backend/routes/subscriptions.js');
+const subscriptionModel = read('backend/models/StudentSubscription.js');
+assert.match(subscriptionRoutes, /router\.get\(['"]\/plans['"]/);
+assert.match(subscriptionRoutes, /router\.post\(['"]\/select['"],\s*protect,\s*authorize\(['"]student['"]\)/);
+assert.match(subscriptionRoutes, /quoteSubscription\(\{\s*planKey,\s*sessionCount\s*\}\)/);
+assert.match(subscriptionModel, /pending_payment/);
+assert.match(subscriptionModel, /sessionCount:[\s\S]{0,100}enum:\s*\[4, 8, 12, 24\]/);
 
 const errorBoundary = read('src/components/shared/ErrorBoundary.jsx');
 assert.match(errorBoundary, /localizedPath\(['\"]\/['\"],\s*locale\)/);

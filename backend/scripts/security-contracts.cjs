@@ -680,6 +680,23 @@ requireContains(
 );
 
 
+// Subscription pricing must remain server-authoritative before payment integration.
+requireContains(
+  'backend/routes/subscriptions.js',
+  'subscription selection must derive pricing from the server-side catalog',
+  /quoteSubscription\(\{\s*planKey,\s*sessionCount\s*\}\)[\s\S]{0,900}pricePerSessionMinor:\s*quote\.pricePerSessionMinor[\s\S]{0,300}totalAmountMinor:\s*quote\.totalAmountMinor/
+);
+requireAbsent(
+  'backend/routes/subscriptions.js',
+  'subscription selection must never trust a client-supplied amount',
+  /req\.body\.(?:price|amount|pricePerSessionMinor|totalAmountMinor)/
+);
+requireContains(
+  'backend/models/GroupCircle.js',
+  'group circles must allow the approved 15-student economic plan capacity',
+  /capacity:[\s\S]{0,100}max:\s*15/
+);
+
 // T07.2d: manual transfer approval must remain private, admin-only and transactional.
 requireContains(
   'backend/config/uploadPolicy.js',
