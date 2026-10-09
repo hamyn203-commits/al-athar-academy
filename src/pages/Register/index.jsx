@@ -401,7 +401,8 @@ export default function Register() {
               >
                 <Users size={15} />
                 <span>{locale === 'ar' ? 'حساب ولي أمر' : 'Guardian Account'}</span>
-              </button>              <button type="button" onClick={() => setRole('teacher')} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${role === 'teacher' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}>{locale === 'ar' ? 'حساب معلم' : 'Teacher'}</button>
+              </button>
+              <button type="button" onClick={() => setRole('teacher')} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${role === 'teacher' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}>{locale === 'ar' ? 'حساب معلم' : 'Teacher'}</button>
             </div>
             <GoogleSignIn context="signup" role={role} />
 
@@ -429,7 +430,9 @@ export default function Register() {
               </motion.div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            {role === 'teacher' ? (
+              <p className="rounded-xl bg-amber-50 border border-amber-200 p-4 text-sm text-amber-900">{locale === 'ar' ? 'يمكنك إنشاء حساب المعلم باستخدام Google، أو اختيار نموذج تقديم المعلم الحالي للتسجيل اليدوي.' : 'Use Google to create your teacher account, or apply through the existing teacher registration form.'} <a className="font-bold underline" href={localizedPath('/register/teacher', locale)}>{locale === 'ar' ? 'التسجيل اليدوي للمعلم' : 'Teacher registration'}</a></p>
+            ) : <form onSubmit={handleSubmit} className="space-y-5">
               
               {/* Full Name */}
               <div>
@@ -680,7 +683,7 @@ export default function Register() {
                   </>
                 )}
               </button>
-            </form>
+            </form>}
           </div>
 
           {/* Login redirection */}
