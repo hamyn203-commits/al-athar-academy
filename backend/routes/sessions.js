@@ -8,7 +8,7 @@ const GroupCircle = require('../models/GroupCircle');
 const { protect, authorize } = require('../middleware/auth');
 const meetingService = require('../services/meetingService');
 const { meetingVisibleToRole, sessionParticipantWindow } = require('../services/sessionAccess');
-const { ensureSessionEarning } = require('../services/teacherFinance');
+const { calculateSessionEarning, ensureSessionEarning } = require('../services/teacherFinance');
 const { settleSubscriptionUsageForSession } = require('../services/subscriptionUsage');
 const { getPlan } = require('../config/subscriptionPlans');
 const {
@@ -795,7 +795,7 @@ router.put('/:id/complete', protect, authorize('teacher'), async (req, res) => {
 
     const HOURLY_RATE = Number(teacher.hourlyRate || 50);
     const sessionDuration = Math.max(1, Number(session.duration || 60));
-    const SESSION_RATE = Math.round((HOURLY_RATE * sessionDuration / 60) * 100) / 100;
+    const SESSION_RATE = calculateSessionEarning(HOURLY_RATE, sessionDuration);
     const scheduledAt = new Date(session.scheduledAt);
     const now = new Date();
 
