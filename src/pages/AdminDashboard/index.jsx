@@ -513,6 +513,8 @@ export default function AdminDashboard() {
     window.open(`/teachers/${encodeURIComponent(teacherId)}`, '_blank', 'noopener,noreferrer');
   };
 
+  const [peopleRole, setPeopleRole] = useState('all');
+
   const adminSearch = (
     <AdminPeopleSearch
       onOpenStudent={openStudentDossier}
@@ -555,7 +557,7 @@ export default function AdminDashboard() {
               {focus === 'guardian-links' ? (
                 <AdminGuardianLinksPanel onOpenStudent={openStudentDossier} />
               ) : null}
-              <AdminPeopleDirectory onOpenStudent={openStudentDossier} onOpenGuardian={openFamilyDossier} />
+              <AdminPeopleDirectory selectedRole={peopleRole} onOpenStudent={openStudentDossier} onOpenGuardian={openFamilyDossier} />
               <section className="wn-admin-people-home">
               <div className="wn-admin-people-home__intro">
                 <span>STUDENT & FAMILY INTELLIGENCE</span>
@@ -563,21 +565,21 @@ export default function AdminDashboard() {
                 <p>استخدم البحث الشامل أعلى اللوحة للوصول إلى Student 360 أو Family 360 بالاسم أو البريد أو الهاتف أو الـID.</p>
               </div>
               <div className="wn-admin-people-home__cards">
-                <div>
+                <button type="button" onClick={() => { setPeopleRole('student'); document.querySelector('[aria-label="دليل الطلاب والأسر"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} aria-label="عرض الطلاب">
                   <Users size={22} />
                   <strong>Student 360</strong>
-                  <p>الحصص، الحضور، تقارير المعلم، الواجبات، المدفوعات، ولي الأمر، والتنبيهات.</p>
-                </div>
-                <div>
+                  <p>افتح دليل الطلاب، ثم ملف الطالب الكامل بالحصص والحضور والواجبات والمدفوعات.</p>
+                </button>
+                <button type="button" onClick={() => { setPeopleRole('guardian'); document.querySelector('[aria-label="دليل الطلاب والأسر"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} aria-label="عرض أولياء الأمور">
                   <ShieldCheck size={22} />
                   <strong>Family 360</strong>
-                  <p>ولي الأمر، الأبناء، طلبات الربط، حالة كل طفل والحصة القادمة.</p>
-                </div>
-                <div>
+                  <p>افتح دليل أولياء الأمور وملف الأسرة، مع بيانات الأبناء وطلبات الربط.</p>
+                </button>
+                <button type="button" onClick={() => selectAdminTab('audit')} aria-label="فتح سجل الإدارة">
                   <History size={22} />
                   <strong>Audit Trail</strong>
-                  <p>كل وصول إداري للبيانات الحساسة يتم تسجيله تلقائيًا.</p>
-                </div>
+                  <p>افتح سجل أنشطة الإدارة ومراجعة العمليات الحساسة.</p>
+                </button>
               </div>
             </section>
             </>
