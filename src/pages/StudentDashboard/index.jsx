@@ -224,6 +224,8 @@ export default function StudentDashboard() {
   const [guardianInvitations, setGuardianInvitations] = useState([]);
   const [linkedGuardians, setLinkedGuardians] = useState([]);
   const [subscriptions, setSubscriptions] = useState([]);
+  const [renewalSessionCount, setRenewalSessionCount] = useState(8);
+  const [renewingSubscription, setRenewingSubscription] = useState(false);
   const [guardianInviteForm, setGuardianInviteForm] = useState({ guardianPhone: '', relationship: 'father' });
   const [savingGuardianInvite, setSavingGuardianInvite] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -467,8 +469,13 @@ export default function StudentDashboard() {
     || nextActiveSession?.teacher?.name
     || (locale === 'ar' ? 'معلم الأكاديمية' : 'Quran Tutor');
   const nextSessionDate = nextActiveSession ? new Date(nextActiveSession.scheduledAt) : null;
+  const renewalSubscription = subscriptions.find((item) =>
+    item.renewalOf && ['pending_payment', 'payment_review', 'renewal_queued'].includes(item.status)
+  ) || null;
   const currentSubscription = subscriptions.find((item) =>
-    ['pending_payment', 'payment_review', 'awaiting_placement', 'placed', 'active', 'paused'].includes(item.status)
+    !item.renewalOf && ['pending_payment', 'payment_review', 'awaiting_placement', 'placed', 'active', 'paused'].includes(item.status)
+  ) || subscriptions.find((item) =>
+    !item.renewalOf && item.status === 'completed'
   ) || null;
   const currentSubscriptionTeacherName = currentSubscription?.preferredTeacher?.personalInfo?.fullName
     || currentSubscription?.preferredTeacher?.user?.name
@@ -498,10 +505,41 @@ export default function StudentDashboard() {
       ar: 'اشتراكك متوقف مؤقتًا. تواصل مع الإدارة للمساعدة.',
       en: 'Your subscription is temporarily paused. Contact administration for help.',
     },
+    completed: {
+      ar: 'انتهى رصيد الباقة. يمكنك تجديد نفس الجروب والمعلم بسهولة.',
+      en: 'Your package balance is finished. You can easily renew the same group and tutor.',
+    },
   }[currentSubscription.status] || {
     ar: currentSubscription.status,
     en: currentSubscription.status,
   }) : null;
+
+  const renewSubscription = async (subscription) => {
+    if (!subscription?._id) return;
+    setRenewingSubscription(true);
+    try {
+      const result = await api.post(
+        '/api/subscriptions/' + encodeURIComponent(subscription._id) + '/renew',
+        { sessionCount: Number(renewalSessionCount) },
+        { auth: true }
+      );
+      const renewal = result.subscription;
+      toast.success(locale === 'ar'
+        ? 'تم إنشاء التجديد بنفس الجروب والمعلم. أكمل التحويل.'
+        : 'Renewal created for the same group and tutor. Complete the transfer.');
+      if (renewal?._id) {
+        navigate(lp('/payment/manual') + '?subscription=' + encodeURIComponent(renewal._id));
+      }
+    } catch (error) {
+      if (error.code === 'RENEWAL_ALREADY_EXISTS' && error.data?.subscription?._id) {
+        navigate(lp('/payment/manual') + '?subscription=' + encodeURIComponent(error.data.subscription._id));
+        return;
+      }
+      toast.error(error.message || (locale === 'ar' ? 'تعذر إنشاء التجديد' : 'Could not create renewal'));
+    } finally {
+      setRenewingSubscription(false);
+    }
+  };
 
   const loadTeacherUpdateVideo = async (updateId, index) => {
     const key = `${updateId}-${index}`;
@@ -1005,6 +1043,56 @@ export default function StudentDashboard() {
                     {locale === 'ar' ? 'عرض حصصي' : 'View sessions'}
                   </button>
                 ) : null}
+
+                {renewalSubscription ? (
+                  renewalSubscription.status === 'pending_payment' ? (
+                    <button
+                      type="button"
+                      onClick={() => navigate(lp('/payment/manual') + '?subscription=' + encodeURIComponent(renewalSubscription._id))}
+                      className="wn-student-primary-action"
+                    >
+                      <CreditCard size={17} />
+                      {locale === 'ar' ? 'إكمال دفع التجديد' : 'Complete renewal payment'}
+                    </button>
+                  ) : renewalSubscription.status === 'payment_review' ? (
+                    <span className="text-xs font-semibold text-amber-700">
+                      {locale === 'ar' ? 'تجديدك قيد مراجعة التحويل' : 'Renewal payment under review'}
+                    </span>
+                  ) : (
+                    <span className="text-xs font-semibold text-emerald-700">
+                      {locale === 'ar'
+                        ? `التجديد مدفوع وجاهز: ${renewalSubscription.sessionCount} حصة تبدأ تلقائيًا بعد انتهاء الرصيد الحالي`
+                        : `Renewal paid and ready: ${renewalSubscription.sessionCount} sessions will activate automatically`}
+                    </span>
+                  )
+                ) : (
+                  ((currentSubscription.status === 'active' && Number(currentSubscription.sessionsRemaining || 0) <= 2)
+                    || currentSubscription.status === 'completed') ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <select
+                        value={renewalSessionCount}
+                        onChange={(event) => setRenewalSessionCount(Number(event.target.value))}
+                        className="rounded-lg border border-emerald-200 bg-white px-3 py-2 text-sm font-bold text-emerald-800"
+                        aria-label={locale === 'ar' ? 'عدد حصص التجديد' : 'Renewal sessions'}
+                      >
+                        {[4, 8, 12, 24].map((count) => (
+                          <option key={count} value={count}>{count} {locale === 'ar' ? 'حصص' : 'sessions'}</option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        disabled={renewingSubscription}
+                        onClick={() => renewSubscription(currentSubscription)}
+                        className="wn-student-primary-action"
+                      >
+                        <RotateCcw size={17} />
+                        {renewingSubscription
+                          ? (locale === 'ar' ? 'جاري إنشاء التجديد...' : 'Creating renewal...')
+                          : (locale === 'ar' ? 'جدد نفس الجروب' : 'Renew same group')}
+                      </button>
+                    </div>
+                  ) : null
+                )}
               </div>
             </section>
           )}
