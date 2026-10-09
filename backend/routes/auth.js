@@ -244,6 +244,7 @@ router.post('/google', async (req, res) => {
         await existing.save();
         user = existing;
       } else {
+        if (req.body?.context !== 'signup') return res.status(404).json({ error: 'No account found. Please use Create Account first.' });
         user = await User.create({
           name: identity.name.length >= 2 ? identity.name : 'طالب الأكاديمية',
           email: identity.email,
