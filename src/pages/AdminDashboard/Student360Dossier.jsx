@@ -2,6 +2,7 @@ import {
   X, UserRound, Users, Calendar, BookOpen, CreditCard, Bell, GraduationCap,
   PlayCircle, CheckCircle2, AlertTriangle, History, MessageSquare, TrendingUp,
 } from 'lucide-react';
+import { formatSessionDateTime, sessionTimeZone } from '../../lib/sessionTime';
 
 function studentAvatarUrl(value) {
   const reference = String(value || '').trim();
@@ -134,7 +135,7 @@ export default function Student360Dossier({
                   {(dossier.sessions || []).slice(0, 40).map((session) => (
                     <article key={session._id}>
                       <div>
-                        <span>{new Date(session.scheduledAt).toLocaleString('ar-EG')}</span>
+                        <span>{formatSessionDateTime(session, 'ar-EG', { dateStyle: 'medium', timeStyle: 'short' })} · {sessionTimeZone(session)}</span>
                         <h4>{session.teacher?.name || 'معلم'} · {session.type}</h4>
                         <small>{session.status} · حضور: {session.attendanceStatus || '—'} · {session.duration || 0} دقيقة</small>
                       </div>

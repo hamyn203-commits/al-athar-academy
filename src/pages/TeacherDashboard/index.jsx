@@ -811,7 +811,7 @@ export default function TeacherDashboard() {
                           <div key={session._id} className={'wn-teacher-agenda__item ' + (index === 0 ? 'is-next' : '')}>
                             <div className="wn-teacher-agenda__time">
                               <strong>{formatSessionDateTime(session, 'ar-EG', { hour: '2-digit', minute: '2-digit' })}</strong>
-                              <small>{new Date(session.scheduledAt).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' })}</small>
+                              <small>{formatSessionDateTime(session, 'ar-EG', { day: 'numeric', month: 'short' })} · {sessionTimeZone(session, teacher?.availabilityTimezone || 'Africa/Cairo')}</small>
                             </div>
                             <div className="wn-teacher-agenda__student">
                               <strong>{session.student?.name || 'طالب'}</strong>
@@ -1393,7 +1393,7 @@ export default function TeacherDashboard() {
                               {session.requestKind === 'trial' ? 'حصة تجريبية' : 'حصة منتظمة'}
                             </span>
                             <h4>{session.student?.name || 'طالب'}</h4>
-                            <p><Clock size={14} /> {new Date(session.scheduledAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</p>
+                            <p><Clock size={14} /> {formatSessionDateTime(session, 'ar-EG', { hour: '2-digit', minute: '2-digit' })} · {sessionTimeZone(session, teacher?.availabilityTimezone || 'Africa/Cairo')}</p>
                             {session.notes ? <small>{session.notes}</small> : null}
                           </div>
                           <div className="wn-teacher-request-card__actions">
@@ -1441,8 +1441,9 @@ export default function TeacherDashboard() {
                         return (
                           <article key={session._id} className={'wn-teacher-session-card ' + (hasStarted ? 'is-due' : '')}>
                             <div className="wn-teacher-session-card__time">
-                              <strong>{new Date(session.scheduledAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</strong>
+                              <strong>{formatSessionDateTime(session, 'ar-EG', { hour: '2-digit', minute: '2-digit' })}</strong>
                               <span>{formatSessionDateTime(session, 'ar-EG', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
+                              <small>{sessionTimeZone(session, teacher?.availabilityTimezone || 'Africa/Cairo')}</small>
                             </div>
                             <div className="wn-teacher-session-card__student">
                               <span>{session.type === 'trial' ? 'تجريبية' : 'فردية'}</span>

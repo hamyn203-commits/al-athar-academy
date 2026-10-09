@@ -13,6 +13,7 @@ import api from '../../lib/api';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { useI18n } from '../../i18n';
 import { localizedPath } from '../../lib/locale';
+import { formatSessionDateTime, sessionTimeZone } from '../../lib/sessionTime';
 import '../LiveRoom/LiveRoom.css';
 import '../../styles/session-experience.css';
 
@@ -200,7 +201,7 @@ export default function LiveSessions() {
                     {session.scheduledAt && (
                       <div className="meta-item">
                         <Calendar size={16} />
-                        <span>{new Date(session.scheduledAt).toLocaleDateString('ar-SA')}</span>
+                        <span>{formatSessionDateTime(session, locale === 'ar' ? 'ar-EG' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' })} · {sessionTimeZone(session)}</span>
                       </div>
                     )}
                   </div>
