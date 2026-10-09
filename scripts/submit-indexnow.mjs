@@ -3,7 +3,7 @@
 const SITE = 'https://wahy-wa-namaa-academy.vercel.app';
 const KEY = 'wahywanamaa2026indexnow01';
 const LOCALES = ['ar', 'en', 'fr', 'de', 'tr', 'ur', 'id', 'ms', 'ku'];
-const PAGES = ['', '/free-trial', '/teachers', '/courses', '/blog', '/contact', '/about', '/teacher/register', '/login', '/faq'];
+const PAGES = ['', '/free-trial', '/teachers', '/courses', '/blog', '/contact', '/about', '/register/teacher', '/login', '/faq'];
 
 const urls = [];
 LOCALES.forEach((loc) => {
