@@ -28,7 +28,7 @@ export default function GoogleSignIn({ context = 'signin', role = 'student' }) {
         auto_select: false,
         callback: async (response) => {
           if (!active || !response?.credential) return;
-          const result = await googleLogin(response.credential, role);
+          const result = await googleLogin(response.credential, role, context);
           if (!active) return;
           if (!result.success) return setError(result.error || 'Google sign-in failed');
           if (result.user?.onboarding?.required && !result.user?.onboarding?.completed) {
