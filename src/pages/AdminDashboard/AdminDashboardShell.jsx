@@ -1,7 +1,7 @@
 import {
   ArrowDown, BookOpen, CalendarClock, CreditCard, FileText, GraduationCap, History,
   Home, LogOut, Mail, Menu, PanelLeftClose, PanelLeftOpen, Settings, ShieldCheck, TrendingUp, Users,
-  WalletCards, X, Sparkles,
+  WalletCards, X, Sparkles, UserRoundCheck,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -16,6 +16,7 @@ const NAV_ITEMS = [
   { id: 'people', label: 'الطلاب والأسر', icon: Users },
   { id: 'sessions', label: 'مركز الحصص', icon: CalendarClock },
   { id: 'payments', label: 'المدفوعات', icon: CreditCard, route: 'payments' },
+  { id: 'subscriptions', label: 'الاشتراكات والتسكين', icon: UserRoundCheck, route: 'subscriptions' },
   { id: 'withdrawals', label: 'السحوبات والمالية', icon: WalletCards },
   { id: 'courses', label: 'الدورات والمحتوى', icon: BookOpen },
   { id: 'messages', label: 'الدعم والرسائل', icon: Mail },
