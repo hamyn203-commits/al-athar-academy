@@ -44,6 +44,7 @@ class ApiClient {
       return fetch(`${this.baseUrl}${path}`, {
         credentials: 'include',
         ...rest,
+        cache: auth ? 'no-store' : (rest.cache || 'default'),
         headers: activeHeaders,
         body: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined,
       });
