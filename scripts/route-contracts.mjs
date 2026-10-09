@@ -210,7 +210,7 @@ assert.match(adminExecutiveHome, /SYSTEM HEALTH/);
 assert.match(adminExecutiveHome, /TeacherReviewQueue/);
 assert.match(adminExecutiveHome, /LaunchReadinessPanel/);
 assert.match(adminExecutiveHome, /ResponsiveContainer/);
-assert.match(adminDashboard, /wn-admin-kpi-grid/);
+assert.match(adminExecutiveHome, /wn-admin-exec-metrics/);
 assert.match(adminDashboard, /tab\s*===\s*['"]people['"]/);
 assert.doesNotMatch(adminDashboard, /<DashboardLayout/);
 assert.doesNotMatch(adminDashboard, /<TabBar/);
