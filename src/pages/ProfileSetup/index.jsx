@@ -3,10 +3,12 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useRequireAuth } from '../../hooks/useRequireAuth';
 import { useI18n } from '../../i18n';
 import { dashboardPathForRole, isSafeInternalRedirect } from '../../lib/navigation';
+import { useAuth } from '../../hooks/useAuth.jsx';
 import api from '../../lib/api';
 
 export default function ProfileSetup() {
   const { user, ready } = useRequireAuth(['student', 'guardian', 'teacher']);
+  const { refreshUser } = useAuth();
   const { locale } = useI18n();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -24,6 +26,7 @@ export default function ProfileSetup() {
       const payload = { name: data.name, phone: data.phone, whatsappPhone: data.whatsappPhone, bio: data.bio };
       if (user.role === 'student') Object.assign(payload, { age: data.age ? Number(data.age) : undefined, gender: data.gender || undefined, memorizedJuz: Number(data.memorizedJuz), preferredTrack: data.preferredTrack, currentLevel: data.currentLevel, memorizationDetails: data.memorizationDetails });
       await api.patch('/api/auth/onboarding', payload, { auth: true });
+      await refreshUser();
       navigate(destination, { replace: true });
     } catch (e) { setError(e.message); } finally { setSaving(false); }
   };
