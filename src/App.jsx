@@ -41,6 +41,7 @@ const Privacy = lazy(() => import('./pages/Privacy'));
 const Terms = lazy(() => import('./pages/Terms'));
 const CertificateView = lazy(() => import('./pages/Certificate'));
 const Login = lazy(() => import('./pages/Login'));
+const ProfileSetup = lazy(() => import('./pages/ProfileSetup'));
 const Register = lazy(() => import('./pages/Register'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
@@ -94,6 +95,7 @@ function pageRoutes() {
       <Route path="blog/:slug" element={<BlogDetail />} />
       <Route path="contact" element={<Contact />} />
       <Route path="verify-certificate/:certificateId" element={<CertificateView />} />
+      <Route path="profile/setup" element={<ProtectedRoute roles={['student', 'teacher', 'guardian']}><ProfileSetup /></ProtectedRoute>} />
       <Route path="student" element={<StudentLegacyRedirect />} />
       <Route path="student/dashboard" element={<ProtectedRoute roles={['student']}><StudentDashboard /></ProtectedRoute>} />
       <Route path="guardian" element={<GuardianLegacyRedirect />} />
