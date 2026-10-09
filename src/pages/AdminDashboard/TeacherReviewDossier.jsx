@@ -28,10 +28,13 @@ export default function TeacherReviewDossier({
   onReview,
   onOpenDocument,
   onOpenMedia,
+  onOpenProfileChangeMedia,
+  onProfileChangeReview,
   onPreviewPublic,
 }) {
   const teacher = dossier?.teacher;
   const gate = dossier?.gate;
+  const profileChange = dossier?.profileChange;
   const approved = teacher?.status === 'approved' && teacher?.isVerified === true;
 
   const specializations = useMemo(
@@ -138,6 +141,65 @@ export default function TeacherReviewDossier({
                 ))}
               </div>
             </section> : null}
+
+            {profileChange ? (
+              <section className="wn-admin-dossier__section border-amber-200 bg-amber-50/40">
+                <div className="wn-admin-dossier__section-title">
+                  <History size={18} />
+                  <h3>طلب تعديل الملف العام</h3>
+                </div>
+
+                <div className="mb-4 rounded-xl border border-amber-200 bg-white p-3">
+                  <strong className="block text-amber-950">
+                    {profileChange.status === 'pending' ? 'قيد المراجعة' : profileChange.status === 'approved' ? 'تم اعتماده' : 'تم رفضه'}
+                  </strong>
+                  <small className="text-slate-500">
+                    {profileChange.createdAt ? new Date(profileChange.createdAt).toLocaleString('ar-EG') : ''}
+                    {' · '}{(profileChange.changedFields || []).length} حقل/وسيط
+                  </small>
+                  {profileChange.adminNote ? <p className="mt-2 text-sm">ملاحظة الإدارة: {profileChange.adminNote}</p> : null}
+                </div>
+
+                <div className="wn-admin-dossier__grid">
+                  <Value label="الاسم المقترح" value={profileChange.proposed?.personalInfo?.fullName} />
+                  <Value label="المدينة المقترحة" value={profileChange.proposed?.personalInfo?.city} />
+                  <Value label="الجامعة المقترحة" value={profileChange.proposed?.academicInfo?.university} />
+                  <Value label="الكلية المقترحة" value={profileChange.proposed?.academicInfo?.faculty} />
+                  <Value label="المؤهل المقترح" value={profileChange.proposed?.academicInfo?.qualification} />
+                  <Value label="سنوات الخبرة المقترحة" value={profileChange.proposed?.quranInfo?.teachingExperience} />
+                  <Value label="عدد الإجازات المقترح" value={profileChange.proposed?.quranInfo?.numberOfIjazat} />
+                  <Value label="النبذة المقترحة" value={profileChange.proposed?.user?.bio} />
+                </div>
+
+                <div className="wn-admin-dossier__asset-grid mt-4">
+                  {MEDIA_ITEMS.filter(({ key }) => profileChange.proposed?.media?.[key]).map(({ key, label, icon: Icon }) => (
+                    <button key={key} type="button" onClick={() => onOpenProfileChangeMedia?.(teacher._id, key)}>
+                      <Icon size={18} />
+                      <span><strong>{label} المقترحة</strong><small>فتح للمراجعة</small></span>
+                    </button>
+                  ))}
+                </div>
+
+                {profileChange.status === 'pending' ? (
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      className="wn-btn wn-btn--primary"
+                      onClick={() => {
+                        if (window.confirm('هل راجعت كل التعديلات والوسائط وتريد نشرها الآن؟')) {
+                          onProfileChangeReview?.(teacher._id, 'approve', 'تمت مراجعة التعديلات واعتمادها للنشر.');
+                        }
+                      }}
+                    >
+                      <CheckCircle2 size={16} /> اعتماد ونشر التعديلات
+                    </button>
+                    <button type="button" className="wn-btn wn-btn--secondary" onClick={() => onProfileChangeReview?.(teacher._id, 'reject', '')}>
+                      <XCircle size={16} /> رفض وإعادة للمعلم
+                    </button>
+                  </div>
+                ) : null}
+              </section>
+            ) : null}
 
             <section className="wn-admin-dossier__section">
               <div className="wn-admin-dossier__section-title"><UserRound size={18} /><h3>البيانات الشخصية</h3></div>
