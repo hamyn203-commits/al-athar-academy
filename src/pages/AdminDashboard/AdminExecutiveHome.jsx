@@ -97,22 +97,7 @@ export default function AdminExecutiveHome({
   };
 
   return (
-    <div className="wn-admin-exec-home">
-      <section className="wn-admin-exec-hero">
-        <div className="wn-admin-exec-hero__copy">
-          <span><Sparkles size={14} /> EXECUTIVE OVERVIEW</span>
-          <h2>صورة الأكاديمية الآن، بدون تشتيت</h2>
-          <p>الأرقام الحية، الأولويات التشغيلية، صحة النظام، وأهم ما يحتاج قرارًا من الإدارة.</p>
-        </div>
-        <div className={`wn-admin-exec-hero__status ${critical ? 'is-alert' : 'is-clear'}`}>
-          <span>{critical ? <AlertTriangle size={21} /> : <ShieldCheck size={21} />}</span>
-          <div>
-            <strong>{critical ? `${critical} حالة حرجة` : 'الوضع التشغيلي مستقر'}</strong>
-            <small>{totalPending ? `${totalPending} إجراء إجمالي يحتاج متابعة` : 'لا توجد إجراءات معلقة حاليًا'}</small>
-          </div>
-        </div>
-      </section>
-
+    <div id="admin-executive-content" className="wn-admin-exec-home">
       <section className="wn-admin-exec-quick-actions" aria-label="اختصارات مركز القيادة">
         <button type="button" onClick={() => onNavigate?.('/admin?tab=teachers')}>
           <GraduationCap size={17} /><span><strong>مراجعة المعلمين</strong><small>Teacher 360</small></span><ArrowLeft size={14} />
@@ -129,6 +114,21 @@ export default function AdminExecutiveHome({
         <button type="button" onClick={() => onNavigate?.('/admin?tab=system')}>
           <ServerCog size={17} /><span><strong>حالة النظام</strong><small>Health & launch</small></span><ArrowLeft size={14} />
         </button>
+      </section>
+
+      <section className="wn-admin-exec-hero">
+        <div className="wn-admin-exec-hero__copy">
+          <span><Sparkles size={14} /> EXECUTIVE OVERVIEW</span>
+          <h2>صورة الأكاديمية الآن، بدون تشتيت</h2>
+          <p>الأرقام الحية، الأولويات التشغيلية، صحة النظام، وأهم ما يحتاج قرارًا من الإدارة.</p>
+        </div>
+        <div className={`wn-admin-exec-hero__status ${critical ? 'is-alert' : 'is-clear'}`}>
+          <span>{critical ? <AlertTriangle size={21} /> : <ShieldCheck size={21} />}</span>
+          <div>
+            <strong>{critical ? `${critical} حالة حرجة` : 'الوضع التشغيلي مستقر'}</strong>
+            <small>{totalPending ? `${totalPending} إجراء إجمالي يحتاج متابعة` : 'لا توجد إجراءات معلقة حاليًا'}</small>
+          </div>
+        </div>
       </section>
 
       <section className="wn-admin-exec-metrics">

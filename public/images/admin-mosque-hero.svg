@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 470" role="img" aria-label="">
+<defs>
+  <linearGradient id="sky" x1="0" y1="0" x2="0.9" y2="1"><stop stop-color="#91cee9"/><stop offset=".55" stop-color="#dbf3fa"/><stop offset="1" stop-color="#fff2d4"/></linearGradient>
+  <radialGradient id="light"><stop stop-color="#fff7b9" stop-opacity=".94"/><stop offset="1" stop-color="#fff7cb" stop-opacity="0"/></radialGradient>
+  <linearGradient id="marble" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fffdf4"/><stop offset=".6" stop-color="#eee1c4"/><stop offset="1" stop-color="#ccbda2"/></linearGradient>
+  <linearGradient id="dome" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fffdf2"/><stop offset=".49" stop-color="#ebe0c6"/><stop offset="1" stop-color="#d9c398"/></linearGradient>
+  <linearGradient id="leaf" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#82a57a"/><stop offset="1" stop-color="#2a725b"/></linearGradient>
+  <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fae59a"/><stop offset="1" stop-color="#ba8b34"/></linearGradient>
+  <filter id="mist"><feGaussianBlur stdDeviation="18"/></filter>
+  <filter id="soft"><feGaussianBlur stdDeviation="2.5"/></filter>
+</defs>
+<rect width="1600" height="470" fill="url(#sky)"/>
+<circle cx="1250" cy="95" r="245" fill="url(#light)"/>
+<g opacity=".58" fill="#fff" filter="url(#mist)">
+ <ellipse cx="130" cy="90" rx="190" ry="42"/><ellipse cx="460" cy="68" rx="180" ry="26"/><ellipse cx="960" cy="135" rx="235" ry="38"/>
+</g>
+<path d="M0 345C154 291 278 314 427 331s305-13 460-9 284 10 436-16 212-4 277 16v148H0Z" fill="#ecdfb8" opacity=".28"/>
+<path d="M0 388C257 340 370 370 590 379s429-51 672-23 259-3 338-6v120H0Z" fill="#90ba95" opacity=".2"/>
+<!-- distant slender minarets -->
+<g opacity=".55" fill="#f7f2e1" stroke="#d8b879" stroke-width="2">
+ <rect x="680" y="154" width="20" height="258" rx="4"/><path d="M676 168h28l-6-11h-16zM676 225h28l-6-11h-16z" fill="#ecdfbf"/><path d="M679 154l11-32 11 32z" fill="#f6e8bd"/>
+ <rect x="785" y="205" width="14" height="209" rx="3"/><path d="M780 220h24l-5-11h-14z" fill="#f3e6cc"/><path d="M784 204l8-26 9 26z" fill="#fff5d9"/>
+</g>
+<!-- mosque main structure -->
+<g transform="translate(105 32)" stroke-linejoin="round">
+ <path d="M20 326H642V426H20Z" fill="url(#marble)" stroke="#e1d1aa" stroke-width="3"/>
+ <path d="M46 267H610V337H46Z" fill="#f9f6e8" stroke="#dbcbab" stroke-width="3"/>
+ <rect x="86" y="320" width="485" height="110" fill="#f8f3e5"/>
+ <g fill="#d2b988" opacity=".8">
+  <path d="M108 363a23 23 0 0146 0v63h-46z"/><path d="M172 363a23 23 0 0146 0v63h-46z"/><path d="M236 363a23 23 0 0146 0v63h-46z"/><path d="M300 363a23 23 0 0146 0v63h-46z"/><path d="M364 363a23 23 0 0146 0v63h-46z"/><path d="M428 363a23 23 0 0146 0v63h-46z"/><path d="M492 363a23 23 0 0146 0v63h-46z"/>
+ </g>
+ <g fill="#fdfbf2">
+  <path d="M112 368a19 19 0 0138 0v58h-38z"/><path d="M176 368a19 19 0 0138 0v58h-38z"/><path d="M240 368a19 19 0 0138 0v58h-38z"/><path d="M304 368a19 19 0 0138 0v58h-38z"/><path d="M368 368a19 19 0 0138 0v58h-38z"/><path d="M432 368a19 19 0 0138 0v58h-38z"/><path d="M496 368a19 19 0 0138 0v58h-38z"/>
+ </g>
+ <!-- central dome -->
+ <path d="M206 267c3-79 50-134 129-159 77 26 121 82 125 159Z" fill="url(#dome)" stroke="#cfb581" stroke-width="3"/>
+ <path d="M326 109q13-30 9-48" stroke="#b99550" stroke-width="4" fill="none"/>
+ <path d="M326 65q14-5 22-21" stroke="#bb9547" stroke-width="4" fill="none"/>
+ <circle cx="336" cy="44" r="7" fill="#e9b646"/>
+ <path d="M207 267h254v13H207z" fill="#d1b67d"/>
+ <path d="M275 267q6-79 60-141" stroke="#eae0ca" stroke-width="4" opacity=".63" fill="none"/>
+ <path d="M394 267q-9-83-59-141" stroke="#bfac86" stroke-width="3" opacity=".34" fill="none"/>
+ <!-- left smaller dome -->
+ <path d="M53 268c3-51 32-79 82-99 46 18 70 46 75 99Z" fill="#f5edd9" stroke="#d2b782" stroke-width="3"/>
+ <path d="M134 171v-24" stroke="#b9924e" stroke-width="3"/><circle cx="134" cy="144" r="5" fill="#e2b344"/>
+ <!-- right smaller dome -->
+ <path d="M460 268c3-45 31-73 76-88 41 15 67 43 71 88Z" fill="#e7e7d7" stroke="#b9b58b" stroke-width="3"/>
+ <path d="M533 181v-21" stroke="#b9924e" stroke-width="3"/><circle cx="533" cy="157" r="5" fill="#e2b344"/>
+ <!-- minaret left -->
+ <rect x="4" y="57" width="34" height="276" rx="5" fill="url(#marble)" stroke="#d7bd8a" stroke-width="2"/>
+ <path d="M-3 98h49l-9-14H6zM-3 174h49l-9-14H6zM-3 253h49l-9-14H6z" fill="#e5ca94" stroke="#cbab72" stroke-width="1"/>
+ <path d="M8 57l13-39 13 39z" fill="#f6e8c4" stroke="#c6a05b" stroke-width="2"/><path d="M21 18V4" stroke="#b38a45" stroke-width="3"/>
+ <g fill="#c5a777"><rect x="14" y="113" width="14" height="25" rx="7"/><rect x="14" y="195" width="14" height="24" rx="7"/></g>
+ <!-- minaret right -->
+ <rect x="620" y="88" width="32" height="245" rx="4" fill="url(#marble)" stroke="#d7bd8a" stroke-width="2"/>
+ <path d="M612 132h48l-8-14h-32zM612 205h48l-8-14h-32zM612 270h48l-8-14h-32z" fill="#edd39c" stroke="#caaa71" stroke-width="1"/>
+ <path d="M625 88l11-36 11 36z" fill="#f8ebc8" stroke="#c6a05b" stroke-width="2"/><path d="M636 52V38" stroke="#b38a45" stroke-width="3"/>
+ <g fill="#c8aa76"><rect x="631" y="146" width="10" height="23" rx="5"/><rect x="631" y="218" width="10" height="23" rx="5"/></g>
+</g>
+<!-- trees and layered palms -->
+<g stroke-linecap="round">
+ <path d="M16 470Q72 357 61 257" stroke="#816b3b" stroke-width="17" fill="none"/>
+ <g fill="url(#leaf)" opacity=".96">
+  <path d="M62 251Q15 182-48 169Q27 164 66 243Z"/><path d="M62 252Q17 210-15 244Q7 201 63 249Z"/>
+  <path d="M62 248Q64 170 125 128Q95 182 69 248Z"/><path d="M61 250Q113 176 197 198Q112 203 67 255Z"/>
+  <path d="M60 252Q101 236 147 298Q95 270 59 259Z"/>
+ </g>
+ <path d="M777 470Q783 407 821 352" stroke="#927d44" stroke-width="9" fill="none" opacity=".8"/>
+ <g fill="#568b6b" opacity=".65"><path d="M821 353Q755 332 732 299Q787 309 823 352Z"/><path d="M820 353Q831 290 870 286Q841 313 820 353Z"/><path d="M816 366Q782 378 756 419Q769 378 816 366Z"/></g>
+</g>
+<g fill="url(#leaf)" opacity=".94">
+ <path d="M0 470v-97q48 7 65 49 22-42 50-44 1 46-28 92z"/>
+ <path d="M603 470q24-61 67-64 3 45-18 64z"/>
+ <path d="M690 470q48-68 91-66-8 53-35 66z"/>
+</g>
+<path d="M0 458Q234 432 407 460t337 0" fill="none" stroke="#d5b568" stroke-width="9" opacity=".45"/>
+<rect width="1600" height="470" fill="url(#light)" opacity=".07"/>
+</svg>

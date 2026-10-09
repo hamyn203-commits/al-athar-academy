@@ -7292,3 +7292,211 @@
     transition: none;
   }
 }
+
+
+/* T19 — Calm, illustrated admin first screen; detailed operations continue on scroll */
+.wn-admin-welcome--illustrated {
+  isolation: isolate;
+  min-height: 270px;
+  margin-bottom: 1.05rem;
+  align-items: center;
+  padding: clamp(1.35rem, 3.5vw, 2.25rem);
+  border: 1px solid rgba(194, 160, 85, .28);
+  border-radius: 24px;
+  background-color: #e8f5f8;
+  background-image:
+    linear-gradient(270deg, rgba(255,255,255,.99) 0%, rgba(255,255,255,.97) 32%, rgba(255,255,255,.78) 51%, rgba(255,255,255,.07) 87%),
+    url('/images/admin-mosque-hero.svg');
+  background-size: cover;
+  background-position: center;
+  box-shadow: 0 22px 52px -43px rgba(6, 45, 47, .44);
+}
+.wn-admin-welcome--illustrated::before { display: none; }
+.wn-admin-welcome--illustrated .wn-admin-welcome__copy {
+  width: min(100%, 620px);
+}
+.wn-admin-welcome--illustrated .wn-admin-welcome__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  width: fit-content;
+  padding: .4rem .7rem;
+  border: 1px solid rgba(20, 112, 80, .12);
+  border-radius: 99px;
+  background: rgba(255, 255, 255, .78);
+  color: #08724e;
+  font-size: .78rem;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+.wn-admin-welcome--illustrated .wn-admin-welcome__copy h1 {
+  margin-top: .8rem;
+  max-width: 620px;
+  color: #071a33;
+  font-size: clamp(1.6rem, 2.65vw, 2.35rem);
+  font-weight: 850;
+  line-height: 1.45;
+  letter-spacing: -.025em;
+}
+.wn-admin-welcome--illustrated .wn-admin-welcome__copy h1 em {
+  color: #08724e;
+  font-style: normal;
+}
+.wn-admin-welcome--illustrated .wn-admin-welcome__copy p {
+  max-width: 505px;
+  margin-top: .4rem;
+  color: #3b5366;
+  font-size: clamp(.87rem, 1.15vw, 1rem);
+  line-height: 1.95;
+}
+.wn-admin-welcome__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .7rem;
+  margin-top: 1.15rem;
+}
+.wn-admin-welcome__actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  min-height: 44px;
+  padding: .65rem 1.05rem;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  font-size: .85rem;
+  font-weight: 800;
+  transition: background .16s ease, box-shadow .16s ease, border-color .16s ease;
+}
+.wn-admin-welcome__actions button:focus-visible,
+.wn-admin-welcome__scroll:focus-visible {
+  outline: 3px solid #b98420;
+  outline-offset: 3px;
+}
+.wn-admin-welcome__actions button.is-primary {
+  background: #071a33;
+  color: #fff;
+  box-shadow: 0 9px 25px -18px rgba(7, 26, 51, .82);
+}
+.wn-admin-welcome__actions button.is-primary:hover { background: #123b52; }
+.wn-admin-welcome__actions button.is-secondary {
+  background: rgba(255,255,255,.89);
+  color: #0a6046;
+  border-color: rgba(10,96,70,.25);
+}
+.wn-admin-welcome__actions button.is-secondary:hover {
+  background: #eefaf4;
+  border-color: rgba(10,96,70,.42);
+}
+.wn-admin-welcome__scroll {
+  position: absolute;
+  z-index: 2;
+  inset-inline-end: 1rem;
+  bottom: .9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .45rem .62rem;
+  border: 1px solid rgba(8, 93, 67, .12);
+  border-radius: 99px;
+  background: rgba(255,255,255,.87);
+  color: #07563e;
+  text-decoration: none;
+  font-size: .73rem;
+  font-weight: 750;
+}
+.wn-admin-welcome__scroll:hover { background: #fff; color: #071a33; }
+.wn-admin-page-heading {
+  margin-bottom: 1rem;
+  padding: 1rem 1.2rem;
+  border: 1px solid rgba(12,39,73,.09);
+  border-radius: 16px;
+  background: #fff;
+}
+.wn-admin-page-heading > span {
+  color: #96691e;
+  font-size: .75rem;
+  font-weight: 850;
+}
+.wn-admin-page-heading h1 {
+  margin-top: .25rem;
+  color: #071a33;
+  font-size: clamp(1.1rem, 2vw, 1.45rem);
+  font-weight: 850;
+}
+#admin-executive-content { scroll-margin-top: 86px; }
+.wn-admin-exec-home { gap: .95rem; }
+.wn-admin-exec-hero {
+  min-height: 0;
+  padding: .72rem 1rem;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 14px 38px -35px rgba(4,18,36,.55);
+}
+.wn-admin-exec-hero::after { display: none; }
+.wn-admin-exec-hero__copy > span { font-size: .7rem; }
+.wn-admin-exec-hero__copy h2 {
+  margin-top: .12rem;
+  font-size: 1rem;
+}
+.wn-admin-exec-hero__copy p { font-size: .79rem; }
+.wn-admin-exec-hero__status {
+  min-width: 230px;
+  padding: .5rem .75rem;
+}
+.wn-admin-exec-hero__status strong { font-size: .84rem; }
+.wn-admin-exec-hero__status small { font-size: .74rem; }
+.wn-admin-exec-metric__body > span { font-size: .8rem; color: #536179; }
+.wn-admin-exec-metric__body > small { font-size: .72rem; color: #647185; line-height: 1.6; }
+.wn-admin-exec-metric__badge { font-size: .61rem; }
+.wn-admin-exec-metric__body > strong { font-size: clamp(1.22rem, 1.6vw, 1.5rem); }
+.wn-admin-exec-panel__head > div > span,
+.wn-admin-exec-section-title > div > span { font-size: .7rem; }
+.wn-admin-exec-panel__head h3,
+.wn-admin-exec-section-title h3 { font-size: 1.02rem; }
+.wn-admin-exec-panel__head p,
+.wn-admin-exec-section-title p { font-size: .79rem; line-height: 1.65; }
+.wn-admin-exec-section-title > button { font-size: .8rem; min-height: 40px; }
+.wn-admin-topbar__date { font-size: .72rem; }
+.wn-admin-topbar__locale { font-size: .75rem; }
+
+@media (max-width: 1180px) {
+  .wn-admin-welcome--illustrated {
+    min-height: 255px;
+    background-image:
+      linear-gradient(270deg, rgba(255,255,255,.98), rgba(255,255,255,.94) 46%, rgba(255,255,255,.34) 100%),
+      url('/images/admin-mosque-hero.svg');
+  }
+  .wn-admin-exec-metrics { grid-template-columns: repeat(3, minmax(0,1fr)); }
+}
+@media (max-width: 900px) {
+  .wn-admin-welcome--illustrated {
+    min-height: 275px;
+    background-position: 28% center;
+  }
+  .wn-admin-exec-metrics { grid-template-columns: repeat(2, minmax(0,1fr)); }
+}
+@media (max-width: 640px) {
+  .wn-admin-welcome--illustrated {
+    min-height: 310px;
+    padding: 1.2rem 1.05rem 3rem;
+    background-image:
+      linear-gradient(270deg, rgba(255,255,255,.98), rgba(255,255,255,.92) 68%, rgba(255,255,255,.62)),
+      url('/images/admin-mosque-hero.svg');
+    background-position: 32% center;
+    border-radius: 18px;
+  }
+  .wn-admin-welcome--illustrated .wn-admin-welcome__copy h1 { font-size: 1.45rem; }
+  .wn-admin-welcome--illustrated .wn-admin-welcome__copy p { font-size: .86rem; line-height: 1.8; }
+  .wn-admin-welcome__actions { gap: .45rem; }
+  .wn-admin-welcome__actions button { flex: 1 1 130px; padding: .65rem .5rem; font-size: .78rem; }
+  .wn-admin-welcome__scroll { inset-inline-end: .85rem; bottom: .65rem; font-size: .68rem; }
+  .wn-admin-exec-metrics { grid-template-columns: 1fr; }
+  .wn-admin-exec-hero { flex-direction: column; align-items: stretch; }
+  .wn-admin-exec-hero__status { min-width: 0; }
+  .wn-admin-page-heading { padding: .85rem 1rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wn-admin-welcome__actions button { transition: none; }
+}

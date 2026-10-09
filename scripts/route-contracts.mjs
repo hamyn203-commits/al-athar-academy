@@ -235,6 +235,18 @@ assert.match(adminDashboardShell, /wn-admin-topbar/);
 assert.match(adminDashboardShell, /مركز القيادة/);
 assert.match(adminDashboardShell, /السحوبات والمالية/);
 assert.match(adminDashboardShell, /التحليلات والنمو/);
+// T19 — Illustrated first screen with navigable actions and scrolled detail.
+assert.match(adminDashboardShell, /wn-admin-welcome--illustrated/);
+assert.match(adminDashboardShell, /active === 'overview'/);
+assert.match(adminDashboardShell, /wn-admin-page-heading/);
+assert.match(adminDashboardShell, /href="#admin-executive-content"/);
+assert.match(adminExecutiveHome, /id="admin-executive-content"/);
+assert.ok(fs.existsSync(path.join(root, 'public/images/admin-mosque-hero.svg')));
+assert.ok(
+  adminExecutiveHome.indexOf('className="wn-admin-exec-quick-actions"')
+    < adminExecutiveHome.indexOf('className="wn-admin-exec-hero"'),
+  'Quick admin actions should appear before the detailed operational summary'
+);
 assert.match(adminDashboardShell, /wn-admin-topbar__sidebar-toggle/);
 assert.match(adminDashboardShell, /is-sidebar-collapsed/);
 assert.match(adminDashboardShell, /wn-admin-sidebar-collapsed/);
