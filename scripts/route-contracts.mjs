@@ -194,7 +194,7 @@ assert.match(plansPage, /الحلقة الاقتصادية الكبرى/);
 assert.match(plansPage, /من 10 إلى 15 طالب/);
 assert.match(plansPage, /الحلقة الجماعية/);
 assert.match(plansPage, /من 5 إلى 10 طلاب/);
-assert.match(plansPage, /القسم النسائي/);
+assert.match(plansPage, /قسم السيدات/);
 assert.match(plansPage, /من ساعة إلى ساعتين/);
 assert.match(plansPage, /ساعة ونصف/);
 assert.match(plansPage, /ساعة أو أقل/);
