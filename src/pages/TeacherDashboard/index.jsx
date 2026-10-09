@@ -66,6 +66,9 @@ export default function TeacherDashboard() {
   const [evalModal, setEvalModal] = useState(null);
   const [evaluation, setEvaluation] = useState(emptyEval);
   const [homeworkList, setHomeworkList] = useState([]);
+  const [attendanceModal, setAttendanceModal] = useState(null);
+  const [attendanceDraft, setAttendanceDraft] = useState({});
+  const [savingAttendance, setSavingAttendance] = useState(false);
 
   const [taskModal, setTaskModal] = useState(false);
   const [newTask, setNewTask] = useState({ studentId: '', type: 'memorization', title: '', description: '', dueDate: '' });
