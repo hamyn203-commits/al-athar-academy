@@ -425,6 +425,17 @@ router.post('/subscription/:id/manual', protect, authorize('student'), async (re
   }
 
   if (
+    subscription.renewalOf
+    && subscription.preferredTeacher
+    && String(subscription.preferredTeacher) !== String(teacher._id)
+  ) {
+    return res.status(409).json({
+      error: 'التجديد مرتبط بنفس المعلم والجروب الحاليين',
+      code: 'RENEWAL_TEACHER_LOCKED',
+    });
+  }
+
+  if (
     subscription.section === 'ladies'
     && teacher.personalInfo?.gender
     && teacher.personalInfo.gender !== 'female'
