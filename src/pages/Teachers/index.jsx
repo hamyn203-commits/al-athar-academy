@@ -398,7 +398,7 @@ export default function Teachers() {
                 <h3>{pagination.total === 0 ? active.noTutors : active.noTutorsMatched}</h3>
                 <p>{pagination.total === 0 ? (isAr ? 'لم تُنشر ملفات معلمين متاحة حاليًا. يمكنك العودة لاحقًا أو التقديم كمعلم.' : 'No teacher profiles are currently published. You can return later or apply as a teacher.') : active.tryChanging}</p>
                 {pagination.total === 0 ? (
-                  <Link to={lp('/teacher/register')} className="wn-btn wn-btn--primary mt-4">
+                  <Link to={lp('/register/teacher')} className="wn-btn wn-btn--primary mt-4">
                     {active.registerTeacher}
                   </Link>
                 ) : null}
