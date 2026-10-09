@@ -13,7 +13,7 @@ export async function login(page, email) {
   await page.goto('/ar/login');
   await page.locator('#login-email').fill(email);
   await page.locator('#login-password').fill(E2E_PASSWORD);
-  await page.locator('form').getByRole('button', { name: 'تسجيل الدخول' }).click();
+  await page.locator('form button[type="submit"]').click();
   await expect(page).toHaveURL(/\/ar\/(student|teacher)\/dashboard/);
 }
 
