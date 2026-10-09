@@ -696,6 +696,41 @@ requireContains(
   'group circles must allow the approved 15-student economic plan capacity',
   /capacity:[\s\S]{0,100}max:\s*15/
 );
+requireContains(
+  'backend/routes/payments.js',
+  'subscription manual payment must derive amount from the stored subscription quote',
+  /kind:\s*['"]subscription['"][\s\S]{0,900}amountMinor:\s*subscription\.totalAmountMinor[\s\S]{0,120}currency:\s*subscription\.currency/
+);
+requireAbsent(
+  'backend/routes/payments.js',
+  'subscription manual payment must never trust a client supplied amount',
+  /subscription\/:id\/manual[\s\S]{0,2600}(?:req\.body\.(?:amount|amountMinor|price)|amountMinor:\s*req\.body)/
+);
+requireContains(
+  'backend/routes/payments.js',
+  'subscription payment proof must remain owner scoped',
+  /subscription\/:id\/manual[\s\S]{0,1600}isOwnedObjectReference\([\s\S]{0,180}['"]payment-proof['"][\s\S]{0,120}req\.user\.id/
+);
+requireContains(
+  'backend/services/manualPaymentSettlement.js',
+  'approved subscription payments must move to placement instead of direct activation',
+  /payment\.kind\s*===\s*['"]subscription['"][\s\S]{0,700}subscription\.status\s*=\s*['"]awaiting_placement['"]/
+);
+requireContains(
+  'backend/routes/subscriptions.js',
+  'subscription placement must remain admin-only',
+  /router\.post\(['"]\/admin\/:id\/place['"],\s*protect,\s*authorize\(['"]admin['"]\)/
+);
+requireContains(
+  'backend/services/subscriptionPlacement.js',
+  'placement must use the student preferred teacher',
+  /subscription\.preferredTeacher[\s\S]{0,1000}Teacher\.findOne\([\s\S]{0,260}_id:\s*subscription\.preferredTeacher/
+);
+requireContains(
+  'backend/services/subscriptionPlacement.js',
+  'group activation must obey the selected plan minimum',
+  /circle\.students\.length\s*>=\s*plan\.minStudents/
+);
 
 // T07.2d: manual transfer approval must remain private, admin-only and transactional.
 requireContains(
