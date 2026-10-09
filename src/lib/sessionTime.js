@@ -22,3 +22,28 @@ export function sessionJoinWindow(session, now = Date.now()) {
     closesAt: new Date(closesAtMs),
   };
 }
+
+
+export function sessionTimeZone(session, fallback = 'Africa/Cairo') {
+  const candidate = String(
+    session?.timezone
+    || session?.teacher?.availabilityTimezone
+    || fallback
+  ).trim();
+
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: candidate }).format(new Date());
+    return candidate;
+  } catch {
+    return fallback;
+  }
+}
+
+export function formatSessionDateTime(session, locale = 'ar-EG', options = {}) {
+  const date = new Date(session?.scheduledAt || 0);
+  if (Number.isNaN(date.getTime())) return '—';
+  return new Intl.DateTimeFormat(locale, {
+    timeZone: sessionTimeZone(session),
+    ...options,
+  }).format(date);
+}
