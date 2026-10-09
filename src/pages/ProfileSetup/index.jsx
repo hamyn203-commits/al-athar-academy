@@ -4,7 +4,6 @@ import { useRequireAuth } from '../../hooks/useRequireAuth';
 import { useI18n } from '../../i18n';
 import { dashboardPathForRole, isSafeInternalRedirect } from '../../lib/navigation';
 import { useAuth } from '../../hooks/useAuth.jsx';
-import api from '../../lib/api';
 
 export default function ProfileSetup() {
   const { user, ready } = useRequireAuth(['student', 'guardian', 'teacher']);
@@ -19,6 +18,14 @@ export default function ProfileSetup() {
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   useEffect(() => { if (user) setData(prev => ({ ...prev, ...Object.fromEntries(Object.keys(prev).filter(k => user[k] !== undefined && user[k] !== null).map(k => [k, user[k]])) })); }, [user]);
+  useEffect(() => {
+    // A returning student with a completed profile should not be asked to fill it again.
+    if (!ready || user?.role !== 'student' || !user?.onboarding?.completed ||
+        !user?.name?.trim() || !user?.phone?.trim() || !isSafeInternalRedirect(next)) return;
+    if (new URL(next, 'https://wahy.local').pathname.endsWith('/journey')) {
+      navigate(next, { replace: true, state: { profileJustSaved: true } });
+    }
+  }, [ready, user, next, navigate]);
   if (!ready) return null;
   const save = async (event) => {
     event.preventDefault();
@@ -29,11 +36,8 @@ export default function ProfileSetup() {
       if (user.role === 'student') payload.guardianContact = data.guardianContact;
       const saved = await saveOnboarding(payload);
       if (!saved.onboarding?.completed) throw new Error('لم تكتمل البيانات بعد، تحقق من الحقول المطلوبة');
-      // Verify persistence before navigation: never enter a redirect loop on stale data.
-      const confirmed = await api.get('/api/auth/me', { auth: true });
-      if (!confirmed?.user?.onboarding?.completed) {
-        throw new Error('تعذر تأكيد حفظ الملف على السيرفر. حاول مرة أخرى.');
-      }
+      // The authenticated PATCH response is the server's confirmation of persistence.
+      // A second GET can be served from an older edge/browser cache and cause an endless loop.
       navigate(destination, { replace: true, state: { profileJustSaved: true } });
     } catch (e) { setError(e.message || 'تعذر حفظ بياناتك، تأكد من رقم الهاتف وباقي الحقول.'); window.scrollTo({ top: 0, behavior: 'smooth' }); } finally { setSaving(false); }
   };

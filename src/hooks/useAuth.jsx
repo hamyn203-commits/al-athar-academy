@@ -46,7 +46,7 @@ export function AuthProvider({ children }) {
 
       try {
         await refreshAccessToken();
-        const data = await api.get('/api/auth/me', { auth: true });
+        const data = await api.get('/api/auth/me?fresh=' + Date.now(), { auth: true });
 
         if (!cancelled) {
           setUser(data.user || null);
@@ -143,7 +143,7 @@ export function AuthProvider({ children }) {
   }, [saveAuthenticatedSession]);
 
   const refreshUser = useCallback(async () => {
-    const data = await api.get('/api/auth/me', { auth: true });
+    const data = await api.get('/api/auth/me?fresh=' + Date.now(), { auth: true });
     setUser(data.user);
     return data.user;
   }, []);
