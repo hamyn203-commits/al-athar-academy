@@ -178,6 +178,8 @@ assert.match(studentDashboard, /بانتظار مراجعة الإدارة/);
 assert.match(studentDashboard, /الدفع معتمد — بانتظار التسكين/);
 assert.match(studentDashboard, /تم التسكين — الجروب قيد الاكتمال/);
 assert.match(studentDashboard, /sessionsRemaining/);
+assert.match(studentDashboard, /group_circle/);
+assert.match(studentDashboard, /حلقة جماعية/);
 assert.match(studentDashboard, /اشتراك/);
 assert.match(studentDashboard, /navigate\(lp\(['"]\/plans['"]\)\)/);
 assert.match(studentDashboard, /تجريبيات متبقية/);
@@ -190,9 +192,15 @@ const studentDashboardRoutes = read('backend/routes/studentDashboard.js');
 assert.match(sessionModel, /teacherEvaluation:[\s\S]{0,500}surahRecited:[\s\S]{0,220}nextHomework:/);
 assert.match(sessionRoutes, /MAX_TRIAL_SESSIONS_PER_STUDENT\s*=\s*3/);
 assert.match(sessionRoutes, /TRIAL_LIMIT_REACHED/);
+assert.match(sessionRoutes, /router\.post\(['"]\/group-circle['"]/);
+assert.match(sessionRoutes, /settleSubscriptionUsageForSession/);
+assert.match(sessionRoutes, /calculateSessionEarning/);
+assert.match(sessionRoutes, /['"]attendance\.student['"]:\s*req\.user\.id/);
 assert.match(sessionRoutes, /trialAllowance:[\s\S]{0,180}remaining/);
 assert.match(studentDashboardRoutes, /trialAllowance:[\s\S]{0,180}remaining/);
 assert.match(teacherDashboard, /الحصص المكتملة وتقاريرها/);
+assert.match(teacherDashboard, /completeGroupSession/);
+assert.match(teacherDashboard, /إنهاء الحصة الجماعية/);
 assert.match(teacherDashboard, /role="radiogroup"/);
 assert.match(teacherDashboard, /surahRecited:\s*evaluation\.surahRecited/);
 
@@ -263,6 +271,9 @@ assert.match(adminSubscriptions, /\/api\/subscriptions\/admin\/placements/);
 assert.match(adminSubscriptions, /\/api\/subscriptions\/admin\/'\s*\+\s*encodeURIComponent\(item\._id\)\s*\+\s*'\/place/);
 assert.match(adminSubscriptions, /جروب موجود/);
 assert.match(adminSubscriptions, /جروب جديد/);
+assert.match(adminSubscriptions, /\/api\/sessions\/group-circle/);
+assert.match(adminSubscriptions, /جدولة حصة الجروب/);
+assert.match(adminSubscriptions, /durationOptionsFor/);
 
 
 const adminDashboard = read('src/pages/AdminDashboard/index.jsx');
