@@ -15,6 +15,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import BrandLogo from '../../components/BrandLogo';
+import GoogleSignIn from '../../components/GoogleSignIn';
 import { useI18n } from '../../i18n';
 import { localizedPath } from '../../lib/locale';
 import { postAuthDestination } from '../../lib/navigation';
@@ -182,6 +183,7 @@ export default function Login() {
             )}
             {error && <div className="wn-public-error" role="alert">{error}</div>}
 
+            <GoogleSignIn context="signin" />
             <form onSubmit={handleSubmit} className="grid gap-4">
               <div className="wn-field">
                 <label htmlFor="login-email">{isAr ? 'البريد الإلكتروني' : 'Email'}</label>
