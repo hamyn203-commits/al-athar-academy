@@ -117,7 +117,7 @@ export default function StudentJourney() {
           </div>}
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {teachers.map(teacher => <div key={teacher._id} className="bg-white rounded-2xl border border-slate-200 p-5">
-              <img src={teacherPublicImage(teacher) || teacherImageFallback} alt="" className="w-20 h-20 rounded-full object-cover mb-3" onError={e=>{e.currentTarget.style.display='none';}}/>
+              <img src={teacherPublicImage(teacher.media?.profilePhoto || teacher.user?.avatar)} alt="" className="w-20 h-20 rounded-full object-cover mb-3" onError={teacherImageFallback}/>
               <h3 className="text-lg font-bold">{teacher.personalInfo?.fullName || teacher.user?.name || (isAr ? 'معلم القرآن الكريم' : 'Quran tutor')}</h3>
               <p className="text-sm text-slate-600 mt-2">{(teacher.quranInfo?.specializations || []).join(' • ')}</p>
               <p className="text-sm text-slate-600 mt-1">{isAr ? 'خبرة تعليمية:' : 'Experience:'} {teacher.quranInfo?.teachingExperience ?? '—'}</p>
