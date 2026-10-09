@@ -69,17 +69,6 @@ const StudentSubscriptionSchema = new mongoose.Schema({
     default: null,
     index: true,
   },
-  renewalOf: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'StudentSubscription',
-    default: null,
-    index: true,
-  },
-  preferredCircle: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'GroupCircle',
-    default: null,
-  },
   circle: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'GroupCircle',
