@@ -91,6 +91,20 @@ router.post('/select', protect, authorize('student'), async (req, res) => {
       });
     }
 
+    const existingOpen = await StudentSubscription.findOne({
+      student: req.user.id,
+      status: { $in: ['payment_review', 'awaiting_placement', 'placed', 'active', 'paused'] },
+    }).select('_id status');
+
+    if (existingOpen) {
+      return res.status(409).json({
+        error: 'لديك اشتراك قائم بالفعل. أكمل مراجعته أو تسكينه قبل إنشاء اشتراك جديد.',
+        code: 'SUBSCRIPTION_ALREADY_OPEN',
+        subscriptionId: String(existingOpen._id),
+        status: existingOpen.status,
+      });
+    }
+
     const { plan } = quote;
     const update = {
       planKey: plan.key,
