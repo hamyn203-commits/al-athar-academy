@@ -1613,6 +1613,14 @@ export default function StudentDashboard() {
                   <p className="text-center text-gray-500 py-8">{locale === 'id' ? 'Belum ada evaluasi — akan muncul setelah kelas selesai' : locale === 'ar' ? 'لا تقييمات بعد — ستظهر بعد إكمال حصة' : 'No evaluations yet — they will appear after completing a session'}</p>
                 ) : evaluations.map((s) => {
                   const ev = s.teacherEvaluation || {};
+                  const legacyReport = (s.studentReports || []).find((report) => (
+                    !report.student || String(report.student?._id || report.student) === String(user?._id || user?.id)
+                  )) || {};
+                  const reportSurah = ev.surahRecited || legacyReport.surahRecited;
+                  const reportFromAyah = ev.fromAyah || legacyReport.fromAyah;
+                  const reportToAyah = ev.toAyah || legacyReport.toAyah;
+                  const reportNextHomework = ev.nextHomework || legacyReport.nextHomework;
+                  const reportNotes = ev.overallNotes || legacyReport.notes;
                   return (
                     <div key={s._id} className="border rounded-xl p-5">
                       <div className="flex justify-between items-start mb-3">
@@ -1644,23 +1652,23 @@ export default function StudentDashboard() {
                           </div>
                         ))}
                       </div>
-                      {(ev.surahRecited || ev.fromAyah || ev.toAyah || ev.nextHomework || ev.overallNotes) && (
+                      {(reportSurah || reportFromAyah || reportToAyah || reportNextHomework || reportNotes) && (
                         <div className="mt-3 rounded-xl border border-emerald-100 bg-emerald-50/60 p-4 text-sm text-slate-700">
                           <p className="mb-2 font-bold text-emerald-900">{locale === 'ar' ? 'تقرير الحصة' : 'Session report'}</p>
-                          {ev.surahRecited ? (
-                            <p><strong>{locale === 'ar' ? 'السورة / المقطع:' : 'Surah / passage:'}</strong> {ev.surahRecited}</p>
+                          {reportSurah ? (
+                            <p><strong>{locale === 'ar' ? 'السورة / المقطع:' : 'Surah / passage:'}</strong> {reportSurah}</p>
                           ) : null}
-                          {(ev.fromAyah || ev.toAyah) ? (
+                          {(reportFromAyah || reportToAyah) ? (
                             <p>
                               <strong>{locale === 'ar' ? 'الآيات:' : 'Ayahs:'}</strong>{' '}
-                              {ev.fromAyah || '—'} {locale === 'ar' ? 'إلى' : 'to'} {ev.toAyah || '—'}
+                              {reportFromAyah || '—'} {locale === 'ar' ? 'إلى' : 'to'} {reportToAyah || '—'}
                             </p>
                           ) : null}
-                          {ev.nextHomework ? (
-                            <p><strong>{locale === 'ar' ? 'الهدف / الواجب القادم:' : 'Next goal / homework:'}</strong> {ev.nextHomework}</p>
+                          {reportNextHomework ? (
+                            <p><strong>{locale === 'ar' ? 'الهدف / الواجب القادم:' : 'Next goal / homework:'}</strong> {reportNextHomework}</p>
                           ) : null}
-                          {ev.overallNotes ? (
-                            <p><strong>{locale === 'ar' ? 'ملاحظات المعلم:' : 'Tutor notes:'}</strong> {ev.overallNotes}</p>
+                          {reportNotes ? (
+                            <p><strong>{locale === 'ar' ? 'ملاحظات المعلم:' : 'Tutor notes:'}</strong> {reportNotes}</p>
                           ) : null}
                         </div>
                       )}
