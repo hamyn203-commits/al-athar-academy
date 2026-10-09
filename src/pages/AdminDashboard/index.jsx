@@ -19,6 +19,9 @@ import Student360Dossier from './Student360Dossier';
 import Family360Dossier from './Family360Dossier';
 import AdminDashboardShell from './AdminDashboardShell';
 import AdminExecutiveHome from './AdminExecutiveHome';
+import AdminSessionControl from './AdminSessionControl';
+import AdminGuardianLinksPanel from './AdminGuardianLinksPanel';
+import LaunchReadinessPanel from './LaunchReadinessPanel';
 
 const STATUS_LABEL = { new: 'جديدة', read: 'مقروءة', replied: 'تم الرد', closed: 'مغلقة' };
 const STATUS_COLOR = { new: 'bg-blue-100 text-blue-700', read: 'bg-gray-100', replied: 'bg-green-100 text-green-700', closed: 'bg-gray-200' };
@@ -34,6 +37,7 @@ export default function AdminDashboard() {
   const toast = useToast();
   const [tab, setTab] = useState('overview');
   const [loading, setLoading] = useState(true);
+  const focus = searchParams.get('focus') || '';
 
   const [stats, setStats] = useState({});
   const [pending, setPending] = useState([]);
@@ -168,7 +172,7 @@ export default function AdminDashboard() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      if (['overview', 'teachers', 'courses'].includes(tab)) await loadCore();
+      if (['overview', 'teachers', 'courses', 'system'].includes(tab)) await loadCore();
       if (tab === 'messages') await loadMessages();
       if (tab === 'courses') await loadCourses();
       if (tab === 'blog') await loadBlog();
@@ -186,7 +190,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const requestedTab = searchParams.get('tab');
-    const allowed = ['overview', 'people', 'messages', 'teachers', 'withdrawals', 'courses', 'blog', 'growth', 'audit'];
+    const allowed = ['overview', 'people', 'sessions', 'system', 'messages', 'teachers', 'withdrawals', 'courses', 'blog', 'growth', 'audit'];
     if (requestedTab && allowed.includes(requestedTab)) {
       setTab(requestedTab);
     }
@@ -484,6 +488,14 @@ export default function AdminDashboard() {
     'الاشتراكات': e.count
   }));
 
+  const selectAdminTab = (nextTab, nextFocus = '') => {
+    setTab(nextTab);
+    const query = new URLSearchParams();
+    query.set('tab', nextTab);
+    if (nextFocus) query.set('focus', nextFocus);
+    navigate(`/admin?${query.toString()}`);
+  };
+
   const adminSearch = (
     <AdminPeopleSearch
       onOpenStudent={openStudentDossier}
@@ -497,7 +509,7 @@ export default function AdminDashboard() {
     <AdminDashboardShell
       user={user}
       active={tab}
-      onChange={setTab}
+      onChange={selectAdminTab}
       onNavigate={navigate}
       onLogout={logout}
       search={adminSearch}
@@ -517,12 +529,16 @@ export default function AdminDashboard() {
               onRefreshTeachers={loadPendingTeachers}
               onOpenTeacher={openTeacherDossier}
               onNavigate={navigate}
-              onSelectTab={setTab}
+              onSelectTab={selectAdminTab}
             />
           )}
 
           {tab === 'people' && (
-            <section className="wn-admin-people-home">
+            <>
+              {focus === 'guardian-links' ? (
+                <AdminGuardianLinksPanel onOpenStudent={openStudentDossier} />
+              ) : null}
+              <section className="wn-admin-people-home">
               <div className="wn-admin-people-home__intro">
                 <span>STUDENT & FAMILY INTELLIGENCE</span>
                 <h2>الطلاب والأسر من نقطة واحدة</h2>
@@ -546,6 +562,43 @@ export default function AdminDashboard() {
                 </div>
               </div>
             </section>
+            </>
+          )}
+
+          {tab === 'sessions' && (
+            <AdminSessionControl
+              initialFocus={['overdue', 'missing-reports'].includes(focus) ? focus : 'all'}
+              onOpenStudent={openStudentDossier}
+              onOpenTeacher={openTeacherDossier}
+              onFocusChange={(nextFocus) => selectAdminTab('sessions', nextFocus)}
+            />
+          )}
+
+          {tab === 'system' && (
+            <div className="wn-admin-system-center">
+              <section className="wn-admin-system-center__hero">
+                <div>
+                  <span>SYSTEM & LAUNCH CONTROL</span>
+                  <h2><MonitorPlay size={20} /> النظام وجاهزية الإطلاق</h2>
+                  <p>حالة الخدمات الأساسية وLaunch Readiness من مكان واحد.</p>
+                </div>
+                <strong>{health?.version ? `v${health.version}` : '—'}</strong>
+              </section>
+
+              {health ? (
+                <section className="wn-admin-system-center__features">
+                  {Object.entries(health.features || {}).map(([key, enabled]) => (
+                    <div key={key} className={enabled ? 'is-on' : 'is-off'}>
+                      <span>{enabled ? '✓' : '!'}</span>
+                      <strong>{key}</strong>
+                      <small>{enabled ? 'الخدمة متاحة' : 'تحتاج مراجعة'}</small>
+                    </div>
+                  ))}
+                </section>
+              ) : null}
+
+              <LaunchReadinessPanel />
+            </div>
           )}
 
           {tab === 'messages' && (
