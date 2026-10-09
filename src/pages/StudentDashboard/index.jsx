@@ -2061,6 +2061,11 @@ function SessionCard({ session, onReview, hasReviewed, onChat }) {
   const { locale } = useI18n();
   const teacherName = session.teacher?.user?.name || session.teacher?.personalInfo?.fullName || (locale === 'id' ? 'Guru' : locale === 'ar' ? 'المعلم' : 'Tutor');
   const isTrial = session.type === 'trial';
+  const isGroup = session.type === 'group_circle';
+  const durationMinutes = Number(session.duration || 60);
+  const durationLabel = locale === 'ar'
+    ? (durationMinutes === 120 ? 'ساعتان' : durationMinutes === 90 ? 'ساعة ونصف' : durationMinutes === 60 ? 'ساعة' : durationMinutes + ' دقيقة')
+    : (durationMinutes === 60 ? '1 hour' : durationMinutes + ' minutes');
   const joinWindow = session.status === 'accepted'
     ? (session.lifecycle
       ? { phase: session.lifecycle.joinPhase, within: session.lifecycle.joinOpen }
@@ -2077,11 +2082,17 @@ function SessionCard({ session, onReview, hasReviewed, onChat }) {
     <div className="border rounded-lg p-4 flex flex-wrap justify-between items-start gap-3">
       <div>
         <div className="flex items-center gap-2">
-          <h3 className="font-bold">{teacherName}</h3>
-          <span className="text-xs bg-slate-100 px-2 py-0.5 rounded">{isTrial ? (locale === 'id' ? 'Uji Coba' : 'تجريبية') : (locale === 'id' ? 'Reguler' : 'منتظمة')}</span>
+          <h3 className="font-bold">{isGroup ? (session.circle?.name || teacherName) : teacherName}</h3>
+          <span className="text-xs bg-slate-100 px-2 py-0.5 rounded">
+            {isTrial
+              ? (locale === 'id' ? 'Uji Coba' : 'تجريبية')
+              : isGroup
+                ? (locale === 'ar' ? 'حلقة جماعية' : 'Group circle')
+                : (locale === 'id' ? 'Reguler' : 'منتظمة')}
+          </span>
         </div>
         <p className="text-sm text-gray-600 flex items-center gap-1 mt-1">
-          <Clock size={14} /> {formatSessionDateTime(session, locale === 'id' ? 'id-ID' : locale === 'ar' ? 'ar-EG' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' })} — {locale === 'id' ? '1 Jam' : locale === 'ar' ? 'ساعة' : '1 Hour'} · {sessionTimeZone(session)}
+          <Clock size={14} /> {formatSessionDateTime(session, locale === 'id' ? 'id-ID' : locale === 'ar' ? 'ar-EG' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' })} — {durationLabel} · {sessionTimeZone(session)}
         </p>
         <span className={`text-xs px-2 py-0.5 rounded mt-1 inline-block ${
           session.status === 'accepted' ? 'bg-green-100 text-green-700'
