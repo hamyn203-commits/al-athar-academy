@@ -48,8 +48,8 @@ export default function AdminPayments() {
         action === 'approve'
           ? (result.renewalQueued
               ? 'تم اعتماد التجديد. سيبدأ تلقائيًا بعد انتهاء الرصيد الحالي.'
-              : result.autoPlaced
-                ? 'تم اعتماد التجديد وإعادته تلقائيًا إلى نفس الجروب.'
+              : (result.autoPlaced || result.renewalActivated)
+                ? 'تم اعتماد التجديد وتفعيله تلقائيًا مع نفس الجروب والمعلم.'
                 : result.awaitingPlacement
                   ? 'تم تأكيد الدفع. الطلب الآن بانتظار التسكين مع المعلم المختار.'
                   : 'تم تأكيد الدفع بنجاح.')
