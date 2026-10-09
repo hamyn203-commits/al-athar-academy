@@ -6,7 +6,7 @@ import { postAuthDestination } from '../lib/navigation';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
-export default function GoogleSignIn({ context = 'signin' }) {
+export default function GoogleSignIn({ context = 'signin', role = 'student' }) {
   const buttonRef = useRef(null);
   const [error, setError] = useState('');
   const { googleLogin } = useAuth();
@@ -28,7 +28,7 @@ export default function GoogleSignIn({ context = 'signin' }) {
         auto_select: false,
         callback: async (response) => {
           if (!active || !response?.credential) return;
-          const result = await googleLogin(response.credential);
+          const result = await googleLogin(response.credential, role);
           if (!active) return;
           if (!result.success) return setError(result.error || 'Google sign-in failed');
           navigate(postAuthDestination({
@@ -56,7 +56,7 @@ export default function GoogleSignIn({ context = 'signin' }) {
     script.addEventListener('load', start);
     if (window.google?.accounts?.id) start();
     return () => { active = false; script?.removeEventListener('load', start); };
-  }, [context, googleLogin, locale, navigate, searchParams]);
+  }, [context, googleLogin, locale, navigate, searchParams, role]);
 
   if (!GOOGLE_CLIENT_ID) return null;
   return (
