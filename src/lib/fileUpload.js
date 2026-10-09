@@ -41,7 +41,12 @@ export async function uploadFileDirect(file, purpose, options = {}) {
   if (!owner && phoneVerificationToken) owner = decodeJwt(phoneVerificationToken).phone || '';
   if (!owner) throw new Error('Upload authorization is missing');
 
-  const pathname = `uploads/${sanitizeSegment(purpose)}/${sanitizeSegment(owner)}/${Date.now()}-${sanitizeSegment(file.name || 'file')}`;
+  // Parallel uploads can share the same millisecond and filename (for example
+  // intro/recitation/method videos). Include an explicit nonce so each object
+  // gets a unique key even when uploads start at the same time.
+  const nonce = globalThis.crypto?.randomUUID?.()
+    || `${Math.random().toString(36).slice(2)}-${performance.now?.().toString().replace('.', '-') || '0'}`;
+  const pathname = `uploads/${sanitizeSegment(purpose)}/${sanitizeSegment(owner)}/${Date.now()}-${sanitizeSegment(nonce)}-${sanitizeSegment(file.name || 'file')}`;
 
   const blob = await upload(pathname, file, {
     access: 'private',
