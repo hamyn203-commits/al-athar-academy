@@ -29,6 +29,18 @@ function guardianRelationshipLabel(value, locale) {
   return (locale === 'ar' ? ar : en)[value] || (locale === 'ar' ? 'ولي الأمر' : 'Guardian');
 }
 
+function learnerLevelLabel(level, locale) {
+  const ar = { beginner: 'مبتدئ', intermediate: 'متوسط', advanced: 'متقدم', ijazah: 'إجازة' };
+  const en = { beginner: 'Beginner', intermediate: 'Intermediate', advanced: 'Advanced', ijazah: 'Ijazah' };
+  return (locale === 'ar' ? ar : en)[level] || (locale === 'ar' ? 'غير محدد' : 'Not set');
+}
+
+function learnerTrackLabel(track, locale) {
+  const ar = { memorization: 'الحفظ والمراجعة', tajweed_ijazah: 'التجويد والإجازة', kids_foundation: 'تأسيس الأطفال' };
+  const en = { memorization: 'Memorization', tajweed_ijazah: 'Tajweed and Ijazah', kids_foundation: 'Kids foundation' };
+  return (locale === 'ar' ? ar : en)[track] || (locale === 'ar' ? 'لم يتم الاختيار' : 'Not selected');
+}
+
 function guardianInvitationStatus(status, locale) {
   const ar = { pending: 'بانتظار ولي الأمر', accepted: 'تم الربط', rejected: 'تم الرفض', cancelled: 'ملغي', expired: 'انتهت الصلاحية' };
   const en = { pending: 'Waiting for guardian', accepted: 'Linked', rejected: 'Rejected', cancelled: 'Cancelled', expired: 'Expired' };
@@ -1070,7 +1082,11 @@ export default function StudentDashboard() {
                     <InfoRow label={locale === 'id' ? 'Email' : locale === 'ar' ? 'البريد' : 'Email'} value={profile?.user?.email || user?.email} />
                     <InfoRow label={locale === 'id' ? 'Telepon' : locale === 'ar' ? 'الهاتف' : 'Phone'} value={profile?.user?.phone} />
                     <InfoRow label={locale === 'id' ? 'Sesi Selesai' : locale === 'ar' ? 'حصص مكتملة' : 'Completed Sessions'} value={profile?.summary?.completedSessions || 0} />
+                    <InfoRow label={locale === 'ar' ? 'مستواي المبدئي' : 'My starting level'} value={learnerLevelLabel(profile?.user?.currentLevel || user?.currentLevel, locale)} />
+                    <InfoRow label={locale === 'ar' ? 'المسار التعليمي' : 'Learning track'} value={(profile?.user?.onboarding?.trackSelected || user?.onboarding?.trackSelected) ? learnerTrackLabel(profile?.user?.preferredTrack || user?.preferredTrack, locale) : (locale === 'ar' ? 'لم يتم الاختيار' : 'Not selected')} />
                   </div>
+                  <p className="mt-3 text-xs text-slate-600">{locale === 'ar' ? 'المستوى مبدئي، ويتأكد المعلم منه داخل الحصة التجريبية.' : 'Your tutor verifies your level during the trial lesson.'}</p>
+                  <Link className="mt-3 inline-flex min-h-11 items-center rounded-lg border border-emerald-700 px-4 py-2 text-sm font-bold text-emerald-800 hover:bg-emerald-100" to={lp('/profile/setup')}>{locale === 'ar' ? 'تعديل بياناتي ومستواي' : 'Edit my profile and level'}</Link>
                 </div>
 
                 <section className="wn-student-guardian-link">
