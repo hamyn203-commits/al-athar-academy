@@ -12,7 +12,10 @@
     "preview": "vite preview",
     "start": "vite preview",
     "safety:production": "node scripts/production-safety-scan.cjs",
-    "test:routes": "node scripts/route-contracts.mjs"
+    "test:routes": "node scripts/route-contracts.mjs",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:report": "playwright show-report"
   },
   "dependencies": {
     "@livekit/components-react": "^2.9.21",
@@ -44,7 +47,8 @@
     "postcss": "^8.5.15",
     "tailwindcss": "^4.3.0",
     "vite": "^8.0.12",
-    "vite-plugin-compression": "^0.5.1"
+    "vite-plugin-compression": "^0.5.1",
+    "@playwright/test": "^1.64.0"
   },
   "engines": {
     "node": "22.x"
