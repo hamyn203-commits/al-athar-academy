@@ -155,6 +155,14 @@ export function AuthProvider({ children }) {
     return data.user;
   }, []);
 
+  const saveLearningTrack = useCallback(async (track) => {
+    const data = await api.patch('/api/auth/learning-track', { track }, { auth: true });
+    if (!data?.user) throw new Error('لم يتم تأكيد حفظ المسار');
+    setUser(data.user);
+    setIsAuthenticated(true);
+    return data.user;
+  }, []);
+
   const updateProfile = useCallback(async (updates) => {
     try {
       const data = await api.patch('/api/auth/me', updates, { auth: true });
@@ -241,6 +249,7 @@ export function AuthProvider({ children }) {
     updateProfile,
     refreshUser,
     saveOnboarding,
+    saveLearningTrack,
     changePassword,
     forgotPassword,
     authFetch,
