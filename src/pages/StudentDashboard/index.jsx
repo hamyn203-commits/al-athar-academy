@@ -473,9 +473,11 @@ export default function StudentDashboard() {
     item.renewalOf && ['pending_payment', 'payment_review', 'renewal_queued'].includes(item.status)
   ) || null;
   const currentSubscription = subscriptions.find((item) =>
-    !item.renewalOf && ['pending_payment', 'payment_review', 'awaiting_placement', 'placed', 'active', 'paused'].includes(item.status)
+    ['awaiting_placement', 'placed', 'active', 'paused'].includes(item.status)
   ) || subscriptions.find((item) =>
-    !item.renewalOf && item.status === 'completed'
+    !item.renewalOf && ['pending_payment', 'payment_review'].includes(item.status)
+  ) || subscriptions.find((item) =>
+    item.status === 'completed'
   ) || null;
   const currentSubscriptionTeacherName = currentSubscription?.preferredTeacher?.personalInfo?.fullName
     || currentSubscription?.preferredTeacher?.user?.name
