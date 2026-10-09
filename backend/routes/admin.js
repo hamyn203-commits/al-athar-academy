@@ -143,21 +143,21 @@ router.get('/command-center', protect, authorize('admin'), async (req, res) => {
         label: 'طلبات ربط أولياء الأمور',
         count: pendingGuardianInvitations,
         severity: 'info',
-        actionUrl: '/admin?tab=overview',
+        actionUrl: '/admin?tab=people&focus=guardian-links',
       },
       {
         id: 'overdue-sessions',
         label: 'حصص انتهى موعدها ولم تُغلق',
         count: overdueAcceptedSessions,
         severity: overdueAcceptedSessions ? 'high' : 'ok',
-        actionUrl: '/admin?tab=overview',
+        actionUrl: '/admin?tab=sessions&focus=overdue',
       },
       {
         id: 'missing-session-reports',
         label: 'حصص مكتملة بدون تقرير طالب',
         count: completedWithoutReports,
         severity: completedWithoutReports ? 'medium' : 'ok',
-        actionUrl: '/admin?tab=overview',
+        actionUrl: '/admin?tab=sessions&focus=missing-reports',
       },
     ];
 
@@ -183,6 +183,83 @@ router.get('/command-center', protect, authorize('admin'), async (req, res) => {
         createdAt: entry.createdAt,
       })),
     });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/session-control', protect, authorize('admin'), async (req, res) => {
+  try {
+    const now = new Date();
+    const focus = String(req.query.focus || 'all').trim();
+    const filter = {};
+
+    if (focus === 'overdue') {
+      Object.assign(filter, { status: 'accepted', scheduledAt: { $lt: now } });
+    } else if (focus === 'missing-reports') {
+      Object.assign(filter, {
+        status: 'completed',
+        $or: [
+          { studentReports: { $exists: false } },
+          { studentReports: { $size: 0 } },
+        ],
+      });
+    } else if (focus !== 'all') {
+      return res.status(400).json({ error: 'Invalid session control focus' });
+    }
+
+    const sessions = await Session.find(filter)
+      .populate('student', 'name email phone avatar')
+      .populate({
+        path: 'teacher',
+        select: 'personalInfo.fullName user media.profilePhoto',
+        populate: { path: 'user', select: 'name email avatar' },
+      })
+      .populate('circle', 'name')
+      .sort({ scheduledAt: focus === 'overdue' ? 1 : -1 })
+      .limit(150)
+      .lean();
+
+    const rows = sessions.map((session) => ({
+      _id: session._id,
+      type: session.type,
+      status: session.status,
+      scheduledAt: session.scheduledAt,
+      duration: session.duration,
+      timezone: session.timezone,
+      student: session.student ? {
+        _id: session.student._id,
+        name: session.student.name,
+        email: session.student.email,
+        phone: session.student.phone,
+        avatar: session.student.avatar,
+      } : null,
+      teacher: session.teacher ? {
+        _id: session.teacher._id,
+        name: session.teacher.user?.name || session.teacher.personalInfo?.fullName || 'معلم',
+        email: session.teacher.user?.email || '',
+        avatar: session.teacher.media?.profilePhoto || session.teacher.user?.avatar || '',
+      } : null,
+      circle: session.circle ? { _id: session.circle._id, name: session.circle.name } : null,
+      attendanceCount: (session.attendance || []).length,
+      reportCount: (session.studentReports || []).length,
+      meetingAvailable: Boolean(session.meetingLink),
+      recordingAvailable: Boolean(session.recordingUrl),
+      cancellationReason: session.cancellationReason || '',
+      createdAt: session.createdAt,
+      updatedAt: session.updatedAt,
+    }));
+
+    await logAdminAction({
+      req,
+      action: 'session-control.viewed',
+      entityType: 'session-control',
+      entityId: focus,
+      reason: `Admin opened session control: ${focus}`,
+      metadata: { focus, resultCount: rows.length },
+    }).catch(() => {});
+
+    return res.json({ focus, count: rows.length, sessions: rows });
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
