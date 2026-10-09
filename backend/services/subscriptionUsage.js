@@ -47,7 +47,14 @@ async function settleSubscriptionUsageForSession(sessionDoc) {
       .map((entry) => [String(entry.student), entry])
   );
 
-  const studentIds = [...new Set((circle.students || []).map(String))];
+  const scheduledStudentIds = (sessionDoc.attendance || [])
+    .filter((entry) => entry?.student)
+    .map((entry) => String(entry.student));
+  const studentIds = [...new Set(
+    scheduledStudentIds.length
+      ? scheduledStudentIds
+      : (circle.students || []).map(String)
+  )];
   const now = new Date();
   const results = [];
   const notificationTargets = [];
