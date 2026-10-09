@@ -14,10 +14,32 @@ const TRACKS = [
   { id: 'tajweed_ijazah', ar: 'التجويد والإجازات', en: 'Tajweed and Ijazah', description: 'إتقان التلاوة وأحكام التجويد', specialties: ['tajweed', 'ijaza'] },
   { id: 'kids_foundation', ar: 'تأسيس الأطفال والناشئة', en: 'Kids foundation', description: 'تعليم القرآن بأسلوب يناسب الصغار', specialties: ['children'] },
 ];
-const activeTrack = (id) => TRACKS.find(t => t.id === id) || TRACKS[0];
+const activeTrack = (id) => TRACKS.find((track) => track.id === id) || TRACKS[0];
+const isTrackId = (value) => TRACKS.some((track) => track.id === value);
+
+function normalizeTeacher(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const specializations = Array.isArray(raw.quranInfo?.specializations)
+    ? raw.quranInfo.specializations.filter((item) => typeof item === 'string')
+    : [];
+
+  return {
+    ...raw,
+    _id: String(raw._id || ''),
+    personalInfo: raw.personalInfo && typeof raw.personalInfo === 'object' ? raw.personalInfo : {},
+    academicInfo: raw.academicInfo && typeof raw.academicInfo === 'object' ? raw.academicInfo : {},
+    quranInfo: {
+      ...(raw.quranInfo && typeof raw.quranInfo === 'object' ? raw.quranInfo : {}),
+      specializations,
+    },
+    media: raw.media && typeof raw.media === 'object' ? raw.media : {},
+    rating: raw.rating && typeof raw.rating === 'object' ? raw.rating : {},
+    user: raw.user && typeof raw.user === 'object' ? raw.user : {},
+  };
+}
 
 export default function StudentJourney() {
-  const { user, isAuthenticated, isLoading, refreshUser } = useAuth();
+  const { user, isAuthenticated, isLoading, refreshUser, saveLearningTrack } = useAuth();
   const { locale } = useI18n();
   const navigate = useNavigate();
   const location = useLocation();
@@ -76,6 +98,13 @@ export default function StudentJourney() {
   }, [isLoading, isAuthenticated, user?.role, user?.onboarding?.completed, location.state?.profileJustSaved, navigate, locale, refreshUser]);
 
   useEffect(() => {
+    if (profileChecking || chosen) return;
+    if (user?.onboarding?.trackSelected === true && isTrackId(user?.preferredTrack)) {
+      setChosen(user.preferredTrack);
+    }
+  }, [profileChecking, chosen, user?.onboarding?.trackSelected, user?.preferredTrack]);
+
+  useEffect(() => {
     if (!chosen) return;
     let valid = true;
     const spec = activeTrack(chosen).specialties;
@@ -86,10 +115,18 @@ export default function StudentJourney() {
       .then(result => {
         if (!valid) return;
         const found = new Map();
-        (result.teachers || []).forEach(t => found.set(String(t._id), t));
+        const incoming = Array.isArray(result?.teachers) ? result.teachers : [];
+        for (const rawTeacher of incoming) {
+          const teacher = normalizeTeacher(rawTeacher);
+          if (!teacher?._id) continue;
+          found.set(teacher._id, teacher);
+        }
         setTeachers(Array.from(found.values()).sort((a, b) => {
-          const score = teacher => {
-            const matching = (teacher.quranInfo?.specializations || []).filter(item => spec.includes(item)).length;
+          const score = (teacher) => {
+            const specialties = Array.isArray(teacher.quranInfo?.specializations)
+              ? teacher.quranInfo.specializations
+              : [];
+            const matching = specialties.filter((item) => spec.includes(item)).length;
             const experience = Number(teacher.quranInfo?.teachingExperience) || 0;
             const rating = Number(teacher.rating?.average) || 0;
             return matching * 100 + Math.min(experience, 15) * 2 + rating * 4;
@@ -103,18 +140,27 @@ export default function StudentJourney() {
   }, [chosen, isAr]);
 
   const choose = async (trackId) => {
+    if (!isTrackId(trackId)) return;
     setSaving(true);
     setError('');
     try {
-      await api.patch('/api/auth/learning-track', { track: trackId }, { auth: true });
-      await refreshUser();
-      setChosen(trackId);
-    } catch (e) { setError(e.message || 'تعذر حفظ المسار'); }
-    finally { setSaving(false); }
+      if (user?.onboarding?.trackSelected === true && user?.preferredTrack === trackId) {
+        setChosen(trackId);
+        return;
+      }
+      const updated = await saveLearningTrack(trackId);
+      setChosen(isTrackId(updated?.preferredTrack) ? updated.preferredTrack : trackId);
+    } catch (e) {
+      setError(e.message || (isAr ? 'تعذر حفظ المسار' : 'Could not save learning track'));
+    } finally {
+      setSaving(false);
+    }
   };
   if (isLoading || profileChecking || !user || user.role !== 'student') return null;
   const step = !chosen ? 3 : 4;
-  const visibleTeachers = preferredGender === 'any' ? teachers : teachers.filter(t => t.personalInfo?.gender === preferredGender);
+  const visibleTeachers = (Array.isArray(teachers) ? teachers : [])
+    .filter((teacher) => teacher && typeof teacher === 'object')
+    .filter((teacher) => preferredGender === 'any' || teacher.personalInfo?.gender === preferredGender);
 
   return <>
     <GlobalHeader />
@@ -160,7 +206,7 @@ export default function StudentJourney() {
             {visibleTeachers.map(teacher => <div key={teacher._id} className="bg-white rounded-2xl border border-slate-200 p-5">
               <img src={teacherPublicImage(teacher.media?.profilePhoto || teacher.user?.avatar)} alt="" className="w-20 h-20 rounded-full object-cover mb-3" onError={teacherImageFallback}/>
               <h3 className="text-lg font-bold">{teacher.personalInfo?.fullName || teacher.user?.name || (isAr ? 'معلم القرآن الكريم' : 'Quran tutor')}</h3>
-              <p className="text-sm text-emerald-800 mt-2 font-semibold">{isAr ? 'تخصصات مطابقة للمسار:' : 'Matching specialties:'} {(teacher.quranInfo?.specializations || []).filter(spec => activeTrack(chosen).specialties.includes(spec)).join(' • ')}</p>
+              <p className="text-sm text-emerald-800 mt-2 font-semibold">{isAr ? 'تخصصات مطابقة للمسار:' : 'Matching specialties:'} {(Array.isArray(teacher.quranInfo?.specializations) ? teacher.quranInfo.specializations : []).filter((spec) => activeTrack(chosen).specialties.includes(spec)).join(' • ') || (isAr ? 'القرآن الكريم' : 'Quran studies')}</p>
               <p className="text-sm text-slate-600 mt-1">{isAr ? 'خبرة تعليمية:' : 'Experience:'} {teacher.quranInfo?.teachingExperience ?? '—'}</p>
               <div className="grid gap-2 mt-5">
                 <Link to={lp('/teachers/' + teacher._id)} className="rounded-xl border border-emerald-700 text-emerald-800 text-center p-3 font-bold flex justify-center gap-2"><UserRound size={18}/>{isAr ? 'التعرف على الشيخ' : 'View tutor profile'}</Link>
