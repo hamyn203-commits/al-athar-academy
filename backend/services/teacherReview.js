@@ -25,6 +25,16 @@ function provided(value) {
   );
 }
 
+function coreMediaAreDistinct(media = {}) {
+  const refs = [
+    media.introductionVideo,
+    media.recitationVideo,
+    media.teachingMethodVideo,
+  ].map((value) => String(value || '').trim()).filter(Boolean);
+
+  return refs.length === 3 && new Set(refs).size === 3;
+}
+
 function checklistMap(teacher) {
   return new Map((teacher.reviewChecklist || []).map((item) => [item.key, item]));
 }
@@ -104,24 +114,37 @@ function buildTeacherReviewGate(teacher) {
   });
 
   const requiredItems = items.filter((item) => item.requiredForTeacher);
-  const completedRequired = requiredItems.filter((item) => item.satisfied).length;
-  const readiness = requiredItems.length
-    ? Math.round((completedRequired / requiredItems.length) * 100)
+  const mediaDistinct = coreMediaAreDistinct(teacher.media || {});
+  const completedChecklist = requiredItems.filter((item) => item.satisfied).length;
+  const requiredCount = requiredItems.length + 1;
+  const completedRequired = completedChecklist + (mediaDistinct ? 1 : 0);
+  const readiness = requiredCount
+    ? Math.round((completedRequired / requiredCount) * 100)
     : 100;
+  const blockers = requiredItems
+    .filter((item) => !item.satisfied)
+    .map((item) => ({
+      key: item.key,
+      label: item.label,
+      reason: !item.available ? 'missing-asset-or-data' : 'not-reviewed',
+    }));
+
+  if (!mediaDistinct) {
+    blockers.push({
+      key: 'core-media-distinct',
+      label: 'تنوع فيديوهات التعريف والتلاوة وطريقة التدريس',
+      reason: 'duplicate-required-media',
+    });
+  }
 
   return {
     items,
     readiness,
-    approvalReady: requiredItems.every((item) => item.satisfied),
-    requiredCount: requiredItems.length,
+    approvalReady: requiredItems.every((item) => item.satisfied) && mediaDistinct,
+    requiredCount,
     completedRequired,
-    blockers: requiredItems
-      .filter((item) => !item.satisfied)
-      .map((item) => ({
-        key: item.key,
-        label: item.label,
-        reason: !item.available ? 'missing-asset-or-data' : 'not-reviewed',
-      })),
+    blockers,
+    qualityChecks: { coreMediaDistinct: mediaDistinct },
   };
 }
 
@@ -137,4 +160,5 @@ module.exports = {
   buildTeacherReviewGate,
   sanitizeChecklistStatus,
   itemRequiredForTeacher,
+  coreMediaAreDistinct,
 };
