@@ -728,6 +728,11 @@ requireContains(
 );
 requireContains(
   'backend/routes/subscriptions.js',
+  'normal plan selection must not overwrite a pending renewal',
+  /pendingRenewal[\s\S]{0,900}RENEWAL_PAYMENT_PENDING[\s\S]{0,2600}findOneAndUpdate\([\s\S]{0,220}renewalOf:\s*null/
+);
+requireContains(
+  'backend/routes/subscriptions.js',
   'subscription placement must remain admin-only',
   /router\.post\(['"]\/admin\/:id\/place['"],\s*protect,\s*authorize\(['"]admin['"]\)/
 );
@@ -773,8 +778,8 @@ requireContains(
 );
 requireContains(
   'backend/routes/sessions.js',
-  'group attendance updates must be teacher/admin protected',
-  /router\.put\(['"]\/:id\/attendance['"],\s*protect,\s*authorize\(['"]teacher['"],\s*['"]admin['"]\)[\s\S]{0,2400}\[['"]attended['"],\s*['"]absent['"]\]\.includes\(status\)/
+  'group attendance updates must be teacher/admin protected and restricted to final states',
+  /router\.patch\(['"]\/:id\/attendance['"],\s*protect,\s*authorize\(['"]teacher['"],\s*['"]admin['"]\)[\s\S]{0,2600}new Set\(\[['"]attended['"],\s*['"]absent['"],\s*['"]excused['"]\]\)/
 );
 requireContains(
   'backend/routes/sessions.js',
