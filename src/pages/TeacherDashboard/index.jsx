@@ -500,6 +500,16 @@ export default function TeacherDashboard() {
 
   const completeGroupSession = async (session) => {
     if (!session?._id) return;
+
+    const unresolved = (session.attendance || []).filter(
+      (entry) => ['pending', 'confirmed'].includes(entry.status)
+    );
+    if (unresolved.length) {
+      toast.info('سجل الحضور النهائي لكل الطلاب قبل إنهاء الحصة');
+      openAttendanceManager(session);
+      return;
+    }
+
     const confirmed = window.confirm(
       `تأكيد إنهاء ${session.circle?.name || 'الحصة الجماعية'}؟ سيتم احتساب حصة واحدة لكل طالب مستحق حسب الحضور والاعتذارات.`
     );
