@@ -95,11 +95,20 @@ async function placeSubscription({
       }
 
       let circle;
+      const expectedGender = circleGenderForStudent(student, subscription.section);
+      const expectedAgeGroup = ageGroupForStudent(student);
+      const expectedTrack = student.preferredTrack || 'memorization';
+      const expectedLevel = student.currentLevel || 'beginner';
+
       if (existingCircleId) {
         circle = await GroupCircle.findOne({
           _id: existingCircleId,
           teacher: teacher._id,
           subscriptionPlanKey: plan.key,
+          gender: expectedGender,
+          targetAgeGroup: expectedAgeGroup,
+          track: expectedTrack,
+          level: expectedLevel,
           status: { $nin: ['completed', 'paused'] },
         }).session(dbSession);
 
@@ -113,10 +122,10 @@ async function placeSubscription({
         const created = await GroupCircle.create([{
           name: String(circleName || '').trim().slice(0, 120)
             || `${plan.name.ar} — ${student.name}`,
-          track: student.preferredTrack || 'memorization',
-          level: student.currentLevel || 'beginner',
-          gender: circleGenderForStudent(student, subscription.section),
-          targetAgeGroup: ageGroupForStudent(student),
+          track: expectedTrack,
+          level: expectedLevel,
+          gender: expectedGender,
+          targetAgeGroup: expectedAgeGroup,
           capacity: plan.maxStudents,
           teacher: teacher._id,
           students: [],
@@ -204,5 +213,7 @@ async function placeSubscription({
 
 module.exports = {
   normalizeSchedule,
+  circleGenderForStudent,
+  ageGroupForStudent,
   placeSubscription,
 };
