@@ -500,6 +500,7 @@ router.patch('/onboarding', verifyAccessToken, async (req, res) => {
     if (isMinor && (!updated.guardianContact?.name?.trim() || !updated.guardianContact?.phone?.trim() || !updated.guardianContact?.relationship)) {
       return res.status(400).json({ code: 'GUARDIAN_CONTACT_REQUIRED', error: 'بيانات ولي الأمر مطلوبة للطالب أقل من 18 سنة' });
     }
+    updated.phoneNormalized = normalizePhone(updated.phone) || undefined;
     updated.set('onboarding.required', true);
     updated.set('onboarding.completed', true);
     await updated.save();
