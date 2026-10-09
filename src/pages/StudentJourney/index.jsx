@@ -17,7 +17,7 @@ const TRACKS = [
 const activeTrack = (id) => TRACKS.find(t => t.id === id) || TRACKS[0];
 
 export default function StudentJourney() {
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading, refreshUser } = useAuth();
   const { locale } = useI18n();
   const navigate = useNavigate();
   const lp = (path) => localizedPath(path, locale);
@@ -75,7 +75,8 @@ export default function StudentJourney() {
     setSaving(true);
     setError('');
     try {
-      await api.patch('/api/auth/onboarding', { preferredTrack: trackId, name: user.name, phone: user.phone }, { auth: true });
+      await api.patch('/api/auth/learning-track', { track: trackId }, { auth: true });
+      await refreshUser();
       setChosen(trackId);
     } catch (e) { setError(e.message || 'تعذر حفظ المسار'); }
     finally { setSaving(false); }
