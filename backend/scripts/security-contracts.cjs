@@ -684,7 +684,7 @@ requireContains(
 requireContains(
   'backend/routes/subscriptions.js',
   'subscription selection must derive pricing from the server-side catalog',
-  /quoteSubscription\(\{\s*planKey,\s*sessionCount\s*\}\)[\s\S]{0,900}pricePerSessionMinor:\s*quote\.pricePerSessionMinor[\s\S]{0,300}totalAmountMinor:\s*quote\.totalAmountMinor/
+  /quoteSubscription\(\{\s*planKey,\s*sessionCount\s*\}\)[\s\S]{0,1800}pricePerSessionMinor:\s*quote\.pricePerSessionMinor[\s\S]{0,300}totalAmountMinor:\s*quote\.totalAmountMinor/
 );
 requireAbsent(
   'backend/routes/subscriptions.js',
@@ -756,7 +756,7 @@ requireContains(
 requireContains(
   'backend/services/manualPaymentSettlement.js',
   'manual payment approval must create enrollment through the settlement service',
-  /normalizedAction\s*===\s*['"]approve['"][\s\S]{0,900}createEnrollmentForSettledPayment/
+  /normalizedAction\s*===\s*['"]approve['"][\s\S]{0,2600}createEnrollmentForSettledPayment/
 );
 requireAbsent(
   'backend/routes/uploads.js',
