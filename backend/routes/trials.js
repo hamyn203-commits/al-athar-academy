@@ -9,6 +9,7 @@ const User = require('../models/User');
 const { protect, authorize } = require('../middleware/auth');
 const meetingService = require('../services/meetingService');
 const { notifyUser } = require('../utils/notify');
+const { parseRequestedDateTime, teacherAvailabilityDecision, overlaps, safeTimeZone } = require('../services/sessionScheduling');
 const rateLimit = require('express-rate-limit');
 
 const publicTrialLimiter = rateLimit({
@@ -293,13 +294,19 @@ router.put('/:id/assign', protect, authorize('admin'), async (req, res) => {
       if (trial) {
         trial.assignedTeacher = teacherId;
         trial.status = 'scheduled';
+        const mockTimezone = safeTimeZone(timezone || 'Africa/Cairo');
+        const mockScheduledAt = parseRequestedDateTime(scheduledAt, mockTimezone);
+        if (!mockScheduledAt || mockScheduledAt.getTime() <= Date.now()) {
+          return res.status(400).json({ error: 'يجب اختيار موعد مستقبلي صحيح', code: 'INVALID_SESSION_TIME' });
+        }
         const session = {
           _id: 'mock-session-trial-' + Date.now(),
           teacher: teacherId,
           type: 'trial',
           status: 'accepted',
-          scheduledAt: new Date(scheduledAt),
+          scheduledAt: mockScheduledAt,
           duration: 30,
+          timezone: mockTimezone,
           meetingLink: 'https://meet.jit.si/wahy-namaa-trial-' + Date.now(),
           meetingProvider: meetingProvider || 'jitsi'
         };
@@ -340,7 +347,42 @@ router.put('/:id/assign', protect, authorize('admin'), async (req, res) => {
       });
     }
 
-    const sessionDate = new Date(scheduledAt);
+    const resolvedTimezone = safeTimeZone(timezone || teacher.availabilityTimezone || 'Africa/Cairo');
+    const sessionDate = parseRequestedDateTime(scheduledAt, resolvedTimezone);
+    if (!sessionDate || sessionDate.getTime() <= Date.now()) {
+      return res.status(400).json({
+        error: 'يجب اختيار موعد مستقبلي صحيح',
+        code: 'INVALID_SESSION_TIME',
+        timezone: resolvedTimezone,
+      });
+    }
+
+    const availability = teacherAvailabilityDecision(teacher, sessionDate, 30);
+    if (!availability.allowed) {
+      return res.status(409).json({
+        error: 'هذا الموعد خارج أوقات توفر المعلم',
+        code: availability.code || 'TEACHER_UNAVAILABLE',
+        teacherTimezone: availability.timeZone || resolvedTimezone,
+      });
+    }
+
+    const activeSessions = await Session.find({
+      teacher: teacher._id,
+      status: { $in: ['pending', 'accepted'] },
+    }).select('scheduledAt duration');
+    const conflict = (activeSessions || []).find((active) => overlaps(
+      sessionDate,
+      30,
+      active.scheduledAt,
+      active.duration || 60,
+    ));
+    if (conflict) {
+      return res.status(409).json({
+        error: 'هذا الموعد يتعارض مع حصة أخرى لدى المعلم',
+        code: 'TEACHER_SLOT_CONFLICT',
+      });
+    }
+
     const provider = meetingProvider || process.env.DEFAULT_MEETING_PROVIDER || 'jitsi';
 
     // Create session record in Session model
@@ -351,7 +393,7 @@ router.put('/:id/assign', protect, authorize('admin'), async (req, res) => {
       status: 'accepted',
       scheduledAt: sessionDate,
       duration: 30, // Free trial standard duration: 30 mins
-      timezone: timezone || 'Africa/Cairo',
+      timezone: resolvedTimezone,
       notes: notes || ('حصة تجريبية للطالب: ' + trial.studentName + ' - واتساب: ' + trial.whatsappPhone)
     });
 
@@ -372,7 +414,7 @@ router.put('/:id/assign', protect, authorize('admin'), async (req, res) => {
         await notifyUser(teacher.user._id || teacher.user, {
           type: 'session_scheduled',
           title: 'حصة تجريبية جديدة مسندة إليك',
-          message: 'تم تعيين حصة تجريبية للطالب ' + trial.studentName + ' في موعد ' + sessionDate.toLocaleString('ar-EG'),
+          message: 'تم تعيين حصة تجريبية للطالب ' + trial.studentName + ' في موعد ' + sessionDate.toLocaleString('ar-EG', { timeZone: resolvedTimezone }) + ' (' + resolvedTimezone + ')',
           data: { sessionId: session._id, trialId: trial._id }
         });
       } catch (notifyErr) {
