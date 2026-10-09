@@ -40,7 +40,6 @@ function serializeSubscription(subscription) {
     payment: value.payment || null,
     preferredTeacher: value.preferredTeacher || null,
     renewalOf: value.renewalOf || null,
-    preferredCircle: value.preferredCircle || null,
     pricingSnapshot: value.pricingSnapshot,
     selectedAt: value.selectedAt,
     paidAt: value.paidAt || null,
@@ -71,7 +70,6 @@ router.get('/me', protect, authorize('student'), async (req, res) => {
         populate: { path: 'user', select: 'name avatar' },
       })
       .populate('circle', 'name code status capacity students schedule timezone')
-      .populate('preferredCircle', 'name code status capacity students schedule timezone subscriptionPlanKey')
       .lean();
 
     return res.json({
