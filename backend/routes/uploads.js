@@ -176,6 +176,7 @@ router.get('/public', async (req, res) => {
 
     const publicPurpose =
       pathname.startsWith('uploads/teacher-public/') ||
+      pathname.startsWith('uploads/student-avatar/') ||
       pathname.startsWith('uploads/course-media/');
 
     if (!publicPurpose) {
