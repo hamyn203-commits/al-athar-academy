@@ -51,11 +51,11 @@ export default function StudentJourney() {
     setLoadingTeachers(true);
     setError('');
     // The public API returns approved and verified teachers only.
-    Promise.all(spec.map(s => api.get('/api/teachers?specialization=' + encodeURIComponent(s) + '&limit=30')))
-      .then(results => {
+    api.get('/api/teachers?specialization=' + encodeURIComponent(spec.join(',')) + '&limit=60')
+      .then(result => {
         if (!valid) return;
         const found = new Map();
-        results.flatMap(r => r.teachers || []).forEach(t => found.set(String(t._id), t));
+        (result.teachers || []).forEach(t => found.set(String(t._id), t));
         setTeachers(Array.from(found.values()).sort((a, b) => {
           const score = teacher => {
             const matching = (teacher.quranInfo?.specializations || []).filter(item => spec.includes(item)).length;
