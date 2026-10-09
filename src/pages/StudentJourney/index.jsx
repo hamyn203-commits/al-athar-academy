@@ -26,6 +26,7 @@ export default function StudentJourney() {
   const [loadingTeachers, setLoadingTeachers] = useState(false);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [preferredGender, setPreferredGender] = useState('any');
   const isAr = locale === 'ar';
 
   useEffect(() => {
@@ -55,9 +56,15 @@ export default function StudentJourney() {
         if (!valid) return;
         const found = new Map();
         results.flatMap(r => r.teachers || []).forEach(t => found.set(String(t._id), t));
-        setTeachers(Array.from(found.values()).sort((a, b) =>
-          (Number(b.rating?.average) || 0) - (Number(a.rating?.average) || 0)
-        ));
+        setTeachers(Array.from(found.values()).sort((a, b) => {
+          const score = teacher => {
+            const matching = (teacher.quranInfo?.specializations || []).filter(item => spec.includes(item)).length;
+            const experience = Number(teacher.quranInfo?.teachingExperience) || 0;
+            const rating = Number(teacher.rating?.average) || 0;
+            return matching * 100 + Math.min(experience, 15) * 2 + rating * 4;
+          };
+          return score(b) - score(a);
+        }));
       })
       .catch(() => { if (valid) setError(isAr ? 'تعذر تحميل المعلمين الآن. حاول مجددًا.' : 'Could not load tutors. Please retry.'); })
       .finally(() => { if (valid) setLoadingTeachers(false); });
@@ -75,6 +82,7 @@ export default function StudentJourney() {
   };
   if (isLoading || !user || user.role !== 'student') return null;
   const step = !chosen ? 3 : 4;
+  const visibleTeachers = preferredGender === 'any' ? teachers : teachers.filter(t => t.personalInfo?.gender === preferredGender);
 
   return <>
     <GlobalHeader />
@@ -108,18 +116,19 @@ export default function StudentJourney() {
             <p className="text-sm text-slate-500 mt-1">{isAr ? 'جميع المعلمين المعروضين معتمدون، والترشيح حسب التخصص.' : 'All listed tutors are approved. Matching is based on specialization.'}</p></div>
             <button type="button" className="text-emerald-800 underline" onClick={() => {setChosen('');setTeachers([]);}}>{isAr ? 'تغيير المسار' : 'Change track'}</button>
           </div>
+          <div className="flex flex-wrap gap-3 items-center mb-5"><label className="text-sm font-bold" htmlFor="journey-gender">{isAr ? 'أفضل التعلم مع' : 'Preferred tutor'}</label><select id="journey-gender" value={preferredGender} onChange={e => setPreferredGender(e.target.value)} className="rounded-xl border border-slate-300 bg-white p-2 text-sm"><option value="any">{isAr ? 'لا يوجد تفضيل' : 'No preference'}</option><option value="male">{isAr ? 'شيخ' : 'Male tutor'}</option><option value="female">{isAr ? 'معلمة' : 'Female tutor'}</option></select><span className="text-xs text-slate-500">{isAr ? 'الترتيب حسب مطابقة التخصص ثم الخبرة والتقييم المتاح' : 'Ordered by specialty match, experience and available ratings'}</span></div>
           {loadingTeachers && <p role="status" className="p-6 bg-white rounded-xl">{isAr ? 'جاري البحث عن المشايخ المناسبين...' : 'Finding matching tutors...'}</p>}
-          {!loadingTeachers && !error && !teachers.length && <div className="bg-white border rounded-2xl p-8 text-center">
+          {!loadingTeachers && !error && !visibleTeachers.length && <div className="bg-white border rounded-2xl p-8 text-center">
             <GraduationCap className="mx-auto text-slate-400 mb-3" size={32}/>
             <h3 className="font-bold">{isAr ? 'لا يوجد حاليًا مشايخ معتمدون مطابقون للمسار' : 'No approved tutors currently match this track'}</h3>
             <p className="text-slate-600 text-sm my-3">{isAr ? 'تقدر تختار مسارًا آخر أو تستعرض كل المعلمين المعتمدين.' : 'Choose another track or browse approved tutors.'}</p>
             <Link className="text-emerald-800 underline" to={lp('/teachers')}>{isAr ? 'عرض جميع المعلمين' : 'Browse all tutors'}</Link>
           </div>}
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {teachers.map(teacher => <div key={teacher._id} className="bg-white rounded-2xl border border-slate-200 p-5">
+            {visibleTeachers.map(teacher => <div key={teacher._id} className="bg-white rounded-2xl border border-slate-200 p-5">
               <img src={teacherPublicImage(teacher.media?.profilePhoto || teacher.user?.avatar)} alt="" className="w-20 h-20 rounded-full object-cover mb-3" onError={teacherImageFallback}/>
               <h3 className="text-lg font-bold">{teacher.personalInfo?.fullName || teacher.user?.name || (isAr ? 'معلم القرآن الكريم' : 'Quran tutor')}</h3>
-              <p className="text-sm text-slate-600 mt-2">{(teacher.quranInfo?.specializations || []).join(' • ')}</p>
+              <p className="text-sm text-emerald-800 mt-2 font-semibold">{isAr ? 'تخصصات مطابقة للمسار:' : 'Matching specialties:'} {(teacher.quranInfo?.specializations || []).filter(spec => activeTrack(chosen).specialties.includes(spec)).join(' • ')}</p>
               <p className="text-sm text-slate-600 mt-1">{isAr ? 'خبرة تعليمية:' : 'Experience:'} {teacher.quranInfo?.teachingExperience ?? '—'}</p>
               <div className="grid gap-2 mt-5">
                 <Link to={lp('/teachers/' + teacher._id)} className="rounded-xl border border-emerald-700 text-emerald-800 text-center p-3 font-bold flex justify-center gap-2"><UserRound size={18}/>{isAr ? 'التعرف على الشيخ' : 'View tutor profile'}</Link>
