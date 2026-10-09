@@ -108,7 +108,7 @@ StudentSubscriptionSchema.index(
 StudentSubscriptionSchema.index({ circle: 1, status: 1 });
 StudentSubscriptionSchema.index(
   { renewalOf: 1 },
-  { unique: true, partialFilterExpression: { renewalOf: { $type: 'objectId' }, status: { $in: ['pending_payment', 'payment_review', 'renewal_queued'] } } }
+  { unique: true, partialFilterExpression: { renewalOf: { $type: 'objectId' } } }
 );
 
 StudentSubscriptionSchema.pre('validate', function(next) {
