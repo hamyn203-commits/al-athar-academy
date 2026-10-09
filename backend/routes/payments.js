@@ -20,6 +20,7 @@ const manualPayments = require('../config/manualPayments');
 const objectStorage = require('../services/objectStorage');
 const { processPaymobWebhook } = require('../services/paymentSettlement');
 const { processManualPaymentReview } = require('../services/manualPaymentSettlement');
+const { placeSubscription } = require('../services/subscriptionPlacement');
 const { notifyCourseEnrollment, notifyAdmins, notifyUser } = require('../utils/notify');
 
 const SUPPORTED_LOCALES = new Set(['ar', 'en', 'fr', 'de', 'tr', 'ur', 'id', 'ms', 'ku']);
@@ -628,12 +629,38 @@ router.get('/admin/manual/:id/proof', protect, authorize('admin'), async (req, r
 
 router.patch('/admin/manual/:id/review', protect, authorize('admin'), async (req, res) => {
   try {
-    const result = await processManualPaymentReview({
+    let result = await processManualPaymentReview({
       paymentId: req.params.id,
       adminId: req.user.id,
       action: req.body?.action,
       note: req.body?.note,
     });
+
+    let autoPlacement = null;
+    if (
+      result?.paymentStatus === 'succeeded'
+      && result?.subscriptionId
+      && result?.awaitingPlacement
+      && result?.renewalCircleId
+    ) {
+      try {
+        autoPlacement = await placeSubscription({
+          subscriptionId: result.subscriptionId,
+          existingCircleId: result.renewalCircleId,
+        });
+        result = {
+          ...result,
+          subscriptionStatus: autoPlacement.subscriptionStatus,
+          awaitingPlacement: false,
+          autoPlaced: true,
+          circleId: autoPlacement.circleId,
+        };
+      } catch (error) {
+        // Keep the approved renewal in the admin placement queue if the old circle
+        // is full or no longer compatible.
+        console.warn('Renewal auto-placement fallback:', error.code || error.message);
+      }
+    }
 
     if (result?.enrollmentCreated && result.studentId && result.courseId) {
       const course = await Course.findById(result.courseId).select('title slug').lean();
@@ -641,29 +668,52 @@ router.patch('/admin/manual/:id/review', protect, authorize('admin'), async (req
     }
 
     if (result?.subscriptionId && result.studentId) {
-      const approved = result.paymentStatus === 'succeeded' && result.awaitingPlacement;
+      const succeeded = result.paymentStatus === 'succeeded';
+      const queuedRenewal = succeeded && result.renewalQueued;
+      const placedRenewal = succeeded && result.autoPlaced;
+      const awaitingPlacement = succeeded && result.awaitingPlacement;
+
       notifyUser(result.studentId, {
         type: 'system',
-        title: approved
-          ? { ar: 'تم اعتماد تحويل الاشتراك', en: 'Subscription payment approved' }
+        title: succeeded
+          ? (queuedRenewal
+              ? { ar: 'تم اعتماد تجديد الباقة', en: 'Package renewal approved' }
+              : { ar: 'تم اعتماد تحويل الاشتراك', en: 'Subscription payment approved' })
           : { ar: 'تعذر اعتماد تحويل الاشتراك', en: 'Subscription payment not approved' },
-        message: approved
-          ? {
-              ar: 'تم التأكد من وصول المبلغ. طلبك الآن في مرحلة التسكين مع المعلم الذي اخترته.',
-              en: 'Your payment was verified. Your request is now waiting for placement with your selected tutor.',
-            }
+        message: succeeded
+          ? (queuedRenewal
+              ? {
+                  ar: 'التجديد مدفوع وجاهز. سيبدأ تلقائيًا بعد استخدام آخر حصة في باقتك الحالية.',
+                  en: 'Your renewal is paid and ready. It will activate automatically after your current package ends.',
+                }
+              : placedRenewal
+                ? {
+                    ar: 'تم اعتماد التجديد وإعادتك تلقائيًا إلى نفس الجروب والمعلم.',
+                    en: 'Your renewal was approved and you were restored to the same group and tutor automatically.',
+                  }
+                : awaitingPlacement
+                  ? {
+                      ar: 'تم التأكد من وصول المبلغ. طلبك الآن في مرحلة التسكين مع المعلم الذي اخترته.',
+                      en: 'Your payment was verified. Your request is now waiting for placement with your selected tutor.',
+                    }
+                  : {
+                      ar: 'تم اعتماد الدفع بنجاح.',
+                      en: 'Your payment was approved successfully.',
+                    })
           : {
               ar: 'لم يتم اعتماد التحويل. يمكنك مراجعة البيانات ورفع إثبات جديد.',
               en: 'The transfer was not approved. You can review the details and submit a new proof.',
             },
         data: {
-          actionUrl: approved
+          actionUrl: succeeded
             ? '/student/dashboard'
             : `/payment/manual?subscription=${result.subscriptionId}`,
           metadata: {
             subscriptionId: result.subscriptionId,
             paymentId: result.paymentId,
             paymentStatus: result.paymentStatus,
+            renewalQueued: Boolean(result.renewalQueued),
+            autoPlaced: Boolean(result.autoPlaced),
           },
         },
         priority: 'high',
@@ -678,6 +728,9 @@ router.patch('/admin/manual/:id/review', protect, authorize('admin'), async (req
       enrollmentId: result.enrollmentId,
       subscriptionId: result.subscriptionId || null,
       awaitingPlacement: Boolean(result.awaitingPlacement),
+      renewalQueued: Boolean(result.renewalQueued),
+      autoPlaced: Boolean(result.autoPlaced),
+      circleId: result.circleId || null,
     });
   } catch (error) {
     if (error.code === 'PAYMENT_NOT_FOUND') {
