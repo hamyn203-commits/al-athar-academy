@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Search, UserRound, Users, GraduationCap, Calendar, CreditCard, X } from 'lucide-react';
 import api from '../../lib/api';
+import { formatSessionDateTime, sessionTimeZone } from '../../lib/sessionTime';
 
 function personIcon(role) {
   if (role === 'student') return UserRound;
@@ -115,7 +116,7 @@ export default function AdminPeopleSearch({
                   <span><Calendar size={17} /></span>
                   <span>
                     <strong>حصة {session.student?.name || 'طالب'} مع {session.teacher?.user?.name || session.teacher?.personalInfo?.fullName || 'معلم'}</strong>
-                    <small>{new Date(session.scheduledAt).toLocaleString('ar-EG')} · {session.status}</small>
+                    <small>{formatSessionDateTime(session, 'ar-EG', { dateStyle: 'medium', timeStyle: 'short' })} · {sessionTimeZone(session)} · {session.status}</small>
                   </span>
                   <code>{session._id}</code>
                 </div>
