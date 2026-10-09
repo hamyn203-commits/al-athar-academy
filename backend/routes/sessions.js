@@ -546,6 +546,7 @@ router.get('/my-sessions', protect, async (req, res) => {
           populate: { path: 'user', select: 'name email avatar' }
         })
         .populate('circle', 'name code status schedule timezone subscriptionPlanKey')
+        .populate('attendance.student', 'name email avatar')
         .sort({ scheduledAt: -1 })
         .skip(skip)
         .limit(parseInt(limit)),
@@ -592,6 +593,73 @@ router.get('/my-sessions', protect, async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+router.put('/:id/attendance', protect, authorize('teacher', 'admin'), async (req, res) => {
+  try {
+    const records = Array.isArray(req.body?.records) ? req.body.records : [];
+    if (!records.length) {
+      return res.status(400).json({ error: 'أرسل حالة حضور طالب واحد على الأقل', code: 'ATTENDANCE_RECORDS_REQUIRED' });
+    }
+
+    const session = await Session.findById(req.params.id);
+    if (!session || session.type !== 'group_circle') {
+      return res.status(404).json({ error: 'الحصة الجماعية غير موجودة', code: 'GROUP_SESSION_NOT_FOUND' });
+    }
+    if (session.status !== 'accepted') {
+      return res.status(409).json({ error: 'لا يمكن تعديل الحضور بعد إغلاق الحصة', code: 'ATTENDANCE_SESSION_CLOSED' });
+    }
+
+    if (req.user.role === 'teacher') {
+      const teacher = await Teacher.findOne({ user: req.user.id }).select('_id');
+      if (!teacher || String(teacher._id) !== String(session.teacher)) {
+        return res.status(403).json({ error: 'غير مصرح بتعديل حضور هذه الحلقة' });
+      }
+    }
+
+    const rosterIds = new Set(
+      (session.attendance || [])
+        .filter((entry) => entry.student)
+        .map((entry) => String(entry.student?._id || entry.student))
+    );
+
+    for (const record of records) {
+      const studentId = String(record?.studentId || '');
+      const status = String(record?.status || '');
+      if (!rosterIds.has(studentId)) {
+        return res.status(400).json({ error: 'الطالب غير موجود في كشف هذه الحصة', code: 'ATTENDANCE_STUDENT_NOT_IN_ROSTER' });
+      }
+      if (!['attended', 'absent'].includes(status)) {
+        return res.status(400).json({ error: 'حالة الحضور يجب أن تكون حضر أو غاب', code: 'ATTENDANCE_STATUS_INVALID' });
+      }
+
+      const entry = session.attendance.find(
+        (item) => item.student && String(item.student?._id || item.student) === studentId
+      );
+      if (!entry) continue;
+
+      if (status === 'absent' && entry.status === 'excused' && entry.eligibleForCompensation) {
+        continue;
+      }
+
+      entry.status = status;
+      if (status === 'attended') {
+        entry.eligibleForCompensation = false;
+        entry.excuseReason = undefined;
+        entry.excusedAt = undefined;
+      }
+    }
+
+    await session.save();
+    await session.populate('attendance.student', 'name email avatar');
+
+    return res.json({
+      success: true,
+      attendance: session.attendance,
+    });
+  } catch (error) {
+    return res.status(400).json({ error: error.message || 'فشل تحديث الحضور' });
   }
 });
 
@@ -805,6 +873,19 @@ router.put('/:id/complete', protect, authorize('teacher'), async (req, res) => {
         code: 'SESSION_NOT_STARTED',
         scheduledAt: session.scheduledAt,
       });
+    }
+
+    if (session.type === 'group_circle') {
+      const unresolved = (session.attendance || []).filter((entry) => (
+        ['pending', 'confirmed'].includes(String(entry.status || 'pending'))
+      ));
+      if (unresolved.length) {
+        return res.status(409).json({
+          error: 'حدّد حضر أو غاب لكل طالب قبل إنهاء الحصة',
+          code: 'ATTENDANCE_INCOMPLETE',
+          unresolvedStudentIds: unresolved.map((entry) => String(entry.student?._id || entry.student)),
+        });
+      }
     }
 
     const blockedAttendance = session.student
