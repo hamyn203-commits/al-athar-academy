@@ -43,8 +43,14 @@ export default function AdminPayments() {
 
     setWorking(payment.id);
     try {
-      await api.patch('/api/payments/admin/manual/' + payment.id + '/review', { action, note }, { auth: true });
-      toast.success(action === 'approve' ? 'تم تأكيد الدفع وتفعيل الاشتراك' : 'تم رفض إثبات الدفع');
+      const result = await api.patch('/api/payments/admin/manual/' + payment.id + '/review', { action, note }, { auth: true });
+      toast.success(
+        action === 'approve'
+          ? (result.awaitingPlacement
+              ? 'تم تأكيد الدفع. الطلب الآن بانتظار التسكين مع المعلم المختار.'
+              : 'تم تأكيد الدفع وتفعيل الدورة.')
+          : 'تم رفض إثبات الدفع'
+      );
       await load();
     } catch (error) {
       toast.error(error.message || 'فشلت المراجعة');
@@ -101,7 +107,25 @@ export default function AdminPayments() {
                 <div className="space-y-1">
                   <h3 className="font-bold">{payment.student?.name || 'طالب'}</h3>
                   <p className="text-sm text-gray-500">{payment.student?.email}</p>
-                  <p className="text-sm">{payment.course?.title?.ar || payment.course?.title?.en || payment.course?.slug}</p>
+                  <p className="text-sm">
+                    {payment.kind === 'subscription'
+                      ? (payment.subscription?.pricingSnapshot?.nameAr || payment.subscription?.planKey || 'اشتراك أكاديمية')
+                      : (payment.course?.title?.ar || payment.course?.title?.en || payment.course?.slug)}
+                  </p>
+                  {payment.kind === 'subscription' ? (
+                    <div className="text-xs text-slate-600 space-y-1 rounded-lg bg-slate-50 border p-3 my-2">
+                      <p>القسم: <strong>{payment.subscription?.section === 'ladies' ? 'قسم السيدات' : 'قسم الرجال والأطفال'}</strong></p>
+                      <p>الحصص: <strong>{payment.subscription?.sessionCount || '—'}</strong></p>
+                      <p>
+                        المعلم المختار:{' '}
+                        <strong>
+                          {payment.subscription?.preferredTeacher?.personalInfo?.fullName
+                            || payment.subscription?.preferredTeacher?.user?.name
+                            || '—'}
+                        </strong>
+                      </p>
+                    </div>
+                  ) : null}
                   <p className="text-xl font-bold text-emerald-700">{amount(payment)}</p>
                   <p className="text-sm">الطريقة: <strong>{payment.manual?.method || '-'}</strong></p>
                   {payment.manual?.transferReference ? <p className="text-sm">مرجع العملية: <strong>{payment.manual.transferReference}</strong></p> : null}
@@ -127,7 +151,7 @@ export default function AdminPayments() {
 
                   {payment.status === 'pending' ? (
                     <div className="flex gap-2">
-                      <button disabled={working === payment.id} onClick={() => review(payment, 'approve')} className="wn-btn wn-btn--primary"><CheckCircle size={16} /> قبول</button>
+                      <button disabled={working === payment.id} onClick={() => review(payment, 'approve')} className="wn-btn wn-btn--primary"><CheckCircle size={16} /> {payment.kind === 'subscription' ? 'اعتماد الدفع' : 'قبول'}</button>
                       <button disabled={working === payment.id} onClick={() => review(payment, 'reject')} className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold flex items-center gap-2"><XCircle size={16} /> رفض</button>
                     </div>
                   ) : null}
