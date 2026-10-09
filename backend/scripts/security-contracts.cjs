@@ -731,6 +731,11 @@ requireContains(
   'group activation must obey the selected plan minimum',
   /circle\.students\.length\s*>=\s*plan\.minStudents/
 );
+requireContains(
+  'backend/services/subscriptionPlacement.js',
+  'existing circle placement must match student gender age track and level',
+  /gender:\s*expectedGender[\s\S]{0,180}targetAgeGroup:\s*expectedAgeGroup[\s\S]{0,180}track:\s*expectedTrack[\s\S]{0,180}level:\s*expectedLevel/
+);
 
 // T07.2d: manual transfer approval must remain private, admin-only and transactional.
 requireContains(
