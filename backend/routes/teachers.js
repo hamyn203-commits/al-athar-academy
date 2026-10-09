@@ -657,7 +657,7 @@ router.post(
       hourlyRate: 50,
     });
 
-    await User.findByIdAndUpdate(userId, { role: 'teacher' });
+    await User.findByIdAndUpdate(userId, { $set: { role: 'teacher', 'onboarding.teacherApplicationReady': true } });
 
     notifyAdmins({
       type: 'system',
