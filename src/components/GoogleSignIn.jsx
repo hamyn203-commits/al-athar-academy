@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useI18n } from '../i18n';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { postAuthDestination } from '../lib/navigation';
+import { localizedPath } from '../lib/locale';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
@@ -32,7 +33,7 @@ export default function GoogleSignIn({ context = 'signin', role = 'student' }) {
           if (!active) return;
           if (!result.success) return setError(result.error || 'Google sign-in failed');
           if (result.user?.onboarding?.required && !result.user?.onboarding?.completed) {
-            navigate(locale === 'ar' ? '/ar/profile/setup' : `/${locale}/profile/setup`, { replace: true });
+            navigate(localizedPath('/profile/setup', locale), { replace: true });
             return;
           }
           navigate(postAuthDestination({
