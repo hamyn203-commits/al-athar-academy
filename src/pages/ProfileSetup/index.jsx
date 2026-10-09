@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useRequireAuth } from '../../hooks/useRequireAuth';
 import { useI18n } from '../../i18n';
 import { dashboardPathForRole } from '../../lib/navigation';
-import { API_BASE_URL } from '../../config';
+import api from '../../lib/api';
 
 export default function ProfileSetup() {
   const { user, ready } = useRequireAuth(['student', 'guardian', 'teacher']);
@@ -18,12 +18,9 @@ export default function ProfileSetup() {
     event.preventDefault();
     setSaving(true); setError('');
     try {
-      const token = sessionStorage.getItem('accessToken') || localStorage.getItem('accessToken');
       const payload = { name: data.name, phone: data.phone, whatsappPhone: data.whatsappPhone, bio: data.bio };
       if (user.role === 'student') Object.assign(payload, { age: data.age ? Number(data.age) : undefined, gender: data.gender || undefined, memorizedJuz: Number(data.memorizedJuz), preferredTrack: data.preferredTrack, currentLevel: data.currentLevel, memorizationDetails: data.memorizationDetails });
-      const response = await fetch(`${API_BASE_URL}/api/auth/onboarding`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, credentials: 'include', body: JSON.stringify(payload) });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || 'تعذر حفظ البيانات');
+      await api.patch('/api/auth/onboarding', payload, { auth: true });
       navigate(dashboardPathForRole(user.role, locale), { replace: true });
     } catch (e) { setError(e.message); } finally { setSaving(false); }
   };
