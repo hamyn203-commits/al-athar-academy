@@ -1933,55 +1933,92 @@ export default function TeacherDashboard() {
               ['tajweed', 'التجويد'],
               ['behavior', 'السلوك'],
               ['commitment', 'الالتزام'],
-            ].map(([key, label]) => (
-              <div key={key}>
-                <label className="text-sm font-medium">{label} (1-5)</label>
-                <input type="range" min={1} max={5} value={evaluation[key]}
-                  onChange={(e) => setEvaluation((p) => ({ ...p, [key]: Number(e.target.value) }))}
-                  className="w-full" />
-                <span className="text-sm text-emerald-600 font-bold">{evaluation[key]}</span>
-              </div>
-            ))}
+            ].map(([key, label]) => {
+              const inputId = `teacher-eval-${key}`;
+              return (
+                <div key={key}>
+                  <label htmlFor={inputId} className="text-sm font-medium">{label} (1-5)</label>
+                  <input
+                    id={inputId}
+                    name={key}
+                    type="range"
+                    min={1}
+                    max={5}
+                    step={1}
+                    value={evaluation[key]}
+                    aria-valuemin={1}
+                    aria-valuemax={5}
+                    aria-valuenow={evaluation[key]}
+                    aria-valuetext={`${evaluation[key]} من 5`}
+                    onChange={(e) => setEvaluation((p) => ({ ...p, [key]: Number(e.target.value) }))}
+                    className="w-full"
+                  />
+                  <output htmlFor={inputId} className="text-sm text-emerald-600 font-bold">{evaluation[key]}</output>
+                </div>
+              );
+            })}
             <div className="wn-teacher-eval-report">
               <div className="wn-teacher-section-heading">
                 <div><span>تقرير ولي الأمر</span><h3>ماذا تم في الحصة؟</h3></div>
               </div>
+              <label htmlFor="teacher-eval-surah" className="text-sm font-medium">السورة / المقطع الذي تم تسميعه</label>
               <input
+                id="teacher-eval-surah"
+                name="surahRecited"
                 className="input-field w-full"
-                placeholder="السورة / المقطع الذي تم تسميعه"
+                placeholder="مثال: سورة البقرة"
                 value={evaluation.surahRecited}
                 onChange={(event) => setEvaluation((current) => ({ ...current, surahRecited: event.target.value }))}
               />
               <div className="grid grid-cols-2 gap-3">
-                <input
-                  type="number"
-                  min="1"
-                  className="input-field w-full"
-                  placeholder="من آية"
-                  value={evaluation.fromAyah}
-                  onChange={(event) => setEvaluation((current) => ({ ...current, fromAyah: event.target.value }))}
-                />
-                <input
-                  type="number"
-                  min="1"
-                  className="input-field w-full"
-                  placeholder="إلى آية"
-                  value={evaluation.toAyah}
-                  onChange={(event) => setEvaluation((current) => ({ ...current, toAyah: event.target.value }))}
-                />
+                <label className="text-sm font-medium" htmlFor="teacher-eval-from-ayah">
+                  من آية
+                  <input
+                    id="teacher-eval-from-ayah"
+                    name="fromAyah"
+                    type="number"
+                    min="1"
+                    className="input-field w-full mt-1"
+                    placeholder="1"
+                    value={evaluation.fromAyah}
+                    onChange={(event) => setEvaluation((current) => ({ ...current, fromAyah: event.target.value }))}
+                  />
+                </label>
+                <label className="text-sm font-medium" htmlFor="teacher-eval-to-ayah">
+                  إلى آية
+                  <input
+                    id="teacher-eval-to-ayah"
+                    name="toAyah"
+                    type="number"
+                    min="1"
+                    className="input-field w-full mt-1"
+                    placeholder="5"
+                    value={evaluation.toAyah}
+                    onChange={(event) => setEvaluation((current) => ({ ...current, toAyah: event.target.value }))}
+                  />
+                </label>
               </div>
+              <label htmlFor="teacher-eval-next-homework" className="text-sm font-medium">الواجب أو الهدف القادم</label>
               <input
+                id="teacher-eval-next-homework"
+                name="nextHomework"
                 className="input-field w-full"
-                placeholder="الواجب أو الهدف القادم"
+                placeholder="الهدف أو الواجب التالي"
                 value={evaluation.nextHomework}
                 onChange={(event) => setEvaluation((current) => ({ ...current, nextHomework: event.target.value }))}
               />
             </div>
 
             <div>
-              <label className="text-sm font-medium">ملاحظات</label>
-              <textarea className="input-field w-full mt-1" rows={2} value={evaluation.overallNotes}
-                onChange={(e) => setEvaluation((p) => ({ ...p, overallNotes: e.target.value }))} />
+              <label htmlFor="teacher-eval-notes" className="text-sm font-medium">ملاحظات</label>
+              <textarea
+                id="teacher-eval-notes"
+                name="overallNotes"
+                className="input-field w-full mt-1"
+                rows={2}
+                value={evaluation.overallNotes}
+                onChange={(e) => setEvaluation((p) => ({ ...p, overallNotes: e.target.value }))}
+              />
             </div>
             <div>
               <div className="flex justify-between items-center mb-2">
@@ -2003,8 +2040,14 @@ export default function TeacherDashboard() {
               ))}
             </div>
             <div className="wn-teacher-eval-submit">
-              <p><CheckCircle2 size={16} /> سيتم إنهاء الحصة، تسجيل الاستحقاق، وحفظ تقرير المتابعة.</p>
-              <button onClick={completeSession} className="btn-primary w-full">
+              <p id="teacher-eval-submit-note"><CheckCircle2 size={16} /> سيتم إنهاء الحصة، تسجيل الاستحقاق، وحفظ تقرير المتابعة.</p>
+              <button
+                id="teacher-eval-submit"
+                type="button"
+                onClick={completeSession}
+                className="btn-primary w-full"
+                aria-describedby="teacher-eval-submit-note"
+              >
                 إنهاء الحصة وإرسال التقرير (+{SESSION_RATE} ج.م)
               </button>
             </div>
@@ -2142,7 +2185,7 @@ function Modal({ title, onClose, children, wide = false }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" dir="rtl">
       <div className={`bg-white rounded-xl ${wide ? 'max-w-4xl' : 'max-w-lg'} w-full max-h-[90vh] overflow-y-auto p-6 relative`}>
-        <button onClick={onClose} className="absolute left-4 top-4 text-gray-400 hover:text-gray-600"><X size={20} /></button>
+        <button type="button" onClick={onClose} aria-label="إغلاق النافذة" className="absolute left-4 top-4 text-gray-400 hover:text-gray-600"><X size={20} /></button>
         <h3 className="text-lg font-bold mb-4">{title}</h3>
         {children}
       </div>
