@@ -243,7 +243,9 @@ router.post('/', protect, authorize('admin', 'teacher'), async (req, res) => {
       timezone,
       pricePerSession,
       currentSurah,
-      notes
+      notes,
+      capacity,
+      subscriptionPlanKey
     } = req.body;
 
     if (!name || !gender) {
@@ -263,9 +265,9 @@ router.post('/', protect, authorize('admin', 'teacher'), async (req, res) => {
         level: level || 'beginner',
         gender,
         targetAgeGroup: targetAgeGroup || 'kids_8_12',
-        capacity: 10,
+        capacity: Math.min(15, Math.max(1, Number(capacity || 10))),
         currentCount: 0,
-        availableSeats: 10,
+        availableSeats: Math.min(15, Math.max(1, Number(capacity || 10))),
         isFull: false,
         status: 'forming',
         teacher: {
@@ -317,7 +319,8 @@ router.post('/', protect, authorize('admin', 'teacher'), async (req, res) => {
       level: level || 'beginner',
       gender,
       targetAgeGroup: targetAgeGroup || 'kids_8_12',
-      capacity: 10,
+      capacity: Math.min(15, Math.max(1, Number(capacity || 10))),
+      subscriptionPlanKey,
       teacher: finalTeacherId,
       students: [],
       schedule: Array.isArray(schedule) ? schedule : [],
@@ -388,8 +391,9 @@ router.post('/:id/join', protect, authorize('student', 'guardian', 'admin'), asy
         await circle.save();
       }
       return res.status(400).json({
-        error: 'عذراً، الحلقة مكتملة بالكامل (السعة القصوى 10 طلاب)',
-        code: 'CIRCLE_FULL'
+        error: 'عذراً، الحلقة مكتملة بالكامل',
+        code: 'CIRCLE_FULL',
+        capacity: circle.capacity || 10
       });
     }
 
