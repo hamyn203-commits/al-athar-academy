@@ -3,6 +3,20 @@ import {
   PlayCircle, CheckCircle2, AlertTriangle, History, MessageSquare, TrendingUp,
 } from 'lucide-react';
 
+function studentAvatarUrl(value) {
+  const reference = String(value || '').trim();
+  if (!reference) return '';
+  try {
+    const url = new URL(reference, 'https://wahy.invalid');
+    if (url.protocol === 'https:' && url.hostname.endsWith('.blob.vercel-storage.com')
+      && url.pathname.startsWith('/uploads/student-avatar/')) {
+      return '/api/uploads/public?ref=' + encodeURIComponent(reference);
+    }
+    if (reference.startsWith('/') && !reference.startsWith('//')) return reference;
+  } catch { return ''; }
+  return '';
+}
+
 function whatsappLink(value) {
   const raw = String(value || '').replace(/[^\d+]/g, '');
   const digits = raw.startsWith('+') ? raw.slice(1) : raw;
@@ -44,6 +58,7 @@ export default function Student360Dossier({
             <span>Student 360</span>
             <h2>{student?.name || 'ملف الطالب'}</h2>
             <p>{student?.email || '—'} · {student?.phone || '—'}</p>
+            {studentAvatarUrl(student?.avatar) && <img src={studentAvatarUrl(student.avatar)} alt="الصورة الشخصية للطالب" className="mt-3 w-16 h-16 rounded-full object-cover border border-slate-200" />}
           </div>
           <button type="button" onClick={onClose} aria-label="إغلاق"><X size={20} /></button>
         </header>
