@@ -38,7 +38,7 @@ const GroupCircleSchema = new mongoose.Schema({
   capacity: {
     type: Number,
     default: 10,
-    max: 10,
+    max: 15,
     min: 1
   },
   teacher: {
@@ -71,6 +71,11 @@ const GroupCircleSchema = new mongoose.Schema({
   pricePerSession: {
     egp: { type: Number, default: 20 },
     usd: { type: Number, default: 1 }
+  },
+  subscriptionPlanKey: {
+    type: String,
+    enum: ['community', 'group', 'focused', 'mini', 'private'],
+    default: undefined
   },
   currentSurah: {
     type: String,
