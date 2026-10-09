@@ -1,5 +1,5 @@
 import {
-  BarChart3, BookOpen, CreditCard, FileText, GraduationCap, History,
+  BarChart3, BookOpen, CalendarClock, CreditCard, FileText, GraduationCap, History,
   Home, LogOut, Mail, Menu, Settings, ShieldCheck, TrendingUp, Users,
   WalletCards, X,
 } from 'lucide-react';
@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { id: 'overview', label: 'مركز القيادة', icon: Home },
   { id: 'teachers', label: 'المعلمون', icon: GraduationCap },
   { id: 'people', label: 'الطلاب والأسر', icon: Users },
+  { id: 'sessions', label: 'مركز الحصص', icon: CalendarClock },
   { id: 'payments', label: 'المدفوعات', icon: CreditCard, route: 'payments' },
   { id: 'withdrawals', label: 'السحوبات والمالية', icon: WalletCards },
   { id: 'courses', label: 'الدورات والمحتوى', icon: BookOpen },
@@ -91,7 +92,7 @@ export default function AdminDashboardShell({
         </nav>
 
         <div className="wn-admin-sidebar__system">
-          <button type="button" onClick={() => onChange?.('overview')}>
+          <button type="button" onClick={() => onChange?.('system')} className={active === 'system' ? 'is-active' : ''}>
             <Settings size={18} />
             <span>النظام</span>
           </button>
