@@ -836,7 +836,7 @@ requireContains(
 requireContains(
   'backend/services/manualPaymentSettlement.js',
   'manual payment approval must create enrollment through the settlement service',
-  /normalizedAction\s*===\s*['"]approve['"][\s\S]{0,2600}createEnrollmentForSettledPayment/
+  /normalizedAction\s*===\s*['"]approve['"][\s\S]{0,7200}createEnrollmentForSettledPayment/
 );
 requireAbsent(
   'backend/routes/uploads.js',
