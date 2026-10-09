@@ -18,7 +18,7 @@ import AdminPeopleSearch from './AdminPeopleSearch';
 import Student360Dossier from './Student360Dossier';
 import Family360Dossier from './Family360Dossier';
 import AdminDashboardShell from './AdminDashboardShell';
-import LaunchReadinessPanel from './LaunchReadinessPanel';
+import AdminExecutiveHome from './AdminExecutiveHome';
 
 const STATUS_LABEL = { new: 'جديدة', read: 'مقروءة', replied: 'تم الرد', closed: 'مغلقة' };
 const STATUS_COLOR = { new: 'bg-blue-100 text-blue-700', read: 'bg-gray-100', replied: 'bg-green-100 text-green-700', closed: 'bg-gray-200' };
@@ -508,92 +508,17 @@ export default function AdminDashboard() {
       ) : (
         <>
           {tab === 'overview' && (
-            <>
-              <section className="wn-admin-command-center">
-                <div className="wn-admin-command-center__heading">
-                  <div>
-                    <span>Admin Command Center</span>
-                    <h2>ماذا يحتاج تدخل الإدارة الآن؟</h2>
-                    <p>الأولوية للقرارات التشغيلية، ثم الإحصائيات.</p>
-                  </div>
-                  <div className="wn-admin-command-center__score">
-                    <strong>{commandCenter.summary?.totalPendingActions || 0}</strong>
-                    <small>إجراء معلق</small>
-                  </div>
-                </div>
-
-                <div className="wn-admin-command-center__actions">
-                  {(commandCenter.actions || []).map((item) => {
-                    const Icon = item.id === 'teacher-review'
-                      ? UserCheck
-                      : item.id === 'manual-payments'
-                        ? CreditCard
-                        : item.id === 'overdue-sessions'
-                          ? Clock3
-                          : item.severity === 'high'
-                            ? AlertTriangle
-                            : ShieldCheck;
-                    return (
-                      <button
-                        type="button"
-                        key={item.id}
-                        className={`is-${item.severity || 'info'}`}
-                        onClick={() => {
-                          if (item.actionUrl === '/admin/payments') navigate('payments');
-                          else {
-                            const match = item.actionUrl?.match(/tab=([^&]+)/);
-                            if (match?.[1]) setTab(match[1]);
-                          }
-                        }}
-                      >
-                        <span><Icon size={18} /></span>
-                        <span><strong>{item.label}</strong><small>{item.count ? 'يحتاج متابعة' : 'لا يوجد إجراء'}</small></span>
-                        <b>{item.count || 0}</b>
-                        <ChevronLeft size={15} />
-                      </button>
-                    );
-                  })}
-                </div>
-              </section>
-
-              <div className="wn-admin-kpi-grid">
-                <StatCard label="إجمالي الطلاب" value={stats.totalStudents || 0} icon={Users} />
-                <StatCard label="المعلمون النشطون" value={stats.totalTeachers || 0} icon={BookOpen} />
-                <StatCard label="إجمالي الحصص" value={stats.totalSessions || 0} icon={Calendar} />
-                <StatCard label="إجمالي الإيرادات" value={`${stats.totalEarnings || 0} ج.م`} icon={DollarSign} />
-                <StatCard label="يحتاج تدخل الإدارة" value={commandCenter.summary?.totalPendingActions || 0} icon={AlertTriangle} />
-              </div>
-              <LaunchReadinessPanel />
-
-              {health && (
-                <div className="bg-slate-900 text-white rounded-xl p-5 mb-6">
-                  <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-                    <h3 className="font-bold flex items-center gap-2"><MonitorPlay size={18} /> صحة النظام v{health.version}</h3>
-                    <a href="https://wahy-wa-namaa-api.vercel.app/api/health" target="_blank" rel="noreferrer" className="text-xs text-emerald-300 hover:underline">فتح API health ↗</a>
-                  </div>
-                  <div className="flex flex-wrap gap-2 text-xs">
-                    {Object.entries(health.features || {}).map(([k, v]) => (
-                      <span key={k} className={`px-2 py-1 rounded-full ${v ? 'bg-emerald-500/20 text-emerald-200' : 'bg-red-500/20 text-red-200'}`}>{k}: {v ? '✓' : '✗'}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
-              <div className="wn-dashboard-surface mb-6 flex flex-wrap items-center justify-between gap-4">
-                <div>
-                  <h3 className="font-bold flex items-center gap-2"><DollarSign size={18} /> مراجعة مدفوعات الطلاب</h3>
-                  <p className="text-sm text-gray-500 mt-1">راجع تحويلات InstaPay وVodafone Cash ثم فعّل الاشتراك بعد التأكد من وصول المبلغ.</p>
-                </div>
-                <button onClick={() => navigate('payments')} className="wn-btn wn-btn--primary">فتح مراجعة المدفوعات</button>
-              </div>
-
-              <TeacherReviewQueue
-                teachers={pending}
-                loading={loading}
-                onRefresh={loadPendingTeachers}
-                onOpenDossier={openTeacherDossier}
-                compact
-              />
-            </>
+            <AdminExecutiveHome
+              stats={stats}
+              commandCenter={commandCenter}
+              health={health}
+              pendingTeachers={pending}
+              loading={loading}
+              onRefreshTeachers={loadPendingTeachers}
+              onOpenTeacher={openTeacherDossier}
+              onNavigate={navigate}
+              onSelectTab={setTab}
+            />
           )}
 
           {tab === 'people' && (
