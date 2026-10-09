@@ -307,11 +307,24 @@ export default function StudentDashboard() {
     }
   }, [ready]);
 
+  const refreshSubscriptions = useCallback(async () => {
+    if (!ready) return;
+    try {
+      const result = await api.get('/api/subscriptions/me', { auth: true });
+      setSubscriptions(result.subscriptions || []);
+    } catch {
+      // Keep the last known subscription state during transient failures.
+    }
+  }, [ready]);
+
   useEffect(() => {
     if (!ready) return undefined;
 
     const refresh = () => {
-      if (document.visibilityState === 'visible') syncSessions();
+      if (document.visibilityState === 'visible') {
+        syncSessions();
+        refreshSubscriptions();
+      }
     };
 
     const interval = window.setInterval(refresh, 15000);
@@ -326,7 +339,7 @@ export default function StudentDashboard() {
       window.removeEventListener('focus', onFocus);
       document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [ready, syncSessions]);
+  }, [ready, syncSessions, refreshSubscriptions]);
 
   useEffect(() => {
     if (!ready) return undefined;
@@ -348,6 +361,7 @@ export default function StudentDashboard() {
           .catch(() => {});
       }
       if (type === 'system') {
+        refreshSubscriptions();
         api.get('/api/students/dashboard/guardian-invitations', { auth: true })
           .then((result) => {
             setGuardianInvitations(result.invitations || []);
@@ -359,7 +373,7 @@ export default function StudentDashboard() {
 
     window.addEventListener('wn:realtime-notification', onRealtimeNotification);
     return () => window.removeEventListener('wn:realtime-notification', onRealtimeNotification);
-  }, [ready, syncSessions]);
+  }, [ready, syncSessions, refreshSubscriptions]);
 
   useEffect(() => {
     const requestedTab = searchParams.get('tab');
