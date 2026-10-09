@@ -7,6 +7,7 @@ import SEOHead from '../../components/SEOHead';
 import { useI18n } from '../../i18n';
 import { localizedPath } from '../../lib/locale';
 import api from '../../lib/api';
+import { teacherPublicImage, teacherImageFallback } from '../../lib/teacherMedia';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import '../../styles/public-experience.css';
 
@@ -110,7 +111,7 @@ export default function TeacherProfile() {
         <section className="wn-detail-hero wn-teacher-profile-hero">
           <div className="page-container wn-teacher-profile-grid">
             <div className="wn-teacher-profile-photo">
-              <img src={media.profilePhoto || teacher.user?.avatar || '/default-teacher.png'} alt={name} />
+              <img src={teacherPublicImage(media.profilePhoto || teacher.user?.avatar)} alt={name} onError={teacherImageFallback} />
             </div>
 
             <div>
