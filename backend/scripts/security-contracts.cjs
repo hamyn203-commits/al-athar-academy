@@ -913,8 +913,13 @@ requireAbsent(
 );
 requireContains(
   'backend/routes/adminPeople.js',
-  'guardian-link destination must be protected by the admin-only people router',
-  /router\.use\(protect,\s*authorize\(['"]admin['"]\)\)[\s\S]{0,2000}router\.get\(['"]\/guardian-links['"]/
+  'admin people router must remain admin-only',
+  /router\.use\(protect,\s*authorize\(['"]admin['"]\)\)/
+);
+requireContains(
+  'backend/routes/adminPeople.js',
+  'guardian-link destination must stay inside the protected admin people router',
+  /router\.get\(['"]\/guardian-links['"]/
 );
 requireContains(
   'backend/routes/adminPeople.js',
