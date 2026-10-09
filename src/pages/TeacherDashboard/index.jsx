@@ -684,7 +684,7 @@ export default function TeacherDashboard() {
     { id: 'wallet', label: 'المحفظة', icon: Wallet, description: 'الرصيد والسحب والمعاملات' },
     { id: 'analytics', label: 'الأداء', icon: BarChart3, description: 'الحصص والتحويل والواجبات' },
     { id: 'reviews', label: 'التقييمات', icon: Star, description: 'آراء الطلاب ومتوسط التقييم' },
-    { id: 'account', label: 'ملفي', icon: UserRound, description: 'بيانات حساب المعلم' },
+    { id: 'account', label: 'ملفي العام', icon: UserRound, description: 'صورتي وبياناتي وطلب تعديل الملف' },
   ];
 
   const now = new Date();
@@ -704,11 +704,27 @@ export default function TeacherDashboard() {
 
           <section className="wn-teacher-welcome">
             <div className="wn-teacher-welcome__main">
-              <span className="wn-teacher-welcome__eyebrow">
-                <Sparkles size={15} />
-                مساحة المعلم اليومية
-              </span>
-              <h2>السلام عليكم، {teacher?.personalInfo?.fullName || user?.name || 'معلمنا'}</h2>
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-14 h-14 rounded-full overflow-hidden border border-emerald-200 bg-emerald-50 grid place-items-center shrink-0">
+                  {teacher?.media?.profilePhoto ? (
+                    <img
+                      src={teacherPublicImage(teacher.media.profilePhoto)}
+                      alt={teacher?.personalInfo?.fullName || user?.name || 'المعلم'}
+                      onError={teacherImageFallback}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-lg font-bold text-emerald-900">{(teacher?.personalInfo?.fullName || user?.name || 'م').slice(0, 1)}</span>
+                  )}
+                </div>
+                <div>
+                  <span className="wn-teacher-welcome__eyebrow">
+                    <Sparkles size={15} />
+                    مساحة المعلم اليومية
+                  </span>
+                  <h2>السلام عليكم، {teacher?.personalInfo?.fullName || user?.name || 'معلمنا'}</h2>
+                </div>
+              </div>
               <p>
                 {nextSession
                   ? `حلقتك القادمة مع ${nextSession.student?.name || 'الطالب'} — كل ما تحتاجه للتحضير والمتابعة أمامك.`
@@ -744,6 +760,11 @@ export default function TeacherDashboard() {
                   <Megaphone size={17} />
                   رسالة لطلابي
                 </button>
+                <button type="button" onClick={() => setTab('account')} className="wn-teacher-secondary-action">
+                  <UserRound size={17} />
+                  ملفي العام
+                  {profileChange?.status === 'pending' ? <b>مراجعة</b> : null}
+                </button>
               </div>
             </div>
 
@@ -755,8 +776,8 @@ export default function TeacherDashboard() {
               {nextSession ? (
                 <>
                   <strong>{nextSession.student?.name || 'الطالب'}</strong>
-                  <p>{new Date(nextSession.scheduledAt).toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
-                  <p>{new Date(nextSession.scheduledAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</p>
+                  <p>{formatSessionDateTime(nextSession, 'ar-EG', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+                  <p>{formatSessionDateTime(nextSession, 'ar-EG', { hour: '2-digit', minute: '2-digit' })} · {sessionTimeZone(nextSession, teacher?.availabilityTimezone || 'Africa/Cairo')}</p>
                   <div className="wn-teacher-welcome__next-actions">
                     <button type="button" onClick={() => setChatSession(nextSession)}>
                       <MessageSquare size={15} /> محادثة
