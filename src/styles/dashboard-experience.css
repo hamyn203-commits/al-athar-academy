@@ -7185,3 +7185,155 @@
     grid-column: auto;
   }
 }
+
+
+/* T18 — Readable navy-and-gold sidebar and persistent compact rail */
+.wn-admin-sidebar {
+  transition: width .24s ease, transform .24s ease;
+}
+.wn-admin-stage {
+  transition: margin-left .24s ease;
+}
+.wn-admin-sidebar__nav {
+  gap: .18rem;
+  padding: .75rem .62rem;
+}
+.wn-admin-sidebar__nav button,
+.wn-admin-sidebar__system button,
+.wn-admin-sidebar__system a {
+  min-height: 44px;
+  gap: .72rem;
+  font-size: .83rem;
+  font-weight: 750;
+  color: #d5dce7;
+}
+.wn-admin-sidebar__nav button.is-active {
+  background: linear-gradient(108deg,#c08b27,#f0d077);
+  border-color: rgba(251,222,136,.62);
+  box-shadow: 0 9px 24px -16px rgba(242,190,66,.8), inset 0 1px rgba(255,255,255,.35);
+}
+.wn-admin-sidebar__nav button:not(.is-active):hover,
+.wn-admin-sidebar__system button:not(.is-active):hover,
+.wn-admin-sidebar__system a:hover {
+  background: rgba(255,255,255,.095);
+  color: #fff;
+}
+.wn-admin-sidebar__profile strong {font-size: .78rem;}
+.wn-admin-sidebar__profile small {font-size: .64rem; color: #b0bbcb;}
+.wn-admin-sidebar__profile > button {min-width: 32px; min-height: 32px;}
+.wn-admin-topbar {
+  grid-template-areas: "actions search toggle";
+  grid-template-columns: auto minmax(0,1fr) auto;
+  gap: .9rem;
+}
+.wn-admin-topbar__actions {grid-area: actions;}
+.wn-admin-topbar__search {grid-area: search;}
+.wn-admin-topbar__sidebar-toggle {
+  grid-area: toggle;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(12,39,73,.12);
+  border-radius: 12px;
+  color: #0c2749;
+  background: #fff;
+  box-shadow: 0 8px 24px -21px rgba(4,18,36,.7);
+  transition: background .18s ease, color .18s ease, border-color .18s ease;
+}
+.wn-admin-topbar__sidebar-toggle:hover,
+.wn-admin-topbar__sidebar-toggle:focus-visible {
+  color: #8a5e13;
+  background: #fff6dd;
+  border-color: rgba(211,163,60,.42);
+  outline-offset: 2px;
+}
+.wn-admin-app .wn-admin-topbar__search .wn-admin-global-search__bar input {
+  font-size: .82rem;
+}
+.wn-admin-app .wn-admin-topbar__search .wn-admin-global-search__bar > button:last-child {
+  font-size: .69rem;
+  font-weight: 850;
+}
+.wn-admin-topbar__date {font-size: .67rem;}
+.wn-admin-topbar__locale {font-size: .72rem;}
+
+/* Desktop: icon-only rail without hiding access to destinations. */
+@media (min-width: 901px) {
+  .wn-admin-app.is-sidebar-collapsed .wn-admin-sidebar {width: 78px;}
+  .wn-admin-app.is-sidebar-collapsed .wn-admin-stage {margin-left: 78px;}
+  .wn-admin-app.is-sidebar-collapsed .wn-admin-sidebar__brand {
+    min-height: 95px;
+    padding: .75rem .3rem;
+  }
+  .wn-admin-app.is-sidebar-collapsed .wn-admin-sidebar__divider {margin-inline: .75rem;}
+  .wn-admin-app.is-sidebar-collapsed .wn-admin-sidebar__nav {
+    padding: .8rem .5rem;
+    gap: .3rem;
+  }
+  .wn-admin-app.is-sidebar-collapsed .wn-admin-sidebar__nav button,
+  .wn-admin-app.is-sidebar-collapsed .wn-admin-sidebar__system button,
+  .wn-admin-app.is-sidebar-collapsed .wn-admin-sidebar__system a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    gap: 0;
+    padding: .55rem;
+    border-radius: 12px;
+  }
+  .wn-admin-app.is-sidebar-collapsed .wn-admin-sidebar__nav button span,
+  .wn-admin-app.is-sidebar-collapsed .wn-admin-sidebar__system button span,
+  .wn-admin-app.is-sidebar-collapsed .wn-admin-sidebar__system a span {
+    display: none;
+  }
+  .wn-admin-app.is-sidebar-collapsed .wn-admin-sidebar__nav svg,
+  .wn-admin-app.is-sidebar-collapsed .wn-admin-sidebar__system svg {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+  }
+  .wn-admin-app.is-sidebar-collapsed .wn-admin-sidebar__system {
+    padding: .6rem .5rem;
+  }
+  .wn-admin-app.is-sidebar-collapsed .wn-admin-sidebar__profile {
+    display: flex;
+    flex-direction: column;
+    gap: .4rem;
+    margin: .4rem .4rem .7rem;
+    padding: .58rem .3rem;
+    border-radius: 12px;
+  }
+  .wn-admin-app.is-sidebar-collapsed .wn-admin-sidebar__profile > div:nth-child(2) {
+    display: none;
+  }
+  .wn-admin-app.is-sidebar-collapsed .wn-admin-sidebar__avatar {
+    width: 34px;
+    height: 34px;
+  }
+}
+
+@media (max-width: 900px) {
+  /* Mobile retains the full drawer and its original open/close button. */
+  .wn-admin-topbar {
+    grid-template-areas: "search actions";
+    grid-template-columns: minmax(0,1fr) auto;
+  }
+  .wn-admin-topbar__sidebar-toggle {display: none;}
+  .wn-admin-app.is-sidebar-collapsed .wn-admin-sidebar {width: 238px;}
+  .wn-admin-app.is-sidebar-collapsed .wn-admin-stage {margin-left: 0;}
+}
+@media (max-width: 640px) {
+  .wn-admin-topbar {
+    grid-template-areas: "search";
+    grid-template-columns: minmax(0,1fr);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wn-admin-sidebar,
+  .wn-admin-stage,
+  .wn-admin-topbar__sidebar-toggle {
+    transition: none;
+  }
+}
