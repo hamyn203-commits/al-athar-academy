@@ -16,6 +16,7 @@ import { apiUrl } from '../../config';
 import { TASK_TYPES } from '../TeacherRegistration/constants';
 import SessionChatModal from '../../components/session/SessionChatModal';
 import { sessionJoinWindow } from '../../lib/sessionTime';
+import { teacherPublicImage, teacherImageFallback } from '../../lib/teacherMedia';
 import { useI18n } from '../../i18n';
 import { localizedPath } from '../../lib/locale';
 
@@ -109,10 +110,20 @@ export default function TeacherDashboard() {
   });
   const [publishingUpdate, setPublishingUpdate] = useState(false);
   const [updateVideoUrls, setUpdateVideoUrls] = useState({});
+  const [profileChange, setProfileChange] = useState(null);
+  const [profileEdit, setProfileEdit] = useState({
+    fullName: '', city: '', university: '', faculty: '', qualification: '',
+    teachingExperience: 0, numberOfIjazat: 0, bio: '',
+  });
+  const [profileFiles, setProfileFiles] = useState({
+    profilePhoto: null, introductionVideo: null, recitationVideo: null, teachingMethodVideo: null,
+  });
+  const [savingProfileChange, setSavingProfileChange] = useState(false);
+
 
   const load = useCallback(async () => {
     try {
-      const [prof, st, tr, pendReg, sess, stud, tsk, balance, tx, analyticsData, updateData] = await Promise.all([
+      const [prof, st, tr, pendReg, sess, stud, tsk, balance, tx, analyticsData, updateData, profileChangeData] = await Promise.all([
         api.get('/api/teachers/dashboard/profile', { auth: true }),
         api.get('/api/teachers/dashboard/stats', { auth: true }),
         api.get('/api/sessions/my-sessions?type=trial&status=pending', { auth: true }),
@@ -124,6 +135,7 @@ export default function TeacherDashboard() {
         api.get('/api/finance/teacher/transactions?limit=20', { auth: true }),
         api.get('/api/teachers/dashboard/analytics', { auth: true }),
         api.get('/api/teacher-updates/teacher', { auth: true }),
+        api.get('/api/teachers/dashboard/profile-change', { auth: true }),
       ]);
       setProfile(prof);
       setStats(st);
@@ -142,6 +154,7 @@ export default function TeacherDashboard() {
       setTransactions(tx.transactions || []);
       setAnalytics(analyticsData || null);
       setTeacherUpdates(updateData.updates || []);
+      setProfileChange(profileChangeData?.request || null);
     } catch {
       toast.error('تعذر تحميل بيانات لوحة المعلم');
     } finally {
@@ -150,6 +163,60 @@ export default function TeacherDashboard() {
   }, [toast]);
 
   useEffect(() => { if (ready) load(); }, [ready, load]);
+
+  useEffect(() => {
+    const teacher = profile?.teacher;
+    if (!teacher) return;
+    setProfileEdit({
+      fullName: teacher.personalInfo?.fullName || user?.name || '',
+      city: teacher.personalInfo?.city || '',
+      university: teacher.academicInfo?.university || '',
+      faculty: teacher.academicInfo?.faculty || '',
+      qualification: teacher.academicInfo?.qualification || '',
+      teachingExperience: Number(teacher.quranInfo?.teachingExperience || 0),
+      numberOfIjazat: Number(teacher.quranInfo?.numberOfIjazat || 0),
+      bio: teacher.user?.bio || '',
+    });
+  }, [profile?.teacher?._id, user?.name]);
+
+  const submitProfileChange = async (event) => {
+    event.preventDefault();
+    if (profileChange?.status === 'pending') {
+      return toast.error('لديك طلب تعديل قيد مراجعة الإدارة بالفعل');
+    }
+
+    const teacher = profile?.teacher;
+    if (!teacher) return;
+    setSavingProfileChange(true);
+
+    try {
+      const mediaEntries = Object.entries(profileFiles).filter(([, file]) => Boolean(file));
+      const uploadedPairs = await Promise.all(mediaEntries.map(async ([kind, file]) => (
+        [kind, await uploadFileDirect(file, 'teacher-public')]
+      )));
+      const media = Object.fromEntries(uploadedPairs);
+      const changes = { personalInfo: {}, academicInfo: {}, quranInfo: {}, user: {} };
+
+      if (profileEdit.fullName.trim() !== String(teacher.personalInfo?.fullName || '').trim()) changes.personalInfo.fullName = profileEdit.fullName.trim();
+      if (profileEdit.city.trim() !== String(teacher.personalInfo?.city || '').trim()) changes.personalInfo.city = profileEdit.city.trim();
+      if (profileEdit.university.trim() !== String(teacher.academicInfo?.university || '').trim()) changes.academicInfo.university = profileEdit.university.trim();
+      if (profileEdit.faculty.trim() !== String(teacher.academicInfo?.faculty || '').trim()) changes.academicInfo.faculty = profileEdit.faculty.trim();
+      if (profileEdit.qualification.trim() !== String(teacher.academicInfo?.qualification || '').trim()) changes.academicInfo.qualification = profileEdit.qualification.trim();
+      if (Number(profileEdit.teachingExperience) !== Number(teacher.quranInfo?.teachingExperience || 0)) changes.quranInfo.teachingExperience = Number(profileEdit.teachingExperience);
+      if (Number(profileEdit.numberOfIjazat) !== Number(teacher.quranInfo?.numberOfIjazat || 0)) changes.quranInfo.numberOfIjazat = Number(profileEdit.numberOfIjazat);
+      if (profileEdit.bio.trim() !== String(teacher.user?.bio || '').trim()) changes.user.bio = profileEdit.bio.trim();
+
+      const result = await api.post('/api/teachers/dashboard/profile-change', { changes, media }, { auth: true });
+      setProfileChange(result.request || null);
+      setProfileFiles({ profilePhoto: null, introductionVideo: null, recitationVideo: null, teachingMethodVideo: null });
+      toast.success('تم إرسال التعديلات للإدارة. ملفك العام سيبقى كما هو حتى الموافقة.');
+    } catch (error) {
+      toast.error(error.message || 'تعذر إرسال طلب التعديل');
+    } finally {
+      setSavingProfileChange(false);
+    }
+  };
+
 
   useEffect(() => {
     return () => {
@@ -852,7 +919,14 @@ export default function TeacherDashboard() {
                 <section className="wn-teacher-profile-card">
                   <div className="wn-teacher-profile-card__top">
                     <div className="wn-teacher-profile-card__avatar">
-                      {(teacher.personalInfo?.fullName || user?.name || 'م').slice(0, 1)}
+                      {teacher.media?.profilePhoto ? (
+                        <img
+                          src={teacherPublicImage(teacher.media.profilePhoto)}
+                          alt={teacher.personalInfo?.fullName || user?.name || 'المعلم'}
+                          onError={teacherImageFallback}
+                          className="w-full h-full object-cover rounded-full"
+                        />
+                      ) : (teacher.personalInfo?.fullName || user?.name || 'م').slice(0, 1)}
                     </div>
                     <div>
                       <span className="wn-teacher-profile-card__status"><CheckCircle2 size={14} /> {statusLabel(teacher.status)}</span>
@@ -879,9 +953,84 @@ export default function TeacherDashboard() {
                     <AlertTriangle size={17} />
                     <div>
                       <strong>بيانات الملف العام</strong>
-                      <p>تعديل البيانات التي تظهر للطلاب سيخضع لمراجعة الإدارة عند تفعيل محرر الملف العام.</p>
+                      <p>أي تعديل ترسله هنا لا يظهر للطلاب إلا بعد مراجعة الإدارة واعتماده.</p>
                     </div>
                   </div>
+
+                  {profileChange && (
+                    <div className={`mt-5 rounded-xl border p-4 text-sm ${profileChange.status === 'pending' ? 'border-amber-200 bg-amber-50 text-amber-900' : profileChange.status === 'approved' ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : 'border-rose-200 bg-rose-50 text-rose-900'}`}>
+                      <strong className="block">
+                        {profileChange.status === 'pending' ? 'طلب التعديل قيد مراجعة الإدارة' : profileChange.status === 'approved' ? 'آخر تعديل تم اعتماده' : 'آخر تعديل لم يتم اعتماده'}
+                      </strong>
+                      {profileChange.adminNote ? <p className="mt-1">ملاحظة الإدارة: {profileChange.adminNote}</p> : null}
+                      {profileChange.createdAt ? <small className="block mt-1 opacity-80">{new Date(profileChange.createdAt).toLocaleString('ar-EG')}</small> : null}
+                    </div>
+                  )}
+
+                  <form onSubmit={submitProfileChange} className="mt-6 rounded-2xl border border-slate-200 bg-white p-5">
+                    <div className="mb-4">
+                      <h4 className="font-bold text-emerald-950">تعديل الملف العام</h4>
+                      <p className="text-xs text-slate-500 mt-1">حدّث بياناتك أو وسائطك، ثم أرسلها للمراجعة. البيانات الحالية تظل منشورة حتى اعتماد التغيير.</p>
+                    </div>
+
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      {[
+                        ['fullName', 'الاسم العام'],
+                        ['city', 'المدينة'],
+                        ['university', 'الجامعة / جهة الدراسة'],
+                        ['faculty', 'الكلية'],
+                        ['qualification', 'المؤهل'],
+                      ].map(([key, label]) => (
+                        <label key={key} className="text-sm font-semibold">
+                          {label}
+                          <input
+                            className="input-field w-full mt-1"
+                            value={profileEdit[key]}
+                            disabled={profileChange?.status === 'pending'}
+                            onChange={(event) => setProfileEdit((current) => ({ ...current, [key]: event.target.value }))}
+                          />
+                        </label>
+                      ))}
+                      <label className="text-sm font-semibold">سنوات الخبرة
+                        <input type="number" min="0" max="80" className="input-field w-full mt-1" value={profileEdit.teachingExperience}
+                          disabled={profileChange?.status === 'pending'}
+                          onChange={(event) => setProfileEdit((current) => ({ ...current, teachingExperience: event.target.value }))} />
+                      </label>
+                      <label className="text-sm font-semibold">عدد الإجازات
+                        <input type="number" min="0" max="100" className="input-field w-full mt-1" value={profileEdit.numberOfIjazat}
+                          disabled={profileChange?.status === 'pending'}
+                          onChange={(event) => setProfileEdit((current) => ({ ...current, numberOfIjazat: event.target.value }))} />
+                      </label>
+                    </div>
+
+                    <label className="block text-sm font-semibold mt-3">نبذة تظهر للطلاب
+                      <textarea rows={4} maxLength={1200} className="input-field w-full mt-1" value={profileEdit.bio}
+                        disabled={profileChange?.status === 'pending'}
+                        onChange={(event) => setProfileEdit((current) => ({ ...current, bio: event.target.value }))} />
+                    </label>
+
+                    <div className="mt-5 grid sm:grid-cols-2 gap-3">
+                      {[
+                        ['profilePhoto', 'صورة شخصية جديدة', 'image/jpeg,image/png'],
+                        ['introductionVideo', 'فيديو تعريفي جديد', 'video/mp4,video/webm,video/quicktime'],
+                        ['recitationVideo', 'فيديو تلاوة جديد', 'video/mp4,video/webm,video/quicktime'],
+                        ['teachingMethodVideo', 'فيديو طريقة تدريس جديد', 'video/mp4,video/webm,video/quicktime'],
+                      ].map(([key, label, accept]) => (
+                        <label key={key} className="rounded-xl border border-dashed border-slate-300 p-3 text-sm">
+                          <strong className="block mb-2">{label}</strong>
+                          <input type="file" accept={accept} disabled={profileChange?.status === 'pending'}
+                            onChange={(event) => setProfileFiles((current) => ({ ...current, [key]: event.target.files?.[0] || null }))} />
+                          {profileFiles[key] ? <small className="block mt-1 text-emerald-700">{profileFiles[key].name}</small> : null}
+                        </label>
+                      ))}
+                    </div>
+
+                    <button type="submit" disabled={savingProfileChange || profileChange?.status === 'pending'}
+                      className="wn-btn wn-btn--primary mt-5 disabled:opacity-50">
+                      <Send size={16} />
+                      {savingProfileChange ? 'جاري الإرسال...' : profileChange?.status === 'pending' ? 'قيد المراجعة' : 'إرسال التعديلات للمراجعة'}
+                    </button>
+                  </form>
                 </section>
               </div>
             )}
