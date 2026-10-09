@@ -171,6 +171,13 @@ assert.match(studentDashboard, /\/api\/students\/dashboard\/guardian-invitations
 assert.match(studentDashboard, /submitGuardianInvitation/);
 assert.match(studentDashboard, /copyInvitationCode/);
 assert.match(studentDashboard, /trialAllowance/);
+assert.match(studentDashboard, /\/api\/subscriptions\/me/);
+assert.match(studentDashboard, /currentSubscription/);
+assert.match(studentDashboard, /حالة اشتراكك/);
+assert.match(studentDashboard, /بانتظار مراجعة الإدارة/);
+assert.match(studentDashboard, /الدفع معتمد — بانتظار التسكين/);
+assert.match(studentDashboard, /تم التسكين — الجروب قيد الاكتمال/);
+assert.match(studentDashboard, /sessionsRemaining/);
 assert.match(studentDashboard, /اشتراك/);
 assert.match(studentDashboard, /navigate\(lp\(['"]\/plans['"]\)\)/);
 assert.match(studentDashboard, /تجريبيات متبقية/);
