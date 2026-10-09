@@ -127,6 +127,7 @@ router.post('/register', async (req, res) => {
         phoneNormalized: normalizedPhone || undefined,
         role: assignedRole,
         ...(assignedRole === 'student' ? {
+          onboarding: { required: true, completed: false, trackSelected: false },
           whatsappPhone: String(whatsappPhone || '').trim(),
           ...(age ? { age: Number(age) } : {}),
           ...(gender ? { gender } : {}),
@@ -183,6 +184,7 @@ router.post('/register', async (req, res) => {
       name,
       phone,
       role: assignedRole,
+      ...(assignedRole === 'student' ? { onboarding: { required: true, completed: false, trackSelected: false } } : {}),
       isActive: true,
       lastLogin: new Date(),
     });
