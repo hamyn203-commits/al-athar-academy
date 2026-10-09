@@ -142,6 +142,12 @@ export function AuthProvider({ children }) {
     }
   }, [saveAuthenticatedSession]);
 
+  const refreshUser = useCallback(async () => {
+    const data = await api.get('/api/auth/me', { auth: true });
+    setUser(data.user);
+    return data.user;
+  }, []);
+
   const updateProfile = useCallback(async (updates) => {
     try {
       const data = await api.patch('/api/auth/me', updates, { auth: true });
@@ -226,6 +232,7 @@ export function AuthProvider({ children }) {
     register,
     logout,
     updateProfile,
+    refreshUser,
     changePassword,
     forgotPassword,
     authFetch,
