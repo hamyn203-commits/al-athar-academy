@@ -176,7 +176,21 @@ async function placeSubscription({
       }
       await subscription.save({ session: dbSession });
 
+      let activatedStudentIds = [];
       if (['active', 'full'].includes(circle.status)) {
+        const waitingSubscriptions = await StudentSubscription.find({
+          circle: circle._id,
+          status: 'placed',
+        })
+          .select('student')
+          .session(dbSession)
+          .lean();
+
+        activatedStudentIds = [
+          String(subscription.student),
+          ...waitingSubscriptions.map((item) => String(item.student)),
+        ];
+
         await StudentSubscription.updateMany(
           {
             circle: circle._id,
@@ -199,6 +213,9 @@ async function placeSubscription({
         circleStatus: circle.status,
         studentId: String(student._id),
         teacherId: String(teacher._id),
+        teacherUserId: teacher.user ? String(teacher.user) : null,
+        circleName: circle.name,
+        activatedStudentIds,
         studentCount: circle.students.length,
         capacity: circle.capacity,
         minimumToStart: plan.minStudents,
