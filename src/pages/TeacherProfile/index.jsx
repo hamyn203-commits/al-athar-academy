@@ -7,7 +7,7 @@ import SEOHead from '../../components/SEOHead';
 import { useI18n } from '../../i18n';
 import { localizedPath } from '../../lib/locale';
 import api from '../../lib/api';
-import { teacherPublicImage, teacherImageFallback } from '../../lib/teacherMedia';
+import { teacherPublicImage, teacherPublicVideo, teacherImageFallback } from '../../lib/teacherMedia';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import '../../styles/public-experience.css';
 
@@ -105,7 +105,7 @@ export default function TeacherProfile() {
       title: isAr ? 'تلاوة إضافية ' + (index + 1) : 'Additional recitation ' + (index + 1),
       url,
     })),
-  ].filter((item) => item.url && item.url !== '/default-teacher.png');
+  ].map((item) => ({ ...item, url: teacherPublicVideo(item.url) })).filter((item) => item.url);
 
   return (
     <>
@@ -185,7 +185,7 @@ export default function TeacherProfile() {
                   {mediaItems.length || (Array.isArray(media.audioRecordings) && media.audioRecordings.length) ? mediaItems.map((item) => (
                     <div key={item.key}>
                       <h3 className="mb-2 flex items-center gap-2"><Video size={17} /> {item.title}</h3>
-                      <div className="wn-media-block"><video controls preload="metadata"><source src={teacherPublicImage(item.url)} /></video></div>
+                      <div className="wn-media-block"><video controls preload="metadata"><source src={item.url} /></video></div>
                     </div>
                   )) : <div className="wn-public-empty !py-10"><Video size={40} /><h3>{isAr ? 'لا توجد وسائط منشورة' : 'No published media'}</h3></div>}
 
