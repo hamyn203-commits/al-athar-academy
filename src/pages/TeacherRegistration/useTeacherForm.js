@@ -83,6 +83,21 @@ function validateTeacherFiles(files) {
     const error = validateSelectedFile(file, rule);
     if (error) return error;
   }
+
+  const coreVideos = [
+    files.introductionVideo,
+    files.recitationVideos?.[0],
+    files.teachingMethodVideo,
+  ].filter(Boolean);
+  const fingerprints = coreVideos.map((file) => [
+    String(file.name || '').toLowerCase(),
+    Number(file.size || 0),
+    Number(file.lastModified || 0),
+  ].join(':'));
+  if (new Set(fingerprints).size !== fingerprints.length) {
+    return 'استخدم ثلاثة ملفات مختلفة: فيديو التعريف، فيديو التلاوة، وفيديو طريقة التدريس.';
+  }
+
   return null;
 }
 
