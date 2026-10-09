@@ -7,7 +7,7 @@ const Teacher = require('../models/Teacher');
 const GroupCircle = require('../models/GroupCircle');
 const { protect, authorize } = require('../middleware/auth');
 const meetingService = require('../services/meetingService');
-const { meetingVisibleToRole } = require('../services/sessionAccess');
+const { meetingVisibleToRole, sessionParticipantWindow } = require('../services/sessionAccess');
 const { ensureSessionEarning } = require('../services/teacherFinance');
 const {
   parseRequestedDateTime,
@@ -377,10 +377,29 @@ router.get('/my-sessions', protect, async (req, res) => {
     const presentedSessions = sessions.map((session) => {
       const value = typeof session.toObject === 'function' ? session.toObject() : { ...session };
       const meetingVisible = meetingVisibleToRole(value, req.user.role);
+      const windowState = sessionParticipantWindow(value);
+      const started = Boolean(value.scheduledAt) && new Date(value.scheduledAt).getTime() <= Date.now();
+      const phase = !windowState.valid
+        ? 'invalid'
+        : Date.now() < windowState.opensAt.getTime()
+          ? 'early'
+          : Date.now() > windowState.closesAt.getTime()
+            ? 'expired'
+            : 'open';
+
       return {
         ...value,
         meetingAvailable: Boolean(value.meetingLink) && meetingVisible,
         meetingLink: meetingVisible ? value.meetingLink : undefined,
+        lifecycle: {
+          serverNow: new Date().toISOString(),
+          started,
+          canComplete: req.user.role === 'teacher' && value.status === 'accepted' && started,
+          joinPhase: phase,
+          joinOpen: value.status === 'accepted' && windowState.within,
+          opensAt: windowState.opensAt,
+          closesAt: windowState.closesAt,
+        },
       };
     });
 
