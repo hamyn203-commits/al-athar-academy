@@ -2,14 +2,14 @@ import { useEffect, useState } from 'react';
 import { Search, Users, ShieldCheck, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 import api from '../../lib/api';
 
-export default function AdminPeopleDirectory({ onOpenStudent, onOpenGuardian }) {
-  const [role, setRole] = useState('all');
+export default function AdminPeopleDirectory({ onOpenStudent, onOpenGuardian, selectedRole = 'all' }) {
+  const [role, setRole] = useState(selectedRole);
   const [status, setStatus] = useState('all');
   const [query, setQuery] = useState('');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [refresh, setRefresh] = useState(0);
-  const [data, setData] = useState({ people: [], total: 0, pages: 1, counts: { student: 0, guardian: 0 } });
+  const [data, setData] = useState({ people: [], total: 0, pages: 1, counts: { student: null, guardian: null } });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -26,6 +26,8 @@ export default function AdminPeopleDirectory({ onOpenStudent, onOpenGuardian }) 
       .finally(() => { if (current) setLoading(false); });
     return () => { current = false; controller.abort(); };
   }, [role, status, page, search, refresh]);
+
+  useEffect(() => { setRole(selectedRole); setPage(1); }, [selectedRole]);
 
   const selectRole = (next) => { setRole(next); setPage(1); };
   const selectStatus = (next) => { setStatus(next); setPage(1); };
@@ -45,10 +47,10 @@ export default function AdminPeopleDirectory({ onOpenStudent, onOpenGuardian }) 
       </div>
       <div className="grid grid-cols-2 gap-3">
         <button type="button" onClick={() => selectRole('student')} className={`rounded-xl border p-4 text-right ${role === 'student' ? 'border-emerald-600 bg-emerald-50' : 'border-slate-200'}`}>
-          <Users size={20} className="text-emerald-700 mb-2" /><strong className="block">الطلاب</strong><span className="text-xl font-bold">{data.counts?.student ?? '—'}</span>
+          <Users size={20} className="text-emerald-700 mb-2" /><strong className="block">الطلاب</strong><span className="text-xl font-bold">{loading && data.counts?.student == null ? '…' : (data.counts?.student ?? '—')}</span>
         </button>
         <button type="button" onClick={() => selectRole('guardian')} className={`rounded-xl border p-4 text-right ${role === 'guardian' ? 'border-emerald-600 bg-emerald-50' : 'border-slate-200'}`}>
-          <ShieldCheck size={20} className="text-emerald-700 mb-2" /><strong className="block">أولياء الأمور</strong><span className="text-xl font-bold">{data.counts?.guardian ?? '—'}</span>
+          <ShieldCheck size={20} className="text-emerald-700 mb-2" /><strong className="block">أولياء الأمور</strong><span className="text-xl font-bold">{loading && data.counts?.guardian == null ? '…' : (data.counts?.guardian ?? '—')}</span>
         </button>
       </div>
       <form onSubmit={submit} className="flex flex-wrap gap-2">
