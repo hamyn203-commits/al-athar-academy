@@ -11,7 +11,7 @@ import { useI18n } from '../../i18n';
 import { useMarket } from '../../context/MarketProvider';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { localizedPath } from '../../lib/locale';
-import { dashboardPathForRole } from '../../lib/navigation';
+import { dashboardPathForRole, isSafeInternalRedirect } from '../../lib/navigation';
 import '../../styles/public-experience.css';
 import { uploadFileDirect } from '../../lib/fileUpload';
 
@@ -134,7 +134,7 @@ export default function Register() {
       }
 
       navigate(
-        dashboardPathForRole(result.user?.role, locale),
+        role === 'student' && isSafeInternalRedirect(searchParams.get('redirect')) ? searchParams.get('redirect') : dashboardPathForRole(result.user?.role, locale),
         { replace: true }
       );
     } catch (err) {
