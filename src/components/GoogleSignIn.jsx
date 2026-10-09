@@ -31,6 +31,10 @@ export default function GoogleSignIn({ context = 'signin', role = 'student' }) {
           const result = await googleLogin(response.credential, role);
           if (!active) return;
           if (!result.success) return setError(result.error || 'Google sign-in failed');
+          if (result.user?.onboarding?.required && !result.user?.onboarding?.completed) {
+            navigate(locale === 'ar' ? '/ar/profile/setup' : `/${locale}/profile/setup`, { replace: true });
+            return;
+          }
           navigate(postAuthDestination({
             redirect: searchParams.get('redirect'),
             role: result.user?.role,
