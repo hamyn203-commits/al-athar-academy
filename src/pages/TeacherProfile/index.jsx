@@ -7,6 +7,7 @@ import SEOHead from '../../components/SEOHead';
 import { useI18n } from '../../i18n';
 import { localizedPath } from '../../lib/locale';
 import api from '../../lib/api';
+import { teacherPublicImage, teacherImageFallback } from '../../lib/teacherMedia';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import '../../styles/public-experience.css';
 
@@ -99,7 +100,12 @@ export default function TeacherProfile() {
     { key: 'intro', title: isAr ? 'فيديو تعريفي' : 'Introduction video', url: media.introductionVideo },
     { key: 'recitation', title: isAr ? 'تلاوة' : 'Recitation', url: media.recitationVideo },
     { key: 'method', title: isAr ? 'طريقة التدريس' : 'Teaching method', url: media.teachingMethodVideo },
-  ].filter((item) => item.url);
+    ...(Array.isArray(media.additionalVideos) ? media.additionalVideos : []).filter(Boolean).map((url, index) => ({
+      key: 'additional-' + index,
+      title: isAr ? 'تلاوة إضافية ' + (index + 1) : 'Additional recitation ' + (index + 1),
+      url,
+    })),
+  ].filter((item) => item.url && item.url !== '/default-teacher.png');
 
   return (
     <>
@@ -110,7 +116,7 @@ export default function TeacherProfile() {
         <section className="wn-detail-hero wn-teacher-profile-hero">
           <div className="page-container wn-teacher-profile-grid">
             <div className="wn-teacher-profile-photo">
-              <img src={media.profilePhoto || teacher.user?.avatar || '/default-teacher.png'} alt={name} />
+              <img src={teacherPublicImage(media.profilePhoto || teacher.user?.avatar)} alt={name} onError={teacherImageFallback} />
             </div>
 
             <div>
@@ -176,16 +182,16 @@ export default function TeacherProfile() {
 
               {activeTab === 'videos' ? (
                 <div className="grid gap-5">
-                  {mediaItems.length ? mediaItems.map((item) => (
+                  {mediaItems.length || (Array.isArray(media.audioRecordings) && media.audioRecordings.length) ? mediaItems.map((item) => (
                     <div key={item.key}>
                       <h3 className="mb-2 flex items-center gap-2"><Video size={17} /> {item.title}</h3>
-                      <div className="wn-media-block"><video controls preload="metadata"><source src={item.url} /></video></div>
+                      <div className="wn-media-block"><video controls preload="metadata"><source src={teacherPublicImage(item.url)} /></video></div>
                     </div>
                   )) : <div className="wn-public-empty !py-10"><Video size={40} /><h3>{isAr ? 'لا توجد وسائط منشورة' : 'No published media'}</h3></div>}
 
                   {Array.isArray(media.audioRecordings) && media.audioRecordings.length ? (
                     <div className="grid gap-3">
-                      {media.audioRecordings.map((audio, index) => <div key={audio + index} className="wn-media-block p-3"><audio controls preload="metadata"><source src={audio} /></audio></div>)}
+                      {media.audioRecordings.map((audio, index) => <div key={audio + index} className="wn-media-block p-3"><audio controls preload="metadata"><source src={teacherPublicImage(audio)} /></audio></div>)}
                     </div>
                   ) : null}
                 </div>
