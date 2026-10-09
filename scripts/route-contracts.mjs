@@ -186,6 +186,19 @@ const manualPayment = read('src/pages/ManualPayment/index.jsx');
 assert.match(manualPayment, /uploadFileDirect\(proof,\s*['"]payment-proof['"]\)/);
 assert.match(manualPayment, /\/api\/payments\/course\/'\s*\+\s*encodeURIComponent\(slug\)\s*\+\s*'\/manual/);
 
+// T22: Teacher public media is rendered through same-origin routes.
+const teacherMedia = read('src/lib/teacherMedia.js');
+const teacherProfilePage = read('src/pages/TeacherProfile/index.jsx');
+const teacherDirectoryPage = read('src/pages/Teachers/index.jsx');
+assert.match(teacherMedia, /teacherPublicImage/);
+assert.match(teacherMedia, /teacherImageFallback/);
+assert.match(teacherMedia, /api\\/uploads\\/public/);
+assert.match(teacherProfilePage, /teacherPublicImage\\(media\\.profilePhoto/);
+assert.match(teacherProfilePage, /teacherPublicImage\\(item\\.url\\)/);
+assert.match(teacherProfilePage, /teacherPublicImage\\(audio\\)/);
+assert.match(teacherProfilePage, /media\\.additionalVideos/);
+assert.match(teacherDirectoryPage, /teacherPublicImage\\(teacher\\.media\\?\\.profilePhoto\\)/);
+assert.match(read('backend/routes/uploads.js'), /uploads\\/teacher-public\\//);
 const adminPayments = read('src/pages/AdminPayments/index.jsx');
 assert.match(adminPayments, /\/api\/payments\/admin\/manual/);
 assert.match(adminPayments, /\/review/);
