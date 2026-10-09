@@ -28,9 +28,11 @@ export default function TeacherReviewDossier({
   onReview,
   onOpenDocument,
   onOpenMedia,
+  onPreviewPublic,
 }) {
   const teacher = dossier?.teacher;
   const gate = dossier?.gate;
+  const approved = teacher?.status === 'approved' && teacher?.isVerified === true;
 
   const specializations = useMemo(
     () => (teacher?.quranInfo?.specializations || []).join('، '),
@@ -63,18 +65,21 @@ export default function TeacherReviewDossier({
       <div className="wn-admin-dossier">
         <header className="wn-admin-dossier__header">
           <div>
-            <span>Teacher 360 Review Dossier</span>
+            <span>{approved ? 'Teacher 360 · Administration' : 'Teacher 360 Review Dossier'}</span>
             <h2>{teacher?.personalInfo?.fullName || teacher?.user?.name || 'ملف المعلم'}</h2>
             <p>{teacher?.user?.email || '—'} · {teacher?.personalInfo?.phone || '—'}</p>
           </div>
-          <button type="button" onClick={onClose} aria-label="إغلاق"><X size={20} /></button>
+          <div className="wn-admin-dossier__header-actions">
+            {approved ? <button type="button" onClick={() => onPreviewPublic?.(teacher._id)} className="wn-admin-teacher-public-link">معاينة الملف العام</button> : null}
+            <button type="button" onClick={onClose} aria-label="إغلاق"><X size={20} /></button>
+          </div>
         </header>
 
         {loading ? (
           <div className="wn-admin-dossier__loading">جاري تحميل ملف المعلم الكامل...</div>
         ) : (
           <div className="wn-admin-dossier__body">
-            <section className="wn-admin-review-gate">
+            {!approved ? <section className="wn-admin-review-gate">
               <div className="wn-admin-review-gate__summary">
                 <div>
                   <span>جاهزية الاعتماد</span>
@@ -132,7 +137,7 @@ export default function TeacherReviewDossier({
                   </article>
                 ))}
               </div>
-            </section>
+            </section> : null}
 
             <section className="wn-admin-dossier__section">
               <div className="wn-admin-dossier__section-title"><UserRound size={18} /><h3>البيانات الشخصية</h3></div>
@@ -254,7 +259,7 @@ export default function TeacherReviewDossier({
               )}
             </section>
 
-            <footer className="wn-admin-dossier__footer">
+            {!approved ? <footer className="wn-admin-dossier__footer">
               <button type="button" onClick={() => finalDecision('reject')} className="is-reject">رفض الطلب</button>
               <button type="button" onClick={() => finalDecision('request-changes')} className="is-change">طلب استكمال</button>
               <button
@@ -266,7 +271,7 @@ export default function TeacherReviewDossier({
                 <CheckCircle2 size={17} />
                 اعتماد المعلم نهائيًا
               </button>
-            </footer>
+            </footer> : null}
           </div>
         )}
       </div>

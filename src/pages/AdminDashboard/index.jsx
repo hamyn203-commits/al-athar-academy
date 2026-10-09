@@ -42,6 +42,7 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState({});
   const [pending, setPending] = useState([]);
   const [approved, setApproved] = useState([]);
+  const [teacherQuery, setTeacherQuery] = useState('');
   const [messages, setMessages] = useState([]);
   const [courses, setCourses] = useState([]);
   const [blogPosts, setBlogPosts] = useState([]);
@@ -496,6 +497,21 @@ export default function AdminDashboard() {
     navigate(`/admin?${query.toString()}`);
   };
 
+  const filteredApprovedTeachers = approved.filter((teacher) => {
+    const term = teacherQuery.trim().toLocaleLowerCase();
+    if (!term) return true;
+    return [
+      teacher.user?.name, teacher.personalInfo?.fullName,
+      teacher.user?.email, teacher.personalInfo?.country,
+      teacher.personalInfo?.city,
+    ].some((value) => String(value || '').toLocaleLowerCase().includes(term));
+  });
+
+  const previewPublicTeacher = (teacherId) => {
+    if (!teacherId) return;
+    window.open(`/teachers/${encodeURIComponent(teacherId)}`, '_blank', 'noopener,noreferrer');
+  };
+
   const adminSearch = (
     <AdminPeopleSearch
       onOpenStudent={openStudentDossier}
@@ -665,17 +681,45 @@ export default function AdminDashboard() {
                 </div>
                 <button type="submit" className="w-full py-2 bg-emerald-600 text-white rounded-lg text-sm">إنشاء ملف للمراجعة</button>
               </form>
-              <div className="wn-dashboard-surface">
-                <h3 className="font-bold mb-4">المعلمون المعتمدون ({approved.length})</h3>
-                {approved.length === 0 ? <Empty text="لا معلمين" /> : approved.map((t) => (
-                  <div key={t._id} className="border rounded-lg p-3 mb-2 flex justify-between items-center">
-                    <div>
-                      <p className="font-semibold">{t.user?.name || t.personalInfo?.fullName}</p>
-                      <p className="text-xs text-gray-500">{t.personalInfo?.country} — {t.hourlyRate} ج.م/س</p>
-                    </div>
-                    <button onClick={() => navigate(`/teachers/${t._id}`)} className="text-emerald-600 text-sm">عرض</button>
+              <div className="wn-dashboard-surface wn-admin-teachers-list">
+                <div className="wn-admin-teachers-list__head">
+                  <div>
+                    <h3>المعلمون المعتمدون ({approved.length})</h3>
+                    <p>فتح ملف Teacher 360 داخل الإدارة، مع معاينة مستقلة للملف العام عند الحاجة.</p>
                   </div>
-                ))}
+                  <button type="button" className="wn-btn wn-btn--secondary" onClick={loadCore}>تحديث القائمة</button>
+                </div>
+                <label className="wn-admin-teachers-list__search">
+                  <span>البحث في المعلمين</span>
+                  <input
+                    type="search"
+                    value={teacherQuery}
+                    onChange={(event) => setTeacherQuery(event.target.value)}
+                    placeholder="اسم المعلم أو البريد أو المدينة"
+                    aria-label="البحث عن معلم معتمد"
+                  />
+                </label>
+                {approved.length === 0 ? (
+                  <Empty text="لا يوجد معلمون معتمدون حاليًا" />
+                ) : filteredApprovedTeachers.length === 0 ? (
+                  <Empty text="لا توجد نتائج مطابقة للبحث" />
+                ) : (
+                  <div className="wn-admin-teachers-list__rows">
+                    {filteredApprovedTeachers.map((teacher) => (
+                      <article key={teacher._id} className="wn-admin-teachers-list__row">
+                        <div>
+                          <strong>{teacher.user?.name || teacher.personalInfo?.fullName || 'معلم'}</strong>
+                          <small>{[teacher.personalInfo?.country, teacher.personalInfo?.city].filter(Boolean).join('، ') || 'الموقع غير مسجل'} · {teacher.hourlyRate ?? '—'} ج.م/س</small>
+                          <small>{teacher.user?.email || 'البريد غير متاح'}</small>
+                        </div>
+                        <div className="wn-admin-teachers-list__actions">
+                          <button type="button" className="is-primary" onClick={() => openTeacherDossier(teacher._id)}>إدارة المعلم</button>
+                          <button type="button" className="is-secondary" onClick={() => previewPublicTeacher(teacher._id)}>الملف العام</button>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                )}
               </div>
               </div>
             </div>
@@ -1036,6 +1080,7 @@ export default function AdminDashboard() {
           onReview={review}
           onOpenDocument={openTeacherDocument}
           onOpenMedia={openTeacherMedia}
+          onPreviewPublic={previewPublicTeacher}
         />
       )}
 
