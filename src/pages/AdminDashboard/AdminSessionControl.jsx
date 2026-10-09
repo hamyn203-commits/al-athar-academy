@@ -4,6 +4,7 @@ import {
   RefreshCw, UserRound, Video,
 } from 'lucide-react';
 import api from '../../lib/api';
+import { formatSessionDateTime, sessionTimeZone } from '../../lib/sessionTime';
 
 const FOCUS_META = {
   all: {
@@ -130,8 +131,8 @@ export default function AdminSessionControl({
             <article key={session._id}>
               <div className="wn-admin-session-control__date">
                 <CalendarClock size={17} />
-                <span>{new Date(session.scheduledAt).toLocaleDateString('ar-EG')}</span>
-                <small>{new Date(session.scheduledAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</small>
+                <span>{formatSessionDateTime(session, 'ar-EG', { dateStyle: 'medium' })}</span>
+                <small>{formatSessionDateTime(session, 'ar-EG', { timeStyle: 'short' })} · {sessionTimeZone(session)}</small>
               </div>
 
               <div className="wn-admin-session-control__people">
