@@ -11,6 +11,7 @@ const {
   ageGroupForStudent,
 } = require('../services/subscriptionPlacement');
 const { logAdminAction } = require('../services/adminAudit');
+const { notifyUser } = require('../utils/notify');
 const {
   isSection,
   publicPlanCatalog,
@@ -261,6 +262,64 @@ router.post('/admin/:id/place', protect, authorize('admin'), async (req, res) =>
         circleStatus: result.circleStatus,
       },
     }).catch(() => {});
+
+    if (result.subscriptionStatus === 'active') {
+      await Promise.allSettled(
+        (result.activatedStudentIds || [result.studentId]).map((studentId) => notifyUser(studentId, {
+          type: 'system',
+          title: { ar: 'حلقتك جاهزة للبدء', en: 'Your circle is ready to start' },
+          message: {
+            ar: `اكتمل الحد الأدنى لحلقة ${result.circleName || 'الاشتراك'} وتم تفعيل اشتراكك.`,
+            en: `The minimum size for ${result.circleName || 'your circle'} is complete and your subscription is now active.`,
+          },
+          data: {
+            actionUrl: '/student/dashboard',
+            metadata: {
+              subscriptionId: result.subscriptionId,
+              circleId: result.circleId,
+              status: 'active',
+            },
+          },
+          priority: 'high',
+        }))
+      );
+    } else {
+      await notifyUser(result.studentId, {
+        type: 'system',
+        title: { ar: 'تم تسكينك في الحلقة', en: 'You have been placed in a circle' },
+        message: {
+          ar: `تم وضعك في ${result.circleName || 'الحلقة'} مع المعلم الذي اخترته. ننتظر اكتمال الحد الأدنى لبدء الحلقة.`,
+          en: `You were placed in ${result.circleName || 'the circle'} with your selected tutor. The circle is waiting for its minimum size.`,
+        },
+        data: {
+          actionUrl: '/student/dashboard',
+          metadata: {
+            subscriptionId: result.subscriptionId,
+            circleId: result.circleId,
+            status: result.subscriptionStatus,
+          },
+        },
+        priority: 'high',
+      }).catch(() => {});
+    }
+
+    if (result.teacherUserId) {
+      notifyUser(result.teacherUserId, {
+        type: 'system',
+        title: { ar: 'طالب جديد في حلقة الاشتراك', en: 'New learner in your subscription circle' },
+        message: {
+          ar: `تم تسكين طالب جديد في ${result.circleName || 'إحدى حلقاتك'} بواسطة الإدارة.`,
+          en: `Administration placed a new learner in ${result.circleName || 'one of your circles'}.`,
+        },
+        data: {
+          actionUrl: '/teacher/dashboard',
+          metadata: {
+            circleId: result.circleId,
+            subscriptionId: result.subscriptionId,
+          },
+        },
+      }).catch(() => {});
+    }
 
     return res.json({ success: true, ...result });
   } catch (error) {
