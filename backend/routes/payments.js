@@ -677,7 +677,7 @@ router.patch('/admin/manual/:id/review', protect, authorize('admin'), async (req
     if (result?.subscriptionId && result.studentId) {
       const succeeded = result.paymentStatus === 'succeeded';
       const queuedRenewal = succeeded && result.renewalQueued;
-      const placedRenewal = succeeded && result.autoPlaced;
+      const placedRenewal = succeeded && (result.autoPlaced || result.renewalActivated);
       const awaitingPlacement = succeeded && result.awaitingPlacement;
 
       notifyUser(result.studentId, {
@@ -737,6 +737,7 @@ router.patch('/admin/manual/:id/review', protect, authorize('admin'), async (req
       awaitingPlacement: Boolean(result.awaitingPlacement),
       renewalQueued: Boolean(result.renewalQueued),
       autoPlaced: Boolean(result.autoPlaced),
+      renewalActivated: Boolean(result.renewalActivated),
       circleId: result.circleId || null,
     });
   } catch (error) {
