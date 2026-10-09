@@ -3,6 +3,7 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const User = require('../models/User');
+const Guardian = require('../models/Guardian');
 const { 
   generateAccessToken, 
   generateRefreshToken, 
@@ -257,6 +258,9 @@ router.post('/google', async (req, res) => {
     }
     if (!['student', 'guardian', 'teacher'].includes(user.role) || user.isActive === false) {
       return res.status(403).json({ error: 'Account is not eligible for Google student login' });
+    }
+    if (user.role === 'guardian') {
+      await Guardian.updateOne({ user: user._id }, { $setOnInsert: { user: user._id, children: [] } }, { upsert: true });
     }
     user.lastLogin = new Date();
     await user.save();
