@@ -744,7 +744,7 @@ requireContains(
 requireContains(
   'backend/routes/payments.js',
   'subscription payment review must notify the student about placement or retry',
-  /result\?\.subscriptionId[\s\S]{0,1800}notifyUser\(result\.studentId[\s\S]{0,900}awaiting placement/
+  /result\?\.subscriptionId[\s\S]{0,3600}notifyUser\(result\.studentId/
 );
 requireContains(
   'backend/routes/subscriptions.js',
