@@ -69,6 +69,12 @@ const StudentSubscriptionSchema = new mongoose.Schema({
     default: null,
     index: true,
   },
+  renewalOf: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'StudentSubscription',
+    default: null,
+    index: true,
+  },
   preferredCircle: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'GroupCircle',
@@ -111,6 +117,10 @@ StudentSubscriptionSchema.index(
   { unique: true, partialFilterExpression: { status: 'pending_payment' } }
 );
 StudentSubscriptionSchema.index({ circle: 1, status: 1 });
+StudentSubscriptionSchema.index(
+  { renewalOf: 1 },
+  { unique: true, partialFilterExpression: { renewalOf: { $type: 'objectId' }, status: { $in: ['pending_payment', 'payment_review', 'renewal_queued'] } } }
+);
 
 StudentSubscriptionSchema.pre('validate', function(next) {
   if (this.sessionsUsed > this.sessionCount) {
