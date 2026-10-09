@@ -22,8 +22,10 @@ const PLAN_DEFS = [
     badgeAr: 'الأوفر',
     badgeEn: 'Best value',
     tone: 'mint',
-    featuresAr: ['حلقة جماعية منظمة', '60 دقيقة', 'تسميع بالدور', 'مناسبة للاستمرار بتكلفة منخفضة'],
-    featuresEn: ['Structured group circle', '60 minutes', 'Turn-based recitation', 'Lowest-cost continuous learning'],
+    durationAr: 'من ساعة إلى ساعتين',
+    durationEn: '1–2 hours',
+    featuresAr: ['حلقة جماعية منظمة', 'تسميع بالدور', 'مناسبة للاستمرار بتكلفة منخفضة'],
+    featuresEn: ['Structured group circle', 'Turn-based recitation', 'Lowest-cost continuous learning'],
   },
   {
     id: 'group',
@@ -37,8 +39,10 @@ const PLAN_DEFS = [
     badgeEn: 'Most popular',
     tone: 'emerald',
     featured: true,
-    featuresAr: ['متابعة أكبر لكل طالب', '60 دقيقة', 'وقت تسميع أفضل', 'توازن ممتاز بين السعر والمتابعة'],
-    featuresEn: ['More attention per learner', '60 minutes', 'More recitation time', 'Strong price-to-attention balance'],
+    durationAr: 'من ساعة إلى ساعتين',
+    durationEn: '1–2 hours',
+    featuresAr: ['متابعة أكبر لكل طالب', 'وقت تسميع أفضل', 'توازن ممتاز بين السعر والمتابعة'],
+    featuresEn: ['More attention per learner', 'More recitation time', 'Strong price-to-attention balance'],
   },
   {
     id: 'focused',
@@ -51,8 +55,10 @@ const PLAN_DEFS = [
     badgeAr: 'متابعة أقوى',
     badgeEn: 'More focus',
     tone: 'teal',
-    featuresAr: ['مجموعة صغيرة', '60 دقيقة', 'تصحيح وتوجيه أكثر', 'مناسبة للحفظ والمراجعة المكثفة'],
-    featuresEn: ['Small group', '60 minutes', 'More correction and coaching', 'Ideal for focused memorization'],
+    durationAr: 'ساعة ونصف',
+    durationEn: '90 minutes',
+    featuresAr: ['مجموعة صغيرة', 'تصحيح وتوجيه أكثر', 'مناسبة للحفظ والمراجعة المكثفة'],
+    featuresEn: ['Small group', 'More correction and coaching', 'Ideal for focused memorization'],
   },
   {
     id: 'mini',
@@ -65,8 +71,10 @@ const PLAN_DEFS = [
     badgeAr: 'شبه فردي',
     badgeEn: 'Semi-private',
     tone: 'gold',
-    featuresAr: ['اهتمام شبه فردي', '60 دقيقة', 'وقت أكبر للتسميع', 'خطة متابعة أدق'],
-    featuresEn: ['Near-private attention', '60 minutes', 'More recitation time', 'More precise follow-up'],
+    durationAr: 'ساعة أو أقل',
+    durationEn: 'Up to 60 minutes',
+    featuresAr: ['اهتمام شبه فردي', 'وقت أكبر للتسميع', 'خطة متابعة أدق'],
+    featuresEn: ['Near-private attention', 'More recitation time', 'More precise follow-up'],
   },
   {
     id: 'private',
@@ -80,8 +88,10 @@ const PLAN_DEFS = [
     badgeEn: 'Maximum attention',
     tone: 'ink',
     from: true,
-    featuresAr: ['طالب واحد مع المعلم', '60 دقيقة', 'خطة مخصصة بالكامل', 'أقصى مرونة وتركيز'],
-    featuresEn: ['One learner with the tutor', '60 minutes', 'Fully personalized plan', 'Maximum flexibility and focus'],
+    durationAr: 'ساعة أو أقل',
+    durationEn: 'Up to 60 minutes',
+    featuresAr: ['طالب واحد مع المعلم', 'خطة مخصصة بالكامل', 'أقصى مرونة وتركيز'],
+    featuresEn: ['One learner with the tutor', 'Fully personalized plan', 'Maximum flexibility and focus'],
   },
 ];
 
@@ -130,7 +140,7 @@ export default function PlansPage() {
               <div className="wn-plans-hero__proof">
                 <span><ShieldCheck size={18} /> {isAr ? 'معلمون ومعلمات معتمدون' : 'Approved tutors'}</span>
                 <span><BookOpenCheck size={18} /> {isAr ? 'حفظ وتجويد وتأسيس' : 'Hifz, Tajweed & foundation'}</span>
-                <span><Clock3 size={18} /> {isAr ? '60 دقيقة للحصة' : '60-minute sessions'}</span>
+                <span><Clock3 size={18} /> {isAr ? 'مدة مرنة حسب نوع الخطة' : 'Flexible duration by plan'}</span>
               </div>
             </div>
 
@@ -182,14 +192,18 @@ export default function PlansPage() {
                 </button>
               </div>
 
-              <div className="wn-plans-frequency" aria-label={isAr ? 'عدد الحصص الشهري' : 'Monthly session count'}>
-                <span>{isAr ? 'الاشتراك الشهري' : 'Monthly plan'}</span>
-                <button type="button" className={sessionsPerMonth === 8 ? 'is-active' : ''} onClick={() => setSessionsPerMonth(8)}>
-                  {isAr ? '8 حصص' : '8 sessions'}
-                </button>
-                <button type="button" className={sessionsPerMonth === 12 ? 'is-active' : ''} onClick={() => setSessionsPerMonth(12)}>
-                  {isAr ? '12 حصة' : '12 sessions'}
-                </button>
+              <div className="wn-plans-frequency" aria-label={isAr ? 'عدد الحصص في الباقة' : 'Sessions in package'}>
+                <span>{isAr ? 'عدد الحصص' : 'Sessions'}</span>
+                {[4, 8, 12, 24].map((count) => (
+                  <button
+                    type="button"
+                    key={count}
+                    className={sessionsPerMonth === count ? 'is-active' : ''}
+                    onClick={() => setSessionsPerMonth(count)}
+                  >
+                    {count} {isAr ? (count === 12 ? 'حصة' : 'حصص') : 'sessions'}
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -212,7 +226,7 @@ export default function PlansPage() {
             <div className="wn-plans-heading">
               <span>{isAr ? '5 خطط واضحة' : '5 clear plans'}</span>
               <h2>{isAr ? 'كلما قل العدد، زادت المتابعة' : 'Fewer learners. More tutor attention.'}</h2>
-              <p>{isAr ? 'السعر المعروض هو سعر الطالب للحصة الواحدة، ويظهر أسفله إجمالي الاشتراك الشهري حسب عدد الحصص المختار.' : 'Prices are per learner, per session. The monthly total updates with your selected session count.'}</p>
+              <p>{isAr ? 'السعر المعروض هو سعر الطالب للحصة الواحدة. اختر 4 أو 8 أو 12 أو 24 حصة، وسيظهر إجمالي الباقة تلقائيًا.' : 'Prices are per learner, per session. Choose 4, 8, 12, or 24 sessions and the package total updates automatically.'}</p>
             </div>
 
             <div className="wn-plans-grid">
@@ -232,6 +246,12 @@ export default function PlansPage() {
                       {plan.featured ? <Crown size={22} /> : <BadgeCheck size={21} />}
                     </div>
 
+                    <div className="wn-plan-card__duration">
+                      <Clock3 size={15} />
+                      <span>{isAr ? 'مدة الحصة:' : 'Session duration:'}</span>
+                      <strong>{isAr ? plan.durationAr : plan.durationEn}</strong>
+                    </div>
+
                     <div className="wn-plan-card__price">
                       <span>{isAr ? (plan.from ? 'من' : '') : (plan.from ? 'from' : '')}</span>
                       <strong>{plan.price}</strong>
@@ -242,7 +262,7 @@ export default function PlansPage() {
                     </div>
 
                     <div className="wn-plan-card__monthly">
-                      <span>{sessionsPerMonth} {isAr ? 'حصص شهريًا' : 'sessions / month'}</span>
+                      <span>{sessionsPerMonth} {isAr ? (sessionsPerMonth === 12 ? 'حصة في الباقة' : 'حصص في الباقة') : 'sessions in package'}</span>
                       <strong>{plan.from && (isAr ? 'من ' : 'from ')}{plan.monthly} {isAr ? 'ج' : 'EGP'}</strong>
                     </div>
 

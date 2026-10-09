@@ -358,6 +358,30 @@
 .wn-plan-card__title span { color: #71817c; font-size: 11px; font-weight: 800; }
 .wn-plan-card__title h3 { margin-top: 3px; color: #143a30; font-size: 18px; }
 
+.wn-plan-card__duration {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 16px;
+  padding: 9px 11px;
+  border: 1px solid #e3eee9;
+  border-radius: 12px;
+  background: #fbfdfc;
+  color: #62756f;
+  font-size: 11px;
+}
+
+.wn-plan-card__duration svg {
+  flex: 0 0 auto;
+  color: #0f6b4f;
+}
+
+.wn-plan-card__duration strong {
+  margin-inline-start: auto;
+  color: #143a30;
+  font-size: 12px;
+}
+
 .wn-plan-card__price {
   display: flex;
   align-items: flex-end;
