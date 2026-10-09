@@ -483,6 +483,23 @@ router.post('/subscription/:id/manual', protect, authorize('student'), async (re
       subscription.status = 'payment_review';
       await subscription.save({ session: dbSession });
     });
+  } catch (error) {
+    if (error?.code === 11000) {
+      const duplicatePayment = await Payment.findOne({
+        kind: 'subscription',
+        provider: 'manual',
+        student: req.user.id,
+        subscription: subscription._id,
+        status: 'pending',
+      }).select('_id');
+
+      return res.status(409).json({
+        error: 'التحويل مرفوع بالفعل وينتظر مراجعة الإدارة',
+        code: 'PAYMENT_REVIEW_PENDING',
+        paymentId: duplicatePayment ? String(duplicatePayment._id) : null,
+      });
+    }
+    throw error;
   } finally {
     await dbSession.endSession();
   }
