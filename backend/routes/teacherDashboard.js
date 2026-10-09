@@ -52,7 +52,7 @@ if (isMockMode) {
 router.get('/profile', protect, authorize('teacher'), async (req, res) => {
   try {
     const teacher = await Teacher.findOne({ user: req.user.id })
-      .populate('user', 'name email phone avatar');
+      .populate('user', 'name email phone avatar bio');
     if (!teacher) return res.status(404).json({ error: 'Teacher profile not found' });
 
     res.json({
