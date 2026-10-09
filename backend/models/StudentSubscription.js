@@ -87,6 +87,10 @@ const StudentSubscriptionSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 StudentSubscriptionSchema.index({ student: 1, status: 1, createdAt: -1 });
+StudentSubscriptionSchema.index(
+  { student: 1 },
+  { unique: true, partialFilterExpression: { status: 'pending_payment' } }
+);
 StudentSubscriptionSchema.index({ circle: 1, status: 1 });
 
 StudentSubscriptionSchema.pre('validate', function(next) {
