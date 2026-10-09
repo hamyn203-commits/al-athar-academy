@@ -3,8 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Users, BookOpen, Calendar, DollarSign, CheckCircle, XCircle, Eye,
   Mail, MessageSquare, Plus, Trash2, Upload, Video, Edit3, Send,
-  TrendingUp, BriefcaseBusiness, MonitorPlay, AlertTriangle, ShieldCheck,
-  Clock3, History, ChevronLeft, CreditCard, UserCheck,
+  TrendingUp, BriefcaseBusiness, MonitorPlay, ShieldCheck,
+  History,
 } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar, Cell, PieChart, Pie, Legend } from 'recharts';
 import { StatCard } from '../../components/dashboard/DashboardLayout';
