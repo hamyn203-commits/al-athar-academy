@@ -41,6 +41,8 @@ router.get('/profile', protect, authorize('student'), async (req, res) => {
           phone: mockUser?.phone || null,
           avatar: mockUser?.avatar || null,
           role: 'student',
+          currentLevel: mockUser?.currentLevel || 'beginner',
+          preferredTrack: mockUser?.preferredTrack || 'memorization',
           createdAt: mockUser?.createdAt || null,
         },
         summary: {
@@ -52,7 +54,7 @@ router.get('/profile', protect, authorize('student'), async (req, res) => {
     }
 
     const user = await User.findById(req.user.id)
-      .select('name email phone avatar role createdAt +guardianLinkCode');
+      .select('name email phone avatar role createdAt currentLevel preferredTrack onboarding +guardianLinkCode');
     if (!user) return res.status(404).json({ error: 'Student not found' });
 
     if (!user.guardianLinkCode) {
