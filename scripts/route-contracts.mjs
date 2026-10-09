@@ -200,7 +200,12 @@ assert.match(plansPage, /من ساعة إلى ساعتين/);
 assert.match(plansPage, /ساعة ونصف/);
 assert.match(plansPage, /ساعة أو أقل/);
 assert.match(plansPage, /\[4, 8, 12, 24\]/);
-assert.match(plansPage, /sessionsPerMonth/);
+assert.match(plansPage, /sessionCount/);
+assert.match(plansPage, /\/api\/subscriptions\/plans/);
+assert.match(plansPage, /\/api\/subscriptions\/select/);
+assert.match(plansPage, /men_children/);
+assert.match(plansPage, /ladies/);
+assert.match(plansPage, /لم يتم الدفع بعد/);
 assert.ok(fs.existsSync(path.join(root, 'public/images/plans/plan-community.svg')));
 assert.ok(fs.existsSync(path.join(root, 'public/images/plans/plan-women.svg')));
 
