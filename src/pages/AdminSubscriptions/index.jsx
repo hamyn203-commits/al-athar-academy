@@ -45,6 +45,7 @@ export default function AdminSubscriptions() {
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState('');
   const [forms, setForms] = useState({});
+  const [sessionForms, setSessionForms] = useState({});
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -133,6 +134,82 @@ export default function AdminSubscriptions() {
     }
   };
 
+  const durationOptionsFor = (item) => {
+    const min = Number(item.pricingSnapshot?.durationMinMinutes || 0);
+    const max = Number(item.pricingSnapshot?.durationMaxMinutes || 60);
+    if (min && min === max) return [min];
+    if (min === 60 && max === 120) return [60, 90, 120];
+    if (!min && max <= 60) return [30, 45, 60].filter((value) => value <= max);
+    const fallback = [min || Math.min(60, max), max].filter((value, index, values) => value > 0 && values.indexOf(value) === index);
+    return fallback.length ? fallback : [60];
+  };
+
+  const sessionFormFor = (item) => {
+    const circleId = item.circle?._id;
+    const options = durationOptionsFor(item);
+    return sessionForms[circleId] || {
+      scheduledAt: '',
+      duration: options[0],
+      notes: '',
+    };
+  };
+
+  const updateSessionForm = (circleId, patch) => {
+    setSessionForms((current) => ({
+      ...current,
+      [circleId]: {
+        ...(current[circleId] || {}),
+        ...patch,
+      },
+    }));
+  };
+
+  const scheduleGroupSession = async (item) => {
+    const circleId = item.circle?._id;
+    if (!circleId) return;
+    const form = sessionFormFor(item);
+
+    if (!form.scheduledAt) {
+      return toast.error('اختر موعد الحصة');
+    }
+
+    setWorking('session:' + circleId);
+    try {
+      await api.post('/api/sessions/group-circle', {
+        circleId,
+        scheduledAt: form.scheduledAt,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Africa/Cairo',
+        duration: Number(form.duration),
+        notes: form.notes.trim(),
+      }, { auth: true });
+
+      toast.success('تم جدولة حصة الجروب وإرسال التنبيه للطلاب والمعلم');
+      setSessionForms((current) => ({
+        ...current,
+        [circleId]: {
+          scheduledAt: '',
+          duration: durationOptionsFor(item)[0],
+          notes: '',
+        },
+      }));
+    } catch (error) {
+      toast.error(error.message || 'فشل جدولة حصة الجروب');
+    } finally {
+      setWorking('');
+    }
+  };
+
+  const sessionOwnerByCircle = useMemo(() => {
+    const owners = {};
+    for (const item of subscriptions) {
+      const circleId = item.circle?._id;
+      if (item.status === 'active' && circleId && !owners[circleId]) {
+        owners[circleId] = item._id;
+      }
+    }
+    return owners;
+  }, [subscriptions]);
+
   const counts = useMemo(() => ({
     total: subscriptions.length,
     awaiting: subscriptions.filter((item) => item.status === 'awaiting_placement').length,
@@ -194,6 +271,11 @@ export default function AdminSubscriptions() {
               const form = formFor(item);
               const amount = Number(item.totalAmountMinor || 0) / 100;
               const canPlace = item.status === 'awaiting_placement';
+              const canSchedule = item.status === 'active'
+                && item.circle?._id
+                && sessionOwnerByCircle[item.circle._id] === item._id;
+              const groupSessionForm = canSchedule ? sessionFormFor(item) : null;
+              const durationOptions = canSchedule ? durationOptionsFor(item) : [];
 
               return (
                 <article key={item._id} className="wn-dashboard-surface">
@@ -362,13 +444,76 @@ export default function AdminSubscriptions() {
                           {working === item._id ? 'جاري التسكين...' : 'تأكيد التسكين'}
                         </button>
                       </div>
+                    ) : canSchedule ? (
+                      <div className="rounded-2xl border p-5 bg-white">
+                        <h4 className="font-bold flex items-center gap-2 mb-4">
+                          <CalendarClock size={19} /> جدولة حصة الجروب
+                        </h4>
+
+                        <div className="rounded-xl bg-emerald-50 border border-emerald-100 p-3 mb-4 text-sm">
+                          <p><strong>{item.circle?.name || item.circle?.code}</strong></p>
+                          <p className="text-slate-600 mt-1">
+                            الحصة ستظهر تلقائيًا لكل الطلاب المسكنين في الجروب، وسيتم احتساب الرصيد عند إكمالها.
+                          </p>
+                        </div>
+
+                        <div className="grid sm:grid-cols-2 gap-3">
+                          <label className="block">
+                            <span className="text-xs font-semibold">موعد الحصة</span>
+                            <input
+                              type="datetime-local"
+                              value={groupSessionForm.scheduledAt}
+                              onChange={(event) => updateSessionForm(item.circle._id, { scheduledAt: event.target.value })}
+                              className="mt-1 w-full border rounded-lg px-3 py-2"
+                            />
+                          </label>
+
+                          <label className="block">
+                            <span className="text-xs font-semibold">مدة الحصة</span>
+                            <select
+                              value={groupSessionForm.duration}
+                              onChange={(event) => updateSessionForm(item.circle._id, { duration: Number(event.target.value) })}
+                              className="mt-1 w-full border rounded-lg px-3 py-2"
+                            >
+                              {durationOptions.map((minutes) => (
+                                <option key={minutes} value={minutes}>
+                                  {minutes === 60 ? 'ساعة' : minutes === 90 ? 'ساعة ونصف' : minutes === 120 ? 'ساعتان' : minutes + ' دقيقة'}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        </div>
+
+                        <label className="block mt-3">
+                          <span className="text-xs font-semibold">ملاحظات اختيارية</span>
+                          <textarea
+                            rows={2}
+                            value={groupSessionForm.notes}
+                            onChange={(event) => updateSessionForm(item.circle._id, { notes: event.target.value })}
+                            className="mt-1 w-full border rounded-lg px-3 py-2"
+                            maxLength={1500}
+                          />
+                        </label>
+
+                        <button
+                          type="button"
+                          disabled={working === 'session:' + item.circle._id}
+                          onClick={() => scheduleGroupSession(item)}
+                          className="wn-btn wn-btn--primary wn-btn--block mt-4"
+                        >
+                          <CalendarClock size={17} />
+                          {working === 'session:' + item.circle._id ? 'جاري الجدولة...' : 'جدولة الحصة'}
+                        </button>
+                      </div>
                     ) : (
                       <div className="rounded-2xl border p-5 bg-slate-50 flex items-center justify-center text-center">
                         <div>
                           <CheckCircle2 size={36} className="mx-auto text-emerald-600 mb-3" />
                           <strong>{statusLabel(item.status)}</strong>
                           <p className="text-xs text-slate-500 mt-2">
-                            لا يوجد إجراء تسكين مطلوب لهذه الحالة.
+                            {item.status === 'placed'
+                              ? 'الجروب قيد الاكتمال. ستتاح جدولة الحصص عند وصوله للحد الأدنى.'
+                              : 'لا يوجد إجراء تسكين مطلوب لهذه الحالة.'}
                           </p>
                         </div>
                       </div>
