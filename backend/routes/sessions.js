@@ -375,7 +375,7 @@ router.get('/my-sessions', protect, async (req, res) => {
     ]);
 
     const presentedSessions = sessions.map((session) => {
-      const value = session.toObject();
+      const value = typeof session.toObject === 'function' ? session.toObject() : { ...session };
       const meetingVisible = meetingVisibleToRole(value, req.user.role);
       return {
         ...value,
