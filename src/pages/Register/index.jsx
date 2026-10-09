@@ -6,6 +6,7 @@ import {
   Sparkles, CheckCircle2, Globe, ArrowLeft, Star, ShieldCheck
 } from 'lucide-react';
 import BrandLogo from '../../components/BrandLogo';
+import GoogleSignIn from '../../components/GoogleSignIn';
 import { useI18n } from '../../i18n';
 import { useMarket } from '../../context/MarketProvider';
 import { useAuth } from '../../hooks/useAuth.jsx';
@@ -375,6 +376,7 @@ export default function Register() {
           className="wn-register-form-card lg:col-span-7 p-6 md:p-10 flex flex-col justify-between"
         >
           <div>
+            <GoogleSignIn context="signup" />
             {/* Role Switcher Tabs */}
             <div className="flex bg-slate-100 p-1 rounded-xl mb-6 border border-slate-200">
               <button
