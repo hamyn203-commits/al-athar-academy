@@ -1,7 +1,7 @@
 import {
-  BarChart3, BookOpen, CalendarClock, CreditCard, FileText, GraduationCap, History,
+  ArrowDown, BookOpen, CalendarClock, CreditCard, FileText, GraduationCap, History,
   Home, LogOut, Mail, Menu, PanelLeftClose, PanelLeftOpen, Settings, ShieldCheck, TrendingUp, Users,
-  WalletCards, X,
+  WalletCards, X, Sparkles,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -53,6 +53,9 @@ export default function AdminDashboardShell({
   }, [collapsed]);
 
   const roleHome = dashboardPathForRole('admin', locale);
+  const firstName = user?.name?.trim().split(/\\s+/)[0] || 'مدير الأكاديمية';
+  const activeSectionTitle = NAV_ITEMS.find((item) => item.id === active)?.label
+    || (active === 'system' ? 'إدارة النظام' : 'لوحة الإدارة');
 
   const today = useMemo(() => new Intl.DateTimeFormat('ar-EG', {
     weekday: 'long',
@@ -167,17 +170,31 @@ export default function AdminDashboardShell({
         </header>
 
         <main className="wn-admin-canvas">
-          <section className="wn-admin-welcome">
-            <div className="wn-admin-welcome__copy">
-              <span>وَحْيٌ وَنَمَاء · ADMIN OS</span>
-              <h1>مرحبًا بك يا مدير الأكاديمية</h1>
-              <p>نظرة تشغيلية شاملة على ما يحدث داخل الأكاديمية الآن.</p>
-            </div>
-            <div className="wn-admin-welcome__ornament">
-              <BarChart3 size={30} />
-              <span>إدارة · متابعة · نمو</span>
-            </div>
-          </section>
+          {active === 'overview' ? (
+            <section className="wn-admin-welcome wn-admin-welcome--illustrated" aria-labelledby="admin-welcome-title">
+              <div className="wn-admin-welcome__copy">
+                <span className="wn-admin-welcome__eyebrow"><Sparkles size={15} /> وَحْيٌ وَنَمَاء · مركز القيادة</span>
+                <h1 id="admin-welcome-title">مرحبًا بعودتك، <em>{firstName}</em></h1>
+                <p>من هنا تبدأ رؤية أوضح لكل ما يحدث في الأكاديمية، وخطوات أسرع لما يستحق اهتمامك.</p>
+                <div className="wn-admin-welcome__actions">
+                  <button type="button" className="is-primary" onClick={() => onChange?.('sessions')}>
+                    <CalendarClock size={17} /> متابعة الحصص
+                  </button>
+                  <button type="button" className="is-secondary" onClick={() => onChange?.('teachers')}>
+                    <GraduationCap size={17} /> مراجعة المعلمين
+                  </button>
+                </div>
+              </div>
+              <a className="wn-admin-welcome__scroll" href="#admin-executive-content">
+                استكشف لوحة التشغيل <ArrowDown size={15} />
+              </a>
+            </section>
+          ) : (
+            <section className="wn-admin-page-heading" aria-labelledby="admin-section-title">
+              <span>وَحْيٌ وَنَمَاء · الإدارة</span>
+              <h1 id="admin-section-title">{activeSectionTitle}</h1>
+            </section>
+          )}
 
           {children}
         </main>
