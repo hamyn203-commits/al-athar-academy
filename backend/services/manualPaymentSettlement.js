@@ -67,9 +67,35 @@ async function processManualPaymentReview({
             throw error;
           }
 
-          subscription.status = 'awaiting_placement';
+          const paidAt = new Date();
+          let renewalQueued = false;
+          let renewalCircleId = null;
+
+          if (subscription.renewalOf) {
+            const source = await StudentSubscription.findById(subscription.renewalOf).session(session);
+
+            if (
+              source
+              && source.status === 'active'
+              && Number(source.sessionsRemaining || 0) > 0
+              && (subscription.preferredCircle || source.circle)
+            ) {
+              subscription.status = 'renewal_queued';
+              subscription.circle = subscription.preferredCircle || source.circle;
+              subscription.renewalQueuedAt = paidAt;
+              renewalQueued = true;
+            } else {
+              subscription.status = 'awaiting_placement';
+              renewalCircleId = subscription.preferredCircle
+                ? String(subscription.preferredCircle)
+                : (source?.circle ? String(source.circle) : null);
+            }
+          } else {
+            subscription.status = 'awaiting_placement';
+          }
+
           subscription.payment = payment._id;
-          subscription.paidAt = new Date();
+          subscription.paidAt = paidAt;
           await subscription.save({ session });
 
           result = {
@@ -81,7 +107,9 @@ async function processManualPaymentReview({
             courseId: null,
             subscriptionId: String(subscription._id),
             subscriptionStatus: subscription.status,
-            awaitingPlacement: true,
+            awaitingPlacement: subscription.status === 'awaiting_placement',
+            renewalQueued,
+            renewalCircleId,
           };
           return;
         }
