@@ -12,6 +12,9 @@ const backendEnv = {
   SITE_URL: 'http://127.0.0.1:3500',
   JWT_SECRET: process.env.JWT_SECRET || 'playwright-access-secret-0123456789-abcdef',
   JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || 'playwright-refresh-secret-9876543210-fedcba',
+  MANUAL_PAYMENT_ENABLED: 'true',
+  MANUAL_PAYMENT_RECIPIENT_NAME: 'Wahy Wa Namaa E2E',
+  MANUAL_PAYMENT_INSTAPAY: 'e2e@instapay',
 };
 
 export default defineConfig({
