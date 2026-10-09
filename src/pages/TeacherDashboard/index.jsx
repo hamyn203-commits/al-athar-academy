@@ -120,6 +120,7 @@ export default function TeacherDashboard() {
     profilePhoto: null, introductionVideo: null, recitationVideo: null, teachingMethodVideo: null,
   });
   const [savingProfileChange, setSavingProfileChange] = useState(false);
+  const [attendanceUpdating, setAttendanceUpdating] = useState('');
 
 
   const load = useCallback(async () => {
@@ -414,6 +415,28 @@ export default function TeacherDashboard() {
       load();
     } catch (error) {
       toast.error(error.message || 'فشل إكمال الحصة');
+    }
+  };
+
+  const updateGroupAttendance = async (session, studentId, status) => {
+    if (!session?._id || !studentId) return;
+    const key = session._id + ':' + studentId;
+    setAttendanceUpdating(key);
+    try {
+      const result = await api.put(`/api/sessions/${session._id}/attendance`, {
+        records: [{ studentId, status }],
+      }, { auth: true });
+
+      setSessions((current) => current.map((item) => (
+        item._id === session._id
+          ? { ...item, attendance: result.attendance || item.attendance }
+          : item
+      )));
+      toast.success(status === 'attended' ? 'تم تسجيل حضور الطالب' : 'تم تسجيل غياب الطالب');
+    } catch (error) {
+      toast.error(error.message || 'فشل تحديث الحضور');
+    } finally {
+      setAttendanceUpdating('');
     }
   };
 
@@ -1512,7 +1535,61 @@ export default function TeacherDashboard() {
                               {session.type !== 'group_circle' ? (
                                 <button type="button" onClick={() => openStudent(session.student)}>عرض ملف الطالب</button>
                               ) : (
-                                <small>{session.attendance?.length || 0} طالب · {session.duration || 60} دقيقة</small>
+                                <div className="mt-2 space-y-2">
+                                  <small>{session.attendance?.length || 0} طالب · {session.duration || 60} دقيقة</small>
+                                  <div className="space-y-1.5">
+                                    {(session.attendance || []).map((entry) => {
+                                      const studentId = entry.student?._id || entry.student;
+                                      const studentName = entry.student?.name || 'طالب';
+                                      const isEligibleExcuse = entry.status === 'excused' && entry.eligibleForCompensation;
+                                      const isUpdating = attendanceUpdating === session._id + ':' + studentId;
+                                      return (
+                                        <div key={studentId} className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs">
+                                          <strong className="min-w-[90px]">{studentName}</strong>
+                                          {isEligibleExcuse ? (
+                                            <span className="rounded-full bg-blue-50 px-2 py-1 font-semibold text-blue-700">
+                                              معتذر — لا تخصم
+                                            </span>
+                                          ) : (
+                                            <>
+                                              <button
+                                                type="button"
+                                                disabled={isUpdating}
+                                                onClick={() => updateGroupAttendance(session, studentId, 'attended')}
+                                                className={
+                                                  'rounded-lg px-2.5 py-1 font-bold ' +
+                                                  (entry.status === 'attended'
+                                                    ? 'bg-emerald-600 text-white'
+                                                    : 'bg-emerald-50 text-emerald-700')
+                                                }
+                                              >
+                                                حضر
+                                              </button>
+                                              <button
+                                                type="button"
+                                                disabled={isUpdating}
+                                                onClick={() => updateGroupAttendance(session, studentId, 'absent')}
+                                                className={
+                                                  'rounded-lg px-2.5 py-1 font-bold ' +
+                                                  (entry.status === 'absent'
+                                                    ? 'bg-rose-600 text-white'
+                                                    : 'bg-rose-50 text-rose-700')
+                                                }
+                                              >
+                                                غاب
+                                              </button>
+                                            </>
+                                          )}
+                                          {entry.status === 'excused' && !entry.eligibleForCompensation ? (
+                                            <span className="rounded-full bg-amber-50 px-2 py-1 font-semibold text-amber-700">
+                                              اعتذار متأخر — تخصم
+                                            </span>
+                                          ) : null}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
                               )}
                             </div>
                             <div className="wn-teacher-session-card__actions">
