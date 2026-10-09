@@ -178,6 +178,9 @@ assert.match(studentDashboard, /بانتظار مراجعة الإدارة/);
 assert.match(studentDashboard, /الدفع معتمد — بانتظار التسكين/);
 assert.match(studentDashboard, /تم التسكين — الجروب قيد الاكتمال/);
 assert.match(studentDashboard, /sessionsRemaining/);
+assert.match(studentDashboard, /\/api\/subscriptions\/'\s*\+\s*encodeURIComponent\(subscription\._id\)\s*\+\s*'\/renew/);
+assert.match(studentDashboard, /جدد نفس الجروب/);
+assert.match(studentDashboard, /renewal_queued/);
 assert.match(studentDashboard, /group_circle/);
 assert.match(studentDashboard, /حلقة جماعية/);
 assert.match(studentDashboard, /اشتراك/);
@@ -196,11 +199,15 @@ assert.match(sessionRoutes, /router\.post\(['"]\/group-circle['"]/);
 assert.match(sessionRoutes, /settleSubscriptionUsageForSession/);
 assert.match(sessionRoutes, /calculateSessionEarning/);
 assert.match(sessionRoutes, /['"]attendance\.student['"]:\s*req\.user\.id/);
+assert.match(sessionRoutes, /router\.put\(['"]\/:id\/attendance['"],\s*protect,\s*authorize\(['"]teacher['"],\s*['"]admin['"]\)/);
+assert.match(sessionRoutes, /ATTENDANCE_INCOMPLETE/);
 assert.match(sessionRoutes, /trialAllowance:[\s\S]{0,180}remaining/);
 assert.match(studentDashboardRoutes, /trialAllowance:[\s\S]{0,180}remaining/);
 assert.match(teacherDashboard, /الحصص المكتملة وتقاريرها/);
 assert.match(teacherDashboard, /completeGroupSession/);
 assert.match(teacherDashboard, /إنهاء الحصة الجماعية/);
+assert.match(teacherDashboard, /updateGroupAttendance/);
+assert.match(teacherDashboard, /معتذر — لا تخصم/);
 assert.match(teacherDashboard, /role="radiogroup"/);
 assert.match(teacherDashboard, /surahRecited:\s*evaluation\.surahRecited/);
 
@@ -228,6 +235,9 @@ const subscriptionRoutes = read('backend/routes/subscriptions.js');
 const subscriptionModel = read('backend/models/StudentSubscription.js');
 assert.match(subscriptionRoutes, /router\.get\(['"]\/plans['"]/);
 assert.match(subscriptionRoutes, /router\.post\(['"]\/select['"],\s*protect,\s*authorize\(['"]student['"]\)/);
+assert.match(subscriptionRoutes, /router\.post\(['"]\/:id\/renew['"],\s*protect,\s*authorize\(['"]student['"]\)/);
+assert.match(subscriptionRoutes, /SUBSCRIPTION_NOT_RENEWABLE/);
+assert.match(subscriptionRoutes, /RENEWAL_ALREADY_EXISTS/);
 assert.match(subscriptionRoutes, /quoteSubscription\(\{\s*planKey,\s*sessionCount\s*\}\)/);
 assert.match(subscriptionModel, /pending_payment/);
 assert.match(subscriptionModel, /sessionCount:[\s\S]{0,100}enum:\s*\[4, 8, 12, 24\]/);
@@ -248,6 +258,8 @@ assert.match(manualPayment, /\/api\/payments\/course\/'\s*\+\s*encodeURIComponen
 assert.match(manualPayment, /\/api\/payments\/subscription\/'\s*\+\s*encodeURIComponent\(subscriptionId\)\s*\+\s*'\/manual/);
 assert.match(manualPayment, /عايز تدرس مع مين/);
 assert.match(manualPayment, /\/api\/teachers/);
+assert.match(manualPayment, /التجديد مع نفس المعلم/);
+assert.match(manualPayment, /disabled=\{Boolean\(subscription\?\.renewalOf\)\}/);
 
 // T22: Teacher public media is rendered through same-origin routes.
 const teacherMedia = read('src/lib/teacherMedia.js');
