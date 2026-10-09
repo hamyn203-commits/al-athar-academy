@@ -26,6 +26,9 @@ const {
 const { isMockMode } = require('../config/runtime');
 const isDBConnected = () => mongoose.connection.readyState === 1;
 
+const MAX_TRIAL_SESSIONS_PER_STUDENT = 3;
+const TRIAL_CONSUMING_STATUSES = ['pending', 'accepted', 'completed'];
+
 async function validateBookingSlot({ teacher, scheduledAt, timezone, duration = 60 }) {
   const resolved = parseRequestedDateTime(scheduledAt, timezone);
   if (!resolved) {
@@ -179,6 +182,26 @@ router.post('/trial', protect, authorize('student'), async (req, res) => {
       return res.status(404).json({ error: 'Teacher not found or not available' });
     }
 
+    const trialUsed = await Session.countDocuments({
+      student: req.user.id,
+      type: 'trial',
+      status: { $in: TRIAL_CONSUMING_STATUSES },
+    });
+    const trialRemaining = Math.max(0, MAX_TRIAL_SESSIONS_PER_STUDENT - trialUsed);
+
+    if (trialUsed >= MAX_TRIAL_SESSIONS_PER_STUDENT) {
+      return res.status(409).json({
+        error: 'لقد استخدمت الحد الأقصى من الحصص التجريبية. اشترك للاستمرار في رحلتك.',
+        code: 'TRIAL_LIMIT_REACHED',
+        trialAllowance: {
+          limit: MAX_TRIAL_SESSIONS_PER_STUDENT,
+          used: trialUsed,
+          remaining: 0,
+        },
+        nextActions: ['subscribe', 'continue-with-teacher'],
+      });
+    }
+
     const completedTrial = await Session.findOne({
       student: req.user.id,
       teacher: teacherId,
@@ -256,7 +279,12 @@ router.post('/trial', protect, authorize('student'), async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'Trial session request sent successfully',
-      session
+      session,
+      trialAllowance: {
+        limit: MAX_TRIAL_SESSIONS_PER_STUDENT,
+        used: trialUsed + 1,
+        remaining: Math.max(0, trialRemaining - 1),
+      },
     });
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -695,6 +723,16 @@ router.put('/:id/complete', protect, authorize('teacher'), async (req, res) => {
 
     try {
       const isTrial = session.type === 'trial';
+      const trialUsed = isTrial
+        ? await Session.countDocuments({
+            student: session.student,
+            type: 'trial',
+            status: { $in: TRIAL_CONSUMING_STATUSES },
+          })
+        : 0;
+      const trialRemaining = isTrial
+        ? Math.max(0, MAX_TRIAL_SESSIONS_PER_STUDENT - trialUsed)
+        : 0;
       const payload = {
         type: 'session-completed',
         title: {
@@ -703,10 +741,14 @@ router.put('/:id/complete', protect, authorize('teacher'), async (req, res) => {
         },
         message: {
           ar: isTrial
-            ? 'يمكنك الآن الاستمرار مع نفس المعلم أو تجربة معلم آخر.'
+            ? (trialRemaining > 0
+              ? `أحسنت. يمكنك الاشتراك والاستمرار مع نفس المعلم، أو استخدام ${trialRemaining} حصة تجريبية متبقية مع معلمين آخرين.`
+              : 'أحسنت. استخدمت حصصك التجريبية الثلاث. اشترك الآن للاستمرار مع المعلم المناسب.')
             : 'تم تسجيل الحصة كمكتملة ويمكنك مراجعة التقييم والواجب.',
           en: isTrial
-            ? 'You can now continue with this tutor or try another tutor.'
+            ? (trialRemaining > 0
+              ? `You can subscribe and continue with this tutor, or use your ${trialRemaining} remaining trial session(s) with other tutors.`
+              : 'You have used all three trial sessions. Subscribe to continue with your tutor.')
             : 'The session is complete. Review your evaluation and homework.',
         },
         data: {
@@ -714,6 +756,13 @@ router.put('/:id/complete', protect, authorize('teacher'), async (req, res) => {
           actionUrl: isTrial
             ? `/student/dashboard?tab=trials&postTrial=${session._id}`
             : '/student/dashboard?tab=evaluations',
+          ...(isTrial ? {
+            trialAllowance: {
+              limit: MAX_TRIAL_SESSIONS_PER_STUDENT,
+              used: trialUsed,
+              remaining: trialRemaining,
+            },
+          } : {}),
         },
         priority: 'high',
       };
