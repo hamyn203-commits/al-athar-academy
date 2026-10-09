@@ -18,7 +18,7 @@ test.describe.serial('Wahy Wa Namaa core academy journey', () => {
 
     await page.locator('form').getByRole('button', { name: /إنشاء|تسجيل/ }).click();
     await expect(page).toHaveURL(/\/ar\/student\/dashboard/);
-    await expect(page.getByText('لوحة الطالب')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'لوحة الطالب', exact: true })).toBeVisible();
   });
 
   test('student books a trial and teacher accepts it', async ({ browser }) => {
