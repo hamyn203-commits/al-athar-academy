@@ -62,6 +62,9 @@ const UserSchema = new mongoose.Schema({
     min: 4,
     max: 100
   },
+  memorizedJuz: { type: Number, min: 0, max: 30, default: 0 },
+  memorizationDetails: { type: String, trim: true, maxlength: 500, default: '' },
+  customLevel: { type: String, trim: true, maxlength: 120, default: '' },
   currentLevel: {
     type: String,
     enum: ['beginner', 'intermediate', 'advanced', 'ijazah'],
