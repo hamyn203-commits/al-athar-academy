@@ -53,6 +53,7 @@ function sanitizePublicCircle(circle) {
     timezone: value.timezone,
     status: value.status,
     pricePerSession: value.pricePerSession,
+    subscriptionPlanKey: value.subscriptionPlanKey,
     currentSurah: value.currentSurah,
     teacher,
     currentCount: studentCount,
@@ -350,7 +351,7 @@ router.post('/', protect, authorize('admin', 'teacher'), async (req, res) => {
 });
 
 // @route   POST /api/circles/:id/join
-// @desc    Join circle for students (Strict validation: capacity <= 10, gender match, no duplicate, updates User.circle)
+// @desc    Join circle for students (Strict validation: configured capacity <= 15, gender match, no duplicate, updates User.circle)
 // @access  Protected
 router.post('/:id/join', protect, authorize('student', 'guardian', 'admin'), async (req, res) => {
   try {
@@ -469,7 +470,7 @@ router.put('/:id', protect, authorize('admin', 'teacher'), async (req, res) => {
     if (isMockMode && !isDBConnected()) {
       const found = MOCK_CIRCLES.find(c => c._id === req.params.id) || MOCK_CIRCLES[0];
       if (!found) return res.status(404).json({ error: 'الحلقة غير موجودة' });
-      const { name, track, level, gender, schedule, status, notes } = req.body;
+      const { name, track, level, gender, schedule, status, notes, capacity, subscriptionPlanKey } = req.body;
       if (name !== undefined) found.name = name;
       if (track !== undefined) found.track = track;
       if (level !== undefined) found.level = level;
@@ -477,6 +478,8 @@ router.put('/:id', protect, authorize('admin', 'teacher'), async (req, res) => {
       if (Array.isArray(schedule)) found.schedule = schedule;
       if (status !== undefined) found.status = status;
       if (notes !== undefined) found.notes = notes;
+      if (capacity !== undefined) found.capacity = Math.min(15, Math.max(1, Number(capacity)));
+      if (subscriptionPlanKey !== undefined) found.subscriptionPlanKey = subscriptionPlanKey;
       return res.json({
         success: true,
         message: 'تم تحديث بيانات الحلقة بنجاح',
@@ -508,7 +511,9 @@ router.put('/:id', protect, authorize('admin', 'teacher'), async (req, res) => {
       currentSurah,
       notes,
       pricePerSession,
-      teacherId
+      teacherId,
+      capacity,
+      subscriptionPlanKey
     } = req.body;
 
     if (name !== undefined) circle.name = name;
@@ -521,6 +526,14 @@ router.put('/:id', protect, authorize('admin', 'teacher'), async (req, res) => {
     if (currentSurah !== undefined) circle.currentSurah = currentSurah;
     if (notes !== undefined) circle.notes = notes;
     if (pricePerSession !== undefined) circle.pricePerSession = pricePerSession;
+    if (capacity !== undefined) {
+      const normalizedCapacity = Math.min(15, Math.max(1, Number(capacity)));
+      if (!Number.isFinite(normalizedCapacity) || normalizedCapacity < circle.students.length) {
+        return res.status(400).json({ error: 'سعة الحلقة غير صحيحة أو أقل من عدد الطلاب الحالي' });
+      }
+      circle.capacity = normalizedCapacity;
+    }
+    if (subscriptionPlanKey !== undefined) circle.subscriptionPlanKey = subscriptionPlanKey;
 
     if (teacherId && req.user.role === 'admin') {
       const teacherExists = await Teacher.findById(teacherId);
