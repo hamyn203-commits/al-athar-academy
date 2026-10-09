@@ -39,9 +39,12 @@ function serializeSubscription(subscription) {
     circle: value.circle || null,
     payment: value.payment || null,
     preferredTeacher: value.preferredTeacher || null,
+    renewalOf: value.renewalOf || null,
+    preferredCircle: value.preferredCircle || null,
     pricingSnapshot: value.pricingSnapshot,
     selectedAt: value.selectedAt,
     paidAt: value.paidAt || null,
+    renewalQueuedAt: value.renewalQueuedAt || null,
     placedAt: value.placedAt || null,
     startedAt: value.startedAt || null,
     completedAt: value.completedAt || null,
@@ -68,6 +71,7 @@ router.get('/me', protect, authorize('student'), async (req, res) => {
         populate: { path: 'user', select: 'name avatar' },
       })
       .populate('circle', 'name code status capacity students schedule timezone')
+      .populate('preferredCircle', 'name code status capacity students schedule timezone subscriptionPlanKey')
       .lean();
 
     return res.json({
@@ -159,6 +163,115 @@ router.post('/select', protect, authorize('student'), async (req, res) => {
     });
   } catch (error) {
     return res.status(500).json({ error: 'فشل حفظ اختيار الاشتراك', details: error.message });
+  }
+});
+
+
+router.post('/:id/renew', protect, authorize('student'), async (req, res) => {
+  try {
+    const source = await StudentSubscription.findOne({
+      _id: req.params.id,
+      student: req.user.id,
+    });
+
+    if (!source) {
+      return res.status(404).json({
+        error: 'الاشتراك المراد تجديده غير موجود',
+        code: 'SUBSCRIPTION_NOT_FOUND',
+      });
+    }
+
+    const renewable = source.status === 'completed'
+      || (source.status === 'active' && Number(source.sessionsRemaining || 0) <= 2);
+
+    if (!renewable) {
+      return res.status(409).json({
+        error: 'يمكن التجديد عند تبقي حصتين أو أقل، أو بعد انتهاء الباقة.',
+        code: 'SUBSCRIPTION_NOT_RENEWABLE_YET',
+        sessionsRemaining: source.sessionsRemaining,
+        status: source.status,
+      });
+    }
+
+    if (!source.preferredTeacher || !source.circle) {
+      return res.status(409).json({
+        error: 'لا توجد بيانات كافية للتجديد التلقائي مع نفس المعلم والجروب',
+        code: 'RENEWAL_CONTEXT_MISSING',
+      });
+    }
+
+    const existingRenewal = await StudentSubscription.findOne({
+      renewalOf: source._id,
+      status: { $in: ['pending_payment', 'payment_review', 'renewal_queued', 'awaiting_placement', 'placed', 'active', 'paused'] },
+    }).select('_id status');
+
+    if (existingRenewal) {
+      return res.status(409).json({
+        error: 'يوجد طلب تجديد قائم بالفعل لهذا الاشتراك.',
+        code: 'RENEWAL_ALREADY_EXISTS',
+        subscriptionId: String(existingRenewal._id),
+        status: existingRenewal.status,
+      });
+    }
+
+    const sessionCount = Number(req.body?.sessionCount);
+    let quote;
+    try {
+      quote = quoteSubscription({ planKey: source.planKey, sessionCount });
+    } catch (error) {
+      return res.status(400).json({
+        error: error.message,
+        code: error.code || 'SUBSCRIPTION_RENEWAL_INVALID',
+      });
+    }
+
+    const plan = quote.plan;
+    const renewal = await StudentSubscription.create({
+      student: req.user.id,
+      planKey: source.planKey,
+      section: source.section,
+      sessionCount: quote.sessionCount,
+      sessionsUsed: 0,
+      sessionsRemaining: quote.sessionCount,
+      currency: quote.currency,
+      pricePerSessionMinor: quote.pricePerSessionMinor,
+      totalAmountMinor: quote.totalAmountMinor,
+      status: 'pending_payment',
+      preferredTeacher: source.preferredTeacher,
+      renewalOf: source._id,
+      preferredCircle: source.circle,
+      circle: null,
+      payment: null,
+      pricingSnapshot: {
+        minStudents: plan.minStudents,
+        maxStudents: plan.maxStudents,
+        durationMinMinutes: plan.durationMinMinutes,
+        durationMaxMinutes: plan.durationMaxMinutes,
+        nameAr: plan.name.ar,
+        nameEn: plan.name.en,
+        durationLabelAr: plan.durationLabel.ar,
+        durationLabelEn: plan.durationLabel.en,
+      },
+      selectedAt: new Date(),
+    });
+
+    return res.status(201).json({
+      success: true,
+      renewal: true,
+      message: 'تم إنشاء طلب التجديد بنفس الخطة والمعلم والجروب.',
+      subscription: serializeSubscription(renewal),
+    });
+  } catch (error) {
+    if (error?.code === 11000) {
+      return res.status(409).json({
+        error: 'يوجد طلب دفع أو تجديد قائم بالفعل.',
+        code: 'RENEWAL_ALREADY_EXISTS',
+      });
+    }
+    return res.status(500).json({
+      error: 'فشل إنشاء طلب التجديد',
+      details: error.message,
+    });
   }
 });
 
