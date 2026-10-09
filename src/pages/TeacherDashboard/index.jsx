@@ -1431,9 +1431,12 @@ export default function TeacherDashboard() {
                     {[...sessions]
                       .sort((a, b) => new Date(a.scheduledAt) - new Date(b.scheduledAt))
                       .map((session) => {
-                        const hasStarted = new Date(session.scheduledAt) <= new Date();
-                        const joinWindow = sessionJoinWindow(session);
-                        const canJoinRoom = session.status === 'accepted' && joinWindow.within;
+                        const joinWindow = session.lifecycle
+                          ? { phase: session.lifecycle.joinPhase, within: session.lifecycle.joinOpen }
+                          : sessionJoinWindow(session);
+                        const hasStarted = session.lifecycle?.started ?? (new Date(session.scheduledAt) <= new Date());
+                        const canJoinRoom = session.lifecycle?.joinOpen ?? (session.status === 'accepted' && joinWindow.within);
+                        const canComplete = session.lifecycle?.canComplete ?? hasStarted;
                         return (
                           <article key={session._id} className={'wn-teacher-session-card ' + (hasStarted ? 'is-due' : '')}>
                             <div className="wn-teacher-session-card__time">
@@ -1460,9 +1463,9 @@ export default function TeacherDashboard() {
                               <button
                                 type="button"
                                 onClick={() => openEval(session)}
-                                disabled={!hasStarted}
+                                disabled={!canComplete}
                                 className="is-complete"
-                                title={!hasStarted ? 'يمكن إنهاء الحصة بعد بدء موعدها فقط' : undefined}
+                                title={!canComplete ? 'يمكن إنهاء الحصة بعد بدء موعدها حسب توقيت السيرفر فقط' : undefined}
                               >
                                 <CheckCircle2 size={16} /> إنهاء + تقرير
                               </button>

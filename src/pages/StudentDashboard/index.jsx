@@ -1835,10 +1835,14 @@ function SessionCard({ session, onReview, hasReviewed, onChat }) {
   const { locale } = useI18n();
   const teacherName = session.teacher?.user?.name || session.teacher?.personalInfo?.fullName || (locale === 'id' ? 'Guru' : locale === 'ar' ? 'المعلم' : 'Tutor');
   const isTrial = session.type === 'trial';
-  const joinWindow = session.status === 'accepted' ? sessionJoinWindow(session) : null;
+  const joinWindow = session.status === 'accepted'
+    ? (session.lifecycle
+      ? { phase: session.lifecycle.joinPhase, within: session.lifecycle.joinOpen }
+      : sessionJoinWindow(session))
+    : null;
   const acceptedExpired = joinWindow?.phase === 'expired';
   const acceptedEarly = joinWindow?.phase === 'early';
-  const canJoin = Boolean(session.meetingLink && session.status === 'accepted' && joinWindow?.within);
+  const canJoin = Boolean(session.meetingLink && session.status === 'accepted' && (session.lifecycle?.joinOpen ?? joinWindow?.within));
   const statusText = acceptedExpired
     ? (locale === 'ar' ? 'انتهى موعد الدخول — بانتظار التقرير' : locale === 'id' ? 'Waktu masuk selesai — menunggu laporan' : 'Join window ended — awaiting report')
     : getStatusLabel(session.status, locale);
