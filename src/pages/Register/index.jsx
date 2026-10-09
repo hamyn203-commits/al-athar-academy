@@ -12,6 +12,7 @@ import { useAuth } from '../../hooks/useAuth.jsx';
 import { localizedPath } from '../../lib/locale';
 import { dashboardPathForRole } from '../../lib/navigation';
 import '../../styles/public-experience.css';
+import { uploadFileDirect } from '../../lib/fileUpload';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -36,6 +37,8 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [studentPhoto, setStudentPhoto] = useState(null);
+  const [photoNotice, setPhotoNotice] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -110,6 +113,23 @@ export default function Register() {
 
       if (!result.success) {
         throw new Error(result.error || (locale === 'ar' ? 'فشل إنشاء الحساب' : 'Registration failed'));
+      }
+
+      if (role === 'student' && studentPhoto) {
+        try {
+          const uploaded = await uploadFileDirect(studentPhoto, 'student-avatar');
+          const token = (await import('../../lib/authSession')).getAccessToken();
+          const updateResponse = await fetch((await import('../../config')).apiUrl('/api/auth/me'), {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+            body: JSON.stringify({ avatar: uploaded.url }),
+          });
+          if (!updateResponse.ok) throw new Error('Photo save failed');
+        } catch {
+          window.alert(locale === 'ar'
+            ? 'تم إنشاء الحساب بنجاح، لكن تعذر حفظ الصورة. يمكنك إضافتها لاحقًا.'
+            : 'Your account was created, but the optional photo could not be saved.');
+        }
       }
 
       navigate(
@@ -485,6 +505,28 @@ export default function Register() {
                     <textarea name="memorizationDetails" maxLength="500" rows="3" value={formData.memorizationDetails} onChange={handleChange} className="block w-full rounded-xl border p-3 mt-1" placeholder={locale === 'ar' ? 'مثال: أحفظ جزء عم وتبارك، وأريد البدء من سورة البقرة' : 'Example: I memorized Juz Amma and Tabarak'} />
                   </label>
                 </section>
+              )}
+
+              {role === 'student' && (
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
+                  <label htmlFor="optional-student-photo" className="block font-bold text-sm text-slate-900">
+                    {locale === 'ar' ? 'الصورة الشخصية (اختيارية)' : 'Profile photo (optional)'}
+                  </label>
+                  <input id="optional-student-photo" type="file" accept="image/jpeg,image/png,.jpg,.jpeg,.png"
+                    className="block w-full text-sm" onChange={(event) => {
+                      const file = event.target.files?.[0] || null;
+                      if (file && (!['image/jpeg', 'image/png'].includes(file.type) || file.size > 5 * 1024 * 1024)) {
+                        setStudentPhoto(null);
+                        event.target.value = '';
+                        setPhotoNotice(locale === 'ar' ? 'اختر JPG أو PNG بحجم لا يتجاوز 5 ميجابايت' : 'Choose JPG or PNG up to 5 MB');
+                      } else {
+                        setStudentPhoto(file);
+                        setPhotoNotice(file ? file.name : '');
+                      }
+                    }} />
+                  <p className="text-xs text-slate-500">{locale === 'ar' ? 'يمكنك إكمال التسجيل دون صورة. JPG أو PNG بحد أقصى 5 MB.' : 'You can register without a photo. JPG or PNG, up to 5 MB.'}</p>
+                  {photoNotice && <p role="status" className="text-xs text-emerald-800">{photoNotice}</p>}
+                </div>
               )}
 
               {/* Phone Number */}
