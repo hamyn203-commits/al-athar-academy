@@ -115,6 +115,7 @@ test.describe('Wahy Wa Namaa core academy journey', () => {
     await expect(studentPage.getByText('من ساعة إلى ساعتين', { exact: true }).first()).toBeVisible();
     await expect(studentPage.getByText('ساعة ونصف', { exact: true })).toBeVisible();
     await expect(studentPage.getByText('ساعة أو أقل', { exact: true }).first()).toBeVisible();
+    await expect(studentPage.getByRole('tab', { name: /قسم الرجال والأطفال/ })).toBeVisible();
     await expect(studentPage.getByRole('tab', { name: /قسم السيدات/ })).toBeVisible();
 
     await studentPage.getByRole('button', { name: '24 حصص' }).click();
