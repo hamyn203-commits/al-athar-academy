@@ -19,7 +19,7 @@ import { localizeInternalHref } from '../../lib/navigation';
 import { apiUrl } from '../../config';
 import StudentTeacherMarketplace from './TeacherMarketplace';
 import SessionChatModal from '../../components/session/SessionChatModal';
-import { sessionJoinWindow } from '../../lib/sessionTime';
+import { sessionJoinWindow, formatSessionDateTime, sessionTimeZone } from '../../lib/sessionTime';
 
 const emptyReview = { rating: 5, comment: '', wouldContinue: true };
 const emptyBook = { date: '', time: '', notes: '' };
@@ -1855,7 +1855,7 @@ function SessionCard({ session, onReview, hasReviewed, onChat }) {
           <span className="text-xs bg-slate-100 px-2 py-0.5 rounded">{isTrial ? (locale === 'id' ? 'Uji Coba' : 'تجريبية') : (locale === 'id' ? 'Reguler' : 'منتظمة')}</span>
         </div>
         <p className="text-sm text-gray-600 flex items-center gap-1 mt-1">
-          <Clock size={14} /> {new Date(session.scheduledAt).toLocaleString(locale === 'id' ? 'id-ID' : 'ar-EG')} — {locale === 'id' ? '1 Jam' : locale === 'ar' ? 'ساعة' : '1 Hour'}
+          <Clock size={14} /> {formatSessionDateTime(session, locale === 'id' ? 'id-ID' : locale === 'ar' ? 'ar-EG' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' })} — {locale === 'id' ? '1 Jam' : locale === 'ar' ? 'ساعة' : '1 Hour'} · {sessionTimeZone(session)}
         </p>
         <span className={`text-xs px-2 py-0.5 rounded mt-1 inline-block ${
           session.status === 'accepted' ? 'bg-green-100 text-green-700'

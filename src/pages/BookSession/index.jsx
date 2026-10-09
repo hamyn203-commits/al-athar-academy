@@ -8,6 +8,7 @@ import { localizedPath } from '../../lib/locale';
 import api from '../../lib/api';
 import { teacherPublicImage, teacherImageFallback } from '../../lib/teacherMedia';
 import { useAuth } from '../../hooks/useAuth.jsx';
+import { formatSessionDateTime, sessionTimeZone } from '../../lib/sessionTime';
 import '../../styles/session-experience.css';
 
 export default function BookSession() {
@@ -203,7 +204,7 @@ export default function BookSession() {
                       {existingTrial.scheduledAt && (
                         <p className="text-sm mt-1">
                           {isAr ? 'الموعد: ' : 'Time: '}
-                          {new Date(existingTrial.scheduledAt).toLocaleString(isAr ? 'ar-EG' : 'en')}
+                          {formatSessionDateTime(existingTrial, isAr ? 'ar-EG' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' })} ({sessionTimeZone(existingTrial)})
                         </p>
                       )}
                       <button

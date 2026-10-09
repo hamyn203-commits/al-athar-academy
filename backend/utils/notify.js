@@ -54,12 +54,14 @@ async function notifyGuardiansForStudent(studentId, payload) {
 }
 
 async function notifyTeacherForSessionRequest(session, teacherUserId) {
+  const timezone = String(session?.timezone || 'Africa/Cairo');
+  const scheduled = new Date(session.scheduledAt);
   return notifyUser(teacherUserId, {
     type: 'session-request',
     title: { ar: 'طلب حصة جديد', en: 'New session request' },
     message: {
-      ar: `طلب حصة ${session.type === 'trial' ? 'تجريبية' : ''} — ${new Date(session.scheduledAt).toLocaleString('ar-EG')}`,
-      en: `New ${session.type} session — ${new Date(session.scheduledAt).toLocaleString('en-US')}`,
+      ar: `طلب حصة ${session.type === 'trial' ? 'تجريبية' : ''} — ${scheduled.toLocaleString('ar-EG', { timeZone: timezone })} (${timezone})`,
+      en: `New ${session.type} session — ${scheduled.toLocaleString('en-US', { timeZone: timezone })} (${timezone})`,
     },
     data: {
       session: session._id,

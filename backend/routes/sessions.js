@@ -419,7 +419,7 @@ router.get('/my-sessions', protect, async (req, res) => {
 
 router.put('/:id/respond', protect, authorize('teacher'), async (req, res) => {
   try {
-    const { action, rescheduledDate, reason } = req.body;
+    const { action, rescheduledDate, rescheduleTimezone, reason } = req.body;
 
     if (!['accept', 'reject', 'reschedule'].includes(action)) {
       return res.status(400).json({ error: 'Invalid session response action' });
@@ -461,9 +461,47 @@ router.put('/:id/respond', protect, authorize('teacher'), async (req, res) => {
       session.status = 'rejected';
       session.cancellationReason = reason;
     } else if (action === 'reschedule') {
-      const proposedDate = new Date(rescheduledDate);
-      if (!rescheduledDate || Number.isNaN(proposedDate.getTime()) || proposedDate <= new Date()) {
-        return res.status(400).json({ error: 'A valid future reschedule date is required' });
+      const timezone = safeTimeZone(
+        rescheduleTimezone
+        || session.timezone
+        || teacher.availabilityTimezone
+        || 'Africa/Cairo'
+      );
+      const proposedDate = parseRequestedDateTime(rescheduledDate, timezone);
+      if (!proposedDate || proposedDate.getTime() <= Date.now()) {
+        return res.status(400).json({
+          error: 'A valid future reschedule date is required',
+          code: 'INVALID_RESCHEDULE_TIME',
+          timezone,
+        });
+      }
+
+      const availability = teacherAvailabilityDecision(teacher, proposedDate, session.duration || 60);
+      if (!availability.allowed) {
+        return res.status(409).json({
+          error: 'هذا الموعد خارج أوقات توفر المعلم',
+          code: availability.code || 'TEACHER_UNAVAILABLE',
+          teacherTimezone: availability.timeZone || timezone,
+        });
+      }
+
+      const otherSessions = await Session.find({
+        _id: { $ne: session._id },
+        teacher: teacher._id,
+        status: { $in: ['pending', 'accepted'] },
+      }).select('scheduledAt duration');
+
+      const conflict = (otherSessions || []).find((other) => overlaps(
+        proposedDate,
+        session.duration || 60,
+        other.scheduledAt,
+        other.duration || 60,
+      ));
+      if (conflict) {
+        return res.status(409).json({
+          error: 'هذا الموعد يتعارض مع حصة أخرى لدى المعلم',
+          code: 'TEACHER_SLOT_CONFLICT',
+        });
       }
 
       const source = session.toObject();
@@ -476,6 +514,7 @@ router.put('/:id/respond', protect, authorize('teacher'), async (req, res) => {
       const newSession = await Session.create({
         ...source,
         scheduledAt: proposedDate,
+        timezone,
         status: 'pending',
         rescheduledFrom: session._id,
         cancellationReason: undefined,
@@ -486,12 +525,14 @@ router.put('/:id/respond', protect, authorize('teacher'), async (req, res) => {
       await session.save();
 
       try {
+        const arTime = proposedDate.toLocaleString('ar-EG', { timeZone: timezone });
+        const enTime = proposedDate.toLocaleString('en-US', { timeZone: timezone });
         const payload = {
           type: 'session-rescheduled',
           title: { ar: 'اقتراح موعد جديد للحصة', en: 'New session time proposed' },
           message: {
-            ar: `اقترح المعلم موعدًا جديدًا: ${proposedDate.toLocaleString('ar-EG')}`,
-            en: `Your tutor proposed a new time: ${proposedDate.toLocaleString('en-US')}`,
+            ar: `اقترح المعلم موعدًا جديدًا: ${arTime} (${timezone})`,
+            en: `Your tutor proposed a new time: ${enTime} (${timezone})`,
           },
           data: {
             session: newSession._id,
@@ -520,8 +561,8 @@ router.put('/:id/respond', protect, authorize('teacher'), async (req, res) => {
           type: 'session-accepted',
           title: { ar: 'تم تأكيد حصة الطالب', en: 'Student session confirmed' },
           message: {
-            ar: `تم تأكيد الحصة بتاريخ ${new Date(session.scheduledAt).toLocaleString('ar-EG')}`,
-            en: `The session was confirmed for ${new Date(session.scheduledAt).toLocaleString('en-US')}`,
+            ar: `تم تأكيد الحصة بتاريخ ${new Date(session.scheduledAt).toLocaleString('ar-EG', { timeZone: safeTimeZone(session.timezone) })} (${safeTimeZone(session.timezone)})`,
+            en: `The session was confirmed for ${new Date(session.scheduledAt).toLocaleString('en-US', { timeZone: safeTimeZone(session.timezone) })} (${safeTimeZone(session.timezone)})`,
           },
           data: { session: session._id, actionUrl: '/guardian/dashboard' },
           priority: 'high',
