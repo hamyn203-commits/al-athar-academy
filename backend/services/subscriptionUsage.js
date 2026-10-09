@@ -61,6 +61,7 @@ async function settleSubscriptionUsageForSession(sessionDoc) {
   const now = new Date();
   const results = [];
   const notificationTargets = [];
+  const activatedRenewals = [];
 
   for (const studentId of studentIds) {
     const dbSession = await mongoose.startSession();
@@ -138,27 +139,47 @@ async function settleSubscriptionUsageForSession(sessionDoc) {
 
         await subscription.save({ session: dbSession });
 
+        let renewalActivated = false;
         if (subscription.status === 'completed') {
-          await GroupCircle.updateOne(
-            { _id: circleId },
-            { $pull: { students: studentId } },
-            { session: dbSession }
-          );
-          await User.updateOne(
-            { _id: studentId, circle: circleId },
-            { $unset: { circle: 1 } },
-            { session: dbSession }
-          );
-          await Session.updateMany(
-            {
-              _id: { $ne: sessionDoc._id },
-              circle: circleId,
-              status: { $in: ['pending', 'accepted'] },
-              scheduledAt: { $gt: now },
-            },
-            { $pull: { attendance: { student: studentId } } },
-            { session: dbSession }
-          );
+          const queuedRenewal = await StudentSubscription.findOne({
+            student: studentId,
+            renewalOf: subscription._id,
+            status: 'renewal_queued',
+          }).session(dbSession);
+
+          if (queuedRenewal) {
+            queuedRenewal.status = 'active';
+            queuedRenewal.circle = circleId;
+            queuedRenewal.placedAt = queuedRenewal.placedAt || now;
+            queuedRenewal.startedAt = now;
+            await queuedRenewal.save({ session: dbSession });
+            renewalActivated = true;
+            activatedRenewals.push({
+              studentId,
+              subscriptionId: String(queuedRenewal._id),
+            });
+          } else {
+            await GroupCircle.updateOne(
+              { _id: circleId },
+              { $pull: { students: studentId } },
+              { session: dbSession }
+            );
+            await User.updateOne(
+              { _id: studentId, circle: circleId },
+              { $unset: { circle: 1 } },
+              { session: dbSession }
+            );
+            await Session.updateMany(
+              {
+                _id: { $ne: sessionDoc._id },
+                circle: circleId,
+                status: { $in: ['pending', 'accepted'] },
+                scheduledAt: { $gt: now },
+              },
+              { $pull: { attendance: { student: studentId } } },
+              { session: dbSession }
+            );
+          }
         }
 
         result = {
@@ -167,6 +188,7 @@ async function settleSubscriptionUsageForSession(sessionDoc) {
           outcome: 'consumed',
           remaining: subscription.sessionsRemaining,
           completed: subscription.status === 'completed',
+          renewalActivated,
         };
 
         if (subscription.sessionsRemaining <= 2) {
@@ -174,6 +196,7 @@ async function settleSubscriptionUsageForSession(sessionDoc) {
             studentId,
             remaining: subscription.sessionsRemaining,
             completed: subscription.status === 'completed',
+            renewalActivated,
           });
         }
       });
@@ -209,20 +232,27 @@ async function settleSubscriptionUsageForSession(sessionDoc) {
   await Promise.allSettled(
     notificationTargets.map((target) => notifyUser(target.studentId, {
       type: 'system',
-      title: target.completed
-        ? { ar: 'اكتملت باقة حصصك', en: 'Your session package is complete' }
-        : { ar: 'رصيد حصصك أوشك على النفاد', en: 'Your session balance is running low' },
-      message: target.completed
+      title: target.renewalActivated
+        ? { ar: 'بدأت باقتك المجددة تلقائيًا', en: 'Your renewed package is now active' }
+        : target.completed
+          ? { ar: 'اكتملت باقة حصصك', en: 'Your session package is complete' }
+          : { ar: 'رصيد حصصك أوشك على النفاد', en: 'Your session balance is running low' },
+      message: target.renewalActivated
         ? {
-            ar: 'تم استخدام جميع حصص الباقة. يمكنك اختيار باقة جديدة للاستمرار.',
-            en: 'All sessions in your package have been used. Choose a new package to continue.',
+            ar: 'اكتملت الباقة السابقة وتم تفعيل الباقة المجددة تلقائيًا مع نفس الجروب والمعلم.',
+            en: 'Your previous package ended and the prepaid renewal activated automatically with the same group and tutor.',
           }
-        : {
-            ar: `متبقي لك ${target.remaining} حصة فقط في الباقة الحالية.`,
-            en: `You have only ${target.remaining} session(s) left in your current package.`,
-          },
+        : target.completed
+          ? {
+              ar: 'تم استخدام جميع حصص الباقة. يمكنك اختيار باقة جديدة للاستمرار.',
+              en: 'All sessions in your package have been used. Choose a new package to continue.',
+            }
+          : {
+              ar: `متبقي لك ${target.remaining} حصة فقط في الباقة الحالية.`,
+              en: `You have only ${target.remaining} session(s) left in your current package.`,
+            },
       data: {
-        actionUrl: target.completed ? '/plans' : '/student/dashboard',
+        actionUrl: target.completed && !target.renewalActivated ? '/plans' : '/student/dashboard',
         metadata: {
           remainingSessions: target.remaining,
           sessionId: String(sessionDoc._id),
@@ -232,7 +262,7 @@ async function settleSubscriptionUsageForSession(sessionDoc) {
     }))
   );
 
-  return { processed: true, usages: results };
+  return { processed: true, usages: results, activatedRenewals };
 }
 
 module.exports = {
