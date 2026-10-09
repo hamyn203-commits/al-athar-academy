@@ -712,6 +712,11 @@ requireContains(
   /subscription\/:id\/manual[\s\S]{0,1600}isOwnedObjectReference\([\s\S]{0,180}['"]payment-proof['"][\s\S]{0,120}req\.user\.id/
 );
 requireContains(
+  'backend/models/Payment.js',
+  'pending subscription manual payments must be unique per student and subscription',
+  /student:\s*1,\s*subscription:\s*1,\s*provider:\s*1,\s*status:\s*1[\s\S]{0,260}unique:\s*true[\s\S]{0,260}kind:\s*['"]subscription['"][\s\S]{0,160}provider:\s*['"]manual['"][\s\S]{0,160}status:\s*['"]pending['"]/
+);
+requireContains(
   'backend/services/manualPaymentSettlement.js',
   'approved subscription payments must move to placement instead of direct activation',
   /payment\.kind\s*===\s*['"]subscription['"][\s\S]{0,700}subscription\.status\s*=\s*['"]awaiting_placement['"]/
