@@ -27,6 +27,7 @@ export default function StudentJourney() {
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [preferredGender, setPreferredGender] = useState('any');
+  const [profileChecking, setProfileChecking] = useState(true);
   const isAr = locale === 'ar';
 
   useEffect(() => {
@@ -39,10 +40,31 @@ export default function StudentJourney() {
       navigate(lp(user?.role === 'guardian' ? '/guardian/dashboard' : user?.role === 'teacher' ? '/teacher/dashboard' : '/'), { replace: true });
       return;
     }
-    if (!user?.name?.trim() || !user?.phone?.trim() || (user?.onboarding?.required && !user?.onboarding?.completed)) {
-      navigate(lp('/profile/setup') + '?next=' + encodeURIComponent(lp('/journey')), { replace: true });
-    }
-  }, [isLoading, isAuthenticated, user, navigate, locale]);
+
+    // A saved profile may be newer than the user object held by an already-open tab.
+    // Recheck the authoritative profile once before redirecting; otherwise students
+    // can be trapped between the profile and journey pages after a successful save.
+    let cancelled = false;
+    const checkProfile = async () => {
+      try {
+        const current = await refreshUser();
+        if (cancelled) return;
+        if (!current?.name?.trim() || !current?.phone?.trim() ||
+            (current?.onboarding?.required && !current.onboarding.completed)) {
+          navigate(lp('/profile/setup') + '?next=' + encodeURIComponent(lp('/journey')), { replace: true });
+        } else {
+          setProfileChecking(false);
+        }
+      } catch {
+        if (!cancelled) {
+          setError(isAr ? 'تعذر التحقق من بيانات حسابك. حاول تحديث الصفحة.' : 'Could not verify your account. Please reload.');
+          setProfileChecking(false);
+        }
+      }
+    };
+    checkProfile();
+    return () => { cancelled = true; };
+  }, [isLoading, isAuthenticated, user?.role, navigate, locale, refreshUser]);
 
   useEffect(() => {
     if (!chosen) return;
@@ -81,7 +103,7 @@ export default function StudentJourney() {
     } catch (e) { setError(e.message || 'تعذر حفظ المسار'); }
     finally { setSaving(false); }
   };
-  if (isLoading || !user || user.role !== 'student') return null;
+  if (isLoading || profileChecking || !user || user.role !== 'student') return null;
   const step = !chosen ? 3 : 4;
   const visibleTeachers = preferredGender === 'any' ? teachers : teachers.filter(t => t.personalInfo?.gender === preferredGender);
 
