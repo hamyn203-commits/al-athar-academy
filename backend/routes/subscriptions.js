@@ -83,6 +83,103 @@ router.get('/me', protect, authorize('student'), async (req, res) => {
   }
 });
 
+router.post('/:id/renew', protect, authorize('student'), async (req, res) => {
+  try {
+    const source = await StudentSubscription.findOne({
+      _id: req.params.id,
+      student: req.user.id,
+    });
+
+    if (!source) {
+      return res.status(404).json({ error: 'الاشتراك غير موجود', code: 'SUBSCRIPTION_NOT_FOUND' });
+    }
+
+    const canRenewActive = source.status === 'active' && source.sessionsRemaining <= 2;
+    const canRenewCompleted = source.status === 'completed';
+    if (!canRenewActive && !canRenewCompleted) {
+      return res.status(409).json({
+        error: 'التجديد متاح عند بقاء حصتين أو أقل أو بعد انتهاء الباقة',
+        code: 'SUBSCRIPTION_NOT_RENEWABLE',
+        remaining: source.sessionsRemaining,
+        status: source.status,
+      });
+    }
+
+    if (!source.preferredTeacher || !source.circle) {
+      return res.status(409).json({
+        error: 'لا يمكن التجديد التلقائي بدون معلم وجروب حاليين',
+        code: 'RENEWAL_PLACEMENT_CONTEXT_MISSING',
+      });
+    }
+
+    const sessionCount = Number(req.body.sessionCount);
+    let quote;
+    try {
+      quote = quoteSubscription({ planKey: source.planKey, sessionCount });
+    } catch (error) {
+      return res.status(400).json({
+        error: error.message,
+        code: error.code || 'SUBSCRIPTION_RENEWAL_INVALID',
+      });
+    }
+
+    const existingRenewal = await StudentSubscription.findOne({
+      renewalOf: source._id,
+      status: { $in: ['pending_payment', 'payment_review', 'renewal_queued'] },
+    });
+
+    if (existingRenewal) {
+      return res.status(409).json({
+        error: 'يوجد تجديد قائم بالفعل لهذه الباقة',
+        code: 'RENEWAL_ALREADY_EXISTS',
+        subscription: serializeSubscription(existingRenewal),
+      });
+    }
+
+    const { plan } = quote;
+    const renewal = await StudentSubscription.create({
+      student: req.user.id,
+      planKey: source.planKey,
+      section: source.section,
+      sessionCount: quote.sessionCount,
+      sessionsUsed: 0,
+      sessionsRemaining: quote.sessionCount,
+      currency: quote.currency,
+      pricePerSessionMinor: quote.pricePerSessionMinor,
+      totalAmountMinor: quote.totalAmountMinor,
+      status: 'pending_payment',
+      preferredTeacher: source.preferredTeacher,
+      circle: source.circle,
+      renewalOf: source._id,
+      pricingSnapshot: {
+        minStudents: plan.minStudents,
+        maxStudents: plan.maxStudents,
+        durationMinMinutes: plan.durationMinMinutes,
+        durationMaxMinutes: plan.durationMaxMinutes,
+        nameAr: plan.name.ar,
+        nameEn: plan.name.en,
+        durationLabelAr: plan.durationLabel.ar,
+        durationLabelEn: plan.durationLabel.en,
+      },
+      selectedAt: new Date(),
+    });
+
+    return res.status(201).json({
+      success: true,
+      renewal: true,
+      subscription: serializeSubscription(renewal),
+    });
+  } catch (error) {
+    if (error?.code === 11000) {
+      return res.status(409).json({
+        error: 'يوجد تجديد قائم بالفعل',
+        code: 'RENEWAL_ALREADY_EXISTS',
+      });
+    }
+    return res.status(500).json({ error: 'فشل إنشاء التجديد', details: error.message });
+  }
+});
+
 router.post('/select', protect, authorize('student'), async (req, res) => {
   try {
     const planKey = String(req.body.planKey || '').trim();
