@@ -199,6 +199,67 @@ router.post('/register', async (req, res) => {
   }
 });
 
+// Google Identity Services (OpenID Connect). Only student accounts may use self-service Google login.
+router.post('/google', async (req, res) => {
+  if (!process.env.GOOGLE_CLIENT_ID) {
+    return res.status(503).json({ error: 'Google sign-in is not configured', code: 'GOOGLE_NOT_CONFIGURED' });
+  }
+  if (!isDBConnected()) {
+    return res.status(503).json({ error: 'Google sign-in requires the account database' });
+  }
+  try {
+    const { verifyGoogleCredential } = require('../services/googleIdentity');
+    const identity = await verifyGoogleCredential(req.body?.credential, process.env.GOOGLE_CLIENT_ID);
+    let user = await User.findOne({ googleSubject: identity.sub }).select('+googleSubject +refreshTokenVersion');
+
+    if (!user) {
+      const existing = await User.findOne({ email: identity.email })
+        .select('+googleSubject +refreshTokenVersion');
+      if (existing) {
+        if (existing.role !== 'student') {
+          return res.status(403).json({ error: 'Use the account login method for this role' });
+        }
+        // An existing non-Gmail address must be linked from an authenticated session.
+        // Google is authoritative for Gmail addresses it operates.
+        if (!/^[^@]+@(gmail\.com|googlemail\.com)$/.test(identity.email)) {
+          return res.status(409).json({ error: 'Sign in with your existing password to link this address' });
+        }
+        if (existing.googleSubject && existing.googleSubject !== identity.sub) {
+          return res.status(409).json({ error: 'This account is linked to another Google identity' });
+        }
+        existing.googleSubject = identity.sub;
+        existing.emailVerified = true;
+        await existing.save();
+        user = existing;
+      } else {
+        user = await User.create({
+          name: identity.name.length >= 2 ? identity.name : 'طالب الأكاديمية',
+          email: identity.email,
+          password: require('crypto').randomBytes(48).toString('base64url'),
+          googleSubject: identity.sub,
+          role: 'student',
+          emailVerified: true,
+          avatar: identity.picture,
+        });
+      }
+    }
+    if (user.role !== 'student' || user.isActive === false) {
+      return res.status(403).json({ error: 'Account is not eligible for Google student login' });
+    }
+    user.lastLogin = new Date();
+    await user.save();
+    setRefreshCookie(res, generateRefreshToken(user));
+    return res.json({
+      accessToken: generateAccessToken(user),
+      user: sanitizeUserResponse(user),
+    });
+  } catch (error) {
+    if (error?.code === 11000) return res.status(409).json({ error: 'Account was already registered. Please retry.' });
+    console.warn('Google sign-in rejected:', error.message);
+    return res.status(401).json({ error: 'Google verification failed. Please try again.' });
+  }
+});
+
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
