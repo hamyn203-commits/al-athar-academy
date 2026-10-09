@@ -8,6 +8,7 @@ const Payment = require('../models/Payment');
 const Enrollment = require('../models/Enrollment');
 const Progress = require('../models/Progress');
 const Course = require('../models/Course');
+const StudentSubscription = require('../models/StudentSubscription');
 
 const oid = () => new mongoose.Types.ObjectId();
 
@@ -193,6 +194,143 @@ test('manual payment rejection grants no enrollment', async () => {
     Payment.findOne = originalPaymentFindOne;
     Enrollment.create = originalEnrollmentCreate;
     delete require.cache[require.resolve('../services/paymentSettlement')];
+    delete require.cache[require.resolve('../services/manualPaymentSettlement')];
+  }
+});
+
+
+test('subscription payment approval moves subscription to awaiting placement without course enrollment', async () => {
+  const studentId = oid();
+  const subscriptionId = oid();
+  const paymentId = oid();
+  const adminId = oid();
+
+  const payment = {
+    _id: paymentId,
+    provider: 'manual',
+    kind: 'subscription',
+    student: studentId,
+    subscription: subscriptionId,
+    amountMinor: 48000,
+    currency: 'EGP',
+    status: 'pending',
+    manual: {},
+    async save() {
+      return this;
+    },
+  };
+
+  const subscription = {
+    _id: subscriptionId,
+    student: studentId,
+    status: 'payment_review',
+    payment: paymentId,
+    paidAt: null,
+    async save() {
+      return this;
+    },
+  };
+
+  const originalStartSession = mongoose.startSession;
+  const originalPaymentFindOne = Payment.findOne;
+  const originalSubscriptionFindOne = StudentSubscription.findOne;
+
+  mongoose.startSession = async () => ({
+    async withTransaction(fn) {
+      return fn();
+    },
+    async endSession() {},
+  });
+
+  Payment.findOne = () => querySession(payment);
+  StudentSubscription.findOne = () => querySession(subscription);
+
+  delete require.cache[require.resolve('../services/manualPaymentSettlement')];
+  const { processManualPaymentReview } = require('../services/manualPaymentSettlement');
+
+  try {
+    const approved = await processManualPaymentReview({
+      paymentId,
+      adminId,
+      action: 'approve',
+      note: 'Subscription funds verified',
+    });
+
+    assert.equal(approved.paymentStatus, 'succeeded');
+    assert.equal(approved.awaitingPlacement, true);
+    assert.equal(approved.subscriptionId, String(subscriptionId));
+    assert.equal(approved.enrollmentCreated, false);
+    assert.equal(subscription.status, 'awaiting_placement');
+    assert.equal(String(subscription.payment), String(paymentId));
+    assert.ok(subscription.paidAt instanceof Date);
+  } finally {
+    mongoose.startSession = originalStartSession;
+    Payment.findOne = originalPaymentFindOne;
+    StudentSubscription.findOne = originalSubscriptionFindOne;
+    delete require.cache[require.resolve('../services/manualPaymentSettlement')];
+  }
+});
+
+test('subscription payment rejection returns subscription to pending payment', async () => {
+  const studentId = oid();
+  const subscriptionId = oid();
+  const paymentId = oid();
+  const adminId = oid();
+
+  const payment = {
+    _id: paymentId,
+    provider: 'manual',
+    kind: 'subscription',
+    student: studentId,
+    subscription: subscriptionId,
+    amountMinor: 8000,
+    currency: 'EGP',
+    status: 'pending',
+    manual: {},
+    async save() {
+      return this;
+    },
+  };
+
+  let subscriptionUpdate = null;
+  const originalStartSession = mongoose.startSession;
+  const originalPaymentFindOne = Payment.findOne;
+  const originalSubscriptionUpdateOne = StudentSubscription.updateOne;
+
+  mongoose.startSession = async () => ({
+    async withTransaction(fn) {
+      return fn();
+    },
+    async endSession() {},
+  });
+
+  Payment.findOne = () => querySession(payment);
+  StudentSubscription.updateOne = async (...args) => {
+    subscriptionUpdate = args;
+    return { acknowledged: true, modifiedCount: 1 };
+  };
+
+  delete require.cache[require.resolve('../services/manualPaymentSettlement')];
+  const { processManualPaymentReview } = require('../services/manualPaymentSettlement');
+
+  try {
+    const rejected = await processManualPaymentReview({
+      paymentId,
+      adminId,
+      action: 'reject',
+      note: 'Transfer not received',
+    });
+
+    assert.equal(rejected.paymentStatus, 'failed');
+    assert.equal(rejected.awaitingPlacement, false);
+    assert.equal(rejected.subscriptionId, String(subscriptionId));
+    assert.ok(subscriptionUpdate);
+    assert.deepEqual(subscriptionUpdate[1].$set, { status: 'pending_payment' });
+    assert.deepEqual(subscriptionUpdate[1].$unset, { payment: 1, paidAt: 1 });
+  } finally {
+    mongoose.startSession = originalStartSession;
+    Payment.findOne = originalPaymentFindOne;
+    StudentSubscription.updateOne = originalSubscriptionUpdateOne;
     delete require.cache[require.resolve('../services/manualPaymentSettlement')];
   }
 });
