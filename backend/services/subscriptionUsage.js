@@ -1,0 +1,192 @@
+'use strict';
+
+const mongoose = require('mongoose');
+const GroupCircle = require('../models/GroupCircle');
+const StudentSubscription = require('../models/StudentSubscription');
+const SubscriptionUsage = require('../models/SubscriptionUsage');
+const { notifyUser } = require('../utils/notify');
+
+function attendanceDecision(entry) {
+  const status = String(entry?.status || 'pending');
+  const eligible = Boolean(entry?.eligibleForCompensation);
+
+  if (status === 'excused' && eligible) {
+    return { outcome: 'compensated', reason: 'eligible_excuse' };
+  }
+  if (status === 'excused') {
+    return { outcome: 'consumed', reason: 'late_excuse' };
+  }
+  if (status === 'absent') {
+    return { outcome: 'consumed', reason: 'absent' };
+  }
+  if (status === 'attended') {
+    return { outcome: 'consumed', reason: 'attended' };
+  }
+  if (status === 'confirmed') {
+    return { outcome: 'consumed', reason: 'confirmed' };
+  }
+  return { outcome: 'consumed', reason: 'pending' };
+}
+
+async function settleSubscriptionUsageForSession(sessionDoc) {
+  if (!sessionDoc || sessionDoc.type !== 'group_circle' || !sessionDoc.circle) {
+    return { processed: false, usages: [] };
+  }
+
+  const circleId = sessionDoc.circle?._id || sessionDoc.circle;
+  const circle = await GroupCircle.findById(circleId).select('students').lean();
+  if (!circle) {
+    const error = new Error('Circle not found for subscription usage');
+    error.code = 'CIRCLE_NOT_FOUND';
+    throw error;
+  }
+
+  const attendanceByStudent = new Map(
+    (sessionDoc.attendance || [])
+      .filter((entry) => entry?.student)
+      .map((entry) => [String(entry.student), entry])
+  );
+
+  const studentIds = [...new Set((circle.students || []).map(String))];
+  const now = new Date();
+  const results = [];
+  const notificationTargets = [];
+
+  for (const studentId of studentIds) {
+    const dbSession = await mongoose.startSession();
+    try {
+      let result = null;
+
+      await dbSession.withTransaction(async () => {
+        const subscription = await StudentSubscription.findOne({
+          student: studentId,
+          circle: circleId,
+          status: 'active',
+        }).session(dbSession);
+
+        if (!subscription) {
+          result = { studentId, skipped: true, reason: 'NO_ACTIVE_SUBSCRIPTION' };
+          return;
+        }
+
+        const existingUsage = await SubscriptionUsage.findOne({
+          subscription: subscription._id,
+          session: sessionDoc._id,
+        }).session(dbSession);
+
+        if (existingUsage) {
+          result = {
+            studentId,
+            subscriptionId: String(subscription._id),
+            outcome: existingUsage.outcome,
+            remaining: subscription.sessionsRemaining,
+            alreadyProcessed: true,
+          };
+          return;
+        }
+
+        const decision = attendanceDecision(attendanceByStudent.get(studentId));
+
+        await SubscriptionUsage.create([{
+          subscription: subscription._id,
+          student: studentId,
+          session: sessionDoc._id,
+          circle: circleId,
+          outcome: decision.outcome,
+          reason: decision.reason,
+          processedAt: now,
+        }], { session: dbSession });
+
+        if (decision.outcome === 'compensated') {
+          result = {
+            studentId,
+            subscriptionId: String(subscription._id),
+            outcome: 'compensated',
+            remaining: subscription.sessionsRemaining,
+          };
+          return;
+        }
+
+        if (subscription.sessionsRemaining <= 0) {
+          result = {
+            studentId,
+            subscriptionId: String(subscription._id),
+            outcome: 'consumed',
+            remaining: 0,
+            exhaustedBeforeSettlement: true,
+          };
+          return;
+        }
+
+        subscription.sessionsUsed += 1;
+        subscription.sessionsRemaining -= 1;
+
+        if (subscription.sessionsRemaining === 0) {
+          subscription.status = 'completed';
+          subscription.completedAt = now;
+        }
+
+        await subscription.save({ session: dbSession });
+
+        result = {
+          studentId,
+          subscriptionId: String(subscription._id),
+          outcome: 'consumed',
+          remaining: subscription.sessionsRemaining,
+          completed: subscription.status === 'completed',
+        };
+
+        if (subscription.sessionsRemaining <= 2) {
+          notificationTargets.push({
+            studentId,
+            remaining: subscription.sessionsRemaining,
+            completed: subscription.status === 'completed',
+          });
+        }
+      });
+
+      if (result) results.push(result);
+    } catch (error) {
+      if (error?.code === 11000) {
+        results.push({ studentId, skipped: true, reason: 'ALREADY_PROCESSED_CONCURRENTLY' });
+      } else {
+        throw error;
+      }
+    } finally {
+      await dbSession.endSession();
+    }
+  }
+
+  await Promise.allSettled(
+    notificationTargets.map((target) => notifyUser(target.studentId, {
+      type: 'system',
+      title: target.completed
+        ? { ar: 'اكتملت باقة حصصك', en: 'Your session package is complete' }
+        : { ar: 'رصيد حصصك أوشك على النفاد', en: 'Your session balance is running low' },
+      message: target.completed
+        ? {
+            ar: 'تم استخدام جميع حصص الباقة. يمكنك اختيار باقة جديدة للاستمرار.',
+            en: 'All sessions in your package have been used. Choose a new package to continue.',
+          }
+        : {
+            ar: `متبقي لك ${target.remaining} حصة فقط في الباقة الحالية.`,
+            en: `You have only ${target.remaining} session(s) left in your current package.`,
+          },
+      data: {
+        actionUrl: target.completed ? '/plans' : '/student/dashboard',
+        metadata: {
+          remainingSessions: target.remaining,
+          sessionId: String(sessionDoc._id),
+        },
+      },
+      priority: target.completed ? 'high' : 'medium',
+    }))
+  );
+
+  return { processed: true, usages: results };
+}
+
+module.exports = {
+  attendanceDecision,
+  settleSubscriptionUsageForSession,
+};
