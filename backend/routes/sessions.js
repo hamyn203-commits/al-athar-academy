@@ -611,6 +611,12 @@ router.put('/:id/attendance', protect, authorize('teacher', 'admin'), async (req
     if (session.status !== 'accepted') {
       return res.status(409).json({ error: 'لا يمكن تعديل الحضور بعد إغلاق الحصة', code: 'ATTENDANCE_SESSION_CLOSED' });
     }
+    if (new Date(session.scheduledAt).getTime() > Date.now()) {
+      return res.status(409).json({
+        error: 'تسجيل الحضور يفتح عند بداية موعد الحصة',
+        code: 'ATTENDANCE_NOT_OPEN',
+      });
+    }
 
     if (req.user.role === 'teacher') {
       const teacher = await Teacher.findOne({ user: req.user.id }).select('_id');
