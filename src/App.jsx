@@ -62,6 +62,7 @@ const LeaderboardPage = lazy(() => import('./pages/Leaderboard'));
 const NotificationsPage = lazy(() => import('./pages/Notifications'));
 const NotificationSettings = lazy(() => import('./pages/Settings/Notifications'));
 const MeetingRoom = lazy(() => import('./pages/Meeting/MeetingRoom'));
+const PlansPage = lazy(() => import('./pages/Plans'));
 
 function PageLoader() {
   return (
@@ -108,6 +109,7 @@ function pageRoutes() {
       <Route path="teachers" element={<Teachers />} />
       <Route path="teachers/:id" element={<TeacherProfile />} />
       <Route path="free-trial" element={<FreeTrial />} />
+      <Route path="plans" element={<PlansPage />} />
       <Route path="trial" element={<FreeTrial />} />
       <Route path="book-trial/:teacherId" element={<BookSession />} />
       <Route path="global-platform" element={<GlobalPlatform />} />
