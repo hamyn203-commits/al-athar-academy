@@ -31,6 +31,7 @@ export default function Login() {
   const ArrowIcon = isAr ? ArrowLeft : ArrowRight;
   const lp = (path) => localizedPath(path, locale);
 
+  const [googleRole, setGoogleRole] = useState('student');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -183,7 +184,20 @@ export default function Login() {
             )}
             {error && <div className="wn-public-error" role="alert">{error}</div>}
 
-            <GoogleSignIn context="signin" />
+            <div className="mb-3">
+              <p className="text-sm font-semibold mb-2">{isAr ? 'لو معندكش حساب، اختر نوعه قبل الدخول بجوجل' : 'New here? Choose your account type before continuing with Google'}</p>
+              <div className="grid grid-cols-3 gap-2" role="group" aria-label={isAr ? 'نوع الحساب' : 'Account type'}>
+                {[
+                  ['student', isAr ? 'طالب' : 'Student'],
+                  ['teacher', isAr ? 'معلم' : 'Teacher'],
+                  ['guardian', isAr ? 'ولي أمر' : 'Guardian']
+                ].map(([value, label]) => <button key={value} type="button" onClick={() => setGoogleRole(value)}
+                  aria-pressed={googleRole === value}
+                  className={`rounded-xl border p-2 text-sm font-bold ${googleRole === value ? 'border-emerald-700 bg-emerald-50 text-emerald-900' : 'border-slate-200 text-slate-600'}`}>{label}</button>)}
+              </div>
+              <p className="mt-2 text-xs text-slate-500">{isAr ? 'لو عندك حساب بالفعل، هنفتح حسابك الحالي بنفس نوعه دون تغييره.' : 'Existing accounts retain their registered role.'}</p>
+            </div>
+            <GoogleSignIn context="signin" role={googleRole} />
             <form onSubmit={handleSubmit} className="grid gap-4">
               <div className="wn-field">
                 <label htmlFor="login-email">{isAr ? 'البريد الإلكتروني' : 'Email'}</label>
