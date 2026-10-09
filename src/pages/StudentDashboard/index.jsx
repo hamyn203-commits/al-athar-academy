@@ -261,7 +261,7 @@ export default function StudentDashboard() {
         api.get('/api/students/dashboard/profile', { auth: true }),
         api.get('/api/students/dashboard/stats', { auth: true }),
         api.get('/api/sessions/my-sessions?type=trial&limit=50', { auth: true }),
-        api.get('/api/sessions/my-sessions?type=regular&limit=50', { auth: true }),
+        api.get('/api/sessions/my-sessions?limit=100', { auth: true }),
         api.get('/api/homework/student', { auth: true }),
         api.get('/api/students/dashboard/teachers', { auth: true }),
         api.get('/api/students/dashboard/evaluations', { auth: true }),
@@ -276,7 +276,7 @@ export default function StudentDashboard() {
       setProfile(prof);
       setStats(st);
       setTrials(tr.sessions || []);
-      setSessions(sess.sessions || []);
+      setSessions((sess.sessions || []).filter((item) => item.type !== 'trial'));
       setHomework(hw.homework || []);
       setTeachers(tch.teachers || []);
       setDiscoverTeachers(discovery.teachers || []);
@@ -303,7 +303,7 @@ export default function StudentDashboard() {
       const result = await api.get('/api/sessions/my-sessions?limit=100', { auth: true });
       const all = result.sessions || [];
       setTrials(all.filter((item) => item.type === 'trial'));
-      setSessions(all.filter((item) => item.type === 'regular'));
+      setSessions(all.filter((item) => item.type !== 'trial'));
     } catch {
       // Keep the current dashboard stable during a transient sync failure.
     }
