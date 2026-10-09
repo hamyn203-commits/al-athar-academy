@@ -889,6 +889,20 @@ router.put('/:id/complete', protect, authorize('teacher'), async (req, res) => {
       }
     }
 
+    if (session.type === 'group_circle' && session.status !== 'completed') {
+      const unresolvedAttendance = (session.attendance || []).filter(
+        (entry) => ['pending', 'confirmed'].includes(entry.status)
+      );
+
+      if (unresolvedAttendance.length) {
+        return res.status(409).json({
+          error: 'يجب تسجيل الحضور النهائي لكل طلاب الحلقة قبل إنهاء الحصة',
+          code: 'GROUP_ATTENDANCE_INCOMPLETE',
+          unresolvedCount: unresolvedAttendance.length,
+        });
+      }
+    }
+
     const blockedAttendance = session.student
       ? session.attendance?.find((entry) => (
           entry.student
