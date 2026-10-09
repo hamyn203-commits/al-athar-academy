@@ -77,7 +77,7 @@ const verifyAccessToken = async (req, res, next) => {
     return res.status(401).json({ error: 'Invalid token' });
   }
 
-  const isProfileRoute = /^\/api\/auth\/me(?:\/|\?|$)/.test(String(req.originalUrl || '')) && ['GET', 'PATCH'].includes(req.method);
+  const isProfileRoute = /^\/api\/auth\/(?:me|onboarding)(?:\/|\?|$)/.test(String(req.originalUrl || '')) && ['GET', 'PATCH'].includes(req.method);
   if (req.user.role === 'teacher' && !isProfileRoute) {
     try {
       const decision = await getTeacherAccessDecision(req.user.id);
