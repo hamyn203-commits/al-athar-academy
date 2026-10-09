@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { localizedPath } from '../../lib/locale';
 import api from '../../lib/api';
+import { teacherPublicImage, teacherImageFallback } from '../../lib/teacherMedia';
 
 function specializationLabel(value, locale) {
   const ar = {
@@ -344,7 +345,7 @@ export default function StudentTeacherMarketplace({ teachers = [], locale = 'ar'
                 <div className="flex gap-4">
                   <div className="relative shrink-0">
                     <img
-                      src={teacher.media?.profilePhoto || teacher.user?.avatar || '/default-teacher.png'}
+                      src={teacherPublicImage(teacher.media?.profilePhoto || teacher.user?.avatar)} onError={teacherImageFallback}
                       alt={name}
                       className="h-24 w-24 rounded-2xl object-cover border border-slate-100"
                       loading="lazy"

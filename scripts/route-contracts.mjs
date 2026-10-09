@@ -187,6 +187,13 @@ assert.match(manualPayment, /uploadFileDirect\(proof,\s*['"]payment-proof['"]\)/
 assert.match(manualPayment, /\/api\/payments\/course\/'\s*\+\s*encodeURIComponent\(slug\)\s*\+\s*'\/manual/);
 
 // T22: Teacher public media is rendered through same-origin routes.
+// T23 — Student marketplace and booking use same-origin public teacher portraits.
+const marketplaceTeacherPhotos = read('src/pages/StudentDashboard/TeacherMarketplace.jsx');
+const bookingTeacherPhotos = read('src/pages/BookSession/index.jsx');
+assert.match(marketplaceTeacherPhotos, /teacherPublicImage\(teacher\.media\?\.profilePhoto/);
+assert.match(marketplaceTeacherPhotos, /onError=\{teacherImageFallback\}/);
+assert.match(bookingTeacherPhotos, /teacherPublicImage\(teacher\.media\?\.profilePhoto/);
+assert.match(bookingTeacherPhotos, /onError=\{teacherImageFallback\}/);
 const teacherMedia = read('src/lib/teacherMedia.js');
 const teacherProfilePage = read('src/pages/TeacherProfile/index.jsx');
 const teacherDirectoryPage = read('src/pages/Teachers/index.jsx');
