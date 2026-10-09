@@ -823,7 +823,7 @@ export default function StudentDashboard() {
                     if (nextActiveSession) {
                       setTab(nextActiveSession.type === 'trial' ? 'trials' : 'sessions');
                     } else if (postTrialSession?.teacher) {
-                      openBook(postTrialSession.teacher);
+                      navigate(lp('/plans'));
                     } else {
                       setTab('discover');
                     }
@@ -892,7 +892,7 @@ export default function StudentDashboard() {
                 </div>
               </div>
               <div className="wn-student-next-step__actions">
-                <button type="button" onClick={() => openBook(postTrialSession.teacher)} className="wn-student-primary-action">
+                <button type="button" onClick={() => navigate(lp('/plans'))} className="wn-student-primary-action">
                   <CreditCard size={17} />
                   {locale === 'ar' ? 'اشتراك' : 'Subscribe'}
                 </button>
@@ -981,7 +981,7 @@ export default function StudentDashboard() {
                         </div>
                         <button
                           type="button"
-                          onClick={() => postTrialSession?.teacher ? openBook(postTrialSession.teacher) : setTab('discover')}
+                          onClick={() => postTrialSession?.teacher ? navigate(lp('/plans')) : setTab('discover')}
                           className="wn-student-primary-action"
                         >
                           {postTrialSession
