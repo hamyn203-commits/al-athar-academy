@@ -2,11 +2,14 @@
 
 const express = require('express');
 const crypto = require('crypto');
+const mongoose = require('mongoose');
 const router = express.Router();
 
 const Course = require('../models/Course');
 const User = require('../models/User');
 const Payment = require('../models/Payment');
+const StudentSubscription = require('../models/StudentSubscription');
+const Teacher = require('../models/Teacher');
 const { protect, authorize } = require('../middleware/auth');
 const {
   normalizeCurrency,
@@ -343,6 +346,179 @@ router.post('/course/:slug/manual', protect, authorize('student'), async (req, r
   }
 });
 
+
+router.post('/subscription/:id/manual', protect, authorize('student'), async (req, res) => {
+  if (!manualPayments.isConfigured()) {
+    return res.status(503).json({
+      error: 'Manual payment is not configured yet',
+      code: 'MANUAL_PAYMENT_NOT_CONFIGURED',
+    });
+  }
+
+  const method = manualPayments.getMethod(req.body?.method);
+  if (!method) {
+    return res.status(400).json({
+      error: 'Unsupported manual payment method',
+      code: 'INVALID_PAYMENT_METHOD',
+    });
+  }
+
+  const proofReference = cleanText(req.body?.proofReference, 2048);
+  if (!proofReference || !objectStorage.isOwnedObjectReference(
+    proofReference,
+    'payment-proof',
+    req.user.id
+  )) {
+    return res.status(400).json({
+      error: 'A valid owned payment proof is required',
+      code: 'INVALID_PAYMENT_PROOF',
+    });
+  }
+
+  const preferredTeacherId = cleanText(req.body?.preferredTeacherId, 80);
+  const teacher = await Teacher.findOne({
+    _id: preferredTeacherId,
+    status: 'approved',
+    isVerified: true,
+  }).select('_id personalInfo');
+
+  if (!teacher) {
+    return res.status(400).json({
+      error: 'اختر معلمًا متاحًا ومعتمدًا',
+      code: 'PREFERRED_TEACHER_INVALID',
+    });
+  }
+
+  const subscription = await StudentSubscription.findOne({
+    _id: req.params.id,
+    student: req.user.id,
+  });
+
+  if (!subscription) {
+    return res.status(404).json({
+      error: 'الاشتراك غير موجود',
+      code: 'SUBSCRIPTION_NOT_FOUND',
+    });
+  }
+
+  if (subscription.status === 'payment_review') {
+    const existingPending = await Payment.findOne({
+      kind: 'subscription',
+      provider: 'manual',
+      student: req.user.id,
+      subscription: subscription._id,
+      status: 'pending',
+    }).select('_id');
+
+    return res.status(409).json({
+      error: 'التحويل مرفوع بالفعل وينتظر مراجعة الإدارة',
+      code: 'PAYMENT_REVIEW_PENDING',
+      paymentId: existingPending ? String(existingPending._id) : null,
+    });
+  }
+
+  if (subscription.status !== 'pending_payment') {
+    return res.status(409).json({
+      error: 'هذا الاشتراك لم يعد في مرحلة الدفع',
+      code: 'SUBSCRIPTION_PAYMENT_NOT_ALLOWED',
+    });
+  }
+
+  if (
+    subscription.section === 'ladies'
+    && teacher.personalInfo?.gender
+    && teacher.personalInfo.gender !== 'female'
+  ) {
+    return res.status(400).json({
+      error: 'قسم السيدات متاح مع المعلمات فقط',
+      code: 'LADIES_SECTION_TEACHER_MISMATCH',
+    });
+  }
+
+  const existingPending = await Payment.findOne({
+    kind: 'subscription',
+    provider: 'manual',
+    student: req.user.id,
+    subscription: subscription._id,
+    status: 'pending',
+  }).select('_id');
+
+  if (existingPending) {
+    return res.status(409).json({
+      error: 'التحويل مرفوع بالفعل وينتظر مراجعة الإدارة',
+      code: 'PAYMENT_REVIEW_PENDING',
+      paymentId: String(existingPending._id),
+    });
+  }
+
+  const dbSession = await mongoose.startSession();
+  let payment;
+  try {
+    await dbSession.withTransaction(async () => {
+      const created = await Payment.create([{
+        kind: 'subscription',
+        provider: 'manual',
+        idempotencyKey: `manual-subscription:${crypto.randomUUID()}`,
+        student: req.user.id,
+        subscription: subscription._id,
+        amountMinor: subscription.totalAmountMinor,
+        currency: subscription.currency,
+        status: 'pending',
+        manual: {
+          method: method.id,
+          transferReference: cleanText(req.body?.transferReference, 160) || undefined,
+          proofReference,
+          proofFilename: cleanText(req.body?.proofFilename, 180) || undefined,
+          proofContentType: cleanText(req.body?.proofContentType, 100) || undefined,
+          proofSize: Number.isFinite(Number(req.body.proofSize))
+            ? Math.max(1, Math.min(Number(req.body.proofSize), 10 * 1024 * 1024))
+            : undefined,
+          submittedAt: new Date(),
+        },
+      }], { session: dbSession });
+
+      payment = created[0];
+      subscription.preferredTeacher = teacher._id;
+      subscription.payment = payment._id;
+      subscription.status = 'payment_review';
+      await subscription.save({ session: dbSession });
+    });
+  } finally {
+    await dbSession.endSession();
+  }
+
+  notifyAdmins({
+    type: 'payment-received',
+    title: { ar: 'إثبات دفع اشتراك جديد', en: 'New subscription payment proof' },
+    message: {
+      ar: 'طالب رفع إثبات تحويل لاشتراك واختار المعلم. راجع وصول المبلغ ثم أرسل الطلب للتسكين.',
+      en: 'A student submitted a subscription transfer proof and selected a tutor. Verify funds before placement.',
+    },
+    data: {
+      actionUrl: '/admin/payments',
+      metadata: {
+        paymentId: String(payment._id),
+        subscriptionId: String(subscription._id),
+        preferredTeacherId: String(teacher._id),
+        amountMinor: subscription.totalAmountMinor,
+        currency: subscription.currency,
+      },
+    },
+    priority: 'high',
+  }).catch((error) => {
+    console.warn('Admin subscription payment notification failed:', error.message);
+  });
+
+  return res.status(201).json({
+    paymentId: String(payment._id),
+    subscriptionId: String(subscription._id),
+    provider: 'manual',
+    status: payment.status,
+    subscriptionStatus: 'payment_review',
+    reviewRequired: true,
+  });
+});
+
 router.get('/admin/manual', protect, authorize('admin'), async (req, res) => {
   try {
     const requestedStatus = String(req.query.status || 'pending').trim().toLowerCase();
@@ -351,7 +527,7 @@ router.get('/admin/manual', protect, authorize('admin'), async (req, res) => {
 
     const query = {
       provider: 'manual',
-      kind: 'course_enrollment',
+      kind: { $in: ['course_enrollment', 'subscription'] },
     };
     if (status !== 'all') query.status = status;
 
@@ -360,12 +536,22 @@ router.get('/admin/manual', protect, authorize('admin'), async (req, res) => {
       .limit(100)
       .populate('student', 'name email phone whatsappPhone')
       .populate('course', 'title slug price currency')
+      .populate({
+        path: 'subscription',
+        select: 'planKey section sessionCount sessionsRemaining status preferredTeacher pricingSnapshot',
+        populate: {
+          path: 'preferredTeacher',
+          select: 'personalInfo user',
+          populate: { path: 'user', select: 'name email avatar' },
+        },
+      })
       .populate('manual.reviewedBy', 'name email')
       .select('+manual.proofReference');
 
     return res.json({
       payments: payments.map((payment) => ({
         id: String(payment._id),
+        kind: payment.kind,
         status: payment.status,
         amountMinor: payment.amountMinor,
         currency: payment.currency,
@@ -375,6 +561,7 @@ router.get('/admin/manual', protect, authorize('admin'), async (req, res) => {
         failedAt: payment.failedAt || null,
         student: payment.student,
         course: payment.course,
+        subscription: payment.subscription,
         proofAvailable: Boolean(payment.manual?.proofReference),
         manual: {
           method: payment.manual?.method || null,
@@ -431,6 +618,8 @@ router.patch('/admin/manual/:id/review', protect, authorize('admin'), async (req
       status: result.paymentStatus,
       enrollmentCreated: result.enrollmentCreated,
       enrollmentId: result.enrollmentId,
+      subscriptionId: result.subscriptionId || null,
+      awaitingPlacement: Boolean(result.awaitingPlacement),
     });
   } catch (error) {
     if (error.code === 'PAYMENT_NOT_FOUND') {
@@ -512,7 +701,8 @@ router.get('/:id/status', protect, authorize('student', 'admin'), async (req, re
   try {
     const payment = await Payment.findById(req.params.id)
       .populate('course', 'slug title')
-      .select('kind provider student course amountMinor currency status manual createdAt updatedAt settledAt failedAt cancelledAt refundedAt');
+      .populate('subscription', 'planKey section sessionCount status preferredTeacher pricingSnapshot')
+      .select('kind provider student course subscription amountMinor currency status manual createdAt updatedAt settledAt failedAt cancelledAt refundedAt');
 
     if (!payment) return res.status(404).json({ error: 'Payment not found' });
 
@@ -536,6 +726,7 @@ router.get('/:id/status', protect, authorize('student', 'admin'), async (req, re
           slug: payment.course.slug,
           title: payment.course.title,
         } : null,
+        subscription: payment.subscription || null,
         createdAt: payment.createdAt,
         updatedAt: payment.updatedAt,
         settledAt: payment.settledAt || null,
