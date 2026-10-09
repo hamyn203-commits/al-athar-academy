@@ -840,12 +840,16 @@ router.put('/:id/complete', protect, authorize('teacher'), async (req, res) => {
       amount: session.earnings?.amount || SESSION_RATE,
       currency: 'EGP',
       attendeesCount: session.student ? 1 : Math.max(1, session.attendance?.length || 0),
-      notes: session.type === 'trial' ? 'حصة تجريبية مكتملة' : 'حصة منتظمة مكتملة',
+      notes: session.type === 'trial'
+        ? 'حصة تجريبية مكتملة'
+        : session.type === 'group_circle'
+          ? 'حصة جماعية مكتملة'
+          : 'حصة منتظمة مكتملة',
     });
 
-    if (session.type === 'group_circle') {
-      await settleSubscriptionUsageForSession(session);
-    }
+    const subscriptionUsage = session.type === 'group_circle'
+      ? await settleSubscriptionUsageForSession(session)
+      : null;
 
     // Keep non-financial teacher counters deterministic and retry-safe.
     const [completedCount, durationAgg] = await Promise.all([
@@ -867,6 +871,7 @@ router.put('/:id/complete', protect, authorize('teacher'), async (req, res) => {
       return res.json({
         success: true,
         session,
+        subscriptionUsage,
         alreadyCompleted: true,
         message: 'الحصة مكتملة بالفعل وتم التحقق من استحقاقها المالي',
       });
@@ -875,6 +880,12 @@ router.put('/:id/complete', protect, authorize('teacher'), async (req, res) => {
     const { processReferralFirstSession } = require('./referrals');
     if (session.student) {
       processReferralFirstSession(session.student.toString()).catch(() => {});
+    } else if (session.type === 'group_circle') {
+      for (const entry of session.attendance || []) {
+        if (entry.student) {
+          processReferralFirstSession(String(entry.student)).catch(() => {});
+        }
+      }
     }
 
     try {
@@ -933,12 +944,41 @@ router.put('/:id/complete', protect, authorize('teacher'), async (req, res) => {
           },
           data: { ...payload.data, actionUrl: '/guardian/dashboard' },
         });
+      } else if (session.type === 'group_circle') {
+        const studentIds = [...new Set(
+          (session.attendance || [])
+            .filter((entry) => entry.student)
+            .map((entry) => String(entry.student))
+        )];
+
+        await Promise.allSettled(
+          studentIds.flatMap((studentId) => ([
+            notifyUser(studentId, {
+              ...payload,
+              title: { ar: 'اكتملت حصة الحلقة', en: 'Circle session completed' },
+              message: {
+                ar: 'تم تسجيل حصة الحلقة كمكتملة وتحديث رصيد حصصك حسب حالة الحضور.',
+                en: 'The circle session was completed and your session balance was updated based on attendance.',
+              },
+              data: { ...payload.data, actionUrl: '/student/dashboard?tab=sessions' },
+            }),
+            notifyGuardiansForStudent(studentId, {
+              ...payload,
+              title: { ar: 'اكتملت حصة الحلقة للطالب', en: 'Student circle session completed' },
+              message: {
+                ar: 'تم تسجيل حصة الحلقة كمكتملة وتحديث رصيد الطالب حسب الحضور.',
+                en: 'The circle session was completed and the learner balance was updated based on attendance.',
+              },
+              data: { ...payload.data, actionUrl: '/guardian/dashboard' },
+            }),
+          ]))
+        );
       }
     } catch (e) {
       console.warn('Session completion notification:', e.message);
     }
 
-    return res.json({ success: true, session });
+    return res.json({ success: true, session, subscriptionUsage });
   } catch (error) {
     return res.status(400).json({ error: error.message });
   }
