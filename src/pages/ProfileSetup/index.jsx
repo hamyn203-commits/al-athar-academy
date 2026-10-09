@@ -34,15 +34,16 @@ export default function ProfileSetup() {
       if (!confirmed?.user?.onboarding?.completed) {
         throw new Error('تعذر تأكيد حفظ الملف على السيرفر. حاول مرة أخرى.');
       }
-      navigate(destination, { replace: true });
-    } catch (e) { setError(e.message); } finally { setSaving(false); }
+      navigate(destination, { replace: true, state: { profileJustSaved: true } });
+    } catch (e) { setError(e.message || 'تعذر حفظ بياناتك، تأكد من رقم الهاتف وباقي الحقول.'); window.scrollTo({ top: 0, behavior: 'smooth' }); } finally { setSaving(false); }
   };
   const field = (label, key, type = 'text') => <label className="block text-sm font-semibold">{label}<input className="input-field w-full mt-2" type={type} value={data[key] ?? ''} onChange={e => setData(p => ({...p, [key]: e.target.value}))} /></label>;
   return <main className="min-h-screen bg-slate-50 py-12 px-4" dir="rtl"><section className="mx-auto max-w-xl rounded-2xl bg-white p-8 shadow-sm border border-slate-200">
     <h1 className="text-2xl font-bold mb-2">استكمال الملف الشخصي</h1>
+    {error && <p role="alert" className="mb-5 rounded-xl border border-red-300 bg-red-50 p-4 text-sm font-semibold text-red-800">{error}</p>}
     <p className="text-sm text-slate-600 mb-6">بياناتك محفوظة ويمكنك استكمالها لاحقًا. {user.role === 'teacher' ? 'لا يمكنك التدريس أو الظهور للطلاب قبل اعتماد الإدارة.' : ''}</p>
     <form className="space-y-4" onSubmit={save}>
-      {field('الاسم الكامل', 'name')}{field('رقم الهاتف', 'phone', 'tel')}{field('واتساب (اختياري)', 'whatsappPhone', 'tel')}
+      {field('الاسم الكامل', 'name')}<label className="block text-sm font-semibold">رقم الهاتف (مطلوب)<input className="input-field w-full mt-2" type="tel" autoComplete="tel" required value={data.phone || ''} onChange={event => setData(prev => ({ ...prev, phone: event.target.value }))}/><span className="block text-xs font-normal text-slate-500 mt-1">اكتب رقمًا صحيحًا، مثال: 01012345678</span></label>{field('واتساب (اختياري)', 'whatsappPhone', 'tel')}
       {user.role === 'student' && <>{field('العمر', 'age', 'number')}<label className="block text-sm">الجنس<select className="input-field w-full mt-2" value={data.gender} onChange={e => setData(p => ({...p, gender:e.target.value}))}><option value="">غير محدد</option><option value="male">ذكر</option><option value="female">أنثى</option></select></label>{field('عدد الأجزاء المحفوظة (0–30)', 'memorizedJuz', 'number')}{field('تفاصيل الحفظ', 'memorizationDetails')}</>}
 
       {user.role === 'student' && <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 space-y-3">
@@ -64,7 +65,7 @@ export default function ProfileSetup() {
         </label>
       </div>}
       {field('نبذة مختصرة (اختياري)', 'bio')}
-      {error && <p role="alert" className="text-red-700">{error}</p>}
+
       <button disabled={saving || !data.name.trim()} className="w-full rounded-xl bg-emerald-800 text-white p-3 font-bold">{saving ? 'جاري الحفظ...' : 'حفظ والمتابعة'}</button>
       <button type="button" className="w-full text-slate-600 underline" onClick={() => navigate(dashboardDestination, { replace: true })}>استكمل لاحقًا</button>
     </form>
