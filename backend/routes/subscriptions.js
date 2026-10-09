@@ -5,7 +5,11 @@ const StudentSubscription = require('../models/StudentSubscription');
 const GroupCircle = require('../models/GroupCircle');
 const Teacher = require('../models/Teacher');
 const { protect, authorize } = require('../middleware/auth');
-const { placeSubscription } = require('../services/subscriptionPlacement');
+const {
+  placeSubscription,
+  circleGenderForStudent,
+  ageGroupForStudent,
+} = require('../services/subscriptionPlacement');
 const { logAdminAction } = require('../services/adminAudit');
 const {
   isSection,
@@ -187,10 +191,20 @@ router.get('/admin/placements', protect, authorize('admin'), async (req, res) =>
       : [];
 
     const rows = subscriptions.map((subscription) => {
+      const student = subscription.student || {};
+      const expectedGender = circleGenderForStudent(student, subscription.section);
+      const expectedAgeGroup = ageGroupForStudent(student);
+      const expectedTrack = student.preferredTrack || 'memorization';
+      const expectedLevel = student.currentLevel || 'beginner';
+
       const compatibleCircles = circles
         .filter((circle) => (
           String(circle.teacher) === String(subscription.preferredTeacher?._id || '')
           && circle.subscriptionPlanKey === subscription.planKey
+          && circle.gender === expectedGender
+          && circle.targetAgeGroup === expectedAgeGroup
+          && circle.track === expectedTrack
+          && circle.level === expectedLevel
           && (circle.students || []).length < Number(circle.capacity || 0)
         ))
         .map((circle) => ({
