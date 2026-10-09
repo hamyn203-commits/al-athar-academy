@@ -592,9 +592,7 @@ router.post(
 
       const mainVideo =
         directPublic(directRecitations[0]) ||
-        publicMediaPath(recitationFiles[0]) ||
-        profilePhoto ||
-        '/default-teacher.png';
+        publicMediaPath(recitationFiles[0]);
 
       const media = {
         profilePhoto: profilePhoto || '/default-teacher.png',

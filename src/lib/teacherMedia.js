@@ -45,3 +45,23 @@ export function teacherImageFallback(event) {
     image.src = FALLBACK;
   }
 }
+
+/** Video files must come from the teacher's uploaded media, not demo links or image fallbacks. */
+export function teacherPublicVideo(value) {
+  const reference = String(value || '').trim();
+  if (!reference || reference === 'not-provided' || reference.startsWith('blob:')) return '';
+  if (/\.(?:jpe?g|png|gif|webp|svg)(?:[?#]|$)/i.test(reference)) return '';
+  try {
+    const url = new URL(reference, 'https://wahy.invalid');
+    if (url.pathname === '/api/uploads/public') {
+      const original = url.searchParams.get('ref');
+      return original ? teacherPublicVideo(original) : '';
+    }
+    if (reference.startsWith('/uploads/teachers/public/') || reference.startsWith('/uploads/teacher-public/')) return reference;
+    if (url.protocol === 'https:' && url.hostname.endsWith('.blob.vercel-storage.com')
+      && url.pathname.startsWith('/uploads/teacher-public/')) {
+      return `/api/uploads/public?ref=${encodeURIComponent(reference)}`;
+    }
+  } catch { return ''; }
+  return '';
+}
