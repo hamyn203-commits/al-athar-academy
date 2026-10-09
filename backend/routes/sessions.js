@@ -156,6 +156,15 @@ async function sessionIncludesStudent(session, studentId) {
 
 router.post('/trial', protect, authorize('student'), async (req, res) => {
   try {
+    const student = await User.findById(req.user.id).select('name phone onboarding preferredTrack');
+    if (!student?.name?.trim() || !student?.phone?.trim()
+        || (student.onboarding?.required && !student.onboarding.completed)) {
+      return res.status(403).json({ code: 'PROFILE_INCOMPLETE', error: 'Complete your student profile before booking' });
+    }
+    if (student.onboarding?.trackSelected !== true) {
+      return res.status(403).json({ code: 'TRACK_REQUIRED', error: 'Select your learning track before booking' });
+    }
+
     const { teacherId, scheduledAt, timezone, notes } = req.body;
 
     const teacher = await Teacher.findOne({ 
