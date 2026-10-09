@@ -3,6 +3,13 @@ import {
   PlayCircle, CheckCircle2, AlertTriangle, History, MessageSquare, TrendingUp,
 } from 'lucide-react';
 
+function whatsappLink(value) {
+  const raw = String(value || '').replace(/[^\d+]/g, '');
+  const digits = raw.startsWith('+') ? raw.slice(1) : raw;
+  const normalized = digits.startsWith('0') && digits.length === 11 ? '20' + digits.slice(1) : digits;
+  return /^\d{8,15}$/.test(normalized) ? 'https://wa.me/' + normalized : '';
+}
+
 function titleValue(value) {
   if (!value) return '—';
   if (typeof value === 'string') return value;
@@ -60,10 +67,12 @@ export default function Student360Dossier({
                 <Info label="الاسم" value={student?.name} />
                 <Info label="البريد" value={student?.email} />
                 <Info label="الهاتف" value={student?.phone} />
-                <Info label="WhatsApp" value={student?.whatsappPhone} />
+                <div className="wn-admin-360__info"><span>WhatsApp</span>{whatsappLink(student?.whatsappPhone || student?.phone) ? <a href={whatsappLink(student?.whatsappPhone || student?.phone)} target="_blank" rel="noopener noreferrer" className="text-emerald-700 font-bold underline">مراسلة الطالب عبر واتساب</a> : <strong>رقم غير متاح</strong>}</div>
                 <Info label="العمر" value={student?.age} />
                 <Info label="النوع" value={student?.gender} />
-                <Info label="المستوى" value={student?.currentLevel} />
+                <Info label="المستوى" value={student?.customLevel || student?.currentLevel} />
+                <Info label="عدد الأجزاء المحفوظة" value={student?.memorizedJuz} />
+                <Info label="تفاصيل الحفظ" value={student?.memorizationDetails} />
                 <Info label="المسار" value={student?.preferredTrack} />
                 <Info label="الحلقة" value={student?.circle?.name} />
                 <Info label="الحساب" value={student?.isActive === false ? 'موقوف' : 'نشط'} />
