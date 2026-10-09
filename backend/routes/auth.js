@@ -44,6 +44,16 @@ function clearRefreshCookie(res) {
   );
 }
 
+async function presentUser(user) {
+  const result = sanitizeUserResponse(user);
+  if (user?.role === 'teacher') {
+    const decision = await getTeacherAccessDecision(user._id || user.id);
+    result.teacherApproved = decision.allowed;
+    result.teacherApprovalStatus = decision.status;
+  }
+  return result;
+}
+
 function sanitizeUserResponse(user) {
   if (!user) return null;
   const obj = typeof user.toJSON === 'function' ? user.toJSON() : { ...user };
@@ -150,7 +160,7 @@ router.post('/register', async (req, res) => {
 
       res.status(201).json({
         message: 'Registration successful',
-        user: sanitizeUserResponse(user),
+        user: await presentUser(user),
         accessToken
       });
       return;
@@ -180,7 +190,7 @@ router.post('/register', async (req, res) => {
 
     res.status(201).json({
       message: 'Registration successful',
-      user: sanitizeUserResponse(user),
+      user: await presentUser(user),
       accessToken
     });
   } catch (error) {
@@ -239,6 +249,7 @@ router.post('/google', async (req, res) => {
           password: require('crypto').randomBytes(48).toString('base64url'),
           googleSubject: identity.sub,
           role: requestedRole,
+          onboarding: { required: true, completed: false },
           emailVerified: true,
           avatar: identity.picture,
         });
@@ -252,7 +263,7 @@ router.post('/google', async (req, res) => {
     setRefreshCookie(res, generateRefreshToken(user));
     return res.json({
       accessToken: generateAccessToken(user),
-      user: sanitizeUserResponse(user),
+      user: await presentUser(user),
     });
   } catch (error) {
     if (error?.code === 11000) return res.status(409).json({ error: 'Account was already registered. Please retry.' });
@@ -297,18 +308,6 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    if (user.role === 'teacher') {
-      const decision = await getTeacherAccessDecision(user._id || user.id);
-      if (!decision.allowed) {
-        clearRefreshCookie(res);
-        return res.status(403).json({
-          error: decision.error,
-          code: decision.code,
-          applicationStatus: decision.status,
-        });
-      }
-    }
-
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
     setRefreshCookie(res, refreshToken);
@@ -325,7 +324,7 @@ router.post('/login', async (req, res) => {
 
     res.json({
       message: 'Login successful',
-      user: sanitizeUserResponse(user),
+      user: await presentUser(user),
       accessToken
     });
   } catch (error) {
@@ -354,18 +353,6 @@ router.post('/refresh', verifyRefreshToken, async (req, res) => {
     if (tokenVersion !== expectedVersion) {
       clearRefreshCookie(res);
       return res.status(401).json({ error: 'Refresh session has been revoked' });
-    }
-
-    if (user.role === 'teacher') {
-      const decision = await getTeacherAccessDecision(user._id || user.id);
-      if (!decision.allowed) {
-        clearRefreshCookie(res);
-        return res.status(403).json({
-          error: decision.error,
-          code: decision.code,
-          applicationStatus: decision.status,
-        });
-      }
     }
 
     const accessToken = generateAccessToken(user);
@@ -420,7 +407,7 @@ router.get('/me', verifyAccessToken, async (req, res) => {
       });
     }
 
-    res.json({ user: sanitizeUserResponse(user) });
+    res.json({ user: await presentUser(user) });
   } catch (error) {
     console.error('Get profile error:', error);
     res.status(500).json({ 
@@ -468,7 +455,7 @@ router.patch('/me', verifyAccessToken, async (req, res) => {
 
     res.json({ 
       message: 'Profile updated successfully',
-      user: sanitizeUserResponse(user) 
+      user: await presentUser(user) 
     });
   } catch (error) {
     console.error('Update profile error:', error);
