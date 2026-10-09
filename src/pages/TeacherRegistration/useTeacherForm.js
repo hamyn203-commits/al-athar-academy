@@ -3,6 +3,8 @@ import { useToast } from '../../context/ToastProvider';
 import { apiUrl } from '../../config';
 import { INITIAL_FORM, DRAFT_KEY } from './constants';
 import { uploadFileDirect } from '../../lib/fileUpload';
+import { useAuth } from '../../hooks/useAuth.jsx';
+import { getAccessToken } from '../../lib/authSession';
 
 const emptyFiles = () => ({
   profilePhoto: null,
@@ -86,6 +88,8 @@ function validateTeacherFiles(files) {
 
 export function useTeacherForm() {
   const toast = useToast();
+  const { user } = useAuth();
+  const authenticatedTeacher = user?.role === 'teacher';
   const [step, setStep] = useState(1);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -112,6 +116,12 @@ export function useTeacherForm() {
       // Verification proof is intentionally never restored from localStorage.
     } catch { /* ignore */ }
   }, []);
+
+  useEffect(() => {
+    if (!authenticatedTeacher) return;
+    setCredentials(p => ({ ...p, email: user.email }));
+    setFormData(p => ({ ...p, personalInfo: { ...p.personalInfo, fullName: p.personalInfo.fullName || user.name, phone: p.personalInfo.phone || user.phone || '' } }));
+  }, [authenticatedTeacher, user?.email, user?.name, user?.phone]);
 
   const checkApplicationStatus = useCallback(async () => {
     if (!submitted || !applicationStatusToken) return;
@@ -290,17 +300,17 @@ export function useTeacherForm() {
     const err = validate(step);
     if (err) { setFieldError(err); toast.error(err); return; }
     setFieldError('');
-    if (step < 5) setStep(step + 1);
+    if (step < 5) setStep(authenticatedTeacher && step === 1 ? 4 : step + 1);
   };
 
-  const prev = () => { if (step > 1) setStep(step - 1); };
+  const prev = () => { if (step > 1) setStep(authenticatedTeacher && step === 4 ? 1 : step - 1); };
 
   const submit = async () => {
     const err = validate(4);
     if (err) { toast.error(err); return; }
 
-    const verifiedEmailNow = normalizeEmail(credentials.email);
-    if (!emailVerified || !verificationToken || verifiedEmail !== verifiedEmailNow) {
+    const verifiedEmailNow = normalizeEmail(authenticatedTeacher ? user.email : credentials.email);
+    if (!authenticatedTeacher && (!emailVerified || !verificationToken || verifiedEmail !== verifiedEmailNow)) {
       toast.error('يجب إعادة تأكيد البريد الإلكتروني');
       setStep(2);
       return;
@@ -391,7 +401,7 @@ export function useTeacherForm() {
       const r = await fetch(apiUrl('/api/teachers/register'), {
         method: 'POST',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(authenticatedTeacher ? { Authorization: `Bearer ${getAccessToken()}` } : {}) },
         body: JSON.stringify(payload),
       });
       const data = await r.json();
@@ -409,7 +419,7 @@ export function useTeacherForm() {
   };
 
   return {
-    step, setStep, submitted, submitting, applicationStatus, checkApplicationStatus, credentials, setCredentials,
+    step, setStep, submitted, submitting, applicationStatus, checkApplicationStatus, credentials, setCredentials, authenticatedTeacher,
     formData, files, setFile, update,
     verificationCode, setVerificationCode, isCodeSent, emailVerified,
     verifiedEmail, fieldError,
