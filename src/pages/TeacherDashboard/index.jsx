@@ -66,9 +66,6 @@ export default function TeacherDashboard() {
   const [evalModal, setEvalModal] = useState(null);
   const [evaluation, setEvaluation] = useState(emptyEval);
   const [homeworkList, setHomeworkList] = useState([]);
-  const [attendanceModal, setAttendanceModal] = useState(null);
-  const [attendanceDraft, setAttendanceDraft] = useState({});
-  const [savingAttendance, setSavingAttendance] = useState(false);
 
   const [taskModal, setTaskModal] = useState(false);
   const [newTask, setNewTask] = useState({ studentId: '', type: 'memorization', title: '', description: '', dueDate: '' });
@@ -374,61 +371,6 @@ export default function TeacherDashboard() {
     setHomeworkList([]);
   };
 
-  const openAttendanceManager = (session) => {
-    const draft = {};
-    for (const entry of session?.attendance || []) {
-      const studentId = entry.student?._id || entry.student;
-      if (!studentId) continue;
-      draft[String(studentId)] = ['attended', 'absent', 'excused'].includes(entry.status)
-        ? entry.status
-        : '';
-    }
-    setAttendanceDraft(draft);
-    setAttendanceModal(session);
-  };
-
-  const saveGroupAttendance = async () => {
-    if (!attendanceModal) return;
-
-    const roster = attendanceModal.attendance || [];
-    const unresolved = roster.filter((entry) => {
-      const studentId = String(entry.student?._id || entry.student || '');
-      return !attendanceDraft[studentId];
-    });
-
-    if (unresolved.length) {
-      return toast.error(`حدد حالة الحضور لكل الطلاب أولًا (${unresolved.length} متبقي)`);
-    }
-
-    setSavingAttendance(true);
-    try {
-      const records = roster.map((entry) => {
-        const studentId = String(entry.student?._id || entry.student);
-        return {
-          studentId,
-          status: attendanceDraft[studentId],
-          excuseReason: attendanceDraft[studentId] === 'excused'
-            ? (entry.excuseReason || 'اعتذار مسجل بواسطة المعلم')
-            : '',
-        };
-      });
-
-      const result = await api.patch(
-        `/api/sessions/${attendanceModal._id}/attendance`,
-        { records },
-        { auth: true }
-      );
-
-      toast.success('تم حفظ الحضور النهائي للحلقة');
-      setAttendanceModal((current) => current ? { ...current, attendance: result.attendance || current.attendance } : current);
-      await load();
-    } catch (error) {
-      toast.error(error.message || 'فشل حفظ الحضور');
-    } finally {
-      setSavingAttendance(false);
-    }
-  };
-
   const addHomework = () => {
     setHomeworkList((p) => [...p, { ...emptyHomework }]);
   };
@@ -481,7 +423,7 @@ export default function TeacherDashboard() {
     const key = session._id + ':' + studentId;
     setAttendanceUpdating(key);
     try {
-      const result = await api.put(`/api/sessions/${session._id}/attendance`, {
+      const result = await api.patch(`/api/sessions/${session._id}/attendance`, {
         records: [{ studentId, status }],
       }, { auth: true });
 
@@ -490,7 +432,13 @@ export default function TeacherDashboard() {
           ? { ...item, attendance: result.attendance || item.attendance }
           : item
       )));
-      toast.success(status === 'attended' ? 'تم تسجيل حضور الطالب' : 'تم تسجيل غياب الطالب');
+      toast.success(
+        status === 'attended'
+          ? 'تم تسجيل حضور الطالب'
+          : status === 'excused'
+            ? 'تم تسجيل اعتذار الطالب'
+            : 'تم تسجيل غياب الطالب'
+      );
     } catch (error) {
       toast.error(error.message || 'فشل تحديث الحضور');
     } finally {
@@ -505,8 +453,7 @@ export default function TeacherDashboard() {
       (entry) => ['pending', 'confirmed'].includes(entry.status)
     );
     if (unresolved.length) {
-      toast.info('سجل الحضور النهائي لكل الطلاب قبل إنهاء الحصة');
-      openAttendanceManager(session);
+      toast.info('سجل الحضور النهائي لكل الطلاب من قائمة الحضور داخل الحصة قبل الإنهاء');
       return;
     }
 
@@ -1645,6 +1592,19 @@ export default function TeacherDashboard() {
                                                 }
                                               >
                                                 غاب
+                                              </button>
+                                              <button
+                                                type="button"
+                                                disabled={isUpdating}
+                                                onClick={() => updateGroupAttendance(session, studentId, 'excused')}
+                                                className={
+                                                  'rounded-lg px-2.5 py-1 font-bold ' +
+                                                  (entry.status === 'excused'
+                                                    ? 'bg-amber-500 text-white'
+                                                    : 'bg-amber-50 text-amber-700')
+                                                }
+                                              >
+                                                معتذر
                                               </button>
                                             </>
                                           )}
