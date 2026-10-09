@@ -1148,6 +1148,116 @@ router.get('/admin/all', protect, authorize('admin'), async (req, res) => {
   }
 });
 
+// @route   PATCH /api/sessions/:id/attendance
+// @desc    Teacher/admin final attendance manager for group sessions
+// @access  Private (Teacher, Admin)
+router.patch('/:id/attendance', protect, authorize('teacher', 'admin'), async (req, res) => {
+  try {
+    const session = await Session.findById(req.params.id);
+
+    if (!session) {
+      return res.status(404).json({ error: 'الحصة غير موجودة', code: 'SESSION_NOT_FOUND' });
+    }
+    if (session.type !== 'group_circle') {
+      return res.status(400).json({
+        error: 'إدارة الحضور الجماعي متاحة لحصص الجروب فقط',
+        code: 'GROUP_ATTENDANCE_ONLY',
+      });
+    }
+    if (session.status !== 'accepted') {
+      return res.status(409).json({
+        error: 'لا يمكن تعديل الحضور بعد إغلاق الحصة',
+        code: 'GROUP_ATTENDANCE_LOCKED',
+      });
+    }
+
+    if (req.user.role === 'teacher') {
+      const teacher = await Teacher.findOne({ user: req.user.id }).select('_id');
+      if (!teacher || String(session.teacher) !== String(teacher._id)) {
+        return res.status(403).json({ error: 'غير مصرح بإدارة حضور هذه الحلقة' });
+      }
+    }
+
+    const records = Array.isArray(req.body?.records) ? req.body.records : [];
+    if (!records.length) {
+      return res.status(400).json({
+        error: 'أرسل حالات الحضور للطلاب',
+        code: 'ATTENDANCE_RECORDS_REQUIRED',
+      });
+    }
+
+    const allowed = new Set(['attended', 'absent', 'excused']);
+    const rosterIds = new Set(
+      (session.attendance || [])
+        .filter((entry) => entry.student)
+        .map((entry) => String(entry.student?._id || entry.student))
+    );
+
+    for (const record of records) {
+      const studentId = String(record?.studentId || '').trim();
+      const nextStatus = String(record?.status || '').trim();
+
+      if (!rosterIds.has(studentId)) {
+        return res.status(403).json({
+          error: 'لا يمكن تعديل حضور طالب غير مسجل في هذه الحصة',
+          code: 'ATTENDANCE_STUDENT_NOT_IN_ROSTER',
+        });
+      }
+      if (!allowed.has(nextStatus)) {
+        return res.status(400).json({
+          error: 'حالة الحضور غير صحيحة',
+          code: 'ATTENDANCE_STATUS_INVALID',
+        });
+      }
+
+      const entry = session.attendance.find(
+        (item) => item.student && String(item.student?._id || item.student) === studentId
+      );
+      if (!entry) continue;
+
+      const protectedEligibleExcuse = entry.status === 'excused' && entry.eligibleForCompensation === true;
+
+      if (nextStatus === 'attended') {
+        entry.status = 'attended';
+        entry.eligibleForCompensation = false;
+        entry.excuseReason = '';
+        entry.excusedAt = undefined;
+      } else if (nextStatus === 'absent') {
+        if (protectedEligibleExcuse) {
+          entry.status = 'excused';
+          entry.eligibleForCompensation = true;
+        } else {
+          entry.status = 'absent';
+          entry.eligibleForCompensation = false;
+          entry.excuseReason = '';
+          entry.excusedAt = undefined;
+        }
+      } else {
+        entry.status = 'excused';
+        entry.excuseReason = String(record?.excuseReason || entry.excuseReason || 'اعتذار مسجل بواسطة المعلم')
+          .trim()
+          .slice(0, 500);
+        entry.excusedAt = entry.excusedAt || new Date();
+        entry.eligibleForCompensation = protectedEligibleExcuse;
+      }
+    }
+
+    await session.save();
+    await session.populate('attendance.student', 'name email avatar');
+
+    return res.json({
+      success: true,
+      attendance: session.attendance,
+      unresolved: session.attendance.filter((entry) => ['pending', 'confirmed'].includes(entry.status)).length,
+    });
+  } catch (error) {
+    return res.status(400).json({
+      error: error.message || 'فشل تحديث الحضور',
+      code: error.code || 'GROUP_ATTENDANCE_UPDATE_FAILED',
+    });
+  }
+});
+
 // @route   POST /api/sessions/:id/rsvp
 // @desc    Confirm attendance or excuse absence (with 6-hour policy check)
 // @access  Private (Student, Guardian, Admin)
