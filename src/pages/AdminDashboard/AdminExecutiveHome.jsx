@@ -34,9 +34,10 @@ function currency(value) {
   }).format(Number(value || 0));
 }
 
-function OverviewMetric({ icon: Icon, label, value, note, tone = 'navy', badge }) {
+function OverviewMetric({ icon: Icon, label, value, note, tone = 'navy', badge, onClick }) {
+  const Tag = onClick ? 'button' : 'article';
   return (
-    <article className={`wn-admin-exec-metric is-${tone}`}>
+    <Tag type={onClick ? 'button' : undefined} onClick={onClick} className={`wn-admin-exec-metric is-${tone} ${onClick ? 'is-clickable' : ''}`}>
       <div className="wn-admin-exec-metric__top">
         <span className="wn-admin-exec-metric__icon"><Icon size={20} /></span>
         {badge ? <span className="wn-admin-exec-metric__badge">{badge}</span> : null}
@@ -47,7 +48,7 @@ function OverviewMetric({ icon: Icon, label, value, note, tone = 'navy', badge }
         <small>{note}</small>
       </div>
       <i aria-hidden="true" />
-    </article>
+    </Tag>
   );
 }
 
@@ -68,7 +69,7 @@ export default function AdminExecutiveHome({
 }) {
   const actions = commandCenter?.actions || [];
   const priorityActions = actions
-    .filter((item) => Number(item.count || 0) > 0)
+    .slice()
     .sort((a, b) => {
       const priority = { high: 3, medium: 2, info: 1, ok: 0 };
       return (priority[b.severity] || 0) - (priority[a.severity] || 0) || Number(b.count || 0) - Number(a.count || 0);
@@ -87,12 +88,12 @@ export default function AdminExecutiveHome({
   const totalPending = Number(commandCenter?.summary?.totalPendingActions || 0);
 
   const handleAction = (item) => {
-    if (item.actionUrl === '/admin/payments') {
-      onNavigate?.('payments');
-      return;
-    }
-    const match = item.actionUrl?.match(/tab=([^&]+)/);
-    if (match?.[1]) onSelectTab?.(match[1]);
+    if (!item?.actionUrl) return;
+    onNavigate?.(item.actionUrl);
+  };
+
+  const goToActions = () => {
+    document.getElementById('admin-action-center')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
 
   return (
@@ -112,6 +113,24 @@ export default function AdminExecutiveHome({
         </div>
       </section>
 
+      <section className="wn-admin-exec-quick-actions" aria-label="اختصارات مركز القيادة">
+        <button type="button" onClick={() => onNavigate?.('/admin?tab=teachers')}>
+          <GraduationCap size={17} /><span><strong>مراجعة المعلمين</strong><small>Teacher 360</small></span><ArrowLeft size={14} />
+        </button>
+        <button type="button" onClick={() => onNavigate?.('/admin?tab=sessions')}>
+          <Calendar size={17} /><span><strong>مركز الحصص</strong><small>المتابعة التشغيلية</small></span><ArrowLeft size={14} />
+        </button>
+        <button type="button" onClick={() => onNavigate?.('/admin?tab=people&focus=guardian-links')}>
+          <Users size={17} /><span><strong>طلبات ربط الأسرة</strong><small>Family linking</small></span><ArrowLeft size={14} />
+        </button>
+        <button type="button" onClick={() => onNavigate?.('/admin/payments')}>
+          <CreditCard size={17} /><span><strong>مراجعة المدفوعات</strong><small>Manual payments</small></span><ArrowLeft size={14} />
+        </button>
+        <button type="button" onClick={() => onNavigate?.('/admin?tab=system')}>
+          <ServerCog size={17} /><span><strong>حالة النظام</strong><small>Health & launch</small></span><ArrowLeft size={14} />
+        </button>
+      </section>
+
       <section className="wn-admin-exec-metrics">
         <OverviewMetric
           icon={Users}
@@ -120,6 +139,7 @@ export default function AdminExecutiveHome({
           note="كل الحسابات المسجلة كطلاب"
           tone="blue"
           badge="LIVE"
+          onClick={() => onNavigate?.('/admin?tab=people')}
         />
         <OverviewMetric
           icon={GraduationCap}
@@ -127,6 +147,7 @@ export default function AdminExecutiveHome({
           value={compactNumber(stats?.totalTeachers)}
           note="معلمون اجتازوا Approval Gate"
           tone="gold"
+          onClick={() => onNavigate?.('/admin?tab=teachers')}
         />
         <OverviewMetric
           icon={Calendar}
@@ -134,6 +155,7 @@ export default function AdminExecutiveHome({
           value={compactNumber(stats?.totalSessions)}
           note={`${compactNumber(stats?.totalHours)} ساعة تعليمية تقريبًا`}
           tone="green"
+          onClick={() => onNavigate?.('/admin?tab=sessions')}
         />
         <OverviewMetric
           icon={DollarSign}
@@ -141,6 +163,7 @@ export default function AdminExecutiveHome({
           value={currency(stats?.totalEarnings)}
           note="من الحصص المكتملة المسجلة"
           tone="purple"
+          onClick={() => onNavigate?.('/admin/payments')}
         />
         <OverviewMetric
           icon={AlertTriangle}
@@ -148,6 +171,7 @@ export default function AdminExecutiveHome({
           value={compactNumber(totalPending)}
           note={critical ? `${critical} منها عالية الأولوية` : 'لا توجد حالات حرجة'}
           tone={critical ? 'red' : 'navy'}
+          onClick={goToActions}
         />
       </section>
 
@@ -175,7 +199,12 @@ export default function AdminExecutiveHome({
                   />
                   <Bar dataKey="count" radius={[7, 7, 7, 7]} barSize={15}>
                     {chartData.map((entry, index) => (
-                      <Cell key={entry.id} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                      <Cell
+                        key={entry.id}
+                        fill={CHART_COLORS[index % CHART_COLORS.length]}
+                        cursor="pointer"
+                        onClick={() => handleAction(actions.find((item) => item.id === entry.id))}
+                      />
                     ))}
                   </Bar>
                 </BarChart>
@@ -186,7 +215,7 @@ export default function AdminExecutiveHome({
           )}
         </article>
 
-        <article className="wn-admin-exec-panel wn-admin-exec-panel--priority">
+        <article id="admin-action-center" className="wn-admin-exec-panel wn-admin-exec-panel--priority">
           <header className="wn-admin-exec-panel__head">
             <div>
               <span>ACTION CENTER</span>
@@ -197,7 +226,7 @@ export default function AdminExecutiveHome({
           </header>
 
           <div className="wn-admin-exec-priority-list">
-            {priorityActions.length ? priorityActions.slice(0, 5).map((item) => {
+            {priorityActions.length ? priorityActions.map((item) => {
               const meta = ACTION_META[item.id] || { icon: Activity, tone: 'info' };
               const Icon = meta.icon;
               return (
@@ -205,7 +234,7 @@ export default function AdminExecutiveHome({
                   <span className="wn-admin-exec-priority-list__icon"><Icon size={17} /></span>
                   <span>
                     <strong>{item.label}</strong>
-                    <small>{item.severity === 'high' ? 'أولوية عالية' : item.severity === 'medium' ? 'تحتاج متابعة' : 'للمراجعة'}</small>
+                    <small>{Number(item.count || 0) === 0 ? 'لا توجد حالات حاليًا · افتح القسم' : item.severity === 'high' ? 'أولوية عالية' : item.severity === 'medium' ? 'تحتاج متابعة' : 'للمراجعة'}</small>
                   </span>
                   <b>{item.count}</b>
                   <ArrowLeft size={15} />
@@ -217,7 +246,7 @@ export default function AdminExecutiveHome({
       </section>
 
       <section className="wn-admin-exec-grid wn-admin-exec-grid--secondary">
-        <article className="wn-admin-exec-panel wn-admin-exec-system">
+        <article className="wn-admin-exec-panel wn-admin-exec-system is-clickable" onClick={() => onNavigate?.('/admin?tab=system')} role="button" tabIndex={0} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') onNavigate?.('/admin?tab=system'); }}>
           <header className="wn-admin-exec-panel__head">
             <div>
               <span>SYSTEM HEALTH</span>
