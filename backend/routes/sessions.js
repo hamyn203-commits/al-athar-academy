@@ -9,6 +9,8 @@ const { protect, authorize } = require('../middleware/auth');
 const meetingService = require('../services/meetingService');
 const { meetingVisibleToRole, sessionParticipantWindow } = require('../services/sessionAccess');
 const { ensureSessionEarning } = require('../services/teacherFinance');
+const { settleSubscriptionUsageForSession } = require('../services/subscriptionUsage');
+const { getPlan } = require('../config/subscriptionPlans');
 const {
   parseRequestedDateTime,
   teacherAvailabilityDecision,
@@ -291,6 +293,148 @@ router.post('/trial', protect, authorize('student'), async (req, res) => {
   }
 });
 
+
+router.post('/group-circle', protect, authorize('teacher', 'admin'), async (req, res) => {
+  try {
+    const { circleId, scheduledAt, timezone, duration, notes } = req.body;
+    const circle = await GroupCircle.findById(circleId);
+
+    if (!circle) {
+      return res.status(404).json({ error: 'الحلقة غير موجودة', code: 'CIRCLE_NOT_FOUND' });
+    }
+    if (!['active', 'full'].includes(circle.status)) {
+      return res.status(409).json({
+        error: 'لا يمكن جدولة حصة قبل اكتمال الحد الأدنى لتشغيل الحلقة',
+        code: 'CIRCLE_NOT_ACTIVE',
+        status: circle.status,
+      });
+    }
+
+    const teacher = await Teacher.findOne({
+      _id: circle.teacher,
+      status: 'approved',
+      isVerified: true,
+    });
+
+    if (!teacher) {
+      return res.status(409).json({ error: 'معلم الحلقة غير متاح', code: 'CIRCLE_TEACHER_UNAVAILABLE' });
+    }
+
+    if (req.user.role === 'teacher' && String(teacher.user) !== String(req.user.id)) {
+      return res.status(403).json({ error: 'غير مصرح بجدولة حصة لهذه الحلقة' });
+    }
+
+    const plan = getPlan(circle.subscriptionPlanKey);
+    if (!plan) {
+      return res.status(400).json({ error: 'خطة الحلقة غير صحيحة', code: 'CIRCLE_PLAN_INVALID' });
+    }
+
+    const requestedDuration = Number(duration || plan.durationMinMinutes || plan.durationMaxMinutes || 60);
+    const minDuration = Number(plan.durationMinMinutes || 1);
+    const maxDuration = Number(plan.durationMaxMinutes || 60);
+
+    if (
+      !Number.isFinite(requestedDuration)
+      || requestedDuration < minDuration
+      || requestedDuration > maxDuration
+    ) {
+      return res.status(400).json({
+        error: `مدة الحصة لهذه الخطة يجب أن تكون بين ${minDuration} و${maxDuration} دقيقة`,
+        code: 'GROUP_SESSION_DURATION_INVALID',
+        minDuration,
+        maxDuration,
+      });
+    }
+
+    const booking = await validateBookingSlot({
+      teacher,
+      scheduledAt,
+      timezone,
+      duration: requestedDuration,
+    });
+
+    if (!booking.ok) {
+      return res.status(booking.status).json({
+        error: booking.error,
+        code: booking.code,
+        teacherTimezone: booking.teacherTimezone,
+      });
+    }
+
+    const duplicate = await Session.findOne({
+      circle: circle._id,
+      scheduledAt: booking.scheduledAt,
+      status: { $in: ['pending', 'accepted'] },
+    }).select('_id');
+
+    if (duplicate) {
+      return res.status(409).json({
+        error: 'يوجد بالفعل حصة لهذه الحلقة في نفس الموعد',
+        code: 'GROUP_SESSION_ALREADY_EXISTS',
+        sessionId: String(duplicate._id),
+      });
+    }
+
+    const attendance = (circle.students || []).map((studentId) => ({
+      student: studentId,
+      status: 'pending',
+      eligibleForCompensation: false,
+    }));
+
+    const session = await Session.create({
+      circle: circle._id,
+      teacher: teacher._id,
+      type: 'group_circle',
+      status: 'accepted',
+      scheduledAt: booking.scheduledAt,
+      timezone: booking.timezone || timezone || circle.timezone || 'Africa/Cairo',
+      duration: requestedDuration,
+      notes: String(notes || '').trim().slice(0, 1500),
+      attendance,
+    });
+
+    meetingService.attachToSession(session, req.body.provider || process.env.DEFAULT_MEETING_PROVIDER || 'jitsi');
+    await session.save();
+
+    const notifications = (circle.students || []).flatMap((studentId) => ([
+      notifySessionAccepted(session, studentId, session.meetingLink),
+      notifyGuardiansForStudent(studentId, {
+        type: 'session-accepted',
+        title: { ar: 'تم جدولة حصة الحلقة', en: 'Circle session scheduled' },
+        message: {
+          ar: 'تم جدولة حصة جديدة في الحلقة. راجع لوحة المتابعة لمعرفة الموعد.',
+          en: 'A new circle session has been scheduled. Check the dashboard for details.',
+        },
+        data: { session: session._id, actionUrl: '/guardian/dashboard' },
+        priority: 'high',
+      }),
+    ]));
+    await Promise.allSettled(notifications);
+
+    if (req.user.role === 'admin') {
+      notifyUser(teacher.user, {
+        type: 'system',
+        title: { ar: 'تم جدولة حصة جديدة لحلقتك', en: 'A new circle session was scheduled' },
+        message: {
+          ar: `تمت جدولة حصة جديدة لـ ${circle.name} بواسطة الإدارة.`,
+          en: `Administration scheduled a new session for ${circle.name}.`,
+        },
+        data: {
+          actionUrl: '/teacher/dashboard?tab=sessions',
+          metadata: { circleId: String(circle._id), sessionId: String(session._id) },
+        },
+      }).catch(() => {});
+    }
+
+    return res.status(201).json({ success: true, session });
+  } catch (error) {
+    return res.status(400).json({
+      error: error.message || 'فشل جدولة حصة الحلقة',
+      code: error.code || 'GROUP_SESSION_CREATE_FAILED',
+    });
+  }
+});
+
 router.post('/regular', protect, async (req, res) => {
   try {
     if (req.user.role !== 'student') {
@@ -372,7 +516,12 @@ router.get('/my-sessions', protect, async (req, res) => {
     const filter = {};
 
     if (req.user.role === 'student') {
-      filter.student = req.user.id;
+      const student = await User.findById(req.user.id).select('circle').lean();
+      filter.$or = [
+        { student: req.user.id },
+        { 'attendance.student': req.user.id },
+        ...(student?.circle ? [{ circle: student.circle }] : []),
+      ];
     } else if (req.user.role === 'teacher') {
       const teacher = await Teacher.findOne({ user: req.user.id });
       if (!teacher) {
@@ -396,6 +545,7 @@ router.get('/my-sessions', protect, async (req, res) => {
           path: 'teacher',
           populate: { path: 'user', select: 'name email avatar' }
         })
+        .populate('circle', 'name code status schedule timezone subscriptionPlanKey')
         .sort({ scheduledAt: -1 })
         .skip(skip)
         .limit(parseInt(limit)),
@@ -643,7 +793,9 @@ router.put('/:id/complete', protect, authorize('teacher'), async (req, res) => {
       return res.status(404).json({ error: 'Session not found or unavailable for completion' });
     }
 
-    const SESSION_RATE = 50;
+    const HOURLY_RATE = Number(teacher.hourlyRate || 50);
+    const sessionDuration = Math.max(1, Number(session.duration || 60));
+    const SESSION_RATE = Math.round((HOURLY_RATE * sessionDuration / 60) * 100) / 100;
     const scheduledAt = new Date(session.scheduledAt);
     const now = new Date();
 
@@ -690,6 +842,10 @@ router.put('/:id/complete', protect, authorize('teacher'), async (req, res) => {
       attendeesCount: session.student ? 1 : Math.max(1, session.attendance?.length || 0),
       notes: session.type === 'trial' ? 'حصة تجريبية مكتملة' : 'حصة منتظمة مكتملة',
     });
+
+    if (session.type === 'group_circle') {
+      await settleSubscriptionUsageForSession(session);
+    }
 
     // Keep non-financial teacher counters deterministic and retry-safe.
     const [completedCount, durationAgg] = await Promise.all([
