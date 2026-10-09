@@ -53,7 +53,7 @@ export default function AdminDashboardShell({
   }, [collapsed]);
 
   const roleHome = dashboardPathForRole('admin', locale);
-  const firstName = user?.name?.trim().split(/\\s+/)[0] || 'مدير الأكاديمية';
+  const firstName = user?.name?.trim().split(/\s+/)[0] || 'مدير الأكاديمية';
   const activeSectionTitle = NAV_ITEMS.find((item) => item.id === active)?.label
     || (active === 'system' ? 'إدارة النظام' : 'لوحة الإدارة');
 
