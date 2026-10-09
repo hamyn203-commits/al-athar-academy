@@ -7,6 +7,7 @@ const Teacher = require('../models/Teacher');
 const Guardian = require('../models/Guardian');
 const GroupCircle = require('../models/GroupCircle');
 const { verifyAccessToken, requireRole } = require('../middleware/auth');
+const { sessionParticipantWindow } = require('../services/sessionAccess');
 
 const LIVEKIT_API_KEY = process.env.LIVEKIT_API_KEY || '';
 const LIVEKIT_API_SECRET = process.env.LIVEKIT_API_SECRET || '';
@@ -47,18 +48,6 @@ async function sessionIncludesStudent(session, studentId) {
   return false;
 }
 
-function isWithinParticipantJoinWindow(session) {
-  if (!session?.scheduledAt) return false;
-
-  const scheduledAt = new Date(session.scheduledAt).getTime();
-  const durationMs = Math.max(15, Number(session.duration || 60)) * 60 * 1000;
-  const now = Date.now();
-  const opensAt = scheduledAt - 30 * 60 * 1000;
-  const closesAt = scheduledAt + durationMs + 60 * 60 * 1000;
-
-  return now >= opensAt && now <= closesAt;
-}
-
 async function getRoomAccess(liveSession, user) {
   if (!liveSession || !user) {
     return { allowed: false, isHost: false, isObserver: false, bookedSession: null };
@@ -84,13 +73,14 @@ async function getRoomAccess(liveSession, user) {
 
   if (user.role === 'teacher') {
     const teacher = await Teacher.findOne({ user: user.id }).select('_id');
-    const allowed = Boolean(teacher && String(bookedSession.teacher) === String(teacher._id));
+    const allowed = Boolean(teacher && String(bookedSession.teacher) === String(teacher._id))
+      && sessionParticipantWindow(bookedSession).within;
     return { allowed, isHost: allowed, isObserver: false, bookedSession };
   }
 
   if (user.role === 'student') {
     const assigned = await sessionIncludesStudent(bookedSession, user.id);
-    const allowed = assigned && isWithinParticipantJoinWindow(bookedSession);
+    const allowed = assigned && sessionParticipantWindow(bookedSession).within;
     return { allowed, isHost: false, isObserver: false, bookedSession };
   }
 
@@ -108,7 +98,7 @@ async function getRoomAccess(liveSession, user) {
       }
     }
 
-    const allowed = assigned && isWithinParticipantJoinWindow(bookedSession);
+    const allowed = assigned && sessionParticipantWindow(bookedSession).within;
     return { allowed, isHost: false, isObserver: true, bookedSession };
   }
 
@@ -254,10 +244,19 @@ router.post('/sessions', verifyAccessToken, requireRole('teacher', 'admin'), asy
         _id: sessionId,
         teacher: teacher._id,
         status: 'accepted',
-      }).select('_id student circle teacher scheduledAt status');
+      }).select('_id student circle teacher scheduledAt duration status');
 
       if (!bookedSession) {
         return res.status(403).json({ message: 'This booked session is not assigned to you or is not accepted' });
+      }
+      const accessWindow = sessionParticipantWindow(bookedSession);
+      if (!accessWindow.within) {
+        return res.status(403).json({
+          message: 'The academy room opens 30 minutes before the lesson and closes one hour after its duration',
+          code: 'MEETING_OUTSIDE_JOIN_WINDOW',
+          opensAt: accessWindow.opensAt,
+          closesAt: accessWindow.closesAt,
+        });
       }
     } else if (sessionId) {
       bookedSession = await Session.findById(sessionId).select('_id student circle teacher scheduledAt status');

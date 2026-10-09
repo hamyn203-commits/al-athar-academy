@@ -86,7 +86,7 @@ export default function TeacherRegistration() {
 
   return (
     <>
-      <SEOHead page={{ title: 'تسجيل معلم', description: 'انضم كمعلم قرآن في أكاديمية وَحْيٌ وَنَمَاء', url: '/teacher/register' }} />
+      <SEOHead page={{ title: 'تسجيل معلم', description: 'انضم كمعلم قرآن في أكاديمية وَحْيٌ وَنَمَاء', url: '/register/teacher' }} />
       <GlobalHeader />
 
       <div className="wn-teacher-register-shell min-h-screen py-10" dir="rtl">

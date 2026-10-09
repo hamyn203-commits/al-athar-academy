@@ -15,6 +15,7 @@ import { uploadFileDirect } from '../../lib/fileUpload';
 import { apiUrl } from '../../config';
 import { TASK_TYPES } from '../TeacherRegistration/constants';
 import SessionChatModal from '../../components/session/SessionChatModal';
+import { sessionJoinWindow } from '../../lib/sessionTime';
 import { useI18n } from '../../i18n';
 import { localizedPath } from '../../lib/locale';
 
@@ -1282,6 +1283,8 @@ export default function TeacherDashboard() {
                       .sort((a, b) => new Date(a.scheduledAt) - new Date(b.scheduledAt))
                       .map((session) => {
                         const hasStarted = new Date(session.scheduledAt) <= new Date();
+                        const joinWindow = sessionJoinWindow(session);
+                        const canJoinRoom = session.status === 'accepted' && joinWindow.within;
                         return (
                           <article key={session._id} className={'wn-teacher-session-card ' + (hasStarted ? 'is-due' : '')}>
                             <div className="wn-teacher-session-card__time">
@@ -1295,8 +1298,16 @@ export default function TeacherDashboard() {
                             </div>
                             <div className="wn-teacher-session-card__actions">
                               <button type="button" onClick={() => setChatSession(session)}><MessageSquare size={16} /> محادثة</button>
-                              <button type="button" onClick={() => enterAcademyRoom(session)} className="is-room"><Video size={16} /> غرفة الأكاديمية</button>
-                              <Link to={lp(`/meeting/${session._id}`)} className="is-translate">ترجمة مباشرة</Link>
+                              {canJoinRoom ? (
+                                <>
+                                  <button type="button" onClick={() => enterAcademyRoom(session)} className="is-room"><Video size={16} /> غرفة الأكاديمية</button>
+                                  <Link to={lp(`/meeting/${session._id}`)} className="is-translate">ترجمة مباشرة</Link>
+                                </>
+                              ) : (
+                                <span className="text-xs font-semibold text-slate-500 px-2">
+                                  {joinWindow.phase === 'early' ? 'الغرفة تفتح قبل الموعد بـ30 دقيقة' : 'انتهى وقت الدخول — أغلق الحصة وأرسل التقرير'}
+                                </span>
+                              )}
                               <button
                                 type="button"
                                 onClick={() => openEval(session)}

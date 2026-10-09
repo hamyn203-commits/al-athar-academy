@@ -19,6 +19,7 @@ const {
   buildTeacherReviewGate,
   sanitizeChecklistStatus,
   itemRequiredForTeacher,
+  coreMediaAreDistinct,
 } = require('../services/teacherReview');
 const multer = require('multer');
 const {
@@ -627,6 +628,12 @@ router.post(
         ].filter(Boolean),
       };
 
+      if (!coreMediaAreDistinct(media)) {
+        return res.status(400).json({
+          error: 'Introduction, recitation, and teaching-method videos must be different files',
+          code: 'TEACHER_CORE_MEDIA_MUST_BE_DISTINCT',
+        });
+      }
 
     const teacher = await Teacher.create({
       user: userId,

@@ -19,6 +19,7 @@ import { localizeInternalHref } from '../../lib/navigation';
 import { apiUrl } from '../../config';
 import StudentTeacherMarketplace from './TeacherMarketplace';
 import SessionChatModal from '../../components/session/SessionChatModal';
+import { sessionJoinWindow } from '../../lib/sessionTime';
 
 const emptyReview = { rating: 5, comment: '', wouldContinue: true };
 const emptyBook = { date: '', time: '', notes: '' };
@@ -1834,6 +1835,13 @@ function SessionCard({ session, onReview, hasReviewed, onChat }) {
   const { locale } = useI18n();
   const teacherName = session.teacher?.user?.name || session.teacher?.personalInfo?.fullName || (locale === 'id' ? 'Guru' : locale === 'ar' ? 'المعلم' : 'Tutor');
   const isTrial = session.type === 'trial';
+  const joinWindow = session.status === 'accepted' ? sessionJoinWindow(session) : null;
+  const acceptedExpired = joinWindow?.phase === 'expired';
+  const acceptedEarly = joinWindow?.phase === 'early';
+  const canJoin = Boolean(session.meetingLink && session.status === 'accepted' && joinWindow?.within);
+  const statusText = acceptedExpired
+    ? (locale === 'ar' ? 'انتهى موعد الدخول — بانتظار التقرير' : locale === 'id' ? 'Waktu masuk selesai — menunggu laporan' : 'Join window ended — awaiting report')
+    : getStatusLabel(session.status, locale);
 
   return (
     <div className="border rounded-lg p-4 flex flex-wrap justify-between items-start gap-3">
@@ -1851,12 +1859,22 @@ function SessionCard({ session, onReview, hasReviewed, onChat }) {
             : session.status === 'completed' ? 'bg-blue-100 text-blue-700'
             : 'bg-gray-100 text-gray-600'
         }`}>
-          {getStatusLabel(session.status, locale)}
+          {statusText}
         </span>
         {session.status === 'pending' && (
           <p className="text-xs text-amber-600 mt-1">{locale === 'id' ? 'Menunggu persetujuan guru' : locale === 'ar' ? 'بانتظار موافقة المعلم' : 'Awaiting teacher approval'}</p>
         )}
-        {session.meetingLink && session.status === 'accepted' && (
+        {acceptedEarly && (
+          <p className="text-xs text-slate-500 mt-1">
+            {locale === 'ar' ? 'يفتح الدخول قبل الموعد بـ 30 دقيقة.' : locale === 'id' ? 'Akses dibuka 30 menit sebelum sesi.' : 'Joining opens 30 minutes before the session.'}
+          </p>
+        )}
+        {acceptedExpired && (
+          <p className="text-xs text-rose-700 mt-1">
+            {locale === 'ar' ? 'انتهى وقت الدخول لهذه الحصة. سيظهر التقرير بعد أن يغلق المعلم الحصة.' : locale === 'id' ? 'Waktu masuk sesi telah berakhir.' : 'The join window has ended. The report will appear after the tutor closes the session.'}
+          </p>
+        )}
+        {canJoin && (
           <div className="flex flex-wrap gap-2 mt-2">
             <a href={localizeInternalHref(session.meetingLink, locale)} target="_blank" rel="noreferrer"
               className="text-sm text-emerald-600 font-semibold hover:underline">

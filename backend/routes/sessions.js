@@ -7,6 +7,7 @@ const Teacher = require('../models/Teacher');
 const GroupCircle = require('../models/GroupCircle');
 const { protect, authorize } = require('../middleware/auth');
 const meetingService = require('../services/meetingService');
+const { meetingVisibleToRole } = require('../services/sessionAccess');
 const { ensureSessionEarning } = require('../services/teacherFinance');
 const {
   parseRequestedDateTime,
@@ -373,8 +374,18 @@ router.get('/my-sessions', protect, async (req, res) => {
       Session.countDocuments(filter)
     ]);
 
+    const presentedSessions = sessions.map((session) => {
+      const value = typeof session.toObject === 'function' ? session.toObject() : { ...session };
+      const meetingVisible = meetingVisibleToRole(value, req.user.role);
+      return {
+        ...value,
+        meetingAvailable: Boolean(value.meetingLink) && meetingVisible,
+        meetingLink: meetingVisible ? value.meetingLink : undefined,
+      };
+    });
+
     res.json({
-      sessions,
+      sessions: presentedSessions,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
