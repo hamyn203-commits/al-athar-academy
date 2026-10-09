@@ -893,6 +893,31 @@ router.get('/featured', async (req, res) => {
   }
 });
 
+router.get('/admin/profile-changes/pending', protect, authorize('admin'), async (_req, res) => {
+  try {
+    const requests = await TeacherProfileChangeRequest.find({ status: 'pending' })
+      .populate({
+        path: 'teacher',
+        select: 'personalInfo status user',
+        populate: { path: 'user', select: 'name email' },
+      })
+      .sort({ createdAt: 1 })
+      .limit(100)
+      .lean();
+
+    return res.json({
+      requests: requests.map((request) => ({
+        _id: request._id,
+        teacher: request.teacher,
+        changedFields: request.changedFields || [],
+        createdAt: request.createdAt,
+      })),
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
 router.get('/admin/:id/profile-change/media/:kind', protect, authorize('admin'), async (req, res) => {
   try {
     const allowedKinds = new Set(['profilePhoto', 'introductionVideo', 'recitationVideo', 'teachingMethodVideo']);
