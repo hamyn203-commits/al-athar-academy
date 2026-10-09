@@ -875,6 +875,63 @@ requireContains(
   /student\.homework-audio\.viewed/
 );
 
+// T17: command-center destinations must be real, admin-only and privacy-safe.
+requireContains(
+  'backend/routes/admin.js',
+  'guardian command action must route to the guardian-link destination',
+  /guardian-links[\s\S]{0,350}tab=people&focus=guardian-links/
+);
+requireContains(
+  'backend/routes/admin.js',
+  'overdue session action must route to session control',
+  /overdue-sessions[\s\S]{0,350}tab=sessions&focus=overdue/
+);
+requireContains(
+  'backend/routes/admin.js',
+  'missing report action must route to session control',
+  /missing-session-reports[\s\S]{0,350}tab=sessions&focus=missing-reports/
+);
+requireContains(
+  'backend/routes/admin.js',
+  'session control endpoint must be admin-only',
+  /router\.get\(['"]\/session-control['"],\s*protect,\s*authorize\(['"]admin['"]\)/
+);
+requireContains(
+  'backend/routes/admin.js',
+  'session control must reduce private meeting and recording data to availability flags',
+  /meetingAvailable:\s*Boolean\(session\.meetingLink\)[\s\S]{0,120}recordingAvailable:\s*Boolean\(session\.recordingUrl\)/
+);
+requireAbsent(
+  'backend/routes/admin.js',
+  'session control response must not expose a raw meetingLink property',
+  /\bmeetingLink\s*:/
+);
+requireAbsent(
+  'backend/routes/admin.js',
+  'session control response must not expose a raw recordingUrl property',
+  /\brecordingUrl\s*:/
+);
+requireContains(
+  'backend/routes/adminPeople.js',
+  'guardian-link destination must be protected by the admin-only people router',
+  /router\.use\(protect,\s*authorize\(['"]admin['"]\)\)[\s\S]{0,2000}router\.get\(['"]\/guardian-links['"]/
+);
+requireContains(
+  'backend/routes/adminPeople.js',
+  'guardian-link destination must mask phone identity',
+  /phoneMasked:\s*maskPhone\(invitation\.guardianPhone\)/
+);
+requireContains(
+  'backend/routes/adminPeople.js',
+  'guardian-link destination access must be audit logged',
+  /guardian-links\.viewed/
+);
+requireContains(
+  'backend/routes/admin.js',
+  'session-control access must be audit logged',
+  /session-control\.viewed/
+);
+
 if (failures.length) {
   console.error('Security contracts failed:');
   failures.forEach((failure) => console.error(`- ${failure}`));
