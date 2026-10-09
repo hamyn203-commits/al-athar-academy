@@ -5752,12 +5752,19 @@
   margin-top: .85rem;
 }
 
-.wn-admin-people-home__cards > div {
+.wn-admin-people-home__cards > button { 
+  width: 100%;
+  text-align: right;
+  cursor: pointer;
+  transition: border-color .15s, transform .15s, box-shadow .15s;
+
   padding: .85rem;
   border: 1px solid var(--admin-border);
   border-radius: 13px;
   background: linear-gradient(135deg,#fff,#fafbfe);
 }
+
+.wn-admin-people-home__cards > button:hover, .wn-admin-people-home__cards > button:focus-visible { border-color: var(--admin-gold-600); box-shadow: 0 6px 22px rgba(20,40,60,.09); transform: translateY(-2px); outline-offset: 2px; }
 
 .wn-admin-people-home__cards svg {
   color: var(--admin-gold-600);
