@@ -545,6 +545,7 @@ router.get('/my-sessions', protect, async (req, res) => {
           path: 'teacher',
           populate: { path: 'user', select: 'name email avatar' }
         })
+        .populate('attendance.student', 'name email avatar')
         .populate('circle', 'name code status schedule timezone subscriptionPlanKey')
         .populate('attendance.student', 'name email avatar')
         .sort({ scheduledAt: -1 })
