@@ -236,6 +236,28 @@
   box-shadow: 0 8px 20px rgba(15,107,79,.2);
 }
 
+.wn-plans-selection {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 20px;
+  padding: 16px 18px;
+  border: 1px solid #cfe8dc;
+  border-radius: 18px;
+  background: #eff9f4;
+  color: #0f6b4f;
+}
+
+.wn-plans-selection > svg { flex: 0 0 auto; margin-top: 1px; }
+.wn-plans-selection strong { display: block; font-size: 14px; }
+.wn-plans-selection p { margin-top: 3px; color: #567168; font-size: 12px; line-height: 1.7; }
+
+.wn-plan-card__cta:disabled {
+  cursor: wait;
+  opacity: .72;
+  transform: none;
+}
+
 .wn-plans-women-banner {
   position: relative;
   overflow: hidden;
