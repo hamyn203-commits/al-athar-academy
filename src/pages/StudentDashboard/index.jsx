@@ -860,6 +860,10 @@ export default function StudentDashboard() {
                   onClick={() => {
                     if (nextActiveSession) {
                       setTab(nextActiveSession.type === 'trial' ? 'trials' : 'sessions');
+                    } else if (currentSubscription?.status === 'pending_payment') {
+                      navigate(lp('/payment/manual') + '?subscription=' + encodeURIComponent(currentSubscription._id));
+                    } else if (currentSubscription) {
+                      setTab('account');
                     } else if (postTrialSession?.teacher) {
                       navigate(lp('/plans'));
                     } else {
@@ -870,9 +874,13 @@ export default function StudentDashboard() {
                 >
                   {nextActiveSession
                     ? (locale === 'ar' ? 'عرض الحصة القادمة' : 'View next session')
-                    : postTrialSession
-                      ? (locale === 'ar' ? 'اشتراك والاستمرار' : 'Subscribe & continue')
-                      : (locale === 'ar' ? 'اختر معلمك' : 'Find your tutor')}
+                    : currentSubscription
+                      ? (currentSubscription.status === 'pending_payment'
+                          ? (locale === 'ar' ? 'إكمال التحويل' : 'Complete transfer')
+                          : (locale === 'ar' ? 'متابعة الاشتراك' : 'Track subscription'))
+                      : postTrialSession
+                        ? (locale === 'ar' ? 'اشتراك والاستمرار' : 'Subscribe & continue')
+                        : (locale === 'ar' ? 'اختر معلمك' : 'Find your tutor')}
                 </button>
                 <button type="button" onClick={() => setTab('homework')} className="wn-student-secondary-action">
                   <FileText size={16} />
@@ -987,7 +995,7 @@ export default function StudentDashboard() {
             </section>
           )}
 
-          {postTrialSession && (
+          {postTrialSession && !currentSubscription && (
             <section className="wn-student-next-step">
               <div>
                 <span className="wn-student-next-step__eyebrow">{locale === 'ar' ? 'خطوتك التالية' : 'Next step'}</span>
