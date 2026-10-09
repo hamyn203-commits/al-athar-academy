@@ -46,9 +46,13 @@ export default function AdminPayments() {
       const result = await api.patch('/api/payments/admin/manual/' + payment.id + '/review', { action, note }, { auth: true });
       toast.success(
         action === 'approve'
-          ? (result.awaitingPlacement
-              ? 'تم تأكيد الدفع. الطلب الآن بانتظار التسكين مع المعلم المختار.'
-              : 'تم تأكيد الدفع وتفعيل الدورة.')
+          ? (result.renewalQueued
+              ? 'تم اعتماد التجديد. سيبدأ تلقائيًا بعد انتهاء الرصيد الحالي.'
+              : result.autoPlaced
+                ? 'تم اعتماد التجديد وإعادته تلقائيًا إلى نفس الجروب.'
+                : result.awaitingPlacement
+                  ? 'تم تأكيد الدفع. الطلب الآن بانتظار التسكين مع المعلم المختار.'
+                  : 'تم تأكيد الدفع بنجاح.')
           : 'تم رفض إثبات الدفع'
       );
       await load();
@@ -114,6 +118,9 @@ export default function AdminPayments() {
                   </p>
                   {payment.kind === 'subscription' ? (
                     <div className="text-xs text-slate-600 space-y-1 rounded-lg bg-slate-50 border p-3 my-2">
+                      {payment.subscription?.renewalOf ? (
+                        <p><strong className="text-emerald-700">تجديد نفس الجروب والمعلم</strong></p>
+                      ) : null}
                       <p>القسم: <strong>{payment.subscription?.section === 'ladies' ? 'قسم السيدات' : 'قسم الرجال والأطفال'}</strong></p>
                       <p>الحصص: <strong>{payment.subscription?.sessionCount || '—'}</strong></p>
                       <p>
