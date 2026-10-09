@@ -1616,6 +1616,7 @@ export default function TeacherDashboard() {
         <SessionChatModal
           session={chatSession}
           locale="ar"
+          viewerRole="teacher"
           onClose={() => setChatSession(null)}
         />
       )}
