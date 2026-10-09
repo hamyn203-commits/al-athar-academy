@@ -203,7 +203,7 @@ router.post('/select', protect, authorize('student'), async (req, res) => {
 
     const existingOpen = await StudentSubscription.findOne({
       student: req.user.id,
-      status: { $in: ['payment_review', 'awaiting_placement', 'placed', 'active', 'paused'] },
+      status: { $in: ['payment_review', 'renewal_queued', 'awaiting_placement', 'placed', 'active', 'paused'] },
     }).select('_id status');
 
     if (existingOpen) {
