@@ -1789,14 +1789,16 @@ export default function TeacherDashboard() {
         <Modal title={`اقتراح موعد جديد لـ ${rescheduleModal.student?.name || 'الطالب'}`} onClose={() => { setRescheduleModal(null); setRescheduleDate(''); }}>
           <div className="space-y-4">
             <p className="text-sm text-slate-600">
-              الموعد الحالي: {new Date(rescheduleModal.scheduledAt).toLocaleString('ar-EG')}
+              الموعد الحالي: {formatSessionDateTime(rescheduleModal, 'ar-EG', { dateStyle: 'medium', timeStyle: 'short' })}
             </p>
+            <div className="rounded-lg bg-emerald-50 border border-emerald-100 p-3 text-xs text-emerald-900">
+              سيتم تفسير الموعد الجديد حسب <strong>{sessionTimeZone(rescheduleModal, teacher?.availabilityTimezone || 'Africa/Cairo')}</strong> وليس حسب منطقة جهازك.
+            </div>
             <div>
               <label className="text-sm font-medium">الموعد المقترح</label>
               <input
                 type="datetime-local"
                 value={rescheduleDate}
-                min={new Date(Date.now() + 30 * 60 * 1000).toISOString().slice(0, 16)}
                 onChange={(event) => setRescheduleDate(event.target.value)}
                 className="input-field w-full mt-1"
               />
