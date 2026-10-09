@@ -201,6 +201,21 @@ router.post('/select', protect, authorize('student'), async (req, res) => {
       });
     }
 
+    const pendingRenewal = await StudentSubscription.findOne({
+      student: req.user.id,
+      renewalOf: { $ne: null },
+      status: 'pending_payment',
+    }).select('_id status renewalOf');
+
+    if (pendingRenewal) {
+      return res.status(409).json({
+        error: 'لديك طلب تجديد ينتظر الدفع. أكمل التجديد قبل اختيار باقة جديدة.',
+        code: 'RENEWAL_PAYMENT_PENDING',
+        subscriptionId: String(pendingRenewal._id),
+        status: pendingRenewal.status,
+      });
+    }
+
     const existingOpen = await StudentSubscription.findOne({
       student: req.user.id,
       status: { $in: ['payment_review', 'renewal_queued', 'awaiting_placement', 'placed', 'active', 'paused'] },
@@ -245,7 +260,7 @@ router.post('/select', protect, authorize('student'), async (req, res) => {
     };
 
     const subscription = await StudentSubscription.findOneAndUpdate(
-      { student: req.user.id, status: 'pending_payment' },
+      { student: req.user.id, status: 'pending_payment', renewalOf: null },
       { $set: update, $setOnInsert: { student: req.user.id } },
       { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true }
     );
