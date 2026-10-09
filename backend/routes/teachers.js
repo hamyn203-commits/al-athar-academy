@@ -259,8 +259,24 @@ const upload = multer({
   },
 });
 
+async function optionalTeacherRegistrationAuth(req, res, next) {
+  const header = String(req.headers.authorization || '');
+  if (!header.startsWith('Bearer ')) return next();
+  try {
+    const identity = jwt.verify(header.slice(7), process.env.JWT_SECRET);
+    if (identity.role !== 'teacher') return res.status(403).json({ error: 'Only teacher accounts can submit a teacher application' });
+    const account = await User.findById(identity.id).select('role isActive');
+    if (!account || account.role !== 'teacher' || account.isActive !== true) return res.status(403).json({ error: 'Teacher account not active' });
+    req.user = identity;
+    return next();
+  } catch {
+    return res.status(401).json({ error: 'Invalid session. Please sign in again.' });
+  }
+}
+
 router.post(
   '/register',
+  optionalTeacherRegistrationAuth,
   upload.fields([
     { name: 'profilePhoto', maxCount: 1 },
     { name: 'idCard', maxCount: 1 },
@@ -641,7 +657,7 @@ router.post(
       hourlyRate: 50,
     });
 
-    await User.findByIdAndUpdate(userId, { role: 'teacher' });
+    await User.findByIdAndUpdate(userId, { $set: { role: 'teacher', 'onboarding.teacherApplicationReady': true } });
 
     notifyAdmins({
       type: 'system',

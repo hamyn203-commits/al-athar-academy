@@ -3,6 +3,7 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const User = require('../models/User');
+const Guardian = require('../models/Guardian');
 const { 
   generateAccessToken, 
   generateRefreshToken, 
@@ -44,10 +45,22 @@ function clearRefreshCookie(res) {
   );
 }
 
+async function presentUser(user) {
+  const result = sanitizeUserResponse(user);
+  if (user?.role === 'teacher') {
+    const decision = await getTeacherAccessDecision(user._id || user.id);
+    result.teacherApproved = decision.allowed;
+    result.teacherApprovalStatus = decision.status;
+  }
+  return result;
+}
+
 function sanitizeUserResponse(user) {
   if (!user) return null;
   const obj = typeof user.toJSON === 'function' ? user.toJSON() : { ...user };
   delete obj.password;
+  delete obj.googleSubject;
+  delete obj.refreshTokenVersion;
   delete obj.passwordResetToken;
   delete obj.passwordResetExpires;
   delete obj.emailVerificationToken;
@@ -150,7 +163,7 @@ router.post('/register', async (req, res) => {
 
       res.status(201).json({
         message: 'Registration successful',
-        user: sanitizeUserResponse(user),
+        user: await presentUser(user),
         accessToken
       });
       return;
@@ -180,7 +193,7 @@ router.post('/register', async (req, res) => {
 
     res.status(201).json({
       message: 'Registration successful',
-      user: sanitizeUserResponse(user),
+      user: await presentUser(user),
       accessToken
     });
   } catch (error) {
@@ -210,13 +223,14 @@ router.post('/google', async (req, res) => {
   try {
     const { verifyGoogleCredential } = require('../services/googleIdentity');
     const identity = await verifyGoogleCredential(req.body?.credential, process.env.GOOGLE_CLIENT_ID);
+    const requestedRole = ['student', 'guardian', 'teacher'].includes(req.body?.role) ? req.body.role : 'student';
     let user = await User.findOne({ googleSubject: identity.sub }).select('+googleSubject +refreshTokenVersion');
 
     if (!user) {
       const existing = await User.findOne({ email: identity.email })
         .select('+googleSubject +refreshTokenVersion');
       if (existing) {
-        if (existing.role !== 'student') {
+        if (!['student', 'guardian', 'teacher'].includes(existing.role)) {
           return res.status(403).json({ error: 'Use the account login method for this role' });
         }
         // An existing non-Gmail address must be linked from an authenticated session.
@@ -232,26 +246,31 @@ router.post('/google', async (req, res) => {
         await existing.save();
         user = existing;
       } else {
+        if (req.body?.context !== 'signup') return res.status(404).json({ error: 'No account found. Please use Create Account first.' });
         user = await User.create({
           name: identity.name.length >= 2 ? identity.name : 'طالب الأكاديمية',
           email: identity.email,
           password: require('crypto').randomBytes(48).toString('base64url'),
           googleSubject: identity.sub,
-          role: 'student',
+          role: requestedRole,
+          onboarding: { required: true, completed: false },
           emailVerified: true,
           avatar: identity.picture,
         });
       }
     }
-    if (user.role !== 'student' || user.isActive === false) {
+    if (!['student', 'guardian', 'teacher'].includes(user.role) || user.isActive === false) {
       return res.status(403).json({ error: 'Account is not eligible for Google student login' });
+    }
+    if (user.role === 'guardian') {
+      await Guardian.updateOne({ user: user._id }, { $setOnInsert: { user: user._id, children: [] } }, { upsert: true });
     }
     user.lastLogin = new Date();
     await user.save();
     setRefreshCookie(res, generateRefreshToken(user));
     return res.json({
       accessToken: generateAccessToken(user),
-      user: sanitizeUserResponse(user),
+      user: await presentUser(user),
     });
   } catch (error) {
     if (error?.code === 11000) return res.status(409).json({ error: 'Account was already registered. Please retry.' });
@@ -296,18 +315,6 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    if (user.role === 'teacher') {
-      const decision = await getTeacherAccessDecision(user._id || user.id);
-      if (!decision.allowed) {
-        clearRefreshCookie(res);
-        return res.status(403).json({
-          error: decision.error,
-          code: decision.code,
-          applicationStatus: decision.status,
-        });
-      }
-    }
-
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
     setRefreshCookie(res, refreshToken);
@@ -324,7 +331,7 @@ router.post('/login', async (req, res) => {
 
     res.json({
       message: 'Login successful',
-      user: sanitizeUserResponse(user),
+      user: await presentUser(user),
       accessToken
     });
   } catch (error) {
@@ -353,18 +360,6 @@ router.post('/refresh', verifyRefreshToken, async (req, res) => {
     if (tokenVersion !== expectedVersion) {
       clearRefreshCookie(res);
       return res.status(401).json({ error: 'Refresh session has been revoked' });
-    }
-
-    if (user.role === 'teacher') {
-      const decision = await getTeacherAccessDecision(user._id || user.id);
-      if (!decision.allowed) {
-        clearRefreshCookie(res);
-        return res.status(403).json({
-          error: decision.error,
-          code: decision.code,
-          applicationStatus: decision.status,
-        });
-      }
     }
 
     const accessToken = generateAccessToken(user);
@@ -419,7 +414,7 @@ router.get('/me', verifyAccessToken, async (req, res) => {
       });
     }
 
-    res.json({ user: sanitizeUserResponse(user) });
+    res.json({ user: await presentUser(user) });
   } catch (error) {
     console.error('Get profile error:', error);
     res.status(500).json({ 
@@ -467,13 +462,38 @@ router.patch('/me', verifyAccessToken, async (req, res) => {
 
     res.json({ 
       message: 'Profile updated successfully',
-      user: sanitizeUserResponse(user) 
+      user: await presentUser(user) 
     });
   } catch (error) {
     console.error('Update profile error:', error);
     res.status(500).json({ 
       error: 'Failed to update profile' 
     });
+  }
+});
+
+router.patch('/onboarding', verifyAccessToken, async (req, res) => {
+  try {
+    if (!isDBConnected()) return res.status(503).json({ error: 'Database unavailable' });
+    if (!['student', 'teacher', 'guardian'].includes(req.user.role)) return res.status(403).json({ error: 'Not permitted' });
+    const allowed = ['name', 'phone', 'age', 'gender', 'whatsappPhone', 'preferredTrack', 'currentLevel', 'memorizedJuz', 'memorizationDetails', 'bio'];
+    const submitted = req.body || {};
+    if (Object.keys(submitted).some(key => !allowed.includes(key))) return res.status(400).json({ error: 'Invalid fields' });
+    const updated = await User.findById(req.user.id);
+    if (!updated || !updated.isActive || updated.role !== req.user.role) return res.status(403).json({ error: 'Invalid account' });
+    for (const key of allowed) {
+      if (Object.prototype.hasOwnProperty.call(submitted, key)) {
+        if (['preferredTrack', 'currentLevel', 'memorizedJuz', 'memorizationDetails'].includes(key) && updated.role !== 'student') continue;
+        updated[key] = submitted[key];
+      }
+    }
+    if (!updated.name?.trim() || !updated.phone?.trim()) return res.status(400).json({ error: 'Name and phone are required to finish profile' });
+    updated.onboarding = { ...updated.onboarding?.toObject?.(), required: true, completed: true };
+    await updated.save();
+    return res.json({ user: await presentUser(updated) });
+  } catch (error) {
+    if (error.name === 'ValidationError') return res.status(400).json({ error: error.message });
+    return res.status(500).json({ error: 'Could not save profile' });
   }
 });
 
