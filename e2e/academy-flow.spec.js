@@ -106,6 +106,14 @@ test.describe('Wahy Wa Namaa core academy journey', () => {
     await expect(studentPage.getByText('تقرير Playwright آلي للتحقق من دورة الحصة')).toBeVisible();
     await expect(studentPage.getByText(/Africa\/Cairo/)).toBeVisible();
 
+    await studentPage.goto('/ar/student/dashboard');
+    const subscribeStep = studentPage.locator('section.wn-student-next-step');
+    await subscribeStep.getByRole('button', { name: 'اشتراك', exact: true }).click();
+    await expect(studentPage).toHaveURL(/\/ar\/plans/);
+    await expect(studentPage.getByRole('heading', { name: /ابدأ رحلتك مع القرآن من 10 جنيه/ })).toBeVisible();
+    await expect(studentPage.getByRole('heading', { name: 'الحلقة الجماعية' })).toBeVisible();
+    await expect(studentPage.getByRole('tab', { name: /القسم الحريمي/ })).toBeVisible();
+
     await studentContext.close();
   });
 
