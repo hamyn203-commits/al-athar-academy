@@ -51,7 +51,11 @@ const SessionSchema = new mongoose.Schema({
     tajweed: { type: Number, min: 1, max: 5 },
     behavior: { type: Number, min: 1, max: 5 },
     commitment: { type: Number, min: 1, max: 5 },
-    overallNotes: String,
+    surahRecited: { type: String, maxlength: 300 },
+    fromAyah: { type: Number, min: 1 },
+    toAyah: { type: Number, min: 1 },
+    nextHomework: { type: String, maxlength: 1500 },
+    overallNotes: { type: String, maxlength: 3000 },
     assignedHomework: [{
       type: { type: String, enum: ['memorization', 'review-recent', 'review-far', 'review', 'audio', 'test'] },
       description: String,

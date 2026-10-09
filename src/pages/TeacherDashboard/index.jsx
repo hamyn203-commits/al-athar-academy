@@ -54,6 +54,7 @@ export default function TeacherDashboard() {
   const [trials, setTrials] = useState([]);
   const [pendingRegular, setPendingRegular] = useState([]);
   const [sessions, setSessions] = useState([]);
+  const [completedSessions, setCompletedSessions] = useState([]);
   const [activeStudents, setActiveStudents] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -123,12 +124,13 @@ export default function TeacherDashboard() {
 
   const load = useCallback(async () => {
     try {
-      const [prof, st, tr, pendReg, sess, stud, tsk, balance, tx, analyticsData, updateData, profileChangeData] = await Promise.all([
+      const [prof, st, tr, pendReg, sess, done, stud, tsk, balance, tx, analyticsData, updateData, profileChangeData] = await Promise.all([
         api.get('/api/teachers/dashboard/profile', { auth: true }),
         api.get('/api/teachers/dashboard/stats', { auth: true }),
         api.get('/api/sessions/my-sessions?type=trial&status=pending', { auth: true }),
         api.get('/api/sessions/my-sessions?type=regular&status=pending', { auth: true }),
-        api.get('/api/sessions/my-sessions?type=regular&status=accepted', { auth: true }),
+        api.get('/api/sessions/my-sessions?status=accepted&limit=100', { auth: true }),
+        api.get('/api/sessions/my-sessions?status=completed&limit=100', { auth: true }),
         api.get('/api/teachers/dashboard/active-students', { auth: true }),
         api.get('/api/teachers/dashboard/tasks', { auth: true }),
         api.get('/api/finance/teacher/balance', { auth: true }),
@@ -142,6 +144,7 @@ export default function TeacherDashboard() {
       setTrials(tr.sessions || []);
       setPendingRegular(pendReg.sessions || []);
       setSessions((sess.sessions || []).sort((a, b) => new Date(a.scheduledAt) - new Date(b.scheduledAt)));
+      setCompletedSessions((done.sessions || []).sort((a, b) => new Date(b.scheduledAt) - new Date(a.scheduledAt)));
       setActiveStudents(stud.students || []);
       setTasks(tsk.tasks || []);
       setFinance(balance || {
@@ -236,6 +239,11 @@ export default function TeacherDashboard() {
           .filter((item) => item.status === 'accepted')
           .sort((a, b) => new Date(a.scheduledAt) - new Date(b.scheduledAt)),
       );
+      setCompletedSessions(
+        all
+          .filter((item) => item.status === 'completed')
+          .sort((a, b) => new Date(b.scheduledAt) - new Date(a.scheduledAt)),
+      );
     } catch {
       // Keep the current dashboard stable during a transient sync failure.
     }
@@ -290,10 +298,10 @@ export default function TeacherDashboard() {
 
     const requestedSessionId = searchParams.get('session');
     if (!requestedSessionId) return;
-    const found = [...trials, ...pendingRegular, ...sessions]
+    const found = [...trials, ...pendingRegular, ...sessions, ...completedSessions]
       .find((item) => String(item._id) === String(requestedSessionId));
     if (found) setChatSession(found);
-  }, [searchParams, trials, pendingRegular, sessions]);
+  }, [searchParams, trials, pendingRegular, sessions, completedSessions]);
 
   useEffect(() => {
     if (!ready) return;
@@ -376,7 +384,11 @@ export default function TeacherDashboard() {
           tajweed: evaluation.tajweed,
           behavior: evaluation.behavior,
           commitment: evaluation.commitment,
-          overallNotes: evaluation.overallNotes,
+          surahRecited: evaluation.surahRecited?.trim() || '',
+          fromAyah: evaluation.fromAyah ? Number(evaluation.fromAyah) : undefined,
+          toAyah: evaluation.toAyah ? Number(evaluation.toAyah) : undefined,
+          nextHomework: evaluation.nextHomework?.trim() || homeworkList[0]?.description?.trim() || '',
+          overallNotes: evaluation.overallNotes?.trim() || '',
           assignedHomework: homeworkList.filter((item) => item.description?.trim()),
         },
       }, { auth: true });
@@ -926,7 +938,7 @@ export default function TeacherDashboard() {
                     <div className="wn-teacher-performance-preview__metrics">
                       <div><strong>{analytics?.trialConversion?.rate ?? '—'}%</strong><small>تحويل التجريبية</small></div>
                       <div><strong>{analytics?.homework?.completionRate ?? '—'}%</strong><small>إكمال الواجبات</small></div>
-                      <div><strong>{analytics?.upcomingSevenDays ?? upcomingSessions.length}</strong><small>حصص 7 أيام</small></div>
+                      <div><strong>{analytics?.upcomingSevenDays ?? upcomingSessions.length}</strong><small>الأسبوع القادم</small></div>
                     </div>
                     <button type="button" onClick={() => setTab('analytics')}>
                       عرض تحليلات الأداء <TrendingUp size={15} />
@@ -1498,6 +1510,79 @@ export default function TeacherDashboard() {
                       })}
                   </div>
                 )}
+
+                <section className="mt-8 border-t border-slate-200 pt-6">
+                  <div className="wn-teacher-section-heading">
+                    <div>
+                      <span>السجل</span>
+                      <h3>الحصص المكتملة وتقاريرها</h3>
+                    </div>
+                    <strong>{completedSessions.length}</strong>
+                  </div>
+
+                  {completedSessions.length === 0 ? (
+                    <div className="wn-teacher-empty-state compact">
+                      <CheckCircle2 size={22} />
+                      <div><strong>لا توجد حصص مكتملة بعد</strong><p>بعد إنهاء أي حصة سيظهر تقريرها هنا.</p></div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {completedSessions.map((session) => {
+                        const ev = session.teacherEvaluation || {};
+                        const legacyReport = (session.studentReports || []).find((report) => (
+                          !report.student
+                          || String(report.student?._id || report.student) === String(session.student?._id || session.student)
+                        )) || {};
+                        const surah = ev.surahRecited || legacyReport.surahRecited;
+                        const fromAyah = ev.fromAyah || legacyReport.fromAyah;
+                        const toAyah = ev.toAyah || legacyReport.toAyah;
+                        const nextHomework = ev.nextHomework || legacyReport.nextHomework;
+                        const notes = ev.overallNotes || legacyReport.notes;
+
+                        return (
+                          <article key={session._id} className="rounded-xl border border-slate-200 bg-white p-4">
+                            <div className="flex flex-wrap items-start justify-between gap-3">
+                              <div>
+                                <span className="text-xs font-bold text-emerald-700">{session.type === 'trial' ? 'حصة تجريبية' : 'حصة منتظمة'}</span>
+                                <h4 className="font-bold text-slate-900">{session.student?.name || 'طالب'}</h4>
+                                <p className="text-xs text-slate-500">
+                                  {formatSessionDateTime(session, 'ar-EG', { dateStyle: 'medium', timeStyle: 'short' })} · {sessionTimeZone(session, teacher?.availabilityTimezone || 'Africa/Cairo')}
+                                </p>
+                              </div>
+                              <button type="button" onClick={() => setChatSession(session)} className="wn-teacher-secondary-light">
+                                <MessageSquare size={15} /> محادثة الحصة
+                              </button>
+                            </div>
+
+                            <div className="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-5">
+                              {[
+                                ['attendance', 'الحضور'],
+                                ['memorization', 'الحفظ'],
+                                ['tajweed', 'التجويد'],
+                                ['behavior', 'السلوك'],
+                                ['commitment', 'الالتزام'],
+                              ].map(([key, label]) => (
+                                <div key={key} className="rounded-lg bg-slate-50 p-2 text-center">
+                                  <span className="block text-slate-500">{label}</span>
+                                  <strong className="text-emerald-800">{ev[key] ?? '—'}/5</strong>
+                                </div>
+                              ))}
+                            </div>
+
+                            {(surah || fromAyah || toAyah || nextHomework || notes) ? (
+                              <div className="mt-3 rounded-lg border border-emerald-100 bg-emerald-50/60 p-3 text-sm text-slate-700">
+                                {surah ? <p><strong>السورة / المقطع:</strong> {surah}</p> : null}
+                                {(fromAyah || toAyah) ? <p><strong>الآيات:</strong> {fromAyah || '—'} إلى {toAyah || '—'}</p> : null}
+                                {nextHomework ? <p><strong>الهدف / الواجب القادم:</strong> {nextHomework}</p> : null}
+                                {notes ? <p><strong>الملاحظات:</strong> {notes}</p> : null}
+                              </div>
+                            ) : null}
+                          </article>
+                        );
+                      })}
+                    </div>
+                  )}
+                </section>
               </div>
             )}
 
@@ -1885,13 +1970,29 @@ export default function TeacherDashboard() {
                         <span className={'wn-teacher-timeline-dot ' + (session.status === 'completed' ? 'is-done' : '')} />
                         <div>
                           <strong>{session.type === 'trial' ? 'حصة تجريبية' : 'حصة منتظمة'}</strong>
-                          <small>{new Date(session.scheduledAt).toLocaleString('ar-EG')}</small>
-                          {session.progressReport ? (
+                          <small>{formatSessionDateTime(session, 'ar-EG', { dateStyle: 'medium', timeStyle: 'short' })} · {sessionTimeZone(session, teacher?.availabilityTimezone || 'Africa/Cairo')}</small>
+                          {(session.evaluation || session.progressReport) ? (
                             <div className="wn-teacher-timeline-report">
-                              <span>الحفظ <b>{session.progressReport.memorizationScore ?? '—'}/10</b></span>
-                              <span>التجويد <b>{session.progressReport.tajweedScore ?? '—'}/10</b></span>
-                              {session.progressReport.surahRecited ? <p>تم التسميع: {session.progressReport.surahRecited}</p> : null}
-                              {session.progressReport.nextHomework ? <p>التالي: {session.progressReport.nextHomework}</p> : null}
+                              {session.evaluation ? (
+                                <>
+                                  <span>الحفظ <b>{session.evaluation.memorization ?? '—'}/5</b></span>
+                                  <span>التجويد <b>{session.evaluation.tajweed ?? '—'}/5</b></span>
+                                </>
+                              ) : (
+                                <>
+                                  <span>الحفظ <b>{session.progressReport?.memorizationScore ?? '—'}/10</b></span>
+                                  <span>التجويد <b>{session.progressReport?.tajweedScore ?? '—'}/10</b></span>
+                                </>
+                              )}
+                              {(session.evaluation?.surahRecited || session.progressReport?.surahRecited) ? (
+                                <p>تم التسميع: {session.evaluation?.surahRecited || session.progressReport?.surahRecited}</p>
+                              ) : null}
+                              {(session.evaluation?.nextHomework || session.progressReport?.nextHomework) ? (
+                                <p>التالي: {session.evaluation?.nextHomework || session.progressReport?.nextHomework}</p>
+                              ) : null}
+                              {(session.evaluation?.overallNotes || session.progressReport?.notes) ? (
+                                <p>ملاحظات: {session.evaluation?.overallNotes || session.progressReport?.notes}</p>
+                              ) : null}
                             </div>
                           ) : null}
                         </div>
@@ -1936,25 +2037,27 @@ export default function TeacherDashboard() {
             ].map(([key, label]) => {
               const inputId = `teacher-eval-${key}`;
               return (
-                <div key={key}>
-                  <label htmlFor={inputId} className="text-sm font-medium">{label} (1-5)</label>
-                  <input
-                    id={inputId}
-                    name={key}
-                    type="range"
-                    min={1}
-                    max={5}
-                    step={1}
-                    value={evaluation[key]}
-                    aria-valuemin={1}
-                    aria-valuemax={5}
-                    aria-valuenow={evaluation[key]}
-                    aria-valuetext={`${evaluation[key]} من 5`}
-                    onChange={(e) => setEvaluation((p) => ({ ...p, [key]: Number(e.target.value) }))}
-                    className="w-full"
-                  />
-                  <output htmlFor={inputId} className="text-sm text-emerald-600 font-bold">{evaluation[key]}</output>
-                </div>
+                <fieldset key={key} className="space-y-2">
+                  <legend className="text-sm font-medium">{label} (1-5)</legend>
+                  <div className="grid grid-cols-5 gap-2" role="radiogroup" aria-label={label}>
+                    {[1, 2, 3, 4, 5].map((score) => (
+                      <button
+                        key={score}
+                        id={`${inputId}-${score}`}
+                        type="button"
+                        role="radio"
+                        aria-checked={evaluation[key] === score}
+                        onClick={() => setEvaluation((current) => ({ ...current, [key]: score }))}
+                        className={`min-h-11 rounded-lg border text-sm font-bold transition ${evaluation[key] === score
+                          ? 'border-emerald-700 bg-emerald-700 text-white'
+                          : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-400'}`}
+                      >
+                        {score}
+                      </button>
+                    ))}
+                  </div>
+                  <output className="text-sm text-emerald-700 font-bold">{evaluation[key]} من 5</output>
+                </fieldset>
               );
             })}
             <div className="wn-teacher-eval-report">

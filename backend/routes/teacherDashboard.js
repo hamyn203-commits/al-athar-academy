@@ -55,8 +55,16 @@ router.get('/profile', protect, authorize('teacher'), async (req, res) => {
       .populate('user', 'name email phone avatar bio');
     if (!teacher) return res.status(404).json({ error: 'Teacher profile not found' });
 
+    const teacherValue = teacher.toObject();
+    const reviewCount = Number(teacherValue.rating?.count || 0);
+    teacherValue.rating = {
+      ...(teacherValue.rating || {}),
+      average: reviewCount > 0 ? Number(teacherValue.rating?.average || 0) : 0,
+      count: reviewCount,
+    };
+
     res.json({
-      teacher,
+      teacher: teacherValue,
       wallet: {
         sessionRate: SESSION_RATE,
         sessionDurationMinutes: 60,
@@ -544,7 +552,7 @@ router.get('/stats', protect, authorize('teacher'), async (req, res) => {
       totalHours,
       pendingEarnings: teacher.earnings.pendingEarnings,
       totalEarnings,
-      averageRating: teacher.rating.average,
+      averageRating: Number(teacher.rating?.count || 0) > 0 ? Number(teacher.rating?.average || 0) : 0,
       sessionRate: SESSION_RATE,
     });
   } catch (error) {
@@ -671,7 +679,7 @@ router.get('/analytics', protect, authorize('teacher'), async (req, res) => {
         .map(([month, count]) => ({ month, count })),
       totalCompleted: recentCompleted.length,
       lifetimeCompleted: allSessions.filter((session) => session.status === 'completed').length,
-      averageRating: teacher.rating.average,
+      averageRating: Number(teacher.rating?.count || 0) > 0 ? Number(teacher.rating?.average || 0) : 0,
       totalStudents: continuingStudentIds.size,
       trialConversion: {
         completedTrials: trialStudentIds.size,
@@ -869,7 +877,12 @@ router.get('/reviews', protect, authorize('teacher'), async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(20);
 
-    res.json({ reviews, averageRating: teacher.rating.average, totalReviews: teacher.rating.count });
+    const totalReviews = Number(teacher.rating?.count || 0);
+    res.json({
+      reviews,
+      averageRating: totalReviews > 0 ? Number(teacher.rating?.average || 0) : 0,
+      totalReviews,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

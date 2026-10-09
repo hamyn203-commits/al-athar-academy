@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Calendar, CheckCircle, FileText, Star, Trophy, BookOpen,
-  Upload, Clock, Users, X, Award, Video, Gift, Copy,
+  Upload, Clock, Users, X, Award, Video, Gift, Copy, CreditCard,
   Mic, Square, RotateCcw, Send, Sparkles, MoreHorizontal, UserRound, Megaphone
 } from 'lucide-react';
 import { Link as RouterLink } from 'react-router-dom';
@@ -425,6 +425,12 @@ export default function StudentDashboard() {
   const completedTrials = trials
     .filter((session) => session.status === 'completed')
     .sort((a, b) => new Date(b.updatedAt || b.scheduledAt) - new Date(a.updatedAt || a.scheduledAt));
+  const trialAllowance = stats.trialAllowance || {
+    limit: 3,
+    used: trials.filter((session) => ['pending', 'accepted', 'completed'].includes(session.status)).length,
+    remaining: Math.max(0, 3 - trials.filter((session) => ['pending', 'accepted', 'completed'].includes(session.status)).length),
+  };
+  const trialRemaining = Number(trialAllowance.remaining || 0);
   const requestedPostTrialId = searchParams.get('postTrial');
   const postTrialSession = completedTrials.find((session) => String(session._id) === String(requestedPostTrialId || ''))
     || completedTrials[0]
@@ -799,18 +805,36 @@ export default function StudentDashboard() {
                     : `Your next session is with ${nextSessionTeacherName}. Everything you need is here.`)
                   : pendingTrials.length
                     ? (locale === 'ar' ? 'طلبك التجريبي قيد المراجعة من المعلم. سننبهك فور الرد.' : 'Your trial request is waiting for tutor confirmation.')
-                    : (locale === 'ar' ? 'ابدأ بخطوة واضحة: اختر المعلم المناسب واحجز حصتك التجريبية.' : 'Start with one clear step: choose a tutor and book your trial.')}
+                    : postTrialSession
+                      ? (locale === 'ar'
+                        ? (trialRemaining > 0
+                          ? `أكملت التجريبية. اشترك للاستمرار مع معلمك، أو لديك ${trialRemaining} تجريبية متبقية لاختيار معلم آخر.`
+                          : 'أكملت التجريبيات المتاحة. اشترك الآن للاستمرار مع معلمك.')
+                        : (trialRemaining > 0
+                          ? `Your trial is complete. Subscribe to continue, or use ${trialRemaining} remaining trial(s).`
+                          : 'Your trials are complete. Subscribe to continue with your tutor.'))
+                      : (locale === 'ar' ? 'ابدأ بخطوة واضحة: اختر المعلم المناسب واحجز حصتك التجريبية.' : 'Start with one clear step: choose a tutor and book your trial.')}
               </p>
 
               <div className="wn-student-welcome__actions">
                 <button
                   type="button"
-                  onClick={() => setTab(nextActiveSession ? (nextActiveSession.type === 'trial' ? 'trials' : 'sessions') : 'discover')}
+                  onClick={() => {
+                    if (nextActiveSession) {
+                      setTab(nextActiveSession.type === 'trial' ? 'trials' : 'sessions');
+                    } else if (postTrialSession?.teacher) {
+                      openBook(postTrialSession.teacher);
+                    } else {
+                      setTab('discover');
+                    }
+                  }}
                   className="wn-student-primary-action"
                 >
                   {nextActiveSession
                     ? (locale === 'ar' ? 'عرض الحصة القادمة' : 'View next session')
-                    : (locale === 'ar' ? 'اختر معلمك' : 'Find your tutor')}
+                    : postTrialSession
+                      ? (locale === 'ar' ? 'اشتراك والاستمرار' : 'Subscribe & continue')
+                      : (locale === 'ar' ? 'اختر معلمك' : 'Find your tutor')}
                 </button>
                 <button type="button" onClick={() => setTab('homework')} className="wn-student-secondary-action">
                   <FileText size={16} />
@@ -857,17 +881,30 @@ export default function StudentDashboard() {
                 <h3>{locale === 'ar' ? 'أكملت الحصة التجريبية بنجاح' : 'Your trial session is complete'}</h3>
                 <p>
                   {locale === 'ar'
-                    ? `استمر مع ${postTrialSession.teacher?.user?.name || postTrialSession.teacher?.personalInfo?.fullName || 'المعلم'} أو جرّب معلماً آخر قبل الاشتراك.`
-                    : 'Continue with this tutor or try another tutor before subscribing.'}
+                    ? `اشترك للاستمرار مع ${postTrialSession.teacher?.user?.name || postTrialSession.teacher?.personalInfo?.fullName || 'المعلم'}. لديك 3 حصص تجريبية إجمالاً، والمتبقي الآن ${trialRemaining}.`
+                    : `Subscribe to continue with this tutor. You have 3 trial sessions in total, with ${trialRemaining} remaining.`}
                 </p>
+                <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-800">
+                  <Clock size={14} />
+                  {locale === 'ar'
+                    ? `التجريبيات: ${trialAllowance.used || 0} مستخدمة من ${trialAllowance.limit || 3} · ${trialRemaining} متبقية`
+                    : `Trials: ${trialAllowance.used || 0} used of ${trialAllowance.limit || 3} · ${trialRemaining} remaining`}
+                </div>
               </div>
               <div className="wn-student-next-step__actions">
                 <button type="button" onClick={() => openBook(postTrialSession.teacher)} className="wn-student-primary-action">
-                  {locale === 'ar' ? 'استمر مع نفس المعلم' : 'Continue with tutor'}
+                  <CreditCard size={17} />
+                  {locale === 'ar' ? 'اشتراك' : 'Subscribe'}
                 </button>
-                <button type="button" onClick={() => setTab('discover')} className="wn-student-secondary-action">
-                  {locale === 'ar' ? 'جرّب معلماً آخر' : 'Try another tutor'}
-                </button>
+                {trialRemaining > 0 ? (
+                  <button type="button" onClick={() => setTab('discover')} className="wn-student-secondary-action">
+                    {locale === 'ar' ? 'استخدم تجريبية أخرى' : 'Use another trial'}
+                  </button>
+                ) : (
+                  <span className="text-xs font-semibold text-slate-500">
+                    {locale === 'ar' ? 'استخدمت الحصص التجريبية الثلاث' : 'All three trials have been used'}
+                  </span>
+                )}
               </div>
             </section>
           )}
@@ -934,10 +971,22 @@ export default function StudentDashboard() {
                         <BookOpen size={28} />
                         <div>
                           <h4>{locale === 'ar' ? 'لا توجد حصة قادمة' : 'No upcoming session'}</h4>
-                          <p>{locale === 'ar' ? 'اختر معلماً معتمداً وابدأ بحصة تجريبية.' : 'Choose an approved tutor and start with a trial.'}</p>
+                          <p>
+                            {postTrialSession
+                              ? (locale === 'ar'
+                                ? (trialRemaining > 0 ? `اشترك للاستمرار، أو استخدم واحدة من ${trialRemaining} تجريبية متبقية.` : 'اشترك للاستمرار مع معلمك.')
+                                : (trialRemaining > 0 ? `Subscribe to continue, or use one of ${trialRemaining} remaining trials.` : 'Subscribe to continue with your tutor.'))
+                              : (locale === 'ar' ? 'اختر معلماً معتمداً وابدأ بحصة تجريبية.' : 'Choose an approved tutor and start with a trial.')}
+                          </p>
                         </div>
-                        <button type="button" onClick={() => setTab('discover')} className="wn-student-primary-action">
-                          {locale === 'ar' ? 'اختر معلمك' : 'Find a tutor'}
+                        <button
+                          type="button"
+                          onClick={() => postTrialSession?.teacher ? openBook(postTrialSession.teacher) : setTab('discover')}
+                          className="wn-student-primary-action"
+                        >
+                          {postTrialSession
+                            ? (locale === 'ar' ? 'اشتراك' : 'Subscribe')
+                            : (locale === 'ar' ? 'اختر معلمك' : 'Find a tutor')}
                         </button>
                       </div>
                     )}
@@ -977,7 +1026,7 @@ export default function StudentDashboard() {
 
                 <div className="wn-student-stat-grid">
                   <StatCard label={locale === 'ar' ? 'حصص قادمة' : 'Upcoming sessions'} value={stats.upcomingSessions || 0} icon={Calendar} />
-                  <StatCard label={locale === 'ar' ? 'تجريبية معلقة' : 'Pending trials'} value={stats.pendingTrials || 0} icon={Clock} />
+                  <StatCard label={locale === 'ar' ? 'تجريبيات متبقية' : 'Trials remaining'} value={trialRemaining} icon={Clock} />
                   <StatCard label={locale === 'ar' ? 'حصص مكتملة' : 'Completed sessions'} value={stats.completedSessions || 0} icon={CheckCircle} />
                   <StatCard label={locale === 'ar' ? 'واجبات تم تسليمها' : 'Homework submitted'} value={stats.homeworkSubmitted || 0} icon={FileText} />
                 </div>
@@ -1229,7 +1278,11 @@ export default function StudentDashboard() {
                     <div key={t._id} className="border rounded-lg p-4 mb-2 flex flex-wrap justify-between items-center gap-3">
                       <div>
                         <h4 className="font-bold">{t.name}</h4>
-                        <p className="text-xs text-gray-500">{t.country} — {t.sessionCount} {locale === 'id' ? 'sesi' : locale === 'ar' ? 'حصة' : 'sessions'} — ⭐ {t.rating?.toFixed?.(1) || '0'}</p>
+                        <p className="text-xs text-gray-500">
+                          {t.country} — {t.sessionCount} {locale === 'id' ? 'sesi' : locale === 'ar' ? 'حصة' : 'sessions'} — ⭐ {Number(t.ratingCount || 0) > 0
+                            ? Number(t.rating || 0).toFixed(1)
+                            : (locale === 'ar' ? 'بدون تقييم بعد' : 'No ratings yet')}
+                        </p>
                       </div>
                       <div className="flex gap-2">
                         <button onClick={() => navigate(lp(`/teachers/${t._id}`))} className="px-3 py-1.5 border rounded-lg text-sm">{locale === 'id' ? 'Profil' : locale === 'ar' ? 'الملف' : 'Profile'}</button>
@@ -1245,7 +1298,14 @@ export default function StudentDashboard() {
 
             {tab === 'trials' && (
               <div className="space-y-3">
-                <p className="text-sm text-slate-600 mb-2">{locale === 'id' ? 'Permintaan sesi uji coba dengan guru' : locale === 'ar' ? 'طلبات الحصة التجريبية مع المعلمين' : 'Trial session requests with tutors'}</p>
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm text-slate-600">{locale === 'id' ? 'Permintaan sesi uji coba dengan guru' : locale === 'ar' ? 'طلبات الحصة التجريبية مع المعلمين' : 'Trial session requests with tutors'}</p>
+                  <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800">
+                    {locale === 'ar'
+                      ? `${trialRemaining} من 3 تجريبيات متبقية`
+                      : `${trialRemaining} of 3 trials remaining`}
+                  </span>
+                </div>
                 {trials.length === 0 ? (
                   <div className="text-center py-8">
                     <p className="text-gray-500 mb-3">{locale === 'id' ? 'Tidak ada permintaan uji coba' : locale === 'ar' ? 'لا طلبات تجريبية' : 'No trial requests'}</p>
@@ -1553,12 +1613,26 @@ export default function StudentDashboard() {
                   <p className="text-center text-gray-500 py-8">{locale === 'id' ? 'Belum ada evaluasi — akan muncul setelah kelas selesai' : locale === 'ar' ? 'لا تقييمات بعد — ستظهر بعد إكمال حصة' : 'No evaluations yet — they will appear after completing a session'}</p>
                 ) : evaluations.map((s) => {
                   const ev = s.teacherEvaluation || {};
+                  const legacyReport = (s.studentReports || []).find((report) => (
+                    !report.student || String(report.student?._id || report.student) === String(user?._id || user?.id)
+                  )) || {};
+                  const reportSurah = ev.surahRecited || legacyReport.surahRecited;
+                  const reportFromAyah = ev.fromAyah || legacyReport.fromAyah;
+                  const reportToAyah = ev.toAyah || legacyReport.toAyah;
+                  const reportNextHomework = ev.nextHomework || legacyReport.nextHomework;
+                  const reportNotes = ev.overallNotes || legacyReport.notes;
                   return (
                     <div key={s._id} className="border rounded-xl p-5">
                       <div className="flex justify-between items-start mb-3">
                         <div>
                           <h3 className="font-bold">{s.teacher?.user?.name || 'المعلم'}</h3>
-                          <p className="text-xs text-gray-500">{new Date(s.scheduledAt).toLocaleString(locale === 'id' ? 'id-ID' : 'ar-EG')}</p>
+                          <p className="text-xs text-gray-500">
+                            {formatSessionDateTime(
+                              s,
+                              locale === 'id' ? 'id-ID' : locale === 'ar' ? 'ar-EG' : 'en-US',
+                              { dateStyle: 'medium', timeStyle: 'short' },
+                            )} · {sessionTimeZone(s)}
+                          </p>
                         </div>
                         {!hasReviewed(s._id) && (
                           <button onClick={() => openReview(s)} className="text-sm text-orange-600 hover:underline">{locale === 'id' ? 'Beri Nilai Guru' : locale === 'ar' ? 'قيّم المعلم' : 'Rate Teacher'}</button>
@@ -1574,12 +1648,29 @@ export default function StudentDashboard() {
                         ].map(([k, label]) => (
                           <div key={k} className="bg-slate-50 rounded-lg p-2 text-center">
                             <p className="text-xs text-slate-500">{label}</p>
-                            <p className="font-bold text-emerald-700">{ev[k] || '—'}/5</p>
+                            <p className="font-bold text-emerald-700">{ev[k] ?? '—'}/5</p>
                           </div>
                         ))}
                       </div>
-                      {ev.overallNotes && (
-                        <p className="text-sm text-gray-600 mt-3 bg-gray-50 rounded-lg p-3">{ev.overallNotes}</p>
+                      {(reportSurah || reportFromAyah || reportToAyah || reportNextHomework || reportNotes) && (
+                        <div className="mt-3 rounded-xl border border-emerald-100 bg-emerald-50/60 p-4 text-sm text-slate-700">
+                          <p className="mb-2 font-bold text-emerald-900">{locale === 'ar' ? 'تقرير الحصة' : 'Session report'}</p>
+                          {reportSurah ? (
+                            <p><strong>{locale === 'ar' ? 'السورة / المقطع:' : 'Surah / passage:'}</strong> {reportSurah}</p>
+                          ) : null}
+                          {(reportFromAyah || reportToAyah) ? (
+                            <p>
+                              <strong>{locale === 'ar' ? 'الآيات:' : 'Ayahs:'}</strong>{' '}
+                              {reportFromAyah || '—'} {locale === 'ar' ? 'إلى' : 'to'} {reportToAyah || '—'}
+                            </p>
+                          ) : null}
+                          {reportNextHomework ? (
+                            <p><strong>{locale === 'ar' ? 'الهدف / الواجب القادم:' : 'Next goal / homework:'}</strong> {reportNextHomework}</p>
+                          ) : null}
+                          {reportNotes ? (
+                            <p><strong>{locale === 'ar' ? 'ملاحظات المعلم:' : 'Tutor notes:'}</strong> {reportNotes}</p>
+                          ) : null}
+                        </div>
                       )}
                       {ev.assignedHomework?.length > 0 && (
                         <div className="mt-3">

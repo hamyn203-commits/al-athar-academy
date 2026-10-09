@@ -305,6 +305,7 @@ test('four-persona state linking works through real HTTP routes', async (t) => {
   });
   assert.equal(createTrial.status, 201);
   assert.equal(createTrial.data.session.status, 'pending');
+  assert.deepEqual(createTrial.data.trialAllowance, { limit: 3, used: 1, remaining: 2 });
 
   const requestNotification = notifications.find((item) => item.type === 'session-request');
   assert.ok(requestNotification);
@@ -390,6 +391,10 @@ test('four-persona state linking works through real HTTP routes', async (t) => {
         tajweed: 5,
         behavior: 5,
         commitment: 5,
+        surahRecited: 'QA Surah',
+        fromAyah: 1,
+        toAyah: 2,
+        nextHomework: 'QA Homework',
         overallNotes: 'QA complete',
       },
     },
@@ -409,12 +414,18 @@ test('four-persona state linking works through real HTTP routes', async (t) => {
         tajweed: 5,
         behavior: 5,
         commitment: 5,
+        surahRecited: 'QA Surah',
+        fromAyah: 1,
+        toAyah: 2,
+        nextHomework: 'QA Homework',
         overallNotes: 'QA complete',
       },
     },
   });
   assert.equal(completeTrial.status, 200);
   assert.equal(completeTrial.data.session.status, 'completed');
+  assert.equal(completeTrial.data.session.teacherEvaluation.surahRecited, 'QA Surah');
+  assert.equal(completeTrial.data.session.teacherEvaluation.nextHomework, 'QA Homework');
   assert.equal(
     ledgerEntries.filter((entry) => entry.idempotencyKey === `session:${sessionId}:earning`).length,
     1,
@@ -445,4 +456,36 @@ test('four-persona state linking works through real HTTP routes', async (t) => {
   assert.equal(regularAfterCompletion.status, 201);
   assert.equal(regularAfterCompletion.data.session.type, 'regular');
   assert.equal(regularAfterCompletion.data.session.status, 'pending');
+
+  sessions.push(
+    {
+      _id: oid(),
+      student: ids.student,
+      teacher: oid(),
+      type: 'trial',
+      status: 'completed',
+      scheduledAt: new Date(Date.now() - 2 * 86400000).toISOString(),
+    },
+    {
+      _id: oid(),
+      student: ids.student,
+      teacher: oid(),
+      type: 'trial',
+      status: 'completed',
+      scheduledAt: new Date(Date.now() - 3 * 86400000).toISOString(),
+    },
+  );
+
+  const fourthTrialBlocked = await call(base, '/api/sessions/trial', {
+    method: 'POST',
+    token: studentToken,
+    body: {
+      teacherId: ids.teacher,
+      scheduledAt: new Date(Date.now() + 6 * 86400000).toISOString(),
+      timezone: 'Africa/Cairo',
+    },
+  });
+  assert.equal(fourthTrialBlocked.status, 409);
+  assert.equal(fourthTrialBlocked.data.code, 'TRIAL_LIMIT_REACHED');
+  assert.deepEqual(fourthTrialBlocked.data.trialAllowance, { limit: 3, used: 3, remaining: 0 });
 });
