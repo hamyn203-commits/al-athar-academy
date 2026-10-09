@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   User, Users, Lock, Mail, Phone, Eye, EyeOff, ArrowRight, CheckCircle,
-  Sparkles, CheckCircle2, Globe, ArrowLeft, Star, ShieldCheck
+  Sparkles, CheckCircle2, Globe, ArrowLeft, Star
 } from 'lucide-react';
 import BrandLogo from '../../components/BrandLogo';
 import GoogleSignIn from '../../components/GoogleSignIn';
@@ -13,7 +13,6 @@ import { useAuth } from '../../hooks/useAuth.jsx';
 import { localizedPath } from '../../lib/locale';
 import { dashboardPathForRole, isSafeInternalRedirect } from '../../lib/navigation';
 import '../../styles/public-experience.css';
-import { uploadFileDirect } from '../../lib/fileUpload';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -38,22 +37,10 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [studentPhoto, setStudentPhoto] = useState(null);
-  const [photoNotice, setPhotoNotice] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
-    guardianPhone: '',
-    guardianRelationship: 'father',
-    whatsappPhone: '',
-    age: '',
-    gender: '',
-    currentLevel: 'beginner',
-    preferredTrack: 'memorization',
-    memorizedJuz: '0',
-    memorizationDetails: '',
-    customLevel: '',
     password: '',
     confirmPassword: ''
   });
@@ -89,54 +76,27 @@ export default function Register() {
       const result = await createAccount({
         name: formData.name,
         email: formData.email,
-        phone: formData.phone,
-        ...(role === 'student' ? {
-          whatsappPhone: formData.whatsappPhone,
-          age: formData.age,
-          gender: formData.gender,
-          currentLevel: formData.currentLevel === 'other' ? 'beginner' : formData.currentLevel,
-          customLevel: formData.currentLevel === 'other' ? formData.customLevel : '',
-          preferredTrack: formData.preferredTrack,
-          memorizedJuz: Number(formData.memorizedJuz),
-          memorizationDetails: formData.memorizationDetails,
-        } : {}),
+        ...(role === 'guardian' ? { phone: formData.phone } : {}),
         password: formData.password,
         role,
-        ...(role === 'student' && formData.guardianPhone.trim()
-          ? {
-              guardianPhone: formData.guardianPhone.trim(),
-              guardianRelationship: formData.guardianRelationship,
-            }
-          : {}),
         ...(referralCode ? { referralCode } : {}),
-        ...(planPath ? { selectedPlan: { path: planPath, freq: planFreq, level: planLevel } } : {}),
       });
 
       if (!result.success) {
         throw new Error(result.error || (locale === 'ar' ? 'فشل إنشاء الحساب' : 'Registration failed'));
       }
 
-      if (role === 'student' && studentPhoto) {
-        try {
-          const uploaded = await uploadFileDirect(studentPhoto, 'student-avatar');
-          const token = (await import('../../lib/authSession')).getAccessToken();
-          const updateResponse = await fetch((await import('../../config')).apiUrl('/api/auth/me'), {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
-            body: JSON.stringify({ avatar: uploaded.url }),
-          });
-          if (!updateResponse.ok) throw new Error('Photo save failed');
-        } catch {
-          window.alert(locale === 'ar'
-            ? 'تم إنشاء الحساب بنجاح، لكن تعذر حفظ الصورة. يمكنك إضافتها لاحقًا.'
-            : 'Your account was created, but the optional photo could not be saved.');
-        }
+      if (role === 'student') {
+        const requestedNext = isSafeInternalRedirect(searchParams.get('redirect'))
+          ? searchParams.get('redirect')
+          : localizedPath('/journey', locale);
+        navigate(
+          localizedPath('/profile/setup', locale) + '?next=' + encodeURIComponent(requestedNext),
+          { replace: true }
+        );
+      } else {
+        navigate(dashboardPathForRole(result.user?.role, locale), { replace: true });
       }
-
-      navigate(
-        role === 'student' && isSafeInternalRedirect(searchParams.get('redirect')) ? searchParams.get('redirect') : dashboardPathForRole(result.user?.role, locale),
-        { replace: true }
-      );
     } catch (err) {
       setError(err.message);
     } finally {
@@ -415,7 +375,7 @@ export default function Register() {
               <p className="text-sm text-[var(--athar-text-muted)] mt-1">
                 {role === 'teacher' ? (locale === 'ar' ? 'أنشئ حسابك ثم أكمل ملف المعلم ومستنداتك وفيديوهاتك بعد الدخول، قبل مراجعة الإدارة.' : 'Create your account, then complete your teacher application and media after signing in.') : role === 'guardian'
                   ? (locale === 'ar' ? 'تابع مسيرة أبنائك في حفظ القرآن وتقارير حضورهم وتقييماتهم' : 'Monitor your children’s Quran progress, attendance & teacher reports')
-                  : (locale === 'ar' ? 'أدخل بياناتك لإنشاء حسابك وبدء التعلم' : 'Fill in your details to create your account')}
+                  : (locale === 'ar' ? 'أنشئ حسابك أولًا، ثم استكمل ملفك واختر مسارك ومعلمك خطوة بخطوة.' : 'Create your account first, then complete your profile, learning path, and tutor step by step.')}
               </p>
             </div>
 
@@ -474,143 +434,30 @@ export default function Register() {
                 </div>
               </div>
 
-              {role === 'student' && (
-                <section className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-4 space-y-4">
-                  <h3 className="font-bold text-emerald-900">{locale === 'ar' ? 'مستواك الحالي في القرآن الكريم' : 'Your current Quran level'}</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <label className="text-sm font-semibold">{locale === 'ar' ? 'العمر' : 'Age'}
-                      <input className="block w-full rounded-xl border p-3 mt-1" type="number" min="4" max="100" name="age" value={formData.age} onChange={handleChange} />
-                    </label>
-                    <label className="text-sm font-semibold">{locale === 'ar' ? 'النوع' : 'Gender'}
-                      <select className="block w-full rounded-xl border p-3 mt-1" name="gender" value={formData.gender} onChange={handleChange}>
-                        <option value="">{locale === 'ar' ? 'اختر' : 'Select'}</option><option value="male">{locale === 'ar' ? 'ذكر' : 'Male'}</option><option value="female">{locale === 'ar' ? 'أنثى' : 'Female'}</option>
-                      </select>
-                    </label>
-                    <label className="text-sm font-semibold">{locale === 'ar' ? 'المسار التعليمي' : 'Learning track'}
-                      <select className="block w-full rounded-xl border p-3 mt-1" name="preferredTrack" value={formData.preferredTrack} onChange={handleChange}>
-                        <option value="memorization">{locale === 'ar' ? 'حفظ القرآن' : 'Memorization'}</option>
-                        <option value="tajweed_ijazah">{locale === 'ar' ? 'التجويد والإجازة' : 'Tajweed / Ijazah'}</option>
-                        <option value="kids_foundation">{locale === 'ar' ? 'تأسيس الأطفال' : 'Foundation'}</option>
-                      </select>
-                    </label>
-                    <label className="text-sm font-semibold">{locale === 'ar' ? 'مستواك' : 'Level'}
-                      <select className="block w-full rounded-xl border p-3 mt-1" name="currentLevel" value={formData.currentLevel} onChange={handleChange}>
-                        <option value="beginner">{locale === 'ar' ? 'مبتدئ' : 'Beginner'}</option><option value="intermediate">{locale === 'ar' ? 'متوسط' : 'Intermediate'}</option><option value="advanced">{locale === 'ar' ? 'متقدم' : 'Advanced'}</option><option value="ijazah">{locale === 'ar' ? 'طالب إجازة' : 'Ijazah'}</option><option value="other">{locale === 'ar' ? 'أخرى — اكتب مستواك' : 'Other — specify'}</option>
-                      </select>
-                    </label>
-                    {formData.currentLevel === 'other' && <label className="text-sm font-semibold sm:col-span-2">{locale === 'ar' ? 'اكتب مستواك' : 'Describe your level'}<input required maxLength="120" className="block w-full rounded-xl border p-3 mt-1" name="customLevel" value={formData.customLevel} onChange={handleChange} /></label>}
-                    <label className="text-sm font-semibold">{locale === 'ar' ? 'كم جزءًا تحفظ؟ (0 إلى 30)' : 'Memorized Juz (0–30)'}
-                      <input type="number" min="0" max="30" step="1" required className="block w-full rounded-xl border p-3 mt-1" name="memorizedJuz" value={formData.memorizedJuz} onChange={handleChange} />
-                    </label>
-                    <label className="text-sm font-semibold">{locale === 'ar' ? 'واتساب للتواصل (اختياري)' : 'WhatsApp (optional)'}
-                      <input type="tel" className="block w-full rounded-xl border p-3 mt-1" name="whatsappPhone" value={formData.whatsappPhone} onChange={handleChange} placeholder="+201000000000" />
-                    </label>
+              {role === 'guardian' && (
+                <div>
+                  <label className="block text-xs font-bold text-[var(--athar-text)] mb-2">
+                    {locale === 'ar' ? 'رقم هاتف ولي الأمر' : 'Guardian Phone Number'}
+                  </label>
+                  <div className="relative">
+                    <Phone size={18} style={iconStyle} className="absolute top-1/2 transform -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="tel"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleChange}
+                      required
+                      autoComplete="tel"
+                      placeholder="+20 123 456 7890"
+                      style={{ padding: inputPadding }}
+                      className="w-full rounded-xl border border-slate-200 bg-white text-sm text-slate-900 outline-none transition focus:border-[var(--athar-gold)] focus:ring-2 focus:ring-[var(--athar-gold)]/10"
+                    />
                   </div>
-                  <label className="block text-sm font-semibold">{locale === 'ar' ? 'تفاصيل الحفظ — السور أو الأجزاء التي تحفظها، أو خطة أخرى' : 'Memorization details / custom plan'}
-                    <textarea name="memorizationDetails" maxLength="500" rows="3" value={formData.memorizationDetails} onChange={handleChange} className="block w-full rounded-xl border p-3 mt-1" placeholder={locale === 'ar' ? 'مثال: أحفظ جزء عم وتبارك، وأريد البدء من سورة البقرة' : 'Example: I memorized Juz Amma and Tabarak'} />
-                  </label>
-                </section>
-              )}
-
-              {role === 'student' && (
-                <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
-                  <label htmlFor="optional-student-photo" className="block font-bold text-sm text-slate-900">
-                    {locale === 'ar' ? 'الصورة الشخصية (اختيارية)' : 'Profile photo (optional)'}
-                  </label>
-                  <input id="optional-student-photo" type="file" accept="image/jpeg,image/png,.jpg,.jpeg,.png"
-                    className="block w-full text-sm" onChange={(event) => {
-                      const file = event.target.files?.[0] || null;
-                      if (file && (!['image/jpeg', 'image/png'].includes(file.type) || file.size > 5 * 1024 * 1024)) {
-                        setStudentPhoto(null);
-                        event.target.value = '';
-                        setPhotoNotice(locale === 'ar' ? 'اختر JPG أو PNG بحجم لا يتجاوز 5 ميجابايت' : 'Choose JPG or PNG up to 5 MB');
-                      } else {
-                        setStudentPhoto(file);
-                        setPhotoNotice(file ? file.name : '');
-                      }
-                    }} />
-                  <p className="text-xs text-slate-500">{locale === 'ar' ? 'يمكنك إكمال التسجيل دون صورة. JPG أو PNG بحد أقصى 5 MB.' : 'You can register without a photo. JPG or PNG, up to 5 MB.'}</p>
-                  {photoNotice && <p role="status" className="text-xs text-emerald-800">{photoNotice}</p>}
-                </div>
-              )}
-
-              {/* Phone Number */}
-              <div>
-                <label className="block text-xs font-bold text-[var(--athar-text)] mb-2">
-                  {role === 'guardian'
-                    ? (locale === 'ar' ? 'رقم هاتف ولي الأمر' : 'Guardian Phone Number')
-                    : (locale === 'ar' ? 'رقم الهاتف (اختياري)' : 'Phone Number (Optional)')}
-                </label>
-                <div className="relative">
-                  <Phone size={18} style={iconStyle} className="absolute top-1/2 transform -translate-y-1/2 text-slate-400" />
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    required={role === 'guardian'}
-                    placeholder="+20 123 456 7890"
-                    style={{ padding: inputPadding }}
-                    className="w-full rounded-xl border border-slate-200 bg-white text-sm text-slate-900 outline-none transition focus:border-[var(--athar-gold)] focus:ring-2 focus:ring-[var(--athar-gold)]/10"
-                  />
-                </div>
-                {role === 'guardian' && (
                   <p className="mt-2 text-[11px] text-slate-500 leading-relaxed">
                     {locale === 'ar'
-                      ? 'نستخدم الرقم فقط لمطابقة طلبات ربط أبنائك. لا يتم الربط إلا بعد موافقتك داخل حسابك.'
-                      : 'This number is used only to match child-link requests. Nothing is linked until you confirm it.'}
+                      ? 'نستخدم الرقم لمطابقة طلبات ربط أبنائك، والربط لا يتم إلا بعد موافقتك.'
+                      : 'We use this number to match child-link requests; linking only happens after your approval.'}
                   </p>
-                )}
-              </div>
-
-              {role === 'student' && (
-                <div className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4 space-y-3">
-                  <div className="flex items-start gap-2.5">
-                    <ShieldCheck size={18} className="text-emerald-700 mt-0.5 shrink-0" />
-                    <div>
-                      <h3 className="text-sm font-bold text-emerald-900">
-                        {locale === 'ar' ? 'ربط ولي الأمر' : 'Guardian Linking'}
-                      </h3>
-                      <p className="text-[11px] text-emerald-800/80 mt-1 leading-relaxed">
-                        {locale === 'ar'
-                          ? 'اختياري الآن. اكتب رقم ولي الأمر ليظهر له طلب الربط عندما ينشئ حسابه أو يسجل الدخول. لن يتم الربط تلقائيًا.'
-                          : 'Optional for now. Enter a guardian phone so a pending request appears when they sign in. Linking is never automatic.'}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="grid sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-bold text-[var(--athar-text)] mb-2">
-                        {locale === 'ar' ? 'رقم ولي الأمر' : 'Guardian Phone'}
-                      </label>
-                      <input
-                        type="tel"
-                        name="guardianPhone"
-                        value={formData.guardianPhone}
-                        onChange={handleChange}
-                        placeholder="+20 10 0000 0000"
-                        className="w-full rounded-xl border border-emerald-100 bg-white px-3.5 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-[var(--athar-text)] mb-2">
-                        {locale === 'ar' ? 'صلة القرابة' : 'Relationship'}
-                      </label>
-                      <select
-                        name="guardianRelationship"
-                        value={formData.guardianRelationship}
-                        onChange={handleChange}
-                        className="w-full rounded-xl border border-emerald-100 bg-white px-3.5 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
-                      >
-                        <option value="father">{locale === 'ar' ? 'أب' : 'Father'}</option>
-                        <option value="mother">{locale === 'ar' ? 'أم' : 'Mother'}</option>
-                        <option value="guardian">{locale === 'ar' ? 'ولي أمر / وصي' : 'Guardian'}</option>
-                        <option value="other">{locale === 'ar' ? 'صلة أخرى' : 'Other'}</option>
-                      </select>
-                    </div>
-                  </div>
                 </div>
               )}
 
@@ -635,7 +482,8 @@ export default function Register() {
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     style={isRtl ? { left: '16px' } : { right: '16px' }}
-                    className="absolute top-1/2 transform -translate-y-1/2 background-none border-none cursor-pointer text-slate-400 p-1 flex items-center"
+                    aria-label={showPassword ? (locale === 'ar' ? 'إخفاء كلمة المرور' : 'Hide password') : (locale === 'ar' ? 'إظهار كلمة المرور' : 'Show password')}
+                    className="absolute top-1/2 transform -translate-y-1/2 background-none border-none cursor-pointer text-slate-400 min-w-11 min-h-11 flex items-center justify-center"
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
@@ -678,7 +526,7 @@ export default function Register() {
                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 ) : (
                   <>
-                    {locale === 'ar' ? 'إنشاء الحساب وبدء الدراسة' : 'Create Account & Begin'}
+                    {locale === 'ar' ? 'إنشاء الحساب والمتابعة' : 'Create Account & Continue'}
                     {isRtl ? <ArrowLeft size={16} /> : <ArrowRight size={16} />}
                   </>
                 )}
@@ -693,14 +541,14 @@ export default function Register() {
             </p>
             <button
               onClick={() => navigate(localizedPath('/login', locale))}
-              className="inline-flex items-center gap-2 rounded-xl border border-[var(--athar-gold)]/40 bg-white px-8 py-2.5 text-xs font-bold text-[var(--athar-gold-muted)] hover:bg-[var(--athar-gold-50)] transition"
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[var(--athar-gold)]/40 bg-white px-8 py-2.5 text-xs font-bold text-[var(--athar-gold-muted)] hover:bg-[var(--athar-gold-50)] transition"
             >
               {locale === 'ar' ? 'تسجيل الدخول' : 'Sign In'}
             </button>
             <div className="mt-4">
               <button
                 onClick={() => navigate(localizedPath('/', locale))}
-                className="text-xs text-[var(--athar-gold-muted)] hover:text-[var(--athar-gold)] hover:underline"
+                className="inline-flex min-h-11 items-center text-xs text-[var(--athar-gold-muted)] hover:text-[var(--athar-gold)] hover:underline"
               >
                 {locale === 'ar' ? 'العودة للصفحة الرئيسية' : 'Back to Homepage'}
               </button>
