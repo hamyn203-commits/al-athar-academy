@@ -48,7 +48,15 @@ export default function ProfileSetup() {
     <p className="text-sm text-slate-600 mb-6">بياناتك محفوظة ويمكنك استكمالها لاحقًا. {user.role === 'teacher' ? 'لا يمكنك التدريس أو الظهور للطلاب قبل اعتماد الإدارة.' : ''}</p>
     <form className="space-y-4" onSubmit={save}>
       {field('الاسم الكامل', 'name')}<label className="block text-sm font-semibold">رقم الهاتف (مطلوب)<input className="input-field w-full mt-2" type="tel" autoComplete="tel" required value={data.phone || ''} onChange={event => setData(prev => ({ ...prev, phone: event.target.value }))}/><span className="block text-xs font-normal text-slate-500 mt-1">اكتب رقمًا صحيحًا، مثال: 01012345678</span></label>{field('واتساب (اختياري)', 'whatsappPhone', 'tel')}
-      {user.role === 'student' && <>{field('العمر', 'age', 'number')}<label className="block text-sm">الجنس<select className="input-field w-full mt-2" value={data.gender} onChange={e => setData(p => ({...p, gender:e.target.value}))}><option value="">غير محدد</option><option value="male">ذكر</option><option value="female">أنثى</option></select></label>{field('عدد الأجزاء المحفوظة (0–30)', 'memorizedJuz', 'number')}{field('تفاصيل الحفظ', 'memorizationDetails')}</>}
+      {user.role === 'student' && <>{field('العمر', 'age', 'number')}<label className="block text-sm">الجنس<select className="input-field w-full mt-2" value={data.gender} onChange={e => setData(p => ({...p, gender:e.target.value}))}><option value="">غير محدد</option><option value="male">ذكر</option><option value="female">أنثى</option></select></label><label className="block text-sm font-semibold">مستواك الحالي (تقييم مبدئي)
+          <select className="input-field w-full mt-2" value={data.currentLevel || 'beginner'} onChange={e => setData(p => ({ ...p, currentLevel: e.target.value }))}>
+            <option value="beginner">مبتدئ</option>
+            <option value="intermediate">متوسط</option>
+            <option value="advanced">متقدم</option>
+            <option value="ijazah">مستوى الإجازة</option>
+          </select>
+          <span className="block text-xs font-normal text-slate-500 mt-1">اختيارك مبدئي، والمعلم يحدد المستوى الفعلي أثناء الحصة التجريبية.</span>
+        </label>{field('عدد الأجزاء المحفوظة (0–30)', 'memorizedJuz', 'number')}{field('تفاصيل الحفظ', 'memorizationDetails')}</>}
 
       {user.role === 'student' && <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 space-y-3">
         <h2 className="font-bold text-emerald-950">بيانات ولي الأمر</h2>
