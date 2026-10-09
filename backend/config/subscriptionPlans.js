@@ -1,0 +1,113 @@
+const SESSION_PACKS = Object.freeze([4, 8, 12, 24]);
+const SECTIONS = Object.freeze(['men_children', 'ladies']);
+
+const PLANS = Object.freeze({
+  community: Object.freeze({
+    key: 'community',
+    pricePerSessionMinor: 1000,
+    minStudents: 10,
+    maxStudents: 15,
+    durationMinMinutes: 60,
+    durationMaxMinutes: 120,
+    name: { ar: 'الحلقة الاقتصادية الكبرى', en: 'Community Circle' },
+    durationLabel: { ar: 'من ساعة إلى ساعتين', en: '1–2 hours' },
+  }),
+  group: Object.freeze({
+    key: 'group',
+    pricePerSessionMinor: 2000,
+    minStudents: 5,
+    maxStudents: 10,
+    durationMinMinutes: 60,
+    durationMaxMinutes: 120,
+    name: { ar: 'الحلقة الجماعية', en: 'Group Circle' },
+    durationLabel: { ar: 'من ساعة إلى ساعتين', en: '1–2 hours' },
+  }),
+  focused: Object.freeze({
+    key: 'focused',
+    pricePerSessionMinor: 3500,
+    minStudents: 3,
+    maxStudents: 5,
+    durationMinMinutes: 90,
+    durationMaxMinutes: 90,
+    name: { ar: 'الحلقة المركزة', en: 'Focused Circle' },
+    durationLabel: { ar: 'ساعة ونصف', en: '90 minutes' },
+  }),
+  mini: Object.freeze({
+    key: 'mini',
+    pricePerSessionMinor: 5000,
+    minStudents: 2,
+    maxStudents: 3,
+    durationMinMinutes: null,
+    durationMaxMinutes: 60,
+    name: { ar: 'الحلقة المصغرة', en: 'Mini Circle' },
+    durationLabel: { ar: 'ساعة أو أقل', en: 'Up to 60 minutes' },
+  }),
+  private: Object.freeze({
+    key: 'private',
+    pricePerSessionMinor: 10000,
+    minStudents: 1,
+    maxStudents: 1,
+    durationMinMinutes: null,
+    durationMaxMinutes: 60,
+    name: { ar: 'الحصة الفردية', en: 'Private Session' },
+    durationLabel: { ar: 'ساعة أو أقل', en: 'Up to 60 minutes' },
+    fromPrice: true,
+  }),
+});
+
+function getPlan(planKey) {
+  return PLANS[String(planKey || '').trim()] || null;
+}
+
+function isSessionPack(value) {
+  return SESSION_PACKS.includes(Number(value));
+}
+
+function isSection(value) {
+  return SECTIONS.includes(String(value || '').trim());
+}
+
+function quoteSubscription({ planKey, sessionCount }) {
+  const plan = getPlan(planKey);
+  const count = Number(sessionCount);
+
+  if (!plan) {
+    const error = new Error('الخطة غير موجودة');
+    error.code = 'SUBSCRIPTION_PLAN_INVALID';
+    throw error;
+  }
+
+  if (!isSessionPack(count)) {
+    const error = new Error('عدد الحصص غير متاح');
+    error.code = 'SUBSCRIPTION_PACK_INVALID';
+    throw error;
+  }
+
+  return {
+    plan,
+    sessionCount: count,
+    currency: 'EGP',
+    pricePerSessionMinor: plan.pricePerSessionMinor,
+    totalAmountMinor: plan.pricePerSessionMinor * count,
+  };
+}
+
+function publicPlanCatalog() {
+  return {
+    currency: 'EGP',
+    sessionPacks: [...SESSION_PACKS],
+    sections: [...SECTIONS],
+    plans: Object.values(PLANS).map((plan) => ({ ...plan })),
+  };
+}
+
+module.exports = {
+  SESSION_PACKS,
+  SECTIONS,
+  PLANS,
+  getPlan,
+  isSessionPack,
+  isSection,
+  quoteSubscription,
+  publicPlanCatalog,
+};
