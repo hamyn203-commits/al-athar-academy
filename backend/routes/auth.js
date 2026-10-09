@@ -59,6 +59,8 @@ function sanitizeUserResponse(user) {
   if (!user) return null;
   const obj = typeof user.toJSON === 'function' ? user.toJSON() : { ...user };
   delete obj.password;
+  delete obj.googleSubject;
+  delete obj.refreshTokenVersion;
   delete obj.passwordResetToken;
   delete obj.passwordResetExpires;
   delete obj.emailVerificationToken;
@@ -485,7 +487,8 @@ router.patch('/onboarding', verifyAccessToken, async (req, res) => {
         updated[key] = submitted[key];
       }
     }
-    updated.onboarding = { ...updated.onboarding?.toObject?.(), required: true, completed: Boolean(updated.name?.trim() && updated.phone?.trim()) };
+    if (!updated.name?.trim() || !updated.phone?.trim()) return res.status(400).json({ error: 'Name and phone are required to finish profile' });
+    updated.onboarding = { ...updated.onboarding?.toObject?.(), required: true, completed: true };
     await updated.save();
     return res.json({ user: await presentUser(updated) });
   } catch (error) {
