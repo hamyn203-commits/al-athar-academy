@@ -186,7 +186,7 @@ router.get('/admin/placements', protect, authorize('admin'), async (req, res) =>
           teacher: { $in: teacherIds },
           status: { $nin: ['completed', 'paused'] },
         })
-        .select('name code status capacity students schedule timezone subscriptionPlanKey teacher')
+        .select('name code status capacity students schedule timezone subscriptionPlanKey teacher gender targetAgeGroup track level')
         .lean()
       : [];
 
