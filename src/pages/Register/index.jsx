@@ -408,12 +408,12 @@ export default function Register() {
 
             <div className="mb-6">
               <h2 className="font-naskh text-2xl md:text-3xl font-bold text-[var(--athar-text)]">
-                {role === 'guardian'
+                {role === 'teacher' ? (locale === 'ar' ? 'إنشاء حساب معلم' : 'Create Teacher Account') : role === 'guardian'
                   ? (locale === 'ar' ? 'إنشاء حساب ولي أمر' : 'Create Guardian Account')
                   : (locale === 'ar' ? 'إنشاء حساب طالب' : 'Create Student Account')}
               </h2>
               <p className="text-sm text-[var(--athar-text-muted)] mt-1">
-                {role === 'guardian'
+                {role === 'teacher' ? (locale === 'ar' ? 'أنشئ حسابك ثم أكمل ملف المعلم ومستنداتك وفيديوهاتك بعد الدخول، قبل مراجعة الإدارة.' : 'Create your account, then complete your teacher application and media after signing in.') : role === 'guardian'
                   ? (locale === 'ar' ? 'تابع مسيرة أبنائك في حفظ القرآن وتقارير حضورهم وتقييماتهم' : 'Monitor your children’s Quran progress, attendance & teacher reports')
                   : (locale === 'ar' ? 'أدخل بياناتك لإنشاء حسابك وبدء التعلم' : 'Fill in your details to create your account')}
               </p>
