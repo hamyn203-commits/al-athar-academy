@@ -1,9 +1,9 @@
 import {
   BarChart3, BookOpen, CalendarClock, CreditCard, FileText, GraduationCap, History,
-  Home, LogOut, Mail, Menu, Settings, ShieldCheck, TrendingUp, Users,
+  Home, LogOut, Mail, Menu, PanelLeftClose, PanelLeftOpen, Settings, ShieldCheck, TrendingUp, Users,
   WalletCards, X,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import BrandLogo from '../../components/BrandLogo';
 import NotificationBell from '../../components/NotificationBell';
@@ -35,6 +35,23 @@ export default function AdminDashboardShell({
 }) {
   const { locale } = useI18n();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => {
+    try {
+      return typeof window !== 'undefined'
+        && window.localStorage.getItem('wn-admin-sidebar-collapsed') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem('wn-admin-sidebar-collapsed', String(collapsed));
+    } catch {
+      // The control remains usable when browser storage is disabled.
+    }
+  }, [collapsed]);
+
   const roleHome = dashboardPathForRole('admin', locale);
 
   const today = useMemo(() => new Intl.DateTimeFormat('ar-EG', {
@@ -54,21 +71,29 @@ export default function AdminDashboardShell({
   };
 
   return (
-    <div className="wn-admin-app" dir="rtl">
+    <div className={`wn-admin-app ${collapsed ? 'is-sidebar-collapsed' : ''}`} dir="rtl">
       <button
         type="button"
         className="wn-admin-mobile-toggle"
         onClick={() => setMobileOpen((value) => !value)}
-        aria-label="فتح قائمة الإدارة"
+        aria-label={mobileOpen ? 'إغلاق القائمة الجانبية' : 'فتح القائمة الجانبية'}
+        aria-expanded={mobileOpen}
+        aria-controls="wn-admin-sidebar"
       >
         {mobileOpen ? <X size={20} /> : <Menu size={20} />}
       </button>
 
       {mobileOpen ? <button type="button" className="wn-admin-sidebar-scrim" onClick={() => setMobileOpen(false)} aria-label="إغلاق القائمة" /> : null}
 
-      <aside className={`wn-admin-sidebar ${mobileOpen ? 'is-open' : ''}`}>
+      <aside id="wn-admin-sidebar" className={`wn-admin-sidebar ${mobileOpen ? 'is-open' : ''}`}>
         <div className="wn-admin-sidebar__brand">
-          <BrandLogo size={62} variant="light" layout="vertical" to={roleHome} />
+          <BrandLogo
+            size={58}
+            showText={true}
+            variant="light"
+            layout="vertical"
+            to={roleHome}
+          />
         </div>
 
         <div className="wn-admin-sidebar__divider" />
@@ -83,6 +108,9 @@ export default function AdminDashboardShell({
                 key={item.id}
                 onClick={() => selectItem(item)}
                 className={selected ? 'is-active' : ''}
+                aria-current={selected ? 'page' : undefined}
+                aria-label={item.label}
+                title={item.label}
               >
                 <Icon size={18} />
                 <span>{item.label}</span>
@@ -92,11 +120,16 @@ export default function AdminDashboardShell({
         </nav>
 
         <div className="wn-admin-sidebar__system">
-          <button type="button" onClick={() => onChange?.('system')} className={active === 'system' ? 'is-active' : ''}>
+          <button type="button" onClick={() => { setMobileOpen(false); onChange?.('system'); }}
+            className={active === 'system' ? 'is-active' : ''}
+            aria-label="النظام"
+            aria-current={active === 'system' ? 'page' : undefined}
+            title="النظام"
+          >
             <Settings size={18} />
             <span>النظام</span>
           </button>
-          <Link to={roleHome}>
+          <Link to={roleHome} aria-label="لوحة الإدارة" title="لوحة الإدارة" onClick={() => setMobileOpen(false)}>
             <ShieldCheck size={18} />
             <span>لوحة الإدارة</span>
           </Link>
@@ -108,7 +141,7 @@ export default function AdminDashboardShell({
             <strong>{user?.name || 'Admin'}</strong>
             <small>مدير الأكاديمية</small>
           </div>
-          <button type="button" onClick={onLogout} aria-label="تسجيل الخروج"><LogOut size={17} /></button>
+          <button type="button" onClick={onLogout} aria-label="تسجيل الخروج" title="تسجيل الخروج"><LogOut size={17} /></button>
         </div>
       </aside>
 
@@ -120,6 +153,17 @@ export default function AdminDashboardShell({
             <span className="wn-admin-topbar__date">{today}</span>
             <span className="wn-admin-topbar__locale">AR</span>
           </div>
+          <button
+            type="button"
+            className="wn-admin-topbar__sidebar-toggle"
+            onClick={() => setCollapsed((value) => !value)}
+            aria-label={collapsed ? 'إظهار القائمة الجانبية' : 'إخفاء القائمة الجانبية'}
+            aria-expanded={!collapsed}
+            aria-controls="wn-admin-sidebar"
+            title={collapsed ? 'إظهار القائمة الجانبية' : 'إخفاء القائمة الجانبية'}
+          >
+            {collapsed ? <PanelLeftOpen size={19} /> : <PanelLeftClose size={19} />}
+          </button>
         </header>
 
         <main className="wn-admin-canvas">
