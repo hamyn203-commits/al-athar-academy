@@ -96,7 +96,7 @@ export default function TeacherProfile() {
   }[lang] || lang);
 
   const media = teacher.media || {};
-  const mediaItems = [
+  const mediaItems = Array.from(new Map([
     { key: 'intro', title: isAr ? 'فيديو تعريفي' : 'Introduction video', url: media.introductionVideo },
     { key: 'recitation', title: isAr ? 'تلاوة' : 'Recitation', url: media.recitationVideo },
     { key: 'method', title: isAr ? 'طريقة التدريس' : 'Teaching method', url: media.teachingMethodVideo },
@@ -105,7 +105,16 @@ export default function TeacherProfile() {
       title: isAr ? 'تلاوة إضافية ' + (index + 1) : 'Additional recitation ' + (index + 1),
       url,
     })),
-  ].map((item) => ({ ...item, url: teacherPublicVideo(item.url) })).filter((item) => item.url);
+  ]
+    .map((item) => ({ ...item, url: teacherPublicVideo(item.url) }))
+    .filter((item) => item.url)
+    .map((item) => [item.url, item])).values());
+
+  const audioItems = Array.from(new Set(
+    (Array.isArray(media.audioRecordings) ? media.audioRecordings : [])
+      .map((audio) => teacherPublicImage(audio))
+      .filter(Boolean),
+  ));
 
   return (
     <>
@@ -182,16 +191,16 @@ export default function TeacherProfile() {
 
               {activeTab === 'videos' ? (
                 <div className="grid gap-5">
-                  {mediaItems.length || (Array.isArray(media.audioRecordings) && media.audioRecordings.length) ? mediaItems.map((item) => (
+                  {mediaItems.length || audioItems.length ? mediaItems.map((item) => (
                     <div key={item.key}>
                       <h3 className="mb-2 flex items-center gap-2"><Video size={17} /> {item.title}</h3>
                       <div className="wn-media-block"><video controls preload="metadata"><source src={item.url} /></video></div>
                     </div>
                   )) : <div className="wn-public-empty !py-10"><Video size={40} /><h3>{isAr ? 'لا توجد وسائط منشورة' : 'No published media'}</h3></div>}
 
-                  {Array.isArray(media.audioRecordings) && media.audioRecordings.length ? (
+                  {audioItems.length ? (
                     <div className="grid gap-3">
-                      {media.audioRecordings.map((audio, index) => <div key={audio + index} className="wn-media-block p-3"><audio controls preload="metadata"><source src={teacherPublicImage(audio)} /></audio></div>)}
+                      {audioItems.map((audio) => <div key={audio} className="wn-media-block p-3"><audio controls preload="metadata"><source src={audio} /></audio></div>)}
                     </div>
                   ) : null}
                 </div>
