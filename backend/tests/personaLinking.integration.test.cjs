@@ -338,6 +338,26 @@ test('four-persona state linking works through real HTTP routes', async (t) => {
   });
   assert.equal(accept.status, 200);
   assert.equal(accept.data.session.status, 'accepted');
+  const acceptedNoticeCount = notifications.filter((item) => item.type === 'session-accepted').length;
+  assert.equal(acceptedNoticeCount, 1);
+
+  const replayAccept = await call(base, '/api/sessions/' + sessionId + '/respond', {
+    method: 'PUT',
+    token: teacherToken,
+    body: { action: 'accept', provider: 'jitsi' },
+  });
+  assert.equal(replayAccept.status, 200);
+  assert.equal(replayAccept.data.alreadyAccepted, true);
+  assert.equal(notifications.filter((item) => item.type === 'session-accepted').length, acceptedNoticeCount);
+
+  const invalidReject = await call(base, '/api/sessions/' + sessionId + '/respond', {
+    method: 'PUT',
+    token: teacherToken,
+    body: { action: 'reject', reason: 'QA invalid status transition' },
+  });
+  assert.equal(invalidReject.status, 409);
+  assert.equal(invalidReject.data.code, 'SESSION_ALREADY_DECIDED');
+  assert.equal(sessions[0].status, 'accepted');
 
   const studentView = await call(base, '/api/sessions/my-sessions?type=trial', { token: studentToken });
   assert.equal(studentView.status, 200);
