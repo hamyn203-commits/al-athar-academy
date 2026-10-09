@@ -751,6 +751,46 @@ requireContains(
   'subscription placement must notify the learner lifecycle state',
   /subscriptionStatus\s*===\s*['"]active['"][\s\S]{0,2400}notifyUser\(result\.studentId/
 );
+requireContains(
+  'backend/models/SubscriptionUsage.js',
+  'subscription usage ledger must be unique per subscription and session',
+  /subscription:\s*1,\s*session:\s*1[\s\S]{0,120}unique:\s*true/
+);
+requireContains(
+  'backend/routes/sessions.js',
+  'group circle scheduling must be teacher/admin protected and require an active circle',
+  /router\.post\(['"]\/group-circle['"],\s*protect,\s*authorize\(['"]teacher['"],\s*['"]admin['"]\)[\s\S]{0,900}\[['"]active['"],\s*['"]full['"]\]\.includes\(circle\.status\)/
+);
+requireContains(
+  'backend/routes/sessions.js',
+  'group circle scheduling must snapshot the roster into attendance',
+  /const attendance\s*=\s*\(circle\.students\s*\|\|\s*\[\]\)\.map[\s\S]{0,900}type:\s*['"]group_circle['"][\s\S]{0,500}attendance/
+);
+requireContains(
+  'backend/routes/sessions.js',
+  'group completion must settle subscription credits idempotently',
+  /session\.type\s*===\s*['"]group_circle['"][\s\S]{0,160}settleSubscriptionUsageForSession\(session\)/
+);
+requireContains(
+  'backend/services/subscriptionUsage.js',
+  'eligible early excuses must preserve the package credit',
+  /status\s*===\s*['"]excused['"]\s*&&\s*eligible[\s\S]{0,160}outcome:\s*['"]compensated['"]/
+);
+requireContains(
+  'backend/services/subscriptionUsage.js',
+  'exhausted subscriptions must remove future circle attendance and direct circle access',
+  /subscription\.status\s*===\s*['"]completed['"][\s\S]{0,1200}\$pull:\s*\{\s*students:\s*studentId[\s\S]{0,800}\$unset:\s*\{\s*circle:\s*1[\s\S]{0,900}\$pull:\s*\{\s*attendance:\s*\{\s*student:\s*studentId/
+);
+requireContains(
+  'backend/services/teacherFinance.js',
+  'teacher session earnings must scale by duration from the hourly rate',
+  /function\s+calculateSessionEarning[\s\S]{0,500}rate\s*\*\s*duration\s*\/\s*60/
+);
+requireContains(
+  'backend/routes/sessions.js',
+  'session completion must use the duration based teacher earning calculator',
+  /calculateSessionEarning\(HOURLY_RATE,\s*sessionDuration\)/
+);
 
 // T07.2d: manual transfer approval must remain private, admin-only and transactional.
 requireContains(
