@@ -6,6 +6,7 @@ const User = require('../models/User');
 const Teacher = require('../models/Teacher');
 const Guardian = require('../models/Guardian');
 const { protect, authorize } = require('../middleware/auth');
+const { getPlan } = require('../config/subscriptionPlans');
 
 const { isMockMode } = require('../config/runtime');
 const isDBConnected = () => mongoose.connection.readyState === 1;
@@ -253,6 +254,16 @@ router.post('/', protect, authorize('admin', 'teacher'), async (req, res) => {
       return res.status(400).json({ error: 'اسم الحلقة وجنس الطلاب مطلوبان' });
     }
 
+    const selectedPlan = subscriptionPlanKey ? getPlan(subscriptionPlanKey) : null;
+    if (subscriptionPlanKey && !selectedPlan) {
+      return res.status(400).json({ error: 'خطة الاشتراك غير صحيحة', code: 'CIRCLE_PLAN_INVALID' });
+    }
+    const manualCapacity = Math.min(15, Math.max(1, Number(capacity || 10)));
+    const resolvedCapacity = selectedPlan?.maxStudents || manualCapacity;
+    const resolvedPricePerSession = selectedPlan
+      ? { ...(pricePerSession || {}), egp: selectedPlan.pricePerSessionMinor / 100 }
+      : (pricePerSession || { egp: 20, usd: 1 });
+
     if (isMockMode && !isDBConnected()) {
       const genderPrefix = String(gender).charAt(0).toUpperCase() || 'C';
       const randomCode = Math.floor(1000 + Math.random() * 9000);
@@ -266,9 +277,9 @@ router.post('/', protect, authorize('admin', 'teacher'), async (req, res) => {
         level: level || 'beginner',
         gender,
         targetAgeGroup: targetAgeGroup || 'kids_8_12',
-        capacity: Math.min(15, Math.max(1, Number(capacity || 10))),
+        capacity: resolvedCapacity,
         currentCount: 0,
-        availableSeats: Math.min(15, Math.max(1, Number(capacity || 10))),
+        availableSeats: resolvedCapacity,
         isFull: false,
         status: 'forming',
         teacher: {
@@ -277,7 +288,8 @@ router.post('/', protect, authorize('admin', 'teacher'), async (req, res) => {
         },
         schedule: Array.isArray(schedule) ? schedule : [],
         timezone: timezone || 'Africa/Cairo',
-        pricePerSession: pricePerSession || { egp: 20, usd: 1 },
+        pricePerSession: resolvedPricePerSession,
+        subscriptionPlanKey: selectedPlan?.key,
         currentSurah: currentSurah || '',
         notes: notes || '',
         students: []
@@ -320,14 +332,14 @@ router.post('/', protect, authorize('admin', 'teacher'), async (req, res) => {
       level: level || 'beginner',
       gender,
       targetAgeGroup: targetAgeGroup || 'kids_8_12',
-      capacity: Math.min(15, Math.max(1, Number(capacity || 10))),
-      subscriptionPlanKey,
+      capacity: resolvedCapacity,
+      subscriptionPlanKey: selectedPlan?.key,
       teacher: finalTeacherId,
       students: [],
       schedule: Array.isArray(schedule) ? schedule : [],
       timezone: timezone || 'Africa/Cairo',
       status: 'forming',
-      pricePerSession: pricePerSession || { egp: 20, usd: 1 },
+      pricePerSession: resolvedPricePerSession,
       currentSurah: currentSurah || '',
       notes: notes || ''
     });
@@ -437,8 +449,12 @@ router.post('/:id/join', protect, authorize('student', 'guardian', 'admin'), asy
 
     if (circle.students.length >= (circle.capacity || 10)) {
       circle.status = 'full';
-    } else if (circle.status === 'forming' && circle.students.length >= 3) {
-      circle.status = 'active';
+    } else if (circle.status === 'forming') {
+      const circlePlan = getPlan(circle.subscriptionPlanKey);
+      const minimumToStart = circlePlan?.minStudents || 3;
+      if (circle.students.length >= minimumToStart) {
+        circle.status = 'active';
+      }
     }
 
     await circle.save();
@@ -533,7 +549,23 @@ router.put('/:id', protect, authorize('admin', 'teacher'), async (req, res) => {
       }
       circle.capacity = normalizedCapacity;
     }
-    if (subscriptionPlanKey !== undefined) circle.subscriptionPlanKey = subscriptionPlanKey;
+    if (subscriptionPlanKey !== undefined) {
+      const nextPlan = subscriptionPlanKey ? getPlan(subscriptionPlanKey) : null;
+      if (subscriptionPlanKey && !nextPlan) {
+        return res.status(400).json({ error: 'خطة الاشتراك غير صحيحة', code: 'CIRCLE_PLAN_INVALID' });
+      }
+      circle.subscriptionPlanKey = nextPlan?.key;
+      if (nextPlan) {
+        if (circle.students.length > nextPlan.maxStudents) {
+          return res.status(400).json({ error: 'عدد الطلاب الحالي أكبر من سعة الخطة الجديدة' });
+        }
+        circle.capacity = nextPlan.maxStudents;
+        circle.pricePerSession = {
+          ...(circle.pricePerSession?.toObject?.() || circle.pricePerSession || {}),
+          egp: nextPlan.pricePerSessionMinor / 100,
+        };
+      }
+    }
 
     if (teacherId && req.user.role === 'admin') {
       const teacherExists = await Teacher.findById(teacherId);
