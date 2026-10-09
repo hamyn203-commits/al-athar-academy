@@ -465,6 +465,30 @@ router.patch('/me', verifyAccessToken, async (req, res) => {
   }
 });
 
+router.patch('/onboarding', verifyAccessToken, async (req, res) => {
+  try {
+    if (!isDBConnected()) return res.status(503).json({ error: 'Database unavailable' });
+    if (!['student', 'teacher', 'guardian'].includes(req.user.role)) return res.status(403).json({ error: 'Not permitted' });
+    const allowed = ['name', 'phone', 'age', 'gender', 'whatsappPhone', 'preferredTrack', 'currentLevel', 'memorizedJuz', 'memorizationDetails', 'bio'];
+    const submitted = req.body || {};
+    if (Object.keys(submitted).some(key => !allowed.includes(key))) return res.status(400).json({ error: 'Invalid fields' });
+    const updated = await User.findById(req.user.id);
+    if (!updated || !updated.isActive || updated.role !== req.user.role) return res.status(403).json({ error: 'Invalid account' });
+    for (const key of allowed) {
+      if (Object.prototype.hasOwnProperty.call(submitted, key)) {
+        if (['preferredTrack', 'currentLevel', 'memorizedJuz', 'memorizationDetails'].includes(key) && updated.role !== 'student') continue;
+        updated[key] = submitted[key];
+      }
+    }
+    updated.onboarding = { ...updated.onboarding?.toObject?.(), required: true, completed: Boolean(updated.name?.trim() && updated.phone?.trim()) };
+    await updated.save();
+    return res.json({ user: await presentUser(updated) });
+  } catch (error) {
+    if (error.name === 'ValidationError') return res.status(400).json({ error: error.message });
+    return res.status(500).json({ error: 'Could not save profile' });
+  }
+});
+
 router.post('/change-password', verifyAccessToken, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
