@@ -210,13 +210,14 @@ router.post('/google', async (req, res) => {
   try {
     const { verifyGoogleCredential } = require('../services/googleIdentity');
     const identity = await verifyGoogleCredential(req.body?.credential, process.env.GOOGLE_CLIENT_ID);
+    const requestedRole = ['student', 'guardian', 'teacher'].includes(req.body?.role) ? req.body.role : 'student';
     let user = await User.findOne({ googleSubject: identity.sub }).select('+googleSubject +refreshTokenVersion');
 
     if (!user) {
       const existing = await User.findOne({ email: identity.email })
         .select('+googleSubject +refreshTokenVersion');
       if (existing) {
-        if (existing.role !== 'student') {
+        if (!['student', 'guardian', 'teacher'].includes(existing.role)) {
           return res.status(403).json({ error: 'Use the account login method for this role' });
         }
         // An existing non-Gmail address must be linked from an authenticated session.
@@ -237,13 +238,13 @@ router.post('/google', async (req, res) => {
           email: identity.email,
           password: require('crypto').randomBytes(48).toString('base64url'),
           googleSubject: identity.sub,
-          role: 'student',
+          role: requestedRole,
           emailVerified: true,
           avatar: identity.picture,
         });
       }
     }
-    if (user.role !== 'student' || user.isActive === false) {
+    if (!['student', 'guardian', 'teacher'].includes(user.role) || user.isActive === false) {
       return res.status(403).json({ error: 'Account is not eligible for Google student login' });
     }
     user.lastLogin = new Date();
