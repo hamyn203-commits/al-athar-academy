@@ -89,3 +89,17 @@ test('required checklist items cannot be marked not-applicable', () => {
   assert.equal(sanitizeChecklistStatus('approved', true), 'approved');
   assert.equal(sanitizeChecklistStatus('not-applicable', false), 'not-applicable');
 });
+
+
+test('duplicate required teacher videos block approval', () => {
+  const teacher = completeTeacher();
+  teacher.media.recitationVideo = teacher.media.introductionVideo;
+  teacher.reviewChecklist = buildTeacherReviewGate(teacher).items
+    .filter((item) => item.requiredForTeacher)
+    .map((item) => ({ key: item.key, status: 'approved' }));
+
+  const gate = buildTeacherReviewGate(teacher);
+  assert.equal(gate.approvalReady, false);
+  assert.equal(gate.qualityChecks.coreMediaDistinct, false);
+  assert.ok(gate.blockers.some((item) => item.key === 'core-media-distinct'));
+});
