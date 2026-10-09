@@ -1562,9 +1562,19 @@ export default function TeacherDashboard() {
                                         <div key={studentId} className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs">
                                           <strong className="min-w-[90px]">{studentName}</strong>
                                           {isEligibleExcuse ? (
-                                            <span className="rounded-full bg-blue-50 px-2 py-1 font-semibold text-blue-700">
-                                              معتذر — لا تخصم
-                                            </span>
+                                            <>
+                                              <span className="rounded-full bg-blue-50 px-2 py-1 font-semibold text-blue-700">
+                                                معتذر — لا تخصم
+                                              </span>
+                                              <button
+                                                type="button"
+                                                disabled={isUpdating}
+                                                onClick={() => updateGroupAttendance(session, studentId, 'attended')}
+                                                className="rounded-lg bg-emerald-50 px-2.5 py-1 font-bold text-emerald-700"
+                                              >
+                                                حضر فعليًا
+                                              </button>
+                                            </>
                                           ) : (
                                             <>
                                               <button
