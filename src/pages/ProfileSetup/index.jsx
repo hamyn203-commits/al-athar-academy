@@ -1,14 +1,19 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useRequireAuth } from '../../hooks/useRequireAuth';
 import { useI18n } from '../../i18n';
-import { dashboardPathForRole } from '../../lib/navigation';
+import { dashboardPathForRole, isSafeInternalRedirect } from '../../lib/navigation';
+import { useAuth } from '../../hooks/useAuth.jsx';
 import api from '../../lib/api';
 
 export default function ProfileSetup() {
   const { user, ready } = useRequireAuth(['student', 'guardian', 'teacher']);
+  const { refreshUser } = useAuth();
   const { locale } = useI18n();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const next = searchParams.get('next');
+  const destination = isSafeInternalRedirect(next) ? next : dashboardPathForRole(user?.role, locale);
   const [data, setData] = useState({ name: '', phone: '', age: '', gender: '', whatsappPhone: '', preferredTrack: 'memorization', currentLevel: 'beginner', memorizedJuz: 0, memorizationDetails: '', bio: '' });
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -21,7 +26,8 @@ export default function ProfileSetup() {
       const payload = { name: data.name, phone: data.phone, whatsappPhone: data.whatsappPhone, bio: data.bio };
       if (user.role === 'student') Object.assign(payload, { age: data.age ? Number(data.age) : undefined, gender: data.gender || undefined, memorizedJuz: Number(data.memorizedJuz), preferredTrack: data.preferredTrack, currentLevel: data.currentLevel, memorizationDetails: data.memorizationDetails });
       await api.patch('/api/auth/onboarding', payload, { auth: true });
-      navigate(dashboardPathForRole(user.role, locale), { replace: true });
+      await refreshUser();
+      navigate(destination, { replace: true });
     } catch (e) { setError(e.message); } finally { setSaving(false); }
   };
   const field = (label, key, type = 'text') => <label className="block text-sm font-semibold">{label}<input className="input-field w-full mt-2" type={type} value={data[key] ?? ''} onChange={e => setData(p => ({...p, [key]: e.target.value}))} /></label>;
@@ -34,7 +40,7 @@ export default function ProfileSetup() {
       {field('نبذة مختصرة (اختياري)', 'bio')}
       {error && <p role="alert" className="text-red-700">{error}</p>}
       <button disabled={saving || !data.name.trim()} className="w-full rounded-xl bg-emerald-800 text-white p-3 font-bold">{saving ? 'جاري الحفظ...' : 'حفظ والمتابعة'}</button>
-      <button type="button" className="w-full text-slate-600 underline" onClick={() => navigate(dashboardPathForRole(user.role, locale))}>استكمل لاحقًا</button>
+      <button type="button" className="w-full text-slate-600 underline" onClick={() => navigate(destination)}>استكمل لاحقًا</button>
     </form>
   </section></main>;
 }

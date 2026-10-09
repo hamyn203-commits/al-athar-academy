@@ -73,7 +73,7 @@ export default function HeroSection() {
           </p>
 
           <div className="wn-approved-hero__actions">
-            <LocalizedLink to="/free-trial" locale={locale} className="wn-btn wn-btn--primary wn-btn--lg">
+            <LocalizedLink to="/journey" locale={locale} className="wn-btn wn-btn--primary wn-btn--lg">
               <span>{isAr ? 'ابدأ رحلتك الآن' : 'Start Your Journey'}</span>
               <ArrowIcon size={18} className="wn-btn__arrow" />
             </LocalizedLink>

@@ -249,7 +249,7 @@ export default function Login() {
             <div className="wn-auth-divider">{isAr ? 'حساب جديد' : 'New account'}</div>
 
             <div className="wn-auth-role-grid">
-              <button type="button" onClick={() => navigate(lp('/register/student'))} className="wn-auth-role">
+              <button type="button" onClick={() => navigate(lp('/register/student') + (searchParams.get('redirect') ? '?redirect=' + encodeURIComponent(searchParams.get('redirect')) : ''))} className="wn-auth-role">
                 <User size={16} />
                 {isAr ? 'إنشاء حساب طالب' : 'Student account'}
               </button>
