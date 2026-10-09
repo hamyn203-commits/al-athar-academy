@@ -7923,3 +7923,41 @@
   .wn-admin-app .wn-admin-exec-priority-list > button > svg:last-child { display: none; }
   .wn-admin-app .wn-admin-topbar { min-height: 72px; }
 }
+
+
+/* T20 — Branding and the separate manual-payments screen follow the same scale. */
+.wn-admin-app .wn-admin-sidebar__brand { min-height: 176px; }
+.wn-admin-app .wn-admin-sidebar__brand .font-naskh {
+  font-size: 27px;
+  line-height: 1.35;
+}
+.wn-admin-app .wn-admin-sidebar__brand [class~="text-[9px]"] {
+  font-size: 13.5px;
+  line-height: 1.5;
+  letter-spacing: .03em;
+}
+.wn-admin-payment-readable {
+  font-size: 1.5rem;
+  line-height: 1.6;
+  min-width: 0;
+}
+.wn-admin-payment-readable :is(button, input, select, textarea) {
+  font-size: 1.25rem;
+  font-family: inherit;
+  min-height: 44px;
+}
+.wn-admin-payment-readable [class~="text-xs"] { font-size: 1.125rem; line-height: 1.55; }
+.wn-admin-payment-readable [class~="text-sm"] { font-size: 1.3125rem; line-height: 1.55; }
+.wn-admin-payment-readable [class~="text-lg"] { font-size: 1.6875rem; line-height: 1.45; }
+.wn-admin-payment-readable [class~="text-xl"] { font-size: 1.875rem; line-height: 1.4; }
+.wn-admin-payment-readable .wn-btn { font-size: 1.40625rem; }
+.wn-admin-payment-readable .wn-dashboard-surface {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.wn-admin-payment-readable .wn-dashboard-surface .flex { min-width: 0; }
+@media (max-width: 640px) {
+  .wn-admin-app .wn-admin-sidebar__brand { min-height: 170px; }
+  .wn-admin-payment-readable > .flex { align-items: stretch; }
+  .wn-admin-payment-readable > .flex > div { flex-wrap: wrap; }
+}
