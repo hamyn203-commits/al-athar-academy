@@ -55,7 +55,7 @@ async function getRoomAccess(liveSession, user) {
 
   if (user.role === 'admin') {
     const bookedSession = liveSession.session
-      ? await Session.findById(liveSession.session).select('student teacher circle scheduledAt duration status')
+      ? await Session.findById(liveSession.session).select('student teacher circle scheduledAt duration timezone status')
       : null;
     return { allowed: true, isHost: true, isObserver: false, bookedSession };
   }
@@ -65,7 +65,7 @@ async function getRoomAccess(liveSession, user) {
   }
 
   const bookedSession = await Session.findById(liveSession.session)
-    .select('student teacher circle attendance scheduledAt duration status');
+    .select('student teacher circle attendance scheduledAt duration timezone status');
 
   if (!bookedSession || bookedSession.status !== 'accepted') {
     return { allowed: false, isHost: false, isObserver: false, bookedSession };
@@ -114,6 +114,7 @@ function presentLiveSession(liveSession, access) {
   return {
     ...value,
     scheduledAt: access?.bookedSession?.scheduledAt || value.scheduledAt,
+    timezone: access?.bookedSession?.timezone || value.timezone || 'Africa/Cairo',
     canManage: Boolean(access?.isHost),
     isObserver: Boolean(access?.isObserver),
   };
