@@ -2,6 +2,7 @@
 
 const mongoose = require('mongoose');
 const Payment = require('../models/Payment');
+const StudentSubscription = require('../models/StudentSubscription');
 const { assertPaymentTransition } = require('../utils/paymentIntegrity');
 const { createEnrollmentForSettledPayment } = require('./paymentSettlement');
 
@@ -26,7 +27,7 @@ async function processManualPaymentReview({
       const payment = await Payment.findOne({
         _id: paymentId,
         provider: 'manual',
-        kind: 'course_enrollment',
+        kind: { $in: ['course_enrollment', 'subscription'] },
       }).session(session);
 
       if (!payment) {
@@ -54,6 +55,37 @@ async function processManualPaymentReview({
         payment.failureCode = undefined;
         await payment.save({ session });
 
+        if (payment.kind === 'subscription') {
+          const subscription = await StudentSubscription.findOne({
+            _id: payment.subscription,
+            student: payment.student,
+          }).session(session);
+
+          if (!subscription) {
+            const error = new Error('Subscription not found for payment');
+            error.code = 'SUBSCRIPTION_NOT_FOUND';
+            throw error;
+          }
+
+          subscription.status = 'awaiting_placement';
+          subscription.payment = payment._id;
+          subscription.paidAt = new Date();
+          await subscription.save({ session });
+
+          result = {
+            paymentId: String(payment._id),
+            paymentStatus: payment.status,
+            enrollmentId: null,
+            enrollmentCreated: false,
+            studentId: payment.student ? String(payment.student) : null,
+            courseId: null,
+            subscriptionId: String(subscription._id),
+            subscriptionStatus: subscription.status,
+            awaitingPlacement: true,
+          };
+          return;
+        }
+
         const fulfillment = await createEnrollmentForSettledPayment(payment, session);
         result = {
           paymentId: String(payment._id),
@@ -62,6 +94,8 @@ async function processManualPaymentReview({
           enrollmentCreated: fulfillment.created,
           studentId: payment.student ? String(payment.student) : null,
           courseId: payment.course ? String(payment.course) : null,
+          subscriptionId: null,
+          awaitingPlacement: false,
         };
         return;
       }
@@ -72,6 +106,17 @@ async function processManualPaymentReview({
       payment.failureCode = 'MANUAL_PAYMENT_REJECTED';
       await payment.save({ session });
 
+      if (payment.kind === 'subscription' && payment.subscription) {
+        await StudentSubscription.updateOne(
+          { _id: payment.subscription, student: payment.student },
+          {
+            $set: { status: 'pending_payment' },
+            $unset: { payment: 1, paidAt: 1 },
+          },
+          { session }
+        );
+      }
+
       result = {
         paymentId: String(payment._id),
         paymentStatus: payment.status,
@@ -79,6 +124,8 @@ async function processManualPaymentReview({
         enrollmentCreated: false,
         studentId: payment.student ? String(payment.student) : null,
         courseId: payment.course ? String(payment.course) : null,
+        subscriptionId: payment.subscription ? String(payment.subscription) : null,
+        awaitingPlacement: false,
       };
     });
 
