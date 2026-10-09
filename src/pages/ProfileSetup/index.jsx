@@ -22,7 +22,7 @@ export default function ProfileSetup() {
     // A returning student with a completed profile should not be asked to fill it again.
     if (!ready || user?.role !== 'student' || !user?.onboarding?.completed ||
         !user?.name?.trim() || !user?.phone?.trim() || !isSafeInternalRedirect(next)) return;
-    if (/\\/journey$/.test(new URL(next, 'https://wahy.local').pathname)) {
+    if (new URL(next, 'https://wahy.local').pathname.endsWith('/journey')) {
       navigate(next, { replace: true, state: { profileJustSaved: true } });
     }
   }, [ready, user, next, navigate]);
