@@ -496,6 +496,25 @@ router.patch('/onboarding', verifyAccessToken, async (req, res) => {
   }
 });
 
+router.patch('/learning-track', verifyAccessToken, async (req, res) => {
+  try {
+    if (req.user.role !== 'student') return res.status(403).json({ error: 'Students only' });
+    const allowed = ['memorization', 'tajweed_ijazah', 'kids_foundation'];
+    const { track } = req.body || {};
+    if (!allowed.includes(track)) return res.status(400).json({ error: 'Invalid learning track' });
+    const user = await User.findById(req.user.id);
+    if (!user || !user.isActive) return res.status(401).json({ error: 'Account unavailable' });
+    if (!user.name?.trim() || !user.phone?.trim() || (user.onboarding?.required && !user.onboarding.completed))
+      return res.status(403).json({ code: 'PROFILE_INCOMPLETE', error: 'Complete your profile before choosing a track' });
+    user.preferredTrack = track;
+    user.set('onboarding.trackSelected', true);
+    await user.save();
+    return res.json({ user: await presentUser(user) });
+  } catch (error) {
+    return res.status(500).json({ error: 'Could not save selected learning track' });
+  }
+});
+
 router.post('/change-password', verifyAccessToken, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;

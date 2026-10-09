@@ -17,7 +17,7 @@ const TRACKS = [
 const activeTrack = (id) => TRACKS.find(t => t.id === id) || TRACKS[0];
 
 export default function StudentJourney() {
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading, refreshUser } = useAuth();
   const { locale } = useI18n();
   const navigate = useNavigate();
   const lp = (path) => localizedPath(path, locale);
@@ -51,11 +51,11 @@ export default function StudentJourney() {
     setLoadingTeachers(true);
     setError('');
     // The public API returns approved and verified teachers only.
-    Promise.all(spec.map(s => api.get('/api/teachers?specialization=' + encodeURIComponent(s) + '&limit=30')))
-      .then(results => {
+    api.get('/api/teachers?specialization=' + encodeURIComponent(spec.join(',')) + '&limit=60')
+      .then(result => {
         if (!valid) return;
         const found = new Map();
-        results.flatMap(r => r.teachers || []).forEach(t => found.set(String(t._id), t));
+        (result.teachers || []).forEach(t => found.set(String(t._id), t));
         setTeachers(Array.from(found.values()).sort((a, b) => {
           const score = teacher => {
             const matching = (teacher.quranInfo?.specializations || []).filter(item => spec.includes(item)).length;
@@ -75,7 +75,8 @@ export default function StudentJourney() {
     setSaving(true);
     setError('');
     try {
-      await api.patch('/api/auth/onboarding', { preferredTrack: trackId, name: user.name, phone: user.phone }, { auth: true });
+      await api.patch('/api/auth/learning-track', { track: trackId }, { auth: true });
+      await refreshUser();
       setChosen(trackId);
     } catch (e) { setError(e.message || 'تعذر حفظ المسار'); }
     finally { setSaving(false); }

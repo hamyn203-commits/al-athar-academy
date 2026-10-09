@@ -116,7 +116,7 @@ export default function TeacherProfile() {
         <section className="wn-detail-hero wn-teacher-profile-hero">
           <div className="page-container wn-teacher-profile-grid">
             <div className="wn-teacher-profile-photo">
-              <img src={teacherPublicImage(media.profilePhoto || teacher.user?.avatar)} alt={name} onError={teacherImageFallback} />
+              <img src={teacherPublicImage(media.profilePhoto || teacher.user?.avatar)} alt={name} onError={teacherImageFallback} loading="eager" decoding="async" />
             </div>
 
             <div>

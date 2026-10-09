@@ -6,6 +6,7 @@ import GlobalFooter from '../../components/GlobalFooter';
 import { useI18n } from '../../i18n';
 import { localizedPath } from '../../lib/locale';
 import api from '../../lib/api';
+import { teacherPublicImage, teacherImageFallback } from '../../lib/teacherMedia';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import '../../styles/session-experience.css';
 
@@ -14,7 +15,7 @@ export default function BookSession() {
   const navigate = useNavigate();
   const { locale } = useI18n();
   const isAr = locale === 'ar';
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, user } = useAuth();
   const [teacher, setTeacher] = useState(null);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
@@ -31,6 +32,19 @@ export default function BookSession() {
 
     if (!isAuthenticated) {
       navigate(localizedPath('/login', locale) + '?redirect=' + encodeURIComponent('/book-trial/' + teacherId));
+      return;
+    }
+
+    if (user?.role !== 'student') {
+      navigate(localizedPath('/journey', locale), { replace: true });
+      return;
+    }
+    if (!user?.name?.trim() || !user?.phone?.trim() || (user?.onboarding?.required && !user?.onboarding?.completed)) {
+      navigate(localizedPath('/profile/setup', locale) + '?next=' + encodeURIComponent(localizedPath('/journey', locale)), { replace: true });
+      return;
+    }
+    if (user?.onboarding?.trackSelected !== true) {
+      navigate(localizedPath('/journey', locale), { replace: true });
       return;
     }
 
@@ -58,7 +72,7 @@ export default function BookSession() {
       })
       .catch(() => setTeacher(null))
       .finally(() => setLoading(false));
-  }, [teacherId, navigate, locale, authLoading, isAuthenticated]);
+  }, [teacherId, navigate, locale, authLoading, isAuthenticated, user]);
 
   const dateKeyInTimezone = (value, zone) => {
     const parts = new Intl.DateTimeFormat('en-CA', {
@@ -156,7 +170,7 @@ export default function BookSession() {
   }
 
   const name = teacher.user?.name || teacher.personalInfo?.fullName || (isAr ? 'معلم قرآن' : 'Quran teacher');
-  const photo = teacher.media?.profilePhoto || '/default-teacher.png';
+  const photo = teacherPublicImage(teacher.media?.profilePhoto || teacher.user?.avatar);
 
   return (
     <>
@@ -167,7 +181,7 @@ export default function BookSession() {
             <div className="wn-booking-head">
               <span className="wn-auth-visual__eyebrow"><Sparkles size={14} /> {isAr ? 'حجز جلسة تعريفية' : 'BOOK AN INTRODUCTORY SESSION'}</span>
               <div className="wn-booking-teacher mt-4">
-                <img src={photo} alt={name} />
+                <img src={photo} alt={name} onError={teacherImageFallback} loading="eager" decoding="async" />
                 <div>
                   <h1>{isAr ? 'اختر موعدًا مناسبًا' : 'Choose a suitable time'}</h1>
                   <p>{isAr ? 'مع ' + name : 'With ' + name}</p>
