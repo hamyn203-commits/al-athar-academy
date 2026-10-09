@@ -4,6 +4,9 @@ const mongoose = require('mongoose');
 const GroupCircle = require('../models/GroupCircle');
 const StudentSubscription = require('../models/StudentSubscription');
 const SubscriptionUsage = require('../models/SubscriptionUsage');
+const Session = require('../models/Session');
+const User = require('../models/User');
+const { getPlan } = require('../config/subscriptionPlans');
 const { notifyUser } = require('../utils/notify');
 
 function attendanceDecision(entry) {
@@ -135,6 +138,29 @@ async function settleSubscriptionUsageForSession(sessionDoc) {
 
         await subscription.save({ session: dbSession });
 
+        if (subscription.status === 'completed') {
+          await GroupCircle.updateOne(
+            { _id: circleId },
+            { $pull: { students: studentId } },
+            { session: dbSession }
+          );
+          await User.updateOne(
+            { _id: studentId, circle: circleId },
+            { $unset: { circle: 1 } },
+            { session: dbSession }
+          );
+          await Session.updateMany(
+            {
+              _id: { $ne: sessionDoc._id },
+              circle: circleId,
+              status: { $in: ['pending', 'accepted'] },
+              scheduledAt: { $gt: now },
+            },
+            { $pull: { attendance: { student: studentId } } },
+            { session: dbSession }
+          );
+        }
+
         result = {
           studentId,
           subscriptionId: String(subscription._id),
@@ -161,6 +187,22 @@ async function settleSubscriptionUsageForSession(sessionDoc) {
       }
     } finally {
       await dbSession.endSession();
+    }
+  }
+
+  const refreshedCircle = await GroupCircle.findById(circleId)
+    .select('students capacity subscriptionPlanKey status')
+    .lean();
+  if (refreshedCircle) {
+    const plan = getPlan(refreshedCircle.subscriptionPlanKey);
+    const count = (refreshedCircle.students || []).length;
+    const nextStatus = count >= Number(refreshedCircle.capacity || 0)
+      ? 'full'
+      : count >= Number(plan?.minStudents || 1)
+        ? 'active'
+        : 'forming';
+    if (nextStatus !== refreshedCircle.status) {
+      await GroupCircle.updateOne({ _id: circleId }, { $set: { status: nextStatus } });
     }
   }
 
