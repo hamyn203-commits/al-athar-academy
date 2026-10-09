@@ -1,3 +1,4 @@
+import { teacherPublicImage, teacherImageFallback } from '../../lib/teacherMedia';
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Search, Filter, Star, MapPin, Clock, Award, BookOpen, Users, ChevronDown, Sparkles, GraduationCap, ArrowLeft, ArrowRight } from 'lucide-react';
@@ -426,7 +427,7 @@ export default function Teachers() {
                     return (
                       <Link key={teacher._id} to={lp('/teachers/' + teacher._id)} className="wn-teacher-card">
                         <div className="wn-teacher-card__media">
-                          <img src={teacher.media?.profilePhoto || '/default-teacher.png'} alt={teacher.user?.name || active.title} loading="lazy" />
+                          <img src={teacherPublicImage(teacher.media?.profilePhoto)} alt={teacher.user?.name || active.title} onError={teacherImageFallback} loading="lazy" />
                           {teacher.isFeatured ? <span className="wn-teacher-featured">{active.featured}</span> : null}
                           {price != null ? <span className="wn-teacher-price">{displayPrice(price, 'EGP')}/{active.hour}</span> : null}
                         </div>
