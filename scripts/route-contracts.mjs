@@ -194,7 +194,7 @@ assert.match(teacherMedia, /teacherPublicImage/);
 assert.match(teacherMedia, /teacherImageFallback/);
 assert.match(teacherMedia, /api\/uploads\/public/);
 assert.match(teacherProfilePage, /teacherPublicImage\(media\.profilePhoto/);
-assert.match(teacherProfilePage, /teacherPublicImage\(item\.url\)/);
+assert.match(teacherProfilePage, /teacherPublicVideo\(item\.url\)/);
 assert.match(teacherProfilePage, /teacherPublicImage\(audio\)/);
 assert.match(teacherProfilePage, /media\.additionalVideos/);
 assert.match(teacherDirectoryPage, /teacherPublicImage\(teacher\.media\?\.profilePhoto\)/);

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wahy-wa-namaa-v1';
+const CACHE_NAME = 'wahy-wa-namaa-v2';
 const RUNTIME_CACHE = 'wahy-wa-namaa-runtime-v1';
 
 const PRECACHE_URLS = [
@@ -42,6 +42,12 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
   if (url.origin === location.origin) {
+    // Never cache API responses. They may contain authenticated, user-specific
+    // data and must always reflect the current account and session state.
+    if (url.pathname.startsWith('/api/')) {
+      event.respondWith(fetch(event.request, { cache: 'no-store' }));
+      return;
+    }
     if (event.request.mode === 'navigate' || event.request.destination === 'document') {
       event.respondWith(
         fetch(event.request)

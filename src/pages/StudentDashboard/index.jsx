@@ -225,6 +225,7 @@ export default function StudentDashboard() {
     slots: [],
   });
   const [chatSession, setChatSession] = useState(null);
+  const consumedChatSessionRef = useRef(null);
   const [booking, setBooking] = useState(false);
 
   // In-Browser Voice Recording Studio
@@ -353,8 +354,12 @@ export default function StudentDashboard() {
 
     const requestedSessionId = searchParams.get('session');
     if (!requestedSessionId) return;
+    if (consumedChatSessionRef.current === String(requestedSessionId)) return;
     const found = [...trials, ...sessions].find((item) => String(item._id) === String(requestedSessionId));
-    if (found) setChatSession(found);
+    if (found) {
+      consumedChatSessionRef.current = String(requestedSessionId);
+      setChatSession(found);
+    }
   }, [searchParams, trials, sessions]);
 
   useEffect(() => {
@@ -1597,7 +1602,13 @@ export default function StudentDashboard() {
         <SessionChatModal
           session={chatSession}
           locale={locale}
-          onClose={() => setChatSession(null)}
+          viewerRole="student"
+          onClose={() => {
+            setChatSession(null);
+            const next = new URLSearchParams(searchParams);
+            next.delete('session');
+            navigate(`${lp('/student/dashboard')}${next.toString() ? `?${next.toString()}` : ''}`, { replace: true });
+          }}
         />
       )}
 

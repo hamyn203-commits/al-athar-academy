@@ -35,7 +35,16 @@ const ids = {
 const users = new Map([
   [ids.admin, { _id: ids.admin, id: ids.admin, name: 'QA Admin', role: 'admin', isActive: true }],
   [ids.teacherUser, { _id: ids.teacherUser, id: ids.teacherUser, name: 'QA Teacher', role: 'teacher', isActive: true }],
-  [ids.student, { _id: ids.student, id: ids.student, name: 'QA Student', role: 'student', isActive: true, circle: null }],
+  [ids.student, {
+    _id: ids.student,
+    id: ids.student,
+    name: 'QA Student',
+    role: 'student',
+    isActive: true,
+    phone: '01000000000',
+    onboarding: { required: false, completed: true, trackSelected: true },
+    circle: null,
+  }],
   [ids.guardian, { _id: ids.guardian, id: ids.guardian, name: 'QA Guardian', role: 'guardian', isActive: true }],
 ]);
 

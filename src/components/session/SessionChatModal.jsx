@@ -62,7 +62,7 @@ function SecureVoiceNote({ url, duration, isMe }) {
   );
 }
 
-export default function SessionChatModal({ session, onClose, locale = 'ar' }) {
+export default function SessionChatModal({ session, onClose, locale = 'ar', viewerRole = 'student' }) {
   const isAr = locale === 'ar';
   const sessionId = session?._id;
   const [messages, setMessages] = useState([]);
@@ -217,12 +217,17 @@ export default function SessionChatModal({ session, onClose, locale = 'ar' }) {
     if (!clean || sending) return;
     setSending(true);
     try {
-      await api.post(
+      const created = await api.post(
         `/api/sessions/${sessionId}/translate/messages`,
         { kind: 'text', text: clean, lang: locale },
         { auth: true }
       );
       setText('');
+      if (created?._id) {
+        setMessages((current) => current.some((message) => String(message._id) === String(created._id))
+          ? current
+          : [...current, created]);
+      }
       await loadMessages({ silent: true });
     } catch (err) {
       setError(err.message || 'فشل إرسال الرسالة');
@@ -271,11 +276,9 @@ export default function SessionChatModal({ session, onClose, locale = 'ar' }) {
     }
   };
 
-  const peerName =
-    session?.student?.name ||
-    session?.teacher?.user?.name ||
-    session?.teacher?.personalInfo?.fullName ||
-    (isAr ? 'محادثة الحصة' : 'Session chat');
+  const peerName = viewerRole === 'teacher'
+    ? (session?.student?.name || (isAr ? 'الطالب' : 'Student'))
+    : (session?.teacher?.user?.name || session?.teacher?.personalInfo?.fullName || session?.teacher?.name || (isAr ? 'المعلم' : 'Tutor'));
 
   return (
     <div className="fixed inset-0 z-[70] bg-black/55 p-3 md:p-6 flex items-center justify-center" dir={isAr ? 'rtl' : 'ltr'}>
@@ -285,7 +288,7 @@ export default function SessionChatModal({ session, onClose, locale = 'ar' }) {
             <h3 className="font-black text-slate-900">{isAr ? 'محادثة الحصة' : 'Session chat'}</h3>
             <p className="text-xs text-slate-500 mt-0.5">{peerName} · {new Date(session?.scheduledAt || Date.now()).toLocaleString(isAr ? 'ar-EG' : 'en')}</p>
           </div>
-          <button type="button" onClick={onClose} className="p-2 rounded-lg hover:bg-white text-slate-500">
+          <button type="button" aria-label={isAr ? 'إغلاق المحادثة' : 'Close chat'} onClick={onClose} className="p-2 rounded-lg hover:bg-white text-slate-500">
             <X size={20} />
           </button>
         </header>
@@ -389,7 +392,7 @@ export default function SessionChatModal({ session, onClose, locale = 'ar' }) {
             >
               <Mic size={19} />
             </button>
-            <textarea
+            <textarea aria-label={isAr ? 'اكتب رسالة' : 'Write a message'}
               value={text}
               onChange={(event) => setText(event.target.value)}
               rows={1}

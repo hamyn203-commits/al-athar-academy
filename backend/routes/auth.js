@@ -314,6 +314,19 @@ router.post('/login', async (req, res) => {
       });
     }
 
+    // A valid password does not grant access to the teacher workspace until
+    // the teacher application has been approved and verified by an admin.
+    if (user.role === 'teacher') {
+      const teacherAccess = await getTeacherAccessDecision(user._id || user.id);
+      if (!teacherAccess.allowed) {
+        return res.status(403).json({
+          error: teacherAccess.error,
+          code: teacherAccess.code,
+          applicationStatus: teacherAccess.status,
+        });
+      }
+    }
+
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
     setRefreshCookie(res, refreshToken);
