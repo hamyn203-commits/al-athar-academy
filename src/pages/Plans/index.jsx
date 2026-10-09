@@ -183,8 +183,16 @@ export default function PlansPage() {
 
       setSelection(data.subscription || null);
       toast.success(isAr
-        ? 'تم حفظ اختيارك. لن يتم أي خصم قبل إتمام خطوة الدفع.'
-        : 'Your selection is saved. No charge is made before checkout.');
+        ? 'تم حفظ اختيارك. اختر الشيخ ثم ارفع إثبات التحويل.'
+        : 'Your selection is saved. Choose your tutor, then upload the transfer proof.');
+
+      if (data.subscription?._id) {
+        navigate(
+          localizedPath('/payment/manual', locale)
+          + '?subscription='
+          + encodeURIComponent(data.subscription._id)
+        );
+      }
     } catch (error) {
       toast.error(error.message || (isAr ? 'تعذر حفظ اختيار الباقة.' : 'Could not save the package selection.'));
     } finally {
