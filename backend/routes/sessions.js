@@ -950,15 +950,37 @@ router.put('/:id/feedback', protect, authorize('student'), async (req, res) => {
 
     const session = await Session.findOne({
       _id: req.params.id,
-      student: req.user.id,
       status: 'completed'
     });
 
-    if (!session) {
+    if (!session || !(await sessionIncludesStudent(session, req.user.id))) {
       return res.status(404).json({ error: 'Completed session not found' });
     }
 
-    session.studentFeedback = { rating, comment, wouldContinue };
+    if (session.type === 'group_circle') {
+      if (!Array.isArray(session.studentFeedbacks)) session.studentFeedbacks = [];
+      const existingIndex = session.studentFeedbacks.findIndex(
+        (entry) => entry.student && String(entry.student) === String(req.user.id)
+      );
+      const feedback = {
+        student: req.user.id,
+        rating,
+        comment,
+        wouldContinue,
+        submittedAt: new Date(),
+      };
+      if (existingIndex >= 0) {
+        session.studentFeedbacks[existingIndex] = feedback;
+      } else {
+        session.studentFeedbacks.push(feedback);
+      }
+    } else {
+      if (!session.student || String(session.student) !== String(req.user.id)) {
+        return res.status(403).json({ error: 'Not your session' });
+      }
+      session.studentFeedback = { rating, comment, wouldContinue };
+    }
+
     await session.save();
 
     res.json({ success: true, session });
