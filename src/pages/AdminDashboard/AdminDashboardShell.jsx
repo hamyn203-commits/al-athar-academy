@@ -88,8 +88,8 @@ export default function AdminDashboardShell({
       <aside id="wn-admin-sidebar" className={`wn-admin-sidebar ${mobileOpen ? 'is-open' : ''}`}>
         <div className="wn-admin-sidebar__brand">
           <BrandLogo
-            size={collapsed && !mobileOpen ? 42 : 58}
-            showText={!collapsed || mobileOpen}
+            size={58}
+            showText={true}
             variant="light"
             layout="vertical"
             to={roleHome}
@@ -157,10 +157,10 @@ export default function AdminDashboardShell({
             type="button"
             className="wn-admin-topbar__sidebar-toggle"
             onClick={() => setCollapsed((value) => !value)}
-            aria-label={collapsed ? 'إظهار القائمة الجانبية بالكامل' : 'تصغير القائمة الجانبية'}
+            aria-label={collapsed ? 'إظهار القائمة الجانبية' : 'إخفاء القائمة الجانبية'}
             aria-expanded={!collapsed}
             aria-controls="wn-admin-sidebar"
-            title={collapsed ? 'إظهار القائمة الجانبية' : 'إخفاء تفاصيل القائمة الجانبية'}
+            title={collapsed ? 'إظهار القائمة الجانبية' : 'إخفاء القائمة الجانبية'}
           >
             {collapsed ? <PanelLeftOpen size={19} /> : <PanelLeftClose size={19} />}
           </button>
