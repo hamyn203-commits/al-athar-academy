@@ -17,7 +17,7 @@ export default function TeacherDashboardGate() {
       <p className="text-slate-700 mb-4">{hasSubmittedApplication ? 'طلبك قيد متابعة الإدارة. لا يمكنك التدريس أو الظهور للطلاب قبل الاعتماد.' : 'تم إنشاء حسابك. الخطوة التالية هي استكمال ملف التقديم للمعلم.'}</p>
       <p className="text-sm text-slate-500 mb-5">حالة الحساب: {status === 'under-review' ? 'قيد المراجعة' : status === 'rejected' ? 'يحتاج مراجعة' : status === 'suspended' ? 'موقوف' : 'لم يعتمد بعد'}</p>
       <Link className="block text-center bg-emerald-800 text-white py-3 rounded-xl font-bold mb-3" to={localizedPath('/profile/setup', locale)}>استكمال البيانات الأساسية</Link>
-      <p className="text-sm text-amber-800 mb-4">استكمال بيانات الملف الأساسية لا يعتبر تقديمًا نهائيًا لطلب التدريس. تقديم المستندات والفيديوهات التعليمية سيُتاح ضمن إجراءات مراجعة المعلمين.</p>
+      {!hasSubmittedApplication && <Link className="block text-center border border-emerald-800 text-emerald-900 py-3 rounded-xl font-bold mb-4" to={localizedPath('/register/teacher', locale)}>استكمال طلب المعلم ورفع المستندات والفيديوهات</Link>}
       <button className="w-full text-slate-600 underline" onClick={logout}>تسجيل الخروج</button>
     </section>
   </main>;
