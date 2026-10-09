@@ -61,6 +61,13 @@ export default function ManualPayment() {
           const currentSubscription = subscriptionResult.subscription;
           setSubscription(currentSubscription);
 
+          if (currentSubscription?.renewalOf && currentSubscription?.preferredTeacher) {
+            const lockedTeacher = currentSubscription.preferredTeacher;
+            setTeachers([lockedTeacher]);
+            setPreferredTeacherId(lockedTeacher?._id || lockedTeacher || '');
+            return;
+          }
+
           const teacherQuery = currentSubscription?.section === 'ladies'
             ? '?limit=100&gender=female&sortBy=rating&sortOrder=desc'
             : '?limit=100&sortBy=rating&sortOrder=desc';
@@ -201,8 +208,12 @@ export default function ManualPayment() {
               <>
                 <p className="text-gray-600 mb-3">
                   {isAr
-                    ? 'بعد تأكيد وصول المبلغ، سيتحول طلبك إلى مرحلة التسكين. الإدارة ستضعك في مجموعة مع الشيخ أو المعلمة التي اخترتها.'
-                    : 'After the funds are verified, your request moves to placement. Administration will place you in a group with your selected tutor.'}
+                    ? (subscription?.renewalOf
+                        ? 'بعد اعتماد التحويل، التجديد سيبقى جاهزًا ويبدأ تلقائيًا عند انتهاء رصيد الباقة الحالية مع نفس الجروب والمعلم.'
+                        : 'بعد تأكيد وصول المبلغ، سيتحول طلبك إلى مرحلة التسكين. الإدارة ستضعك في مجموعة مع الشيخ أو المعلمة التي اخترتها.')
+                    : (subscription?.renewalOf
+                        ? 'After approval, the renewal stays ready and activates automatically when your current package ends, with the same group and tutor.'
+                        : 'After the funds are verified, your request moves to placement. Administration will place you in a group with your selected tutor.')}
                 </p>
                 {selectedTeacher ? (
                   <div className="rounded-xl bg-emerald-50 border border-emerald-100 p-4 mb-4">
@@ -279,14 +290,17 @@ export default function ManualPayment() {
                   <label className="block">
                     <span className="text-sm font-semibold flex items-center gap-2">
                       <GraduationCap size={17} className="text-emerald-700" />
-                      {isAr ? 'عايز تدرس مع مين؟' : 'Who would you like to study with?'}
+                      {subscription?.renewalOf
+                        ? (isAr ? 'التجديد مع نفس المعلم' : 'Renew with the same tutor')
+                        : (isAr ? 'عايز تدرس مع مين؟' : 'Who would you like to study with?')}
                     </span>
                     <select
                       required
                       aria-label={isAr ? 'اختيار الشيخ أو المعلمة' : 'Choose tutor'}
                       value={preferredTeacherId}
                       onChange={(event) => setPreferredTeacherId(event.target.value)}
-                      className="mt-2 w-full border rounded-xl px-3 py-3"
+                      disabled={Boolean(subscription?.renewalOf)}
+                      className="mt-2 w-full border rounded-xl px-3 py-3 disabled:bg-slate-100 disabled:text-slate-600"
                     >
                       <option value="">{isAr ? 'اختر الشيخ أو المعلمة' : 'Choose a tutor'}</option>
                       {teachers.map((teacher) => (
@@ -297,9 +311,13 @@ export default function ManualPayment() {
                       ))}
                     </select>
                     <p className="text-xs text-gray-500 mt-2">
-                      {subscription?.section === 'ladies'
-                        ? (isAr ? 'قسم السيدات يعرض المعلمات المعتمدات فقط.' : 'The women’s section shows approved female tutors only.')
-                        : (isAr ? 'الإدارة ستحاول تسكينك مع اختيارك بعد اعتماد التحويل.' : 'Administration will place you with your preferred tutor after payment approval.')}
+                      {subscription?.renewalOf
+                        ? (isAr
+                            ? 'هذا تجديد مباشر لنفس الجروب والمعلم، لذلك لا تحتاج إلى تسكين جديد.'
+                            : 'This is a direct renewal for the same group and tutor, so no new placement is needed.')
+                        : subscription?.section === 'ladies'
+                          ? (isAr ? 'قسم السيدات يعرض المعلمات المعتمدات فقط.' : 'The women’s section shows approved female tutors only.')
+                          : (isAr ? 'الإدارة ستحاول تسكينك مع اختيارك بعد اعتماد التحويل.' : 'Administration will place you with your preferred tutor after payment approval.')}
                     </p>
                   </label>
                 ) : null}
