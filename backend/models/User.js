@@ -49,6 +49,11 @@ const UserSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   }],
+  onboarding: {
+    completed: { type: Boolean, default: false },
+    notes: { type: String, maxlength: 500, default: '' },
+    teacherApplicationReady: { type: Boolean, default: false },
+  },
   googleSubject: { type: String, unique: true, sparse: true, select: false },
   whatsappPhone: {
     type: String,
