@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { BookOpen, GraduationCap, UserRound, CalendarDays, ChevronLeft, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { useI18n } from '../../i18n';
@@ -20,6 +20,7 @@ export default function StudentJourney() {
   const { user, isAuthenticated, isLoading, refreshUser } = useAuth();
   const { locale } = useI18n();
   const navigate = useNavigate();
+  const location = useLocation();
   const lp = (path) => localizedPath(path, locale);
   const [chosen, setChosen] = useState('');
   const [teachers, setTeachers] = useState([]);
@@ -38,6 +39,14 @@ export default function StudentJourney() {
     }
     if (user?.role !== 'student') {
       navigate(lp(user?.role === 'guardian' ? '/guardian/dashboard' : user?.role === 'teacher' ? '/teacher/dashboard' : '/'), { replace: true });
+      return;
+    }
+
+    // A just-confirmed save already updated AuthContext. Avoid rechecking an older
+    // cached snapshot immediately after navigating from profile completion.
+    if (location.state?.profileJustSaved && user?.onboarding?.completed
+        && user?.name?.trim() && user?.phone?.trim()) {
+      setProfileChecking(false);
       return;
     }
 
@@ -64,7 +73,7 @@ export default function StudentJourney() {
     };
     checkProfile();
     return () => { cancelled = true; };
-  }, [isLoading, isAuthenticated, user?.role, navigate, locale, refreshUser]);
+  }, [isLoading, isAuthenticated, user?.role, user?.onboarding?.completed, location.state?.profileJustSaved, navigate, locale, refreshUser]);
 
   useEffect(() => {
     if (!chosen) return;
