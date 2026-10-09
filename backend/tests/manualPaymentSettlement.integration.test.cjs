@@ -420,3 +420,97 @@ test('approved early renewal is queued until the current package is exhausted', 
     delete require.cache[require.resolve('../services/manualPaymentSettlement')];
   }
 });
+
+
+test('paid renewal queues while the current package still has remaining sessions', async () => {
+  const studentId = oid();
+  const sourceSubscriptionId = oid();
+  const renewalSubscriptionId = oid();
+  const circleId = oid();
+  const teacherId = oid();
+  const paymentId = oid();
+  const adminId = oid();
+
+  const payment = {
+    _id: paymentId,
+    provider: 'manual',
+    kind: 'subscription',
+    student: studentId,
+    subscription: renewalSubscriptionId,
+    amountMinor: 16000,
+    currency: 'EGP',
+    status: 'pending',
+    manual: {},
+    async save() {
+      return this;
+    },
+  };
+
+  const renewal = {
+    _id: renewalSubscriptionId,
+    student: studentId,
+    renewalOf: sourceSubscriptionId,
+    circle: circleId,
+    preferredTeacher: teacherId,
+    status: 'payment_review',
+    payment: paymentId,
+    paidAt: null,
+    renewalQueuedAt: null,
+    async save() {
+      return this;
+    },
+  };
+
+  const source = {
+    _id: sourceSubscriptionId,
+    student: studentId,
+    circle: circleId,
+    preferredTeacher: teacherId,
+    status: 'active',
+    sessionsRemaining: 2,
+  };
+
+  const originalStartSession = mongoose.startSession;
+  const originalPaymentFindOne = Payment.findOne;
+  const originalSubscriptionFindOne = StudentSubscription.findOne;
+
+  mongoose.startSession = async () => ({
+    async withTransaction(fn) {
+      return fn();
+    },
+    async endSession() {},
+  });
+
+  Payment.findOne = () => querySession(payment);
+  StudentSubscription.findOne = (query) => {
+    if (String(query?._id) === String(renewalSubscriptionId)) return querySession(renewal);
+    if (String(query?._id) === String(sourceSubscriptionId)) return querySession(source);
+    return querySession(null);
+  };
+
+  delete require.cache[require.resolve('../services/manualPaymentSettlement')];
+  const { processManualPaymentReview } = require('../services/manualPaymentSettlement');
+
+  try {
+    const approved = await processManualPaymentReview({
+      paymentId,
+      adminId,
+      action: 'approve',
+      note: 'Renewal funds verified',
+    });
+
+    assert.equal(approved.paymentStatus, 'succeeded');
+    assert.equal(approved.renewalQueued, true);
+    assert.equal(approved.awaitingPlacement, false);
+    assert.equal(approved.subscriptionStatus, 'renewal_queued');
+    assert.equal(renewal.status, 'renewal_queued');
+    assert.ok(renewal.paidAt instanceof Date);
+    assert.ok(renewal.renewalQueuedAt instanceof Date);
+    assert.equal(String(renewal.circle), String(circleId));
+  } finally {
+    mongoose.startSession = originalStartSession;
+    Payment.findOne = originalPaymentFindOne;
+    StudentSubscription.findOne = originalSubscriptionFindOne;
+    delete require.cache[require.resolve('../services/manualPaymentSettlement')];
+  }
+});
