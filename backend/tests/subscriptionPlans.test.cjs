@@ -8,6 +8,7 @@ const {
   SECTIONS,
   getPlan,
   quoteSubscription,
+  isCompatibleStudentSection,
   publicPlanCatalog,
 } = require('../config/subscriptionPlans');
 
@@ -73,3 +74,13 @@ test('subscription quote rejects unknown plans and arbitrary package sizes', () 
   );
 });
 
+
+
+test('a saved learner division is enforced while legacy students retain their existing choices', () => {
+  assert.equal(isCompatibleStudentSection('ladies', 'ladies'), true);
+  assert.equal(isCompatibleStudentSection('ladies', 'men_children'), false);
+  assert.equal(isCompatibleStudentSection('men_children', 'ladies'), false);
+  assert.equal(isCompatibleStudentSection('men_children', 'men_children'), true);
+  assert.equal(isCompatibleStudentSection(undefined, 'ladies'), true);
+  assert.equal(isCompatibleStudentSection(null, 'men_children'), true);
+});
