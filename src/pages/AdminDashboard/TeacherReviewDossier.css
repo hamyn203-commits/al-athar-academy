@@ -355,6 +355,27 @@
   color: #e7eee9;
 }
 .wn-admin-asset-viewer__message.is-error { color: #ffd5c7; }
+.wn-admin-asset-viewer__metadata {
+  padding: 9px 16px;
+  background: #eaf3ef;
+  border-top: 1px solid #cfdfd7;
+  color: #174739;
+  font-size: 12px;
+  line-height: 1.8;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.wn-admin-asset-viewer__panel > .wn-admin-asset-viewer__message.is-error {
+  background: #fff4ea;
+  color: #894622;
+  margin: 0;
+  padding: 10px 15px;
+}
+.wn-admin-asset-viewer__footer button.wn-admin-asset-viewer__retry {
+  background: #e5f4ec;
+  color: #135a45;
+}
+
 .wn-admin-asset-viewer__footer {
   border-top: 1px solid #e5eeea;
 }
