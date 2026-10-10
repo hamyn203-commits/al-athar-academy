@@ -5,8 +5,8 @@ const PLANS = Object.freeze({
   community: Object.freeze({
     key: 'community',
     pricePerSessionMinor: 1000,
-    minStudents: 10,
-    maxStudents: 15,
+    minStudents: 15,
+    maxStudents: 20,
     durationMinMinutes: 60,
     durationMaxMinutes: 120,
     name: { ar: 'الحلقة الاقتصادية الكبرى', en: 'Community Circle' },
@@ -111,3 +111,4 @@ module.exports = {
   quoteSubscription,
   publicPlanCatalog,
 };
+

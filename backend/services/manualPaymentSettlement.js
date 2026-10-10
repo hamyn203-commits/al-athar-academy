@@ -5,6 +5,7 @@ const Payment = require('../models/Payment');
 const StudentSubscription = require('../models/StudentSubscription');
 const GroupCircle = require('../models/GroupCircle');
 const User = require('../models/User');
+const { isRunningCircle, circleStatusForCount, operationalCapacity } = require('./subscriptionCircleLifecycle');
 const { getPlan } = require('../config/subscriptionPlans');
 const { assertPaymentTransition } = require('../utils/paymentIntegrity');
 const { createEnrollmentForSettledPayment } = require('./paymentSettlement');
@@ -97,21 +98,19 @@ async function processManualPaymentReview({
               if (
                 circle
                 && plan
+                && !['paused', 'completed'].includes(circle.status)
+                && circle.subscriptionPlanKey === subscription.planKey
+                && (!circle.subscriptionSection || circle.subscriptionSection === subscription.section)
                 && String(circle.teacher) === String(subscription.preferredTeacher)
-                && (circle.students || []).length < Number(circle.capacity || plan.maxStudents)
+                && (circle.students || []).length < operationalCapacity(circle, plan)
               ) {
                 const alreadyMember = (circle.students || []).some(
                   (studentId) => String(studentId) === String(payment.student)
                 );
                 if (!alreadyMember) circle.students.push(payment.student);
 
-                if (circle.students.length >= Number(circle.capacity || plan.maxStudents)) {
-                  circle.status = 'full';
-                } else if (circle.students.length >= plan.minStudents) {
-                  circle.status = 'active';
-                } else {
-                  circle.status = 'forming';
-                }
+                circle.capacity = operationalCapacity(circle, plan);
+                circle.status = circleStatusForCount(circle, plan);
 
                 await circle.save({ session });
                 await User.updateOne(
@@ -121,7 +120,7 @@ async function processManualPaymentReview({
                 );
 
                 subscription.placedAt = paidAt;
-                subscription.status = ['active', 'full'].includes(circle.status) ? 'active' : 'placed';
+                subscription.status = isRunningCircle(circle) ? 'active' : 'placed';
                 if (subscription.status === 'active') {
                   subscription.startedAt = paidAt;
                   renewalActivated = true;
@@ -209,3 +208,4 @@ async function processManualPaymentReview({
 module.exports = {
   processManualPaymentReview,
 };
+

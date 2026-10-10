@@ -258,7 +258,7 @@ router.post('/', protect, authorize('admin', 'teacher'), async (req, res) => {
     if (subscriptionPlanKey && !selectedPlan) {
       return res.status(400).json({ error: 'خطة الاشتراك غير صحيحة', code: 'CIRCLE_PLAN_INVALID' });
     }
-    const manualCapacity = Math.min(15, Math.max(1, Number(capacity || 10)));
+    const manualCapacity = Math.min(20, Math.max(1, Number(capacity || 10)));
     const resolvedCapacity = selectedPlan?.maxStudents || manualCapacity;
     const resolvedPricePerSession = selectedPlan
       ? { ...(pricePerSession || {}), egp: selectedPlan.pricePerSessionMinor / 100 }
@@ -363,7 +363,7 @@ router.post('/', protect, authorize('admin', 'teacher'), async (req, res) => {
 });
 
 // @route   POST /api/circles/:id/join
-// @desc    Join circle for students (Strict validation: configured capacity <= 15, gender match, no duplicate, updates User.circle)
+// @desc    Join circle for students (Strict validation: configured capacity <= 20, gender match, no duplicate, updates User.circle)
 // @access  Protected
 router.post('/:id/join', protect, authorize('student', 'guardian', 'admin'), async (req, res) => {
   try {
@@ -391,6 +391,10 @@ router.post('/:id/join', protect, authorize('student', 'guardian', 'admin'), asy
     const circle = await GroupCircle.findById(req.params.id);
     if (!circle) {
       return res.status(404).json({ error: 'الحلقة غير موجودة' });
+    }
+
+    if (circle.subscriptionPlanKey) {
+      return res.status(409).json({ error: 'حلقات الاشتراكات تتطلب اعتماد الدفع والتسكين من الإدارة', code: 'SUBSCRIPTION_PLACEMENT_REQUIRED' });
     }
 
     if (circle.status === 'completed' || circle.status === 'paused') {
@@ -494,7 +498,7 @@ router.put('/:id', protect, authorize('admin', 'teacher'), async (req, res) => {
       if (Array.isArray(schedule)) found.schedule = schedule;
       if (status !== undefined) found.status = status;
       if (notes !== undefined) found.notes = notes;
-      if (capacity !== undefined) found.capacity = Math.min(15, Math.max(1, Number(capacity)));
+      if (capacity !== undefined) found.capacity = Math.min(20, Math.max(1, Number(capacity)));
       if (subscriptionPlanKey !== undefined) found.subscriptionPlanKey = subscriptionPlanKey;
       return res.json({
         success: true,
@@ -532,6 +536,19 @@ router.put('/:id', protect, authorize('admin', 'teacher'), async (req, res) => {
       subscriptionPlanKey
     } = req.body;
 
+    if (circle.subscriptionPlanKey && (
+      (status !== undefined && status !== circle.status)
+      || (teacherId && String(teacherId) !== String(circle.teacher))
+      || (subscriptionPlanKey !== undefined && subscriptionPlanKey !== circle.subscriptionPlanKey)
+      || (capacity !== undefined && Number(capacity) !== circle.capacity)
+      || (gender !== undefined && gender !== circle.gender)
+      || (targetAgeGroup !== undefined && targetAgeGroup !== circle.targetAgeGroup)
+      || (track !== undefined && track !== circle.track)
+      || (level !== undefined && level !== circle.level)
+    )) {
+      return res.status(409).json({ error: 'استخدم إدارة الاشتراكات لتشغيل حلقات الاشتراكات والحفاظ على التسكين', code: 'SUBSCRIPTION_CIRCLE_MANAGED' });
+    }
+
     if (name !== undefined) circle.name = name;
     if (track !== undefined) circle.track = track;
     if (level !== undefined) circle.level = level;
@@ -543,7 +560,7 @@ router.put('/:id', protect, authorize('admin', 'teacher'), async (req, res) => {
     if (notes !== undefined) circle.notes = notes;
     if (pricePerSession !== undefined) circle.pricePerSession = pricePerSession;
     if (capacity !== undefined) {
-      const normalizedCapacity = Math.min(15, Math.max(1, Number(capacity)));
+      const normalizedCapacity = Math.min(20, Math.max(1, Number(capacity)));
       if (!Number.isFinite(normalizedCapacity) || normalizedCapacity < circle.students.length) {
         return res.status(400).json({ error: 'سعة الحلقة غير صحيحة أو أقل من عدد الطلاب الحالي' });
       }
@@ -646,3 +663,4 @@ router.delete('/:id', protect, authorize('admin'), async (req, res) => {
 });
 
 module.exports = router;
+

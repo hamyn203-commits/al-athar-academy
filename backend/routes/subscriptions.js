@@ -7,9 +7,12 @@ const Teacher = require('../models/Teacher');
 const { protect, authorize } = require('../middleware/auth');
 const {
   placeSubscription,
+  startSubscriptionCircle,
   circleGenderForStudent,
   ageGroupForStudent,
 } = require('../services/subscriptionPlacement');
+const { circleStatusForCount, operationalCapacity } = require('../services/subscriptionCircleLifecycle');
+const { getPlan } = require('../config/subscriptionPlans');
 const { logAdminAction } = require('../services/adminAudit');
 const { notifyUser } = require('../utils/notify');
 const {
@@ -307,7 +310,7 @@ router.get('/admin/placements', protect, authorize('admin'), async (req, res) =>
           teacher: { $in: teacherIds },
           status: { $nin: ['completed', 'paused'] },
         })
-        .select('name code status capacity students schedule timezone subscriptionPlanKey teacher gender targetAgeGroup track level')
+        .select('name code status capacity students schedule timezone subscriptionPlanKey subscriptionSection teacher gender targetAgeGroup track level')
         .lean()
       : [];
 
@@ -322,20 +325,21 @@ router.get('/admin/placements', protect, authorize('admin'), async (req, res) =>
         .filter((circle) => (
           String(circle.teacher) === String(subscription.preferredTeacher?._id || '')
           && circle.subscriptionPlanKey === subscription.planKey
+          && (!circle.subscriptionSection || circle.subscriptionSection === subscription.section)
           && circle.gender === expectedGender
           && circle.targetAgeGroup === expectedAgeGroup
           && circle.track === expectedTrack
           && circle.level === expectedLevel
-          && (circle.students || []).length < Number(circle.capacity || 0)
+          && (circle.students || []).length < operationalCapacity(circle)
         ))
         .map((circle) => ({
           _id: circle._id,
           name: circle.name,
           code: circle.code,
           status: circle.status,
-          capacity: circle.capacity,
+          capacity: operationalCapacity(circle),
           currentCount: (circle.students || []).length,
-          availableSeats: Math.max(0, Number(circle.capacity || 0) - (circle.students || []).length),
+          availableSeats: Math.max(0, operationalCapacity(circle) - (circle.students || []).length),
           schedule: circle.schedule || [],
           timezone: circle.timezone,
         }));
@@ -351,6 +355,46 @@ router.get('/admin/placements', protect, authorize('admin'), async (req, res) =>
     return res.json({ subscriptions: rows });
   } catch (error) {
     return res.status(500).json({ error: 'فشل تحميل طلبات التسكين', details: error.message });
+  }
+});
+
+router.get('/admin/circles', protect, authorize('admin'), async (_req, res) => {
+  try {
+    const circles = await GroupCircle.find({ subscriptionPlanKey: { $in: ['community', 'group', 'focused', 'mini', 'private'] }, status: { $ne: 'completed' } })
+      .sort({ createdAt: -1 }).limit(100)
+      .populate({ path: 'teacher', select: 'personalInfo user', populate: { path: 'user', select: 'name' } })
+      .lean();
+    const subscriptions = await StudentSubscription.find({ circle: { $in: circles.map(item => item._id) }, status: { $in: ['placed', 'active', 'paused', 'renewal_queued'] } })
+      .populate('student', 'name email').lean();
+    return res.json({ success: true, circles: circles.map(circle => {
+      const plan = getPlan(circle.subscriptionPlanKey);
+      const roster = subscriptions.filter(item => String(item.circle) === String(circle._id) && (circle.students || []).some(id => String(id) === String(item.student?._id)));
+      return { _id: circle._id, name: circle.name, code: circle.code, status: circleStatusForCount(circle, plan),
+        teacher: circle.teacher, plan, section: circle.subscriptionSection || roster[0]?.section,
+        studentCount: (circle.students || []).length, capacity: operationalCapacity(circle, plan),
+        minimumToStart: plan.minStudents, missingToStart: Math.max(0, plan.minStudents - (circle.students || []).length),
+        schedule: circle.schedule, timezone: circle.timezone, startedAt: circle.startedAt || null,
+        roster: roster.map(item => ({ ...serializeSubscription(item), student: item.student })),
+      };
+    }) });
+  } catch (error) { return res.status(500).json({ error: 'فشل تحميل الحلقات', details: error.message }); }
+});
+
+router.post('/admin/circles/:id/start', protect, authorize('admin'), async (req, res) => {
+  try {
+    const result = await startSubscriptionCircle({ circleId: req.params.id, schedule: req.body.schedule, timezone: req.body.timezone });
+    await logAdminAction({ req, action: 'subscription-circle.started', entityType: 'group-circle', entityId: result.circleId,
+      reason: 'تم تحديد المواعيد وبدء الحلقة بعد اكتمال الاشتراكات المدفوعة.', metadata: { studentCount: result.activatedStudentIds.length } }).catch(() => {});
+    const recipients = [...result.activatedStudentIds, result.teacherUserId].filter(Boolean);
+    await Promise.allSettled(recipients.map(id => notifyUser(id, {
+      type: 'system', title: { ar: 'تم بدء الحلقة وتحديد مواعيدها', en: 'Your circle has started' },
+      message: { ar: `بدأت حلقة ${result.circleName}. راجع المواعيد في لوحة المتابعة. لا تخصم الحصص إلا بعد إتمامها.`, en: `${result.circleName} has started. Check your dashboard for the schedule. Credits are consumed after session completion.` },
+      data: { actionUrl: id === result.teacherUserId ? '/teacher/dashboard' : '/student/dashboard', metadata: { circleId: result.circleId } }, priority: 'high',
+    })));
+    return res.json({ success: true, ...result });
+  } catch (error) {
+    return res.status(error.code === 'CIRCLE_NOT_FOUND' ? 404 : error.code?.includes('INVALID') ? 400 : 409)
+      .json({ error: error.message || 'فشل بدء الحلقة', code: error.code || 'CIRCLE_START_FAILED' });
   }
 });
 
@@ -381,10 +425,10 @@ router.post('/admin/:id/place', protect, authorize('admin'), async (req, res) =>
       await Promise.allSettled(
         (result.activatedStudentIds || [result.studentId]).map((studentId) => notifyUser(studentId, {
           type: 'system',
-          title: { ar: 'حلقتك جاهزة للبدء', en: 'Your circle is ready to start' },
+          title: { ar: 'تم انضمامك للحلقة النشطة', en: 'You joined an active circle' },
           message: {
-            ar: `اكتمل الحد الأدنى لحلقة ${result.circleName || 'الاشتراك'} وتم تفعيل اشتراكك.`,
-            en: `The minimum size for ${result.circleName || 'your circle'} is complete and your subscription is now active.`,
+            ar: `تم انضمامك لحلقة ${result.circleName || 'الاشتراك'} الجارية وتفعيل اشتراكك.`,
+            en: `You joined ${result.circleName || 'your circle'} and your subscription is now active.`,
           },
           data: {
             actionUrl: '/student/dashboard',
@@ -402,8 +446,8 @@ router.post('/admin/:id/place', protect, authorize('admin'), async (req, res) =>
         type: 'system',
         title: { ar: 'تم تسكينك في الحلقة', en: 'You have been placed in a circle' },
         message: {
-          ar: `تم وضعك في ${result.circleName || 'الحلقة'} مع المعلم الذي اخترته. ننتظر اكتمال الحد الأدنى لبدء الحلقة.`,
-          en: `You were placed in ${result.circleName || 'the circle'} with your selected tutor. The circle is waiting for its minimum size.`,
+          ar: `تم وضعك في ${result.circleName || 'الحلقة'} مع المعلم الذي اخترته. سيتم تحديد المواعيد وبدء الحلقة من الإدارة بعد اكتمال العدد.`,
+          en: `You were placed in ${result.circleName || 'the circle'} with your selected tutor. Administration will set the schedule and start the circle after its minimum size is reached.`,
         },
         data: {
           actionUrl: '/student/dashboard',
@@ -479,3 +523,4 @@ router.get('/:id', protect, authorize('student', 'admin'), async (req, res) => {
 });
 
 module.exports = router;
+

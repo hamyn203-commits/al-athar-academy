@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const Session = require('../models/Session');
 const User = require('../models/User');
 const Teacher = require('../models/Teacher');
+const StudentSubscription = require('../models/StudentSubscription');
 const GroupCircle = require('../models/GroupCircle');
 const { protect, authorize } = require('../middleware/auth');
 const meetingService = require('../services/meetingService');
@@ -304,7 +305,7 @@ router.post('/group-circle', protect, authorize('teacher', 'admin'), async (req,
     }
     if (!['active', 'full'].includes(circle.status)) {
       return res.status(409).json({
-        error: 'لا يمكن جدولة حصة قبل اكتمال الحد الأدنى لتشغيل الحلقة',
+        error: 'لا يمكن جدولة حصة قبل تحديد المواعيد وبدء الحلقة من الإدارة',
         code: 'CIRCLE_NOT_ACTIVE',
         status: circle.status,
       });
@@ -375,7 +376,10 @@ router.post('/group-circle', protect, authorize('teacher', 'admin'), async (req,
       });
     }
 
-    const attendance = (circle.students || []).map((studentId) => ({
+    const activeSubscriptions = await StudentSubscription.find({ circle: circle._id, student: { $in: circle.students }, status: 'active', sessionsRemaining: { $gt: 0 } }).select('student').lean();
+    const rosterIds = [...new Set(activeSubscriptions.map(item => String(item.student)))];
+    if (!rosterIds.length) return res.status(409).json({ error: 'لا يوجد طلاب برصيد نشط لجدولة هذه الحصة', code: 'CIRCLE_NO_ACTIVE_STUDENTS' });
+    const attendance = rosterIds.map((studentId) => ({
       student: studentId,
       status: 'pending',
       eligibleForCompensation: false,
@@ -396,7 +400,7 @@ router.post('/group-circle', protect, authorize('teacher', 'admin'), async (req,
     meetingService.attachToSession(session, req.body.provider || process.env.DEFAULT_MEETING_PROVIDER || 'jitsi');
     await session.save();
 
-    const notifications = (circle.students || []).flatMap((studentId) => ([
+    const notifications = rosterIds.flatMap((studentId) => ([
       notifySessionAccepted(session, studentId, session.meetingLink),
       notifyGuardiansForStudent(studentId, {
         type: 'session-accepted',
@@ -1527,3 +1531,4 @@ router.post('/:id/report', protect, authorize('teacher', 'admin'), async (req, r
 });
 
 module.exports = router;
+

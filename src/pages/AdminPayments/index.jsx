@@ -85,9 +85,10 @@ export default function AdminPayments() {
     <DashboardLayout title="مراجعة المدفوعات اليدوية" user={user} onLogout={logout}>
       <div className="wn-admin-payment-readable">
       <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
-        <button onClick={() => navigate('..')} className="wn-btn wn-btn--secondary">
+        <button onClick={() => navigate('..', { relative: 'path' })} className="wn-btn wn-btn--secondary">
           <ArrowRight size={16} /> لوحة الإدارة
         </button>
+        <button onClick={() => navigate('../subscriptions', { relative: 'path' })} className="wn-btn wn-btn--primary">الاشتراكات وتسكين الطلاب</button>
         <div className="flex gap-2">
           <select value={filter} onChange={(event) => setFilter(event.target.value)} className="border rounded-lg px-3 py-2 text-sm">
             <option value="pending">قيد المراجعة</option>
@@ -156,6 +157,9 @@ export default function AdminPayments() {
                     <button onClick={() => openProof(payment)} className="wn-btn wn-btn--secondary"><Eye size={16} /> عرض الإثبات</button>
                   ) : null}
 
+                  {payment.kind === 'subscription' && payment.status === 'succeeded' ? (
+                    <button onClick={() => navigate('../subscriptions', { relative: 'path' })} className="wn-btn wn-btn--primary">متابعة التسكين والحلقات</button>
+                  ) : null}
                   {payment.status === 'pending' ? (
                     <div className="flex gap-2">
                       <button disabled={working === payment.id} onClick={() => review(payment, 'approve')} className="wn-btn wn-btn--primary"><CheckCircle size={16} /> {payment.kind === 'subscription' ? 'اعتماد الدفع' : 'قبول'}</button>
@@ -172,3 +176,4 @@ export default function AdminPayments() {
     </DashboardLayout>
   );
 }
+

@@ -38,7 +38,7 @@ const GroupCircleSchema = new mongoose.Schema({
   capacity: {
     type: Number,
     default: 10,
-    max: 15,
+    max: 20,
     min: 1
   },
   teacher: {
@@ -65,7 +65,7 @@ const GroupCircleSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['forming', 'active', 'full', 'completed', 'paused'],
+    enum: ['forming', 'ready', 'active', 'full', 'completed', 'paused'],
     default: 'forming'
   },
   pricePerSession: {
@@ -77,6 +77,9 @@ const GroupCircleSchema = new mongoose.Schema({
     enum: ['community', 'group', 'focused', 'mini', 'private'],
     default: undefined
   },
+  startedAt: Date,
+  subscriptionUsageVersion: { type: Number, default: 0 },
+  subscriptionSection: { type: String, enum: ['men_children', 'ladies'] },
   currentSurah: {
     type: String,
     default: ''
@@ -97,10 +100,11 @@ GroupCircleSchema.pre('save', function(next) {
     const randomSuffix = Math.floor(1000 + Math.random() * 9000);
     this.code = `CIR-${prefix}-${randomSuffix}`;
   }
-  if (this.students && this.students.length >= this.capacity) {
+  if (['active', 'full'].includes(this.status) && this.students && this.students.length >= this.capacity) {
     this.status = 'full';
   }
   next();
 });
 
 module.exports = mongoose.model('GroupCircle', GroupCircleSchema);
+

@@ -213,7 +213,7 @@ assert.match(teacherDashboard, /surahRecited:\s*evaluation\.surahRecited/);
 
 const plansPage = read('src/pages/Plans/index.jsx');
 assert.match(plansPage, /الحلقة الاقتصادية الكبرى/);
-assert.match(plansPage, /من 10 إلى 15 طالب/);
+assert.match(plansPage, /من 15 إلى 20 طالب/);
 assert.match(plansPage, /الحلقة الجماعية/);
 assert.match(plansPage, /من 5 إلى 10 طلاب/);
 assert.match(plansPage, /قسم الرجال والأطفال/);
@@ -287,9 +287,11 @@ assert.match(adminSubscriptions, /\/api\/subscriptions\/admin\/placements/);
 assert.match(adminSubscriptions, /\/api\/subscriptions\/admin\/'\s*\+\s*encodeURIComponent\(item\._id\)\s*\+\s*'\/place/);
 assert.match(adminSubscriptions, /جروب موجود/);
 assert.match(adminSubscriptions, /جروب جديد/);
-assert.match(adminSubscriptions, /\/api\/sessions\/group-circle/);
-assert.match(adminSubscriptions, /جدولة حصة الجروب/);
-assert.match(adminSubscriptions, /durationOptionsFor/);
+const subscriptionCircleCard = read('src/pages/AdminSubscriptions/SubscriptionCircleCard.jsx');
+assert.match(subscriptionCircleCard, /\/api\/sessions\/group-circle/);
+assert.match(subscriptionCircleCard, /\/start/);
+assert.match(subscriptionCircleCard, /جدولة حصة الجروب/);
+assert.match(subscriptionCircleCard, /durationOptionsFor/);
 
 
 const adminDashboard = read('src/pages/AdminDashboard/index.jsx');
@@ -455,3 +457,4 @@ assert.match(guardianDashboard, /session\.instanceKey/);
 assert.match(guardianDashboard, /\/api\/guardian\/invitations/);
 assert.match(guardianDashboard, /respondToInvitation/);
 assert.match(guardianDashboard, /طلبات ربط جديدة/);
+
