@@ -918,6 +918,44 @@ router.get('/admin/profile-changes/pending', protect, authorize('admin'), async 
   }
 });
 
+router.get('/admin/:id/profile-change/media-playback/:kind', protect, authorize('admin'), async (req, res) => {
+  try {
+    const allowed = new Set(['profilePhoto', 'introductionVideo', 'recitationVideo', 'teachingMethodVideo']);
+    if (!allowed.has(req.params.kind)) return res.status(400).json({ error: 'Invalid media type' });
+    const request = await TeacherProfileChangeRequest.findOne({
+      teacher: req.params.id,
+      status: 'pending',
+    }).sort({ createdAt: -1 }).lean();
+    const reference = request?.proposed?.media?.[req.params.kind];
+    if (!reference) return res.status(404).json({ error: 'Proposed media not found' });
+
+    const playback = await objectStorage.createTemporaryReadUrl(reference);
+    if (!playback) return res.status(409).json({
+      code: 'MEDIA_PREVIEW_NOT_SUPPORTED',
+      error: 'Direct media playback is not supported by the current storage driver',
+    });
+
+    await logAdminAction({
+      req,
+      action: 'teacher.profile-change.media-playback-authorized',
+      entityType: 'teacher',
+      entityId: req.params.id,
+      reason: 'profile-change-review',
+      metadata: { requestId: String(request._id), kind: req.params.kind },
+    }).catch(() => {});
+
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.setHeader('Referrer-Policy', 'no-referrer');
+    return res.json(playback);
+  } catch (error) {
+    console.error('Teacher profile-change media playback signing failed:', error.message);
+    return res.status(502).json({
+      code: 'MEDIA_PREVIEW_URL_FAILED',
+      error: 'تعذر إعداد معاينة التعديل مؤقتًا. حاول مرة أخرى.',
+    });
+  }
+});
+
 router.get('/admin/:id/profile-change/media/:kind', protect, authorize('admin'), async (req, res) => {
   try {
     const allowedKinds = new Set(['profilePhoto', 'introductionVideo', 'recitationVideo', 'teachingMethodVideo']);
@@ -1146,6 +1184,54 @@ router.put('/admin/:id/review-checklist/:key', protect, authorize('admin'), asyn
     return res.json({ success: true, gate, reviewChecklist: teacher.reviewChecklist });
   } catch (error) {
     return res.status(400).json({ error: error.message });
+  }
+});
+
+// Scoped, short-lived browser playback avoids proxying multi-MB videos through
+// the API function. The client never receives storage credentials or raw blob refs.
+router.get('/admin/:id/media-playback/:kind{/:index}', protect, authorize('admin'), async (req, res) => {
+  try {
+    const allowed = ['profilePhoto', 'introductionVideo', 'recitationVideo', 'teachingMethodVideo', 'additionalVideos', 'audioRecordings'];
+    if (!allowed.includes(req.params.kind)) {
+      return res.status(400).json({ error: 'Invalid media type' });
+    }
+
+    const teacher = await Teacher.findById(req.params.id).select('media');
+    if (!teacher) return res.status(404).json({ error: 'Teacher not found' });
+    let reference = teacher.media?.[req.params.kind];
+    if (Array.isArray(reference)) {
+      const index = req.params.index === undefined ? 0 : Number(req.params.index);
+      if (!Number.isInteger(index) || index < 0 || index >= reference.length) {
+        return res.status(404).json({ error: 'Media not found' });
+      }
+      reference = reference[index];
+    }
+    if (!reference) return res.status(404).json({ error: 'Media not found' });
+
+    const playback = await objectStorage.createTemporaryReadUrl(reference);
+    if (!playback) return res.status(409).json({
+      code: 'MEDIA_PREVIEW_NOT_SUPPORTED',
+      error: 'Direct media playback is not supported by the current storage driver',
+    });
+
+    await logAdminAction({
+      req,
+      action: 'teacher.sensitive-media.playback-authorized',
+      entityType: 'teacher',
+      entityId: teacher._id,
+      reason: 'teacher-review',
+      metadata: { kind: req.params.kind, index: req.params.index || null },
+    }).catch(() => {});
+
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.setHeader('Referrer-Policy', 'no-referrer');
+    return res.json(playback);
+  } catch (error) {
+    console.error('Teacher private media playback signing failed:', error.message);
+    return res.status(502).json({
+      code: 'MEDIA_PREVIEW_URL_FAILED',
+      error: 'تعذر إعداد تشغيل الفيديو مؤقتًا. حاول مرة أخرى.',
+    });
   }
 });
 
