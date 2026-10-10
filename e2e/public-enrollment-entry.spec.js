@@ -33,3 +33,35 @@ test.describe('Public enrollment entry', () => {
     await expect(page.getByRole('button', { name: 'حساب معلم' })).toHaveCount(0);
   });
 });
+
+
+test('women-section account stays within its saved section at subscription checkout', async ({ page }) => {
+  const email = `e2e.women.section.${Date.now()}@example.test`;
+  await page.goto('/ar/start');
+  await page.getByRole('button', { name: /قسم السيدات/ }).click();
+  await page.getByRole('link', { name: /التسجيل كطالب/ }).click();
+  await page.locator('input[name="name"]').fill('E2E Division Student');
+  await page.locator('input[name="email"]').fill(email);
+  await page.locator('input[name="phone"]').fill('+201000009992');
+  await page.locator('input[name="age"]').fill('23');
+  await page.locator('input[name="password"]').fill('Playwright123!');
+  await page.locator('input[name="confirmPassword"]').fill('Playwright123!');
+  const registered = page.waitForResponse(response => response.url().includes('/api/auth/register') && response.request().method() === 'POST');
+  await page.locator('form').getByRole('button', { name: /إنشاء|تسجيل/ }).click();
+  const registration = await (await registered).json();
+  expect(registration.user?.enrollmentSection).toBe('ladies');
+  await expect(page).toHaveURL(/\\/ar\\/student\\/dashboard/);
+
+  const headers = { Authorization: 'Bearer ' + registration.accessToken };
+  const wrong = await page.request.post('/api/subscriptions/select', {
+    headers, data: { planKey: 'group', section: 'men_children', sessionCount: 4 },
+  });
+  expect(wrong.status()).toBe(409);
+  expect((await wrong.json()).code).toBe('SUBSCRIPTION_SECTION_MISMATCH');
+
+  const valid = await page.request.post('/api/subscriptions/select', {
+    headers, data: { planKey: 'group', section: 'ladies', sessionCount: 4 },
+  });
+  expect(valid.status()).toBe(201);
+  expect((await valid.json()).subscription?.section).toBe('ladies');
+});
