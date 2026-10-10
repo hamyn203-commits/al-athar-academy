@@ -26,6 +26,7 @@ export default function Register() {
   const planFreq = searchParams.get('freq') || '';
   const planLevel = searchParams.get('level') || '';
   const planMode = searchParams.get('mode') || 'private';
+  const selectedSection = ['men', 'women'].includes(searchParams.get('section')) ? searchParams.get('section') : '';
 
   const initialRole = searchParams.get('role') === 'guardian' || (typeof window !== 'undefined' && window.location.pathname.includes('/guardian')) ? 'guardian' : 'student';
   const [role, setRole] = useState(initialRole);
@@ -48,7 +49,7 @@ export default function Register() {
     guardianRelationship: 'father',
     whatsappPhone: '',
     age: '',
-    gender: '',
+    gender: selectedSection === 'women' ? 'female' : selectedSection === 'men' ? 'male' : '',
     currentLevel: 'beginner',
     preferredTrack: 'memorization',
     memorizedJuz: '0',
@@ -376,7 +377,20 @@ export default function Register() {
           className="wn-register-form-card lg:col-span-7 p-6 md:p-10 flex flex-col justify-between"
         >
           <div>
-            {/* Role Switcher Tabs */}
+            {selectedSection && (
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-xs text-emerald-900">
+                <span>{locale === 'ar' ? 'القسم المختار: ' : 'Learning section: '}
+                  <strong>{selectedSection === 'women'
+                    ? (locale === 'ar' ? 'قسم السيدات' : 'Women & girls')
+                    : (locale === 'ar' ? 'قسم الرجال والأطفال' : 'Men & children')}</strong>
+                </span>
+                <button type="button" onClick={() => navigate(localizedPath('/start', locale))}
+                  className="font-bold underline underline-offset-4">
+                  {locale === 'ar' ? 'تغيير القسم' : 'Change section'}
+                </button>
+              </div>
+            )}
+            {/* Only student and guardian sign-up choices are publicly available. */}
             <div className="flex bg-slate-100 p-1 rounded-xl mb-6 border border-slate-200">
               <button
                 type="button"
@@ -402,18 +416,17 @@ export default function Register() {
                 <Users size={15} />
                 <span>{locale === 'ar' ? 'حساب ولي أمر' : 'Guardian Account'}</span>
               </button>
-              <button type="button" onClick={() => setRole('teacher')} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${role === 'teacher' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}>{locale === 'ar' ? 'حساب معلم' : 'Teacher'}</button>
             </div>
             <GoogleSignIn context="signup" role={role} />
 
             <div className="mb-6">
               <h2 className="font-naskh text-2xl md:text-3xl font-bold text-[var(--athar-text)]">
-                {role === 'teacher' ? (locale === 'ar' ? 'إنشاء حساب معلم' : 'Create Teacher Account') : role === 'guardian'
+                {role === 'guardian'
                   ? (locale === 'ar' ? 'إنشاء حساب ولي أمر' : 'Create Guardian Account')
                   : (locale === 'ar' ? 'إنشاء حساب طالب' : 'Create Student Account')}
               </h2>
               <p className="text-sm text-[var(--athar-text-muted)] mt-1">
-                {role === 'teacher' ? (locale === 'ar' ? 'أنشئ حسابك ثم أكمل ملف المعلم ومستنداتك وفيديوهاتك بعد الدخول، قبل مراجعة الإدارة.' : 'Create your account, then complete your teacher application and media after signing in.') : role === 'guardian'
+                {role === 'guardian'
                   ? (locale === 'ar' ? 'تابع مسيرة أبنائك في حفظ القرآن وتقارير حضورهم وتقييماتهم' : 'Monitor your children’s Quran progress, attendance & teacher reports')
                   : (locale === 'ar' ? 'أدخل بياناتك لإنشاء حسابك وبدء التعلم' : 'Fill in your details to create your account')}
               </p>
@@ -430,9 +443,7 @@ export default function Register() {
               </motion.div>
             )}
 
-            {role === 'teacher' ? (
-              <p className="rounded-xl bg-amber-50 border border-amber-200 p-4 text-sm text-amber-900">{locale === 'ar' ? 'يمكنك إنشاء حساب المعلم باستخدام Google، أو اختيار نموذج تقديم المعلم الحالي للتسجيل اليدوي.' : 'Use Google to create your teacher account, or apply through the existing teacher registration form.'} <a className="font-bold underline" href={localizedPath('/register/teacher', locale)}>{locale === 'ar' ? 'التسجيل اليدوي للمعلم' : 'Teacher registration'}</a></p>
-            ) : <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-5">
               
               {/* Full Name */}
               <div>
@@ -683,7 +694,7 @@ export default function Register() {
                   </>
                 )}
               </button>
-            </form>}
+            </form>
           </div>
 
           {/* Login redirection */}
