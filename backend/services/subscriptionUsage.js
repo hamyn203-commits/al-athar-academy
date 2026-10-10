@@ -31,6 +31,10 @@ function attendanceDecision(entry) {
   return { outcome: 'consumed', reason: 'pending' };
 }
 
+function shouldSendLowBalance(subscription, prepaidRenewal) {
+  return subscription.sessionsRemaining === 2 && !subscription.lowBalanceNotifiedAt && !prepaidRenewal;
+}
+
 async function settleSubscriptionUsageForSession(sessionDoc) {
   if (!sessionDoc || sessionDoc.type !== 'group_circle' || !sessionDoc.circle) {
     return { processed: false, usages: [] };
@@ -146,15 +150,16 @@ async function settleSubscriptionUsageForSession(sessionDoc) {
           subscription.completedAt = now;
         }
 
+        const prepaidRenewal = subscription.sessionsRemaining <= 2
+          ? await StudentSubscription.findOne({ student: studentId, renewalOf: subscription._id, status: 'renewal_queued' }).session(dbSession)
+          : null;
+        const lowBalanceAlert = shouldSendLowBalance(subscription, prepaidRenewal);
+        if (lowBalanceAlert) subscription.lowBalanceNotifiedAt = now;
         await subscription.save({ session: dbSession });
 
         let renewalActivated = false;
         if (subscription.status === 'completed') {
-          const queuedRenewal = await StudentSubscription.findOne({
-            student: studentId,
-            renewalOf: subscription._id,
-            status: 'renewal_queued',
-          }).session(dbSession);
+          const queuedRenewal = prepaidRenewal;
 
           if (queuedRenewal) {
             queuedRenewal.status = 'active';
@@ -163,10 +168,7 @@ async function settleSubscriptionUsageForSession(sessionDoc) {
             queuedRenewal.startedAt = now;
             await queuedRenewal.save({ session: dbSession });
             renewalActivated = true;
-            activatedRenewals.push({
-              studentId,
-              subscriptionId: String(queuedRenewal._id),
-            });
+
           } else {
             await GroupCircle.updateOne(
               { _id: circleId },
@@ -198,19 +200,25 @@ async function settleSubscriptionUsageForSession(sessionDoc) {
           remaining: subscription.sessionsRemaining,
           completed: subscription.status === 'completed',
           renewalActivated,
+          activatedRenewalId: renewalActivated ? String(prepaidRenewal._id) : null,
         };
 
-        if (subscription.sessionsRemaining <= 2) {
-          notificationTargets.push({
+        if (lowBalanceAlert || subscription.status === 'completed') {
+          result.notificationTarget = {
             studentId,
             remaining: subscription.sessionsRemaining,
             completed: subscription.status === 'completed',
             renewalActivated,
-          });
+          };
         }
       });
 
-      if (result) results.push(result);
+      if (result) {
+        if (result.notificationTarget) notificationTargets.push(result.notificationTarget);
+        if (result.activatedRenewalId) activatedRenewals.push({ studentId, subscriptionId: result.activatedRenewalId });
+        const { notificationTarget, activatedRenewalId, ...usageResult } = result;
+        results.push(usageResult);
+      }
     } catch (error) {
       if (error?.code === 11000) {
         results.push({ studentId, skipped: true, reason: 'ALREADY_PROCESSED_CONCURRENTLY' });
@@ -257,11 +265,11 @@ async function settleSubscriptionUsageForSession(sessionDoc) {
               en: 'All sessions in your package have been used. Choose a new package to continue.',
             }
           : {
-              ar: `متبقي لك ${target.remaining} حصة فقط في الباقة الحالية.`,
+              ar: `متبقي لك ${target.remaining} حصة في باقتك. جدّد اشتراكك للاستمرار مع نفس المعلم والمجموعة.`,
               en: `You have only ${target.remaining} session(s) left in your current package.`,
             },
       data: {
-        actionUrl: target.completed && !target.renewalActivated ? '/plans' : '/student/dashboard',
+        actionUrl: '/student/dashboard?tab=sessions',
         metadata: {
           remainingSessions: target.remaining,
           sessionId: String(sessionDoc._id),
@@ -276,6 +284,8 @@ async function settleSubscriptionUsageForSession(sessionDoc) {
 
 module.exports = {
   attendanceDecision,
+  shouldSendLowBalance,
   settleSubscriptionUsageForSession,
 };
+
 

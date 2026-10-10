@@ -80,8 +80,8 @@ const StudentSubscriptionSchema = new mongoose.Schema({
     default: null,
   },
   pricingSnapshot: {
-    minStudents: { type: Number, min: 1, max: 15 },
-    maxStudents: { type: Number, min: 1, max: 15 },
+    minStudents: { type: Number, min: 1, max: 20 },
+    maxStudents: { type: Number, min: 1, max: 20 },
     durationMinMinutes: { type: Number, min: 1, max: 180, default: null },
     durationMaxMinutes: { type: Number, min: 1, max: 180 },
     nameAr: { type: String, maxlength: 120 },
@@ -98,6 +98,7 @@ const StudentSubscriptionSchema = new mongoose.Schema({
   placedAt: Date,
   startedAt: Date,
   completedAt: Date,
+  lowBalanceNotifiedAt: Date,
 }, { timestamps: true });
 
 StudentSubscriptionSchema.index({ student: 1, status: 1, createdAt: -1 });
@@ -125,3 +126,4 @@ StudentSubscriptionSchema.pre('validate', function(next) {
 });
 
 module.exports = mongoose.model('StudentSubscription', StudentSubscriptionSchema);
+
