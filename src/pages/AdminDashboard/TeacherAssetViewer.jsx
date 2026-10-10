@@ -43,7 +43,7 @@ export default function TeacherAssetViewer({ teacherId, asset, loader, onClose }
           ? (result.type.startsWith('image/') ? 'image' : result.type === 'application/pdf' ? 'pdf' : 'other')
           : asset.kind === 'profilePhoto' ? 'image' : asset.kind === 'audioRecordings' ? 'audio' : 'video';
         if (isBlob) ownedObjectUrl = URL.createObjectURL(result);
-        setPreview({ status: 'ready', url: isBlob ? ownedObjectUrl : result.url, format, playbackError: false, temporary: !isBlob, contentType: isBlob ? result.type : result.contentType, sizeBytes: isBlob ? result.size : result.sizeBytes, streamingChecked: isBlob ? true : result.streamingChecked });
+        setPreview({ status: 'ready', url: isBlob ? ownedObjectUrl : result.url, format, playbackError: false, temporary: !isBlob, streamingMode: isBlob ? 'local-blob' : result.streamingMode, contentType: isBlob ? result.type : result.contentType, sizeBytes: isBlob ? result.size : result.sizeBytes, streamingChecked: isBlob ? true : result.streamingChecked });
       })
       .catch((error) => {
         if (active) setPreview({ status: 'error', message: error?.message || 'تعذر تحميل الملف.' });
@@ -111,9 +111,12 @@ export default function TeacherAssetViewer({ teacherId, asset, loader, onClose }
           <p className="wn-admin-asset-viewer__message is-error">تنبيه: صيغة MOV قد لا تعمل على Chrome. الأفضل رفع MP4 بترميز H.264 وAAC.</p>
         ) : null}
         <footer className="wn-admin-asset-viewer__footer">
-          {preview.status === 'ready' ? (
+          {preview.status === 'ready' && preview.streamingMode !== 'authenticated-range' ? (
             <a href={preview.url} download={`teacher-review-${asset.kind}`} rel="noreferrer" referrerPolicy="no-referrer"><Download size={17} /> تنزيل الملف عند الحاجة</a>
           ) : <span />}
+          {preview.status === 'ready' && preview.streamingMode === 'authenticated-range' ? (
+            <span className="wn-admin-asset-viewer__range-note">المعاينة تعمل بتحميل الأجزاء المطلوبة من الفيديو فقط.</span>
+          ) : null}
           {preview.status === 'error' || preview.playbackError ? (
             <button type="button" className="wn-admin-asset-viewer__retry" onClick={() => setRetryKey((count) => count + 1)}>إعادة المحاولة</button>
           ) : null}
