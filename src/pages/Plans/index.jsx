@@ -110,11 +110,17 @@ export default function PlansPage() {
   const isAr = locale === 'ar';
   const ArrowIcon = isAr ? ArrowLeft : ArrowRight;
   const [audience, setAudience] = useState('general');
+  const enrolledSection = user?.role === 'student' && ['men_children', 'ladies'].includes(user?.enrollmentSection)
+    ? user.enrollmentSection : null;
   const [sessionCount, setSessionCount] = useState(8);
   const [catalog, setCatalog] = useState(null);
   const [selection, setSelection] = useState(null);
   const [selectingPlan, setSelectingPlan] = useState('');
   const [renewalSource, setRenewalSource] = useState(null);
+
+  useEffect(() => {
+    if (!renewalId && enrolledSection) setAudience(enrolledSection === 'ladies' ? 'women' : 'general');
+  }, [enrolledSection, renewalId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -211,7 +217,7 @@ export default function PlansPage() {
           )
         : await api.post('/api/subscriptions/select', {
             planKey: plan.id,
-            section: audience === 'women' ? 'ladies' : 'men_children',
+            section: enrolledSection || (audience === 'women' ? 'ladies' : 'men_children'),
             sessionCount,
           }, { auth: true });
 
@@ -302,8 +308,8 @@ export default function PlansPage() {
                   role="tab"
                   aria-selected={audience === 'general'}
                   className={audience === 'general' ? 'is-active' : ''}
-                  disabled={Boolean(renewalSource)}
-                  onClick={() => !renewalSource && setAudience('general')}
+                  disabled={Boolean(renewalSource) || enrolledSection === 'ladies'}
+                  onClick={() => !renewalSource && !enrolledSection && setAudience('general')}
                 >
                   <Users size={18} />
                   <span>
@@ -316,8 +322,8 @@ export default function PlansPage() {
                   role="tab"
                   aria-selected={audience === 'women'}
                   className={audience === 'women' ? 'is-active is-women' : 'is-women'}
-                  disabled={Boolean(renewalSource)}
-                  onClick={() => !renewalSource && setAudience('women')}
+                  disabled={Boolean(renewalSource) || enrolledSection === 'men_children'}
+                  onClick={() => !renewalSource && !enrolledSection && setAudience('women')}
                 >
                   <Heart size={18} />
                   <span>

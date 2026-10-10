@@ -7,7 +7,7 @@ import { localizedPath } from '../lib/locale';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
-export default function GoogleSignIn({ context = 'signin', role = 'student' }) {
+export default function GoogleSignIn({ context = 'signin', role = 'student', enrollmentSection }) {
   const buttonRef = useRef(null);
   const [error, setError] = useState('');
   const { googleLogin } = useAuth();
@@ -31,7 +31,7 @@ export default function GoogleSignIn({ context = 'signin', role = 'student' }) {
           if (!active || !response?.credential) return;
           let result;
           try {
-            result = await googleLogin(response.credential, role, context);
+            result = await googleLogin(response.credential, role, context, enrollmentSection);
           } catch (error) {
             if (active) setError(error?.message || 'Google sign-in failed');
             return;
@@ -69,7 +69,7 @@ export default function GoogleSignIn({ context = 'signin', role = 'student' }) {
     script.addEventListener('error', onScriptError);
     if (window.google?.accounts?.id) start();
     return () => { active = false; script?.removeEventListener('load', start); script?.removeEventListener('error', onScriptError); };
-  }, [context, googleLogin, locale, navigate, searchParams, role]);
+  }, [context, googleLogin, locale, navigate, searchParams, role, enrollmentSection]);
 
   if (!GOOGLE_CLIENT_ID) return null;
   return (

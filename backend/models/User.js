@@ -70,6 +70,13 @@ const UserSchema = new mongoose.Schema({
     type: String,
     enum: ['male', 'female']
   },
+  // The selected learning division is independent of a parent's role or children's genders.
+  // Legacy students without this value may still select either division at checkout.
+  enrollmentSection: {
+    type: String,
+    enum: ['men_children', 'ladies'],
+    default: undefined,
+  },
   age: {
     type: Number,
     min: 4,
