@@ -267,9 +267,9 @@ export default function Login() {
                 <User size={16} />
                 {isAr ? 'إنشاء حساب طالب' : 'Student account'}
               </button>
-              <button type="button" onClick={() => navigate(lp('/register/teacher'))} className="wn-auth-role">
-                <User size={16} />
-                {isAr ? 'الانضمام كمعلم' : 'Join as a teacher'}
+              <button type="button" onClick={() => navigate(lp('/register/guardian'))} className="wn-auth-role">
+                <Users size={16} />
+                {isAr ? 'إنشاء حساب ولي أمر' : 'Parent account'}
               </button>
             </div>
 
