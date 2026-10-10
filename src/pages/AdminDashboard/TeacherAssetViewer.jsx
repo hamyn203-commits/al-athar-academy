@@ -36,7 +36,11 @@ export default function TeacherAssetViewer({ teacherId, asset, loader, onClose }
         if (!active) return;
         const isBlob = result instanceof Blob;
         if (isBlob && result.size === 0) throw new Error('الملف فارغ أو غير متاح.');
-        if (!isBlob && (!result?.url || !/^https:\/\//i.test(result.url))) {
+        const isTrustedUrl = typeof result?.url === 'string' && (
+          /^https:\/\//i.test(result.url) ||
+          result.url.startsWith('/api/teachers/admin-media-range/')
+        );
+        if (!isBlob && !isTrustedUrl) {
           throw new Error('لم يصل رابط تشغيل صالح من الخادم.');
         }
         const format = asset.category === 'document'
