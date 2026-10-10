@@ -211,7 +211,14 @@ async function createTemporaryReadUrl(reference, { expiresIn = 20 * 60 } = {}) {
 async function getPrivateObject(reference, options = {}) {
   if (getDriver() === 'vercel-blob') {
     const { get } = await import('@vercel/blob');
-    return get(reference, {
+    const stored = unwrapPublicProxyReference(reference);
+    if (!isVercelBlobReference(stored)) return null;
+    const pathname = extractPathname(stored);
+    if (!isSafeObjectPath(pathname)) return null;
+
+    // @vercel/blob private GET + Range must target the store pathname.
+    // Passing the full blob URL can be rejected as "Invalid URL ... Use a pathname instead".
+    return get(pathname, {
       access: 'private',
       ifNoneMatch: options.ifNoneMatch,
       ...(options.headers ? { headers: options.headers } : {}),

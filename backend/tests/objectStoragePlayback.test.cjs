@@ -89,3 +89,11 @@ test('signed playback probe rejects denied/absent files without downloading them
     global.fetch = previousFetch;
   }
 });
+
+
+test('private Vercel Blob range path is normalized from a trusted blob URL', () => {
+  const source = require('fs').readFileSync(require('path').join(__dirname, '..', 'services', 'objectStorage.js'), 'utf8');
+  assert.match(source, /const pathname = extractPathname\(stored\)/);
+  assert.match(source, /return get\(pathname,/);
+  assert.doesNotMatch(source, /return get\(reference,/);
+});

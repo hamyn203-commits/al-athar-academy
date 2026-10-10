@@ -153,6 +153,11 @@ requireContains(
 );
 requireContains(
   'backend/services/objectStorage.js',
+  'private Vercel Blob Range reads must use store pathname rather than full URL',
+  /const pathname = extractPathname\(stored\)[\s\S]*?return get\(pathname,/
+);
+requireContains(
+  'backend/services/objectStorage.js',
   'Blob media reads must pass requested Range header',
   /\.\.\.\(options\.headers \? \{ headers: options\.headers \} : \{\}\)/
 );
