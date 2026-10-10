@@ -3,6 +3,7 @@ import {
   getLocaleFromPath,
   isValidLocale,
   localizedPath,
+  stripLocale,
 } from './locale.js';
 
 const INTERNAL_BASE_ORIGIN = 'https://wahy.local';
@@ -85,5 +86,19 @@ export function postAuthDestination({
     return dashboardPathForRole(role, activeLocale);
   }
 
-  return localizeInternalHref(redirect, activeLocale);
+  const destination = localizeInternalHref(redirect, activeLocale);
+  const pathname = stripLocale(new URL(destination, INTERNAL_BASE_ORIGIN).pathname);
+
+  // A deep link from a previous account must not take this user to another
+  // role's workspace. ProtectedRoute also enforces this at the route level.
+  const restrictedRole =
+    /^\\/student(?:\\/|$)/.test(pathname) ? 'student' :
+    /^\\/guardian(?:\\/|$)/.test(pathname) ? 'guardian' :
+    /^\\/teacher(?:\\/dashboard(?:\\/|$)|$)/.test(pathname) ? 'teacher' :
+    /^\\/admin(?:\\/|$)/.test(pathname) ? 'admin' :
+    null;
+
+  return restrictedRole && restrictedRole !== role
+    ? dashboardPathForRole(role, activeLocale)
+    : destination;
 }
