@@ -4,6 +4,9 @@ const mongoose = require('mongoose');
 const User = require('../models/User');
 const Teacher = require('../models/Teacher');
 const Session = require('../models/Session');
+const GroupCircle = require('../models/GroupCircle');
+const StudentSubscription = require('../models/StudentSubscription');
+const { quoteSubscription } = require('../config/subscriptionPlans');
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/wahy_playwright';
 const PASSWORD = 'Playwright123!';
@@ -165,6 +168,26 @@ async function main() {
     });
   }
 
+  await createUser({ name: 'E2E Admin', email: 'e2e.admin@example.test', phone: '+201000003000', role: 'admin' });
+  const circle = await GroupCircle.create({ name: 'E2E Economic Circle', teacher: teacherThree.teacher._id,
+    gender: 'men', targetAgeGroup: 'adults', track: 'memorization', level: 'beginner', status: 'forming',
+    capacity: 20, subscriptionPlanKey: 'community', subscriptionSection: 'men_children', students: [] });
+  for (let index = 0; index < 15; index++) {
+    const student = await createUser({ name: `E2E Circle Student ${index}`, email: `e2e.circle${index}@example.test`, phone: `+201000004${String(index).padStart(3, '0')}` });
+    const quote = quoteSubscription({ planKey: 'community', sessionCount: index % 2 ? 8 : 4 });
+    await StudentSubscription.create({ student: student._id, section: 'men_children', planKey: 'community',
+      sessionCount: quote.sessionCount, sessionsRemaining: quote.sessionCount, pricePerSessionMinor: quote.pricePerSessionMinor,
+      totalAmountMinor: quote.totalAmountMinor, preferredTeacher: teacherThree.teacher._id, paidAt: new Date(),
+      status: index < 14 ? 'placed' : 'awaiting_placement', circle: index < 14 ? circle._id : null,
+      pricingSnapshot: { minStudents: 15, maxStudents: 20, durationMinMinutes: 60, durationMaxMinutes: 120, nameAr: 'الحلقة الاقتصادية الكبرى' } });
+    if (index < 14) {
+      circle.students.push(student._id);
+      student.circle = circle._id;
+      await student.save();
+    }
+  }
+  await circle.save();
+
   console.log(JSON.stringify({
     seeded: true,
     database: mongoose.connection.name,
@@ -184,3 +207,4 @@ main().catch(async (error) => {
   try { await mongoose.disconnect(); } catch {}
   process.exit(1);
 });
+

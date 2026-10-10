@@ -511,8 +511,8 @@ export default function StudentDashboard() {
       en: 'Payment approved. Administration is placing you with your selected tutor.',
     },
     placed: {
-      ar: 'تم تسكينك في الجروب. ننتظر اكتمال المجموعة واعتماد الإدارة للمواعيد.',
-      en: 'You have been placed in the group. The circle is waiting for its minimum size.',
+      ar: 'تم تسكينك في الجروب. الإدارة تحدد المواعيد وتبدأ الحلقة بعد اكتمال العدد، دون خصم أثناء الانتظار.',
+      en: 'You have been placed in the group. Administration will set the schedule and start the circle after its minimum size is reached. Waiting does not consume credits.',
     },
     active: {
       ar: 'اشتراكك نشط والحلقة جاهزة.',
@@ -1064,7 +1064,7 @@ export default function StudentDashboard() {
                 ) : null}
                 {currentSubscription.status === 'placed' ? (
                   <span className="text-xs font-semibold text-blue-700">
-                    {locale === 'ar' ? 'تم التسكين — الجروب قيد الاكتمال' : 'Placed — group forming'}
+                    {locale === 'ar' ? (currentSubscription.circle?.status === 'ready' ? 'اكتمل العدد — بانتظار تحديد المواعيد والبدء' : 'تم التسكين — الجروب قيد الاكتمال') : (currentSubscription.circle?.status === 'ready' ? 'Group ready — awaiting schedule and start' : 'Placed — group forming')}
                   </span>
                 ) : null}
                 {currentSubscription.status === 'active' ? (

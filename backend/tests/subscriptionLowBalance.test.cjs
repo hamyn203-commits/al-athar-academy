@@ -31,10 +31,11 @@ function fixture({ remaining = 3, queued = false, retry = false } = {}) {
     '../models/Session': { updateMany: async () => {} },
     '../models/User': { updateOne: async () => {} },
     '../config/subscriptionPlans': plans,
+    './subscriptionCircleLifecycle': require('../services/subscriptionCircleLifecycle'),
     '../utils/notify': { notifyUser: async (id, payload) => notifications.push(payload) },
   };
   vm.runInNewContext(fs.readFileSync(require.resolve('../services/subscriptionUsage'), 'utf8'), { module, require: id => dependencies[id], Date, Map, Set });
-  return { subscription, notifications, service: module.exports, settle: id => module.exports.settleSubscriptionUsageForSession({ _id: id, type: 'group_circle', circle: 'circle', attendance: [{ student: 'student', status: 'attended' }] }) };
+  return { subscription, notifications, service: module.exports, settle: id => module.exports.settleSubscriptionUsageForSession({ _id: id, status: 'completed', type: 'group_circle', circle: 'circle', attendance: [{ student: 'student', status: 'attended' }] }) };
 }
 test('one alert at two remaining; no repeat at one or on lesson replay', async () => {
   const f = fixture();

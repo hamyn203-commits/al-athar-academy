@@ -287,9 +287,11 @@ assert.match(adminSubscriptions, /\/api\/subscriptions\/admin\/placements/);
 assert.match(adminSubscriptions, /\/api\/subscriptions\/admin\/'\s*\+\s*encodeURIComponent\(item\._id\)\s*\+\s*'\/place/);
 assert.match(adminSubscriptions, /جروب موجود/);
 assert.match(adminSubscriptions, /جروب جديد/);
-assert.match(adminSubscriptions, /\/api\/sessions\/group-circle/);
-assert.match(adminSubscriptions, /جدولة حصة الجروب/);
-assert.match(adminSubscriptions, /durationOptionsFor/);
+const subscriptionCircleCard = read('src/pages/AdminSubscriptions/SubscriptionCircleCard.jsx');
+assert.match(subscriptionCircleCard, /\/api\/sessions\/group-circle/);
+assert.match(subscriptionCircleCard, /\/start/);
+assert.match(subscriptionCircleCard, /جدولة حصة الجروب/);
+assert.match(subscriptionCircleCard, /durationOptionsFor/);
 
 
 const adminDashboard = read('src/pages/AdminDashboard/index.jsx');

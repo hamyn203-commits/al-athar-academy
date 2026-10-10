@@ -363,7 +363,7 @@ router.post('/', protect, authorize('admin', 'teacher'), async (req, res) => {
 });
 
 // @route   POST /api/circles/:id/join
-// @desc    Join circle for students (Strict validation: configured capacity <= 15, gender match, no duplicate, updates User.circle)
+// @desc    Join circle for students (Strict validation: configured capacity <= 20, gender match, no duplicate, updates User.circle)
 // @access  Protected
 router.post('/:id/join', protect, authorize('student', 'guardian', 'admin'), async (req, res) => {
   try {
@@ -394,7 +394,7 @@ router.post('/:id/join', protect, authorize('student', 'guardian', 'admin'), asy
     }
 
     if (circle.subscriptionPlanKey) {
-      return res.status(409).json({ error: 'تسكين حلقات الاشتراك يتم من الإدارة بعد اعتماد الدفع', code: 'USE_SUBSCRIPTION_PLACEMENT' });
+      return res.status(409).json({ error: 'حلقات الاشتراكات تتطلب اعتماد الدفع والتسكين من الإدارة', code: 'SUBSCRIPTION_PLACEMENT_REQUIRED' });
     }
 
     if (circle.status === 'completed' || circle.status === 'paused') {
@@ -536,6 +536,19 @@ router.put('/:id', protect, authorize('admin', 'teacher'), async (req, res) => {
       subscriptionPlanKey
     } = req.body;
 
+    if (circle.subscriptionPlanKey && (
+      (status !== undefined && ['active', 'full'].includes(status) && !['active', 'full'].includes(circle.status))
+      || (teacherId && String(teacherId) !== String(circle.teacher))
+      || (subscriptionPlanKey !== undefined && subscriptionPlanKey !== circle.subscriptionPlanKey)
+      || (capacity !== undefined && Number(capacity) !== circle.capacity)
+      || (gender !== undefined && gender !== circle.gender)
+      || (targetAgeGroup !== undefined && targetAgeGroup !== circle.targetAgeGroup)
+      || (track !== undefined && track !== circle.track)
+      || (level !== undefined && level !== circle.level)
+    )) {
+      return res.status(409).json({ error: 'استخدم إدارة الاشتراكات لتشغيل حلقات الاشتراكات والحفاظ على التسكين', code: 'SUBSCRIPTION_CIRCLE_MANAGED' });
+    }
+
     if (name !== undefined) circle.name = name;
     if (track !== undefined) circle.track = track;
     if (level !== undefined) circle.level = level;
@@ -578,9 +591,6 @@ router.put('/:id', protect, authorize('admin', 'teacher'), async (req, res) => {
       }
     }
 
-    if (circle.subscriptionPlanKey && status !== undefined && ['active', 'full'].includes(status) && !['active', 'full'].includes(circle.status)) {
-      return res.status(409).json({ error: 'ابدأ حلقة الاشتراك من صفحة الاشتراكات والتسكين', code: 'USE_SUBSCRIPTION_START' });
-    }
     if (status !== undefined) {
       if (status === 'full' || circle.students.length >= (circle.capacity || 10)) {
         circle.status = circle.students.length >= (circle.capacity || 10) ? 'full' : status;

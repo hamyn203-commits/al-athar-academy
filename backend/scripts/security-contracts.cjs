@@ -744,7 +744,7 @@ requireContains(
 requireContains(
   'backend/services/subscriptionPlacement.js',
   'group activation must obey the selected plan minimum',
-  /circle\.students\.length\s*>=\s*plan\.minStudents/
+  /studentIds\.length\s*<\s*plan\.minStudents/
 );
 requireContains(
   'backend/services/subscriptionPlacement.js',
@@ -774,7 +774,7 @@ requireContains(
 requireContains(
   'backend/routes/sessions.js',
   'group circle scheduling must snapshot the roster into attendance',
-  /const attendance\s*=\s*\(circle\.students\s*\|\|\s*\[\]\)\.map[\s\S]{0,900}type:\s*['"]group_circle['"][\s\S]{0,500}attendance/
+  /const attendance\s*=\s*rosterIds\.map[\s\S]{0,900}type:\s*['"]group_circle['"][\s\S]{0,500}attendance/
 );
 requireContains(
   'backend/routes/sessions.js',
@@ -1074,13 +1074,7 @@ requireContains(
   /session-control\.viewed/
 );
 
-if (failures.length) {
-  console.error('Security contracts failed:');
-  failures.forEach((failure) => console.error(`- ${failure}`));
-  process.exit(1);
-}
 
-console.log('Security contracts passed.');
 
 requireContains(
   'backend/config/uploadPolicy.js',
@@ -1124,3 +1118,17 @@ requireContains(
   'teacher waiting screen must poll approval without repeatedly attempting login',
   /teachers\/application-status[\s\S]{0,1000}setInterval[\s\S]{0,300}10000/
 );
+
+
+requireContains('backend/routes/subscriptions.js', 'circle start must remain admin-only', /router\.post\(['"]\/admin\/circles\/:id\/start['"],\s*protect,\s*authorize\(['"]admin['"]\)/);
+requireContains('backend/services/subscriptionUsage.js', 'settlement must deduplicate by learner and session before choosing a renewed package', /const existingUsage[\s\S]{0,180}student:\s*studentId,\s*session:\s*sessionDoc\._id[\s\S]{0,650}const subscription/);
+requireContains('backend/services/subscriptionUsage.js', 'concurrent renewal settlement must lock the circle inside the transaction', /withTransaction[\s\S]{0,550}\$inc:\s*\{\s*subscriptionUsageVersion:\s*1/);
+requireContains('backend/routes/circles.js', 'subscription circles cannot bypass paid admin placement', /router\.post\(['"]\/:id\/join['"][\s\S]{0,1800}SUBSCRIPTION_PLACEMENT_REQUIRED/);
+
+if (failures.length) {
+  console.error('Security contracts failed:');
+  failures.forEach((failure) => console.error(`- ${failure}`));
+  process.exit(1);
+}
+
+console.log('Security contracts passed.');

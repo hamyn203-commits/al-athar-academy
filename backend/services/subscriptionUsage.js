@@ -6,7 +6,7 @@ const StudentSubscription = require('../models/StudentSubscription');
 const SubscriptionUsage = require('../models/SubscriptionUsage');
 const Session = require('../models/Session');
 const User = require('../models/User');
-const { getPlan } = require('../config/subscriptionPlans');
+const { circleStatusForCount } = require('./subscriptionCircleLifecycle');
 const { notifyUser } = require('../utils/notify');
 
 function attendanceDecision(entry) {
@@ -36,7 +36,7 @@ function shouldSendLowBalance(subscription, prepaidRenewal) {
 }
 
 async function settleSubscriptionUsageForSession(sessionDoc) {
-  if (!sessionDoc || sessionDoc.type !== 'group_circle' || !sessionDoc.circle) {
+  if (!sessionDoc || sessionDoc.status !== 'completed' || sessionDoc.type !== 'group_circle' || !sessionDoc.circle) {
     return { processed: false, usages: [] };
   }
 
@@ -71,41 +71,28 @@ async function settleSubscriptionUsageForSession(sessionDoc) {
     const dbSession = await mongoose.startSession();
     try {
       let result = null;
+      let notificationTarget = null;
+      let activatedRenewal = null;
 
       await dbSession.withTransaction(async () => {
-        // The identity is learner + lesson, independent of package renewal.
-        const previousUsage = await SubscriptionUsage.findOne({
+        notificationTarget = null;
+        activatedRenewal = null;
+        // Serialize settlement within this circle. A concurrent transaction retries
+        // with a fresh snapshot, including any renewal activated by its predecessor.
+        await GroupCircle.updateOne({ _id: circleId }, { $inc: { subscriptionUsageVersion: 1 } }, { session: dbSession });
+        const existingUsage = await SubscriptionUsage.findOne({
           student: studentId, session: sessionDoc._id,
         }).session(dbSession);
-        if (previousUsage) {
-          result = { studentId, alreadyProcessed: true, outcome: previousUsage.outcome };
-          return;
-        }
-
-        const subscription = await StudentSubscription.findOne({
-          student: studentId,
-          circle: circleId,
-          status: 'active',
-        }).session(dbSession);
-
-        if (!subscription) {
-          result = { studentId, skipped: true, reason: 'NO_ACTIVE_SUBSCRIPTION' };
-          return;
-        }
-
-        const existingUsage = await SubscriptionUsage.findOne({
-          subscription: subscription._id,
-          session: sessionDoc._id,
-        }).session(dbSession);
-
         if (existingUsage) {
-          result = {
-            studentId,
-            subscriptionId: String(subscription._id),
-            outcome: existingUsage.outcome,
-            remaining: subscription.sessionsRemaining,
-            alreadyProcessed: true,
-          };
+          result = { studentId, subscriptionId: String(existingUsage.subscription),
+            outcome: existingUsage.outcome, alreadyProcessed: true };
+          return;
+        }
+        const subscription = await StudentSubscription.findOne({
+          student: studentId, circle: circleId, status: 'active',
+        }).session(dbSession);
+        if (!subscription || subscription.sessionsRemaining <= 0) {
+          result = { studentId, skipped: true, reason: 'NO_ACTIVE_SUBSCRIPTION' };
           return;
         }
 
@@ -127,17 +114,6 @@ async function settleSubscriptionUsageForSession(sessionDoc) {
             subscriptionId: String(subscription._id),
             outcome: 'compensated',
             remaining: subscription.sessionsRemaining,
-          };
-          return;
-        }
-
-        if (subscription.sessionsRemaining <= 0) {
-          result = {
-            studentId,
-            subscriptionId: String(subscription._id),
-            outcome: 'consumed',
-            remaining: 0,
-            exhaustedBeforeSettlement: true,
           };
           return;
         }
@@ -168,7 +144,7 @@ async function settleSubscriptionUsageForSession(sessionDoc) {
             queuedRenewal.startedAt = now;
             await queuedRenewal.save({ session: dbSession });
             renewalActivated = true;
-
+            activatedRenewal = { studentId, subscriptionId: String(queuedRenewal._id) };
           } else {
             await GroupCircle.updateOne(
               { _id: circleId },
@@ -200,11 +176,10 @@ async function settleSubscriptionUsageForSession(sessionDoc) {
           remaining: subscription.sessionsRemaining,
           completed: subscription.status === 'completed',
           renewalActivated,
-          activatedRenewalId: renewalActivated ? String(prepaidRenewal._id) : null,
         };
 
         if (lowBalanceAlert || subscription.status === 'completed') {
-          result.notificationTarget = {
+          notificationTarget = {
             studentId,
             remaining: subscription.sessionsRemaining,
             completed: subscription.status === 'completed',
@@ -212,13 +187,10 @@ async function settleSubscriptionUsageForSession(sessionDoc) {
           };
         }
       });
+      if (notificationTarget) notificationTargets.push(notificationTarget);
+      if (activatedRenewal) activatedRenewals.push(activatedRenewal);
 
-      if (result) {
-        if (result.notificationTarget) notificationTargets.push(result.notificationTarget);
-        if (result.activatedRenewalId) activatedRenewals.push({ studentId, subscriptionId: result.activatedRenewalId });
-        const { notificationTarget, activatedRenewalId, ...usageResult } = result;
-        results.push(usageResult);
-      }
+      if (result) results.push(result);
     } catch (error) {
       if (error?.code === 11000) {
         results.push({ studentId, skipped: true, reason: 'ALREADY_PROCESSED_CONCURRENTLY' });
@@ -234,15 +206,9 @@ async function settleSubscriptionUsageForSession(sessionDoc) {
     .select('students capacity subscriptionPlanKey status')
     .lean();
   if (refreshedCircle) {
-    const plan = getPlan(refreshedCircle.subscriptionPlanKey);
-    const count = (refreshedCircle.students || []).length;
-    const nextStatus = count >= Number(refreshedCircle.capacity || 0)
-      ? 'full'
-      : ['active', 'full'].includes(refreshedCircle.status)
-        ? 'active'
-        : count >= Number(plan?.minStudents || 1) ? 'ready' : 'forming';
-    if (['active', 'full'].includes(refreshedCircle.status) && nextStatus !== refreshedCircle.status) {
-      await GroupCircle.updateOne({ _id: circleId }, { $set: { status: nextStatus } });
+    const nextStatus = circleStatusForCount(refreshedCircle);
+    if (nextStatus !== refreshedCircle.status) {
+      await GroupCircle.updateOne({ _id: circleId, status: refreshedCircle.status, students: refreshedCircle.students }, { $set: { status: nextStatus } });
     }
   }
 

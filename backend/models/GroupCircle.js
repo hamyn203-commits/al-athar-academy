@@ -77,6 +77,9 @@ const GroupCircleSchema = new mongoose.Schema({
     enum: ['community', 'group', 'focused', 'mini', 'private'],
     default: undefined
   },
+  startedAt: Date,
+  subscriptionUsageVersion: { type: Number, default: 0 },
+  subscriptionSection: { type: String, enum: ['men_children', 'ladies'] },
   currentSurah: {
     type: String,
     default: ''
