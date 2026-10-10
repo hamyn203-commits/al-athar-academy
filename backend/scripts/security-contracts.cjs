@@ -770,7 +770,7 @@ requireContains(
 requireContains(
   'src/pages/TeacherRegistration/useTeacherForm.js',
   'teacher registration must upload introduction and teaching method videos separately',
-  /uploadOne\(files\.introductionVideo,[\s\S]{0,500}uploadOne\(files\.teachingMethodVideo/
+  /one\(['"]introductionVideo['"],[\s\S]{0,700}one\(['"]teachingMethodVideo['"]/
 );
 
 // T13: admin teacher approval must be review-gated, auditable and private.
