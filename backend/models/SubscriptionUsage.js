@@ -46,7 +46,7 @@ SubscriptionUsageSchema.index(
   { unique: true }
 );
 
-SubscriptionUsageSchema.index({ student: 1, session: 1 });
+SubscriptionUsageSchema.index({ student: 1, session: 1 }, { unique: true });
 
 module.exports = mongoose.model('SubscriptionUsage', SubscriptionUsageSchema);
 

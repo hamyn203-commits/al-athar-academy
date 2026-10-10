@@ -231,6 +231,10 @@ async function startSubscriptionCircle({ circleId, schedule, timezone = 'Africa/
     await dbSession.withTransaction(async () => {
       const circle = await GroupCircle.findById(circleId).session(dbSession);
       if (!circle) fail('CIRCLE_NOT_FOUND', 'الحلقة غير موجودة');
+      if (isRunningCircle(circle)) {
+        result = { circleId: String(circle._id), alreadyStarted: true, studentIds: [], activatedStudentIds: [] };
+        return;
+      }
       if (!['forming', 'ready'].includes(circle.status)) {
         fail('CIRCLE_NOT_READY', 'الحلقة بدأت بالفعل أو غير متاحة للبدء');
       }
@@ -266,7 +270,7 @@ async function startSubscriptionCircle({ circleId, schedule, timezone = 'Africa/
       await StudentSubscription.updateMany({ _id: { $in: placed.map(item => item._id) }, status: 'placed' },
         { $set: { status: 'active', startedAt: now } }, { session: dbSession });
       result = { circleId: String(circle._id), circleName: circle.name, circleStatus: circle.status,
-        activatedStudentIds: studentIds, teacherUserId: teacher.user ? String(teacher.user) : null };
+        studentIds, activatedStudentIds: studentIds, teacherUserId: teacher.user ? String(teacher.user) : null };
     });
     return result;
   } finally { await dbSession.endSession(); }

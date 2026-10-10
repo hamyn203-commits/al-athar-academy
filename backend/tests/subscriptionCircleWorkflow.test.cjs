@@ -99,7 +99,7 @@ test('circle start requires paid minimum and valid plan duration, then activates
   assert.equal(result.activatedStudentIds.length, 15);
   assert.equal(h.circle.status, 'active');
   assert.ok(h.subscriptions.every(sub => sub.status === 'active' && sub.sessionsRemaining === sub.sessionCount && sub.sessionsUsed === 0));
-  await assert.rejects(startSubscriptionCircle(valid), { code: 'CIRCLE_NOT_READY' });
+  assert.equal((await startSubscriptionCircle(valid)).alreadyStarted, true);
 });
 
 test('settlement replay cannot debit the renewal activated by the same completed session', async () => {
