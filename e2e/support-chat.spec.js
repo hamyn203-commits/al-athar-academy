@@ -69,11 +69,11 @@ test('support authorization, concurrent send retry, notification deduplication a
   expect((await request.post(`${endpoint}/api/support/me/messages`, { headers: student.headers, data: { ...payload, text: 'تغيير نفس المعرّف' } })).status()).toBe(409);
   expect((await request.post(`${endpoint}/api/support/me/messages`, { headers: student.headers, data: { text: ' ', clientId: 'invalid-empty' } })).status()).toBe(400);
   const second = (await (await request.post(`${endpoint}/api/support/me/messages`, { headers: student.headers, data: { text: 'رسالة وصلت بعد العرض', clientId: `cutoff-${Date.now()}` } })).json()).message;
-  expect((await request.put(`${endpoint}/api/support/${student.user._id}/read`, { headers: admin.headers, data: { through: first._id } })).status()).toBe(200);
+  expect((await request.put(`${endpoint}/api/support/${student.user._id}/read`, { headers: admin.headers, data: { through: first._id, messageIds: [first._id] } })).status()).toBe(200);
   const thread = await (await request.get(`${endpoint}/api/support/${student.user._id}/messages`, { headers: admin.headers })).json();
   expect(thread.messages.find((m) => m._id === first._id).readAt).toBeTruthy();
   expect(thread.messages.find((m) => m._id === second._id).readAt).toBeNull();
-  expect((await request.put(`${endpoint}/api/support/me/read`, { headers: other.headers, data: { through: first._id } })).status()).toBe(404);
+  expect((await request.put(`${endpoint}/api/support/me/read`, { headers: other.headers, data: { through: first._id, messageIds: [first._id] } })).status()).toBe(404);
   const after = await (await request.get(`${endpoint}/api/notifications?limit=100`, { headers: admin.headers })).json();
   expect(after.notifications.find((n) => n.data?.supportMessage === first._id).isRead).toBeTruthy();
   expect(after.notifications.find((n) => n.data?.supportMessage === second._id).isRead).toBeFalsy();

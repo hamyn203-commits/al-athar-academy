@@ -9,6 +9,6 @@ const schema = new mongoose.Schema({
   readAt: { type: Date, default: null },
 }, { timestamps: true });
 schema.index({ sender: 1, clientId: 1 }, { unique: true });
-schema.index({ student: 1, _id: -1 });
+schema.index({ student: 1, createdAt: -1, _id: -1 });
 schema.index({ student: 1, senderRole: 1, readAt: 1 });
 module.exports = mongoose.model('SupportMessage', schema);

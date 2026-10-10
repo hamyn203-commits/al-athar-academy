@@ -37,14 +37,15 @@ export default function SupportChat({ studentId = 'me', admin = false }) {
       if (!cursorInitialized.current) { setNextBefore(data.nextBefore); cursorInitialized.current = true; }
       if (nearBottom) requestAnimationFrame(() => bottom.current?.scrollIntoView({ block: 'nearest' }));
       const last = data.messages?.at(-1);
-      if (last && data.unread && document.visibilityState === 'visible') {
-        await api.put(`${base}/read`, { through: last._id }, { auth: true });
+      const observed = (data.messages || []).filter((m) => m.senderRole !== (admin ? 'admin' : 'student') && !m.readAt).map((m) => m._id);
+      if (last && observed.length && document.visibilityState === 'visible') {
+        await api.put(`${base}/read`, { through: last._id, messageIds: observed }, { auth: true });
         window.dispatchEvent(new Event('wn:notifications-changed'));
         window.dispatchEvent(new Event('wn:support-changed'));
       }
     } catch { if (version === generation.current) setSyncError(true); }
     finally { if (version === generation.current) busy.current = false; }
-  }, [base]);
+  }, [base, admin]);
 
   useEffect(() => {
     generation.current += 1; busy.current = false; cursorInitialized.current = false;
@@ -72,6 +73,11 @@ export default function SupportChat({ studentId = 'me', admin = false }) {
       const data = await api.get(`${base}/messages?before=${nextBefore}`, { auth: true });
       if (version !== generation.current) return;
       setOlder((current) => [...data.messages, ...current]); setNextBefore(data.nextBefore);
+      const observed = data.messages.filter((m) => m.senderRole !== (admin ? 'admin' : 'student') && !m.readAt).map((m) => m._id);
+      if (observed.length && document.visibilityState === 'visible') {
+        await api.put(`${base}/read`, { through: data.messages.at(-1)._id, messageIds: observed }, { auth: true });
+        window.dispatchEvent(new Event('wn:notifications-changed')); window.dispatchEvent(new Event('wn:support-changed'));
+      }
     } catch { setError(ar ? 'تعذر تحميل الرسائل السابقة' : 'Could not load earlier messages'); }
     finally { setLoadingOlder(false); }
   };
@@ -94,7 +100,7 @@ export default function SupportChat({ studentId = 'me', admin = false }) {
     } catch (failure) { if (version === generation.current) setError(failure.message || (ar ? 'تعذر الإرسال. حاول مرة أخرى.' : 'Send failed. Please retry.')); }
     finally { if (version === generation.current) setSending(false); }
   };
-  const all = [...new Map([...older, ...messages].map((m) => [m._id, m])).values()].sort((a, b) => a._id.localeCompare(b._id));
+  const all = [...new Map([...older, ...messages].map((m) => [m._id, m])).values()].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt) || a._id.localeCompare(b._id));
 
   return <section className="wn-support-chat" aria-label={ar ? 'محادثة الإدارة' : 'Administration chat'} dir={ar ? 'rtl' : 'ltr'}>
     <header className="wn-support-chat__header"><span className="wn-support-icon"><MessageCircle size={23} /></span><div><h2>{admin ? student?.name || (ar ? 'محادثة الطالب' : 'Student chat') : ar ? 'تواصل مع الإدارة' : 'Contact administration'}</h2><p>{admin ? (ar ? 'محادثة مباشرة مع الطالب، محفوظة ومتزامنة مع حسابه.' : 'A direct, saved conversation synchronized with the student account.') : (ar ? 'اكتب استفسارك هنا، ورد الإدارة هيوصلك داخل حسابك.' : 'Send your question here. Replies will arrive in your account.')}</p></div><button type="button" onClick={refresh} aria-label={ar ? 'تحديث المحادثة' : 'Refresh chat'}><RefreshCw size={18} /></button></header>
