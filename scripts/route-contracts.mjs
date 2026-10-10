@@ -427,6 +427,14 @@ assert.match(teacherAssetViewer, /إعادة المحاولة/);
 assert.match(teacherAssetViewer, /describePlaybackError/);
 assert.match(teacherAssetViewer, /preview\.contentType/);
 assert.match(teacherAssetViewer, /playbackErrorCode/);
+// A live dashboard refresh must NOT restart the active teacher video.
+// Playback should be re-requested only when selecting another asset or retrying.
+assert.match(teacherAssetViewer, /useRef\(loader\)/);
+assert.match(teacherAssetViewer, /latestLoader\.current = loader/);
+assert.match(teacherAssetViewer, /latestLoader\.current\(teacherId, kind, index\)/);
+assert.match(teacherAssetViewer, /\[teacherId, kind, index, category, retryKey\]/);
+assert.doesNotMatch(teacherAssetViewer, /\[teacherId, asset, loader, retryKey\]/);
+
 assert.match(teacherAssetViewer, /H\.264/);
 const teachersRouteSource = read('backend/routes/teachers.js');
 const profilePlaybackStart = teachersRouteSource.indexOf("router.get('/admin/:id/profile-change/media-playback/:kind'");
