@@ -67,7 +67,7 @@ export default function StudentJourneySection() {
             <strong>{isAr ? 'ابدأ من مستواك الحالي، لا من نقطة مفترضة.' : 'Start from your actual level, not an assumed one.'}</strong>
             <span>{isAr ? 'الحصة التعريفية تساعدنا على تحديد المسار الأنسب.' : 'The introductory lesson helps identify the most suitable path.'}</span>
           </div>
-          <LocalizedLink to="/journey" locale={locale} className="wn-btn wn-btn--primary">
+          <LocalizedLink to="/start" locale={locale} className="wn-btn wn-btn--primary">
             <Sparkles size={16} />
             {isAr ? 'ابدأ رحلتك التعليمية' : 'Start your learning journey'}
           </LocalizedLink>
