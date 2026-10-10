@@ -103,6 +103,7 @@ export default function Register() {
         } : {}),
         password: formData.password,
         role,
+        ...(role === 'student' && selectedSection ? { enrollmentSection: selectedSection === 'women' ? 'ladies' : 'men_children' } : {}),
         ...(role === 'student' && formData.guardianPhone.trim()
           ? {
               guardianPhone: formData.guardianPhone.trim(),
@@ -417,7 +418,7 @@ export default function Register() {
                 <span>{locale === 'ar' ? 'حساب ولي أمر' : 'Guardian Account'}</span>
               </button>
             </div>
-            <GoogleSignIn context="signup" role={role} />
+            <GoogleSignIn context="signup" role={role} enrollmentSection={role === 'student' && selectedSection ? (selectedSection === 'women' ? 'ladies' : 'men_children') : undefined} />
 
             <div className="mb-6">
               <h2 className="font-naskh text-2xl md:text-3xl font-bold text-[var(--athar-text)]">
