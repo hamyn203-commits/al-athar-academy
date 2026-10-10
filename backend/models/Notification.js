@@ -27,6 +27,7 @@ const NotificationSchema = new mongoose.Schema({
       'session-cancelled',
       'session-rescheduled',
       'session-chat-message',
+      'support-message',
       'homework-assigned',
       'homework-submitted',
       'review-received',
@@ -124,6 +125,7 @@ const NotificationSchema = new mongoose.Schema({
     },
     url: String,
     actionUrl: String,
+    supportMessage: { type: mongoose.Schema.Types.ObjectId, ref: 'SupportMessage' },
     imageUrl: String,
     metadata: mongoose.Schema.Types.Mixed
   },
@@ -144,6 +146,7 @@ const NotificationSchema = new mongoose.Schema({
 });
 
 NotificationSchema.index({ user: 1, createdAt: -1 });
+NotificationSchema.index({ user: 1, 'data.supportMessage': 1 }, { unique: true, partialFilterExpression: { 'data.supportMessage': { $exists: true } } });
 NotificationSchema.index({ user: 1, isRead: 1 });
 NotificationSchema.index({ user: 1, type: 1 });
 NotificationSchema.index({ scheduledAt: 1 });
@@ -341,3 +344,4 @@ NotificationSchema.statics.sendBulk = async function(userIds, notificationData) 
 const Notification = mongoose.model('Notification', NotificationSchema);
 
 module.exports = Notification;
+

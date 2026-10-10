@@ -19,11 +19,15 @@ export default function NotificationBell() {
   const knownNotificationIds = useRef(new Set());
   const initializedNotifications = useRef(false);
   const realtimeRoomRef = useRef(null);
+  const fetching = useRef(false);
+  const refreshPending = useRef(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
 
   const fetchNotifications = async () => {
+    if (fetching.current) { refreshPending.current = true; return; }
+    fetching.current = true;
     try {
       if (!api.getToken()) return;
       const data = await api.get('/api/notifications?limit=10', { auth: true });
@@ -46,6 +50,7 @@ export default function NotificationBell() {
             position: 'top-right',
             duration: 5000,
           });
+          fresh.forEach((notification) => window.dispatchEvent(new CustomEvent('wn:realtime-notification', { detail: notification })));
         }
       }
 
@@ -53,6 +58,9 @@ export default function NotificationBell() {
       setUnreadCount(data.unreadCount || 0);
     } catch (error) {
       console.error('Error fetching notifications:', error);
+    } finally {
+      fetching.current = false;
+      if (refreshPending.current) { refreshPending.current = false; fetchNotifications(); }
     }
   };
 
@@ -75,13 +83,16 @@ export default function NotificationBell() {
 
           try {
             const event = JSON.parse(new TextDecoder().decode(payload));
+            if (event?.type === 'notifications-changed') { fetchNotifications(); window.dispatchEvent(new Event('wn:notifications-changed')); return; }
+            if (event?.type === 'support-updated') { window.dispatchEvent(new Event('wn:support-changed')); return; }
             const notification = event?.notification;
             if (event?.type !== 'notification' || !notification) return;
 
             const id = String(notification._id || '');
+            const known = knownNotificationIds.current.has(id);
             if (id) knownNotificationIds.current.add(id);
 
-            toast.info(pickText(notification.message, locale), {
+            if (!known && !notification.isRead) toast.info(pickText(notification.message, locale), {
               title: pickText(notification.title, locale),
               position: 'top-right',
               duration: 5000,
@@ -108,7 +119,7 @@ export default function NotificationBell() {
     // Fallback only. Normal updates arrive instantly through LiveKit.
     const interval = setInterval(() => {
       if (document.visibilityState === 'visible') fetchNotifications();
-    }, 30000);
+    }, 10000);
 
     const onFocus = () => fetchNotifications();
     const onVisibility = () => {
@@ -116,12 +127,14 @@ export default function NotificationBell() {
     };
 
     window.addEventListener('focus', onFocus);
+    window.addEventListener('wn:notifications-changed', onFocus);
     document.addEventListener('visibilitychange', onVisibility);
 
     return () => {
       disposed = true;
       clearInterval(interval);
       window.removeEventListener('focus', onFocus);
+      window.removeEventListener('wn:notifications-changed', onFocus);
       document.removeEventListener('visibilitychange', onVisibility);
       realtimeRoomRef.current?.disconnect?.();
       realtimeRoomRef.current = null;
@@ -131,8 +144,7 @@ export default function NotificationBell() {
   const markAsRead = async (id) => {
     try {
       await api.put(`/api/notifications/${id}/read`, {}, { auth: true });
-      setNotifications((prev) => prev.map((n) => (n._id === id ? { ...n, isRead: true } : n)));
-      setUnreadCount((prev) => Math.max(0, prev - 1));
+      await fetchNotifications();
     } catch (error) {
       console.error('Error marking notification as read:', error);
     }
@@ -141,8 +153,7 @@ export default function NotificationBell() {
   const markAllAsRead = async () => {
     try {
       await api.put('/api/notifications/read-all', {}, { auth: true });
-      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-      setUnreadCount(0);
+      await fetchNotifications();
     } catch (error) {
       console.error('Error marking all as read:', error);
     }
