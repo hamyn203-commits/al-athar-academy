@@ -931,42 +931,15 @@ router.get('/admin/:id/profile-change/media-playback/:kind', protect, authorize(
     const reference = request?.proposed?.media?.[req.params.kind];
     if (!reference) return res.status(404).json({ error: 'Proposed media not found' });
 
-    const playback = await objectStorage.createTemporaryReadUrl(reference);
-    if (!playback) return res.status(409).json({
-      code: 'MEDIA_PREVIEW_NOT_SUPPORTED',
-      error: 'Direct media playback is not supported by the current storage driver',
+    // Verify the object exists and supports small byte-range reads BEFORE
+    // returning a playback link. Never use a cross-origin signed Blob URL
+    // for video: it can work server-side but be blocked by browser CORP.
+    const verifiedPlayback = await createVerifiedTeacherPlayback(reference, {
+      teacherId: req.params.id,
+      kind: req.params.kind,
+      index: 0,
+      scope: 'proposed',
     });
-
-    const metadata = await objectStorage.inspectPrivateMedia(reference);
-    if (!metadata || !Number.isFinite(Number(metadata.sizeBytes)) || Number(metadata.sizeBytes) <= 0) {
-      return res.status(404).json({
-        code: 'MEDIA_FILE_MISSING',
-        error: 'الملف غير موجود في التخزين أو حجمه صفر. اطلب إعادة رفع الفيديو.',
-      });
-    }
-    // Confirm that the signed GET capability reaches the actual object.
-    // This only requests 32 bytes and never proxies an entire media file.
-    const check = await objectStorage.probeTemporaryMediaUrl(playback.url);
-    if (check.status === 401 || check.status === 403 || check.status === 404) {
-      return res.status(502).json({
-        code: 'MEDIA_SIGNED_URL_REJECTED',
-        error: 'مخزن الوسائط رفض رابط تشغيل الفيديو. يجب مراجعة إعدادات الوصول.',
-      });
-    }
-    const useRangeProxy = !check.ok && (
-      /^(?:video|audio)\//i.test(metadata.contentType || '') ||
-      req.params.kind !== 'profilePhoto'
-    );
-    const verifiedPlayback = {
-      ...playback,
-      ...(useRangeProxy ? {
-        url: createAdminMediaRangeUrl(req.params.id, req.params.kind, 0, reference, 'proposed'),
-        streamingMode: 'authenticated-range',
-      } : { streamingMode: 'direct' }),
-      contentType: metadata.contentType,
-      sizeBytes: metadata.sizeBytes,
-      streamingChecked: check.ok || useRangeProxy,
-    };
 
     await logAdminAction({
       req,
@@ -981,10 +954,10 @@ router.get('/admin/:id/profile-change/media-playback/:kind', protect, authorize(
     res.setHeader('Referrer-Policy', 'no-referrer');
     return res.json(verifiedPlayback);
   } catch (error) {
-    console.error('Teacher profile-change media playback signing failed:', error.message);
-    return res.status(502).json({
-      code: 'MEDIA_PREVIEW_URL_FAILED',
-      error: 'تعذر إعداد معاينة التعديل مؤقتًا. حاول مرة أخرى.',
+    console.error('Teacher profile-change media playback failed:', error.message);
+    return res.status(error.status || 502).json({
+      code: error.code || 'MEDIA_PREVIEW_URL_FAILED',
+      error: error.code ? error.message : 'تعذر إعداد معاينة التعديل مؤقتًا. حاول مرة أخرى.',
     });
   }
 });
@@ -1239,11 +1212,71 @@ function createAdminMediaRangeUrl(teacherId, kind, index, reference, scope = 'or
     scope,
     referenceDigest,
   }, process.env.JWT_SECRET || 'wahy-namaa-dev-access-secret-change-me', { expiresIn: '30m' });
-  const origin = String(process.env.API_PUBLIC_URL || 'https://wahy-wa-namaa-api.vercel.app').replace(/\/$/, '');
-  const url = new URL(`${origin}/api/teachers/admin-media-range/${encodeURIComponent(teacherId)}/${encodeURIComponent(kind)}/${indexNumber}`);
-  if (url.protocol !== 'https:' && process.env.NODE_ENV === 'production') throw new Error('HTTPS is required for admin playback');
-  url.searchParams.set('ticket', ticket);
-  return url.toString();
+  // The frontend rewrites /api to the backend. Keep video requests on the
+  // academy's own origin: Helmet's same-origin CORP otherwise blocks media
+  // loaded from the separate API domain in the browser.
+  const pathname = `/api/teachers/admin-media-range/${encodeURIComponent(teacherId)}/${encodeURIComponent(kind)}/${indexNumber}`;
+  return `${pathname}?ticket=${encodeURIComponent(ticket)}`;
+}
+
+class TeacherPlaybackError extends Error {
+  constructor(code, message, status = 502) {
+    super(message);
+    this.code = code;
+    this.status = status;
+  }
+}
+
+async function createVerifiedTeacherPlayback(reference, { teacherId, kind, index = 0, scope = 'original' }) {
+  const metadata = await objectStorage.inspectPrivateMedia(reference);
+  const size = Number(metadata?.sizeBytes);
+  if (!Number.isSafeInteger(size) || size <= 0) {
+    throw new TeacherPlaybackError(
+      'MEDIA_FILE_MISSING', 'الملف غير موجود في التخزين أو حجمه صفر. اطلب إعادة رفع الفيديو.', 404
+    );
+  }
+
+  if (kind !== 'profilePhoto') {
+    // Probe only 32 bytes using the SAME private Range method as the player.
+    // This catches absent objects, provider errors, and non-range responses.
+    const end = Math.min(size - 1, 31);
+    const result = await objectStorage.getPrivateObject(reference, {
+      headers: { Range: `bytes=0-${end}` },
+    });
+    const actualRange = result?.headers?.get?.('content-range') || result?.blob?.contentRange || '';
+    try {
+      if (!result?.stream || actualRange !== `bytes 0-${end}/${size}`) {
+        throw new TeacherPlaybackError(
+          'MEDIA_RANGE_UNAVAILABLE',
+          'تعذر قراءة أجزاء الفيديو من التخزين. يرجى فحص اتصال Vercel Blob وإعدادات Range.'
+        );
+      }
+    } finally {
+      if (typeof result?.stream?.cancel === 'function') await result.stream.cancel().catch(() => {});
+      else result?.stream?.destroy?.();
+    }
+    return {
+      url: createAdminMediaRangeUrl(teacherId, kind, index, reference, scope),
+      streamingMode: 'authenticated-range',
+      contentType: metadata.contentType,
+      sizeBytes: size,
+      streamingChecked: true,
+    };
+  }
+
+  // Photos remain small and are fetched with the authenticated admin API.
+  // Keep signed-photo compatibility without exposing unrestricted storage.
+  const playback = await objectStorage.createTemporaryReadUrl(reference);
+  if (!playback) throw new TeacherPlaybackError('MEDIA_PREVIEW_NOT_SUPPORTED', 'Direct media playback is not supported by the current storage driver', 409);
+  const check = await objectStorage.probeTemporaryMediaUrl(playback.url);
+  if (!check.ok) throw new TeacherPlaybackError('MEDIA_SIGNED_URL_REJECTED', 'مخزن الوسائط رفض رابط المعاينة. راجع إعدادات الوصول.');
+  return {
+    ...playback,
+    streamingMode: 'direct',
+    contentType: metadata.contentType,
+    sizeBytes: size,
+    streamingChecked: true,
+  };
 }
 
 // The media element cannot send Authorization headers. Grant a short-lived,
@@ -1380,42 +1413,15 @@ router.get('/admin/:id/media-playback/:kind{/:index}', protect, authorize('admin
     }
     if (!reference) return res.status(404).json({ error: 'Media not found' });
 
-    const playback = await objectStorage.createTemporaryReadUrl(reference);
-    if (!playback) return res.status(409).json({
-      code: 'MEDIA_PREVIEW_NOT_SUPPORTED',
-      error: 'Direct media playback is not supported by the current storage driver',
+    // Verify the object exists and supports small byte-range reads BEFORE
+    // returning a playback link. Never use a cross-origin signed Blob URL
+    // for video: it can work server-side but be blocked by browser CORP.
+    const verifiedPlayback = await createVerifiedTeacherPlayback(reference, {
+      teacherId: teacher._id,
+      kind: req.params.kind,
+      index: req.params.index,
+      scope: 'original',
     });
-
-    const metadata = await objectStorage.inspectPrivateMedia(reference);
-    if (!metadata || !Number.isFinite(Number(metadata.sizeBytes)) || Number(metadata.sizeBytes) <= 0) {
-      return res.status(404).json({
-        code: 'MEDIA_FILE_MISSING',
-        error: 'الملف غير موجود في التخزين أو حجمه صفر. اطلب إعادة رفع الفيديو.',
-      });
-    }
-    // Confirm that the signed GET capability reaches the actual object.
-    // This only requests 32 bytes and never proxies an entire media file.
-    const check = await objectStorage.probeTemporaryMediaUrl(playback.url);
-    if (check.status === 401 || check.status === 403 || check.status === 404) {
-      return res.status(502).json({
-        code: 'MEDIA_SIGNED_URL_REJECTED',
-        error: 'مخزن الوسائط رفض رابط تشغيل الفيديو. يجب مراجعة إعدادات الوصول.',
-      });
-    }
-    const useRangeProxy = !check.ok && (
-      /^(?:video|audio)\//i.test(metadata.contentType || '') ||
-      req.params.kind !== 'profilePhoto'
-    );
-    const verifiedPlayback = {
-      ...playback,
-      ...(useRangeProxy ? {
-        url: createAdminMediaRangeUrl(teacher._id, req.params.kind, req.params.index, reference, 'original'),
-        streamingMode: 'authenticated-range',
-      } : { streamingMode: 'direct' }),
-      contentType: metadata.contentType,
-      sizeBytes: metadata.sizeBytes,
-      streamingChecked: check.ok || useRangeProxy,
-    };
 
     await logAdminAction({
       req,
@@ -1430,10 +1436,10 @@ router.get('/admin/:id/media-playback/:kind{/:index}', protect, authorize('admin
     res.setHeader('Referrer-Policy', 'no-referrer');
     return res.json(verifiedPlayback);
   } catch (error) {
-    console.error('Teacher private media playback signing failed:', error.message);
-    return res.status(502).json({
-      code: 'MEDIA_PREVIEW_URL_FAILED',
-      error: 'تعذر إعداد تشغيل الفيديو مؤقتًا. حاول مرة أخرى.',
+    console.error('Teacher private media playback failed:', error.message);
+    return res.status(error.status || 502).json({
+      code: error.code || 'MEDIA_PREVIEW_URL_FAILED',
+      error: error.code ? error.message : 'تعذر إعداد تشغيل الفيديو مؤقتًا. حاول مرة أخرى.',
     });
   }
 });
