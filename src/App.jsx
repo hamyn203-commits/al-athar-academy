@@ -80,7 +80,7 @@ function pageRoutes() {
   return (
     <>
       <Route index element={<AuthenticatedLanding><LandingPage /></AuthenticatedLanding>} />
-      <Route path="login" element={<Login />} />
+      <Route path="login" element={<AuthenticatedLanding><Login /></AuthenticatedLanding>} />
       <Route path="start" element={<StartPage />} />
       <Route path="journey" element={<StudentJourney />} />
       <Route path="forgot-password" element={<ForgotPassword />} />
