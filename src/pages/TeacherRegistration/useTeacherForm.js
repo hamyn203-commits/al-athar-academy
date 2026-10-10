@@ -416,6 +416,9 @@ export function useTeacherForm() {
       });
       const data = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(data.error || 'تعذر حفظ طلب المعلم. تواصل مع الإدارة إذا تكرر الخطأ.');
+      if (data.success !== true) {
+        throw new Error('تعذر تأكيد حفظ الطلب من رد الخادم. راجع حالة الطلب مع الإدارة قبل إعادة الإرسال.');
+      }
       localStorage.removeItem(DRAFT_KEY);
       setApplicationStatus(data.applicationStatus || 'pending');
       setApplicationStatusToken(data.applicationStatusToken || '');
