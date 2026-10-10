@@ -17,7 +17,7 @@ export default function MobileStickyBar() {
       <div className="wn-mobile-sticky__inner">
         <Link to={lp('/start')} className="wn-mobile-sticky__primary">
           <Sparkles size={16} />
-          <span>{isAr ? 'ابدأ حصة تعريفية' : 'Start a trial lesson'}</span>
+          <span>{isAr ? 'ابدأ معنا' : 'Get started'}</span>
         </Link>
         <Link
           to={lp('/contact')}
