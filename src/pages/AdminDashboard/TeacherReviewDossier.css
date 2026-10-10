@@ -1,0 +1,402 @@
+/* Teacher review: readable RTL hierarchy, clear decisions and private in-page media. */
+.wn-admin-dossier-backdrop .wn-admin-dossier {
+  width: min(1100px, 98vw);
+  background: #f5f8f7;
+}
+.wn-admin-dossier .wn-admin-dossier__header {
+  align-items: center;
+  gap: 16px;
+  padding: 20px 25px;
+}
+.wn-admin-dossier .wn-admin-dossier__header > div > span {
+  font-size: 12px;
+  letter-spacing: .015em;
+}
+.wn-admin-dossier .wn-admin-dossier__header h2 {
+  font-size: clamp(20px, 2vw, 25px);
+  line-height: 1.5;
+}
+.wn-admin-dossier .wn-admin-dossier__header p {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+  line-height: 1.75;
+}
+.wn-admin-dossier .wn-admin-dossier__header-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 10px;
+}
+.wn-admin-dossier .wn-admin-dossier__header-actions button {
+  min-height: 40px;
+  padding: 9px 12px;
+  border-radius: 10px;
+}
+.wn-admin-dossier .wn-admin-dossier__header-actions button[aria-label="إغلاق"] {
+  width: 40px;
+  display: grid;
+  place-items: center;
+  background: #eef3f1;
+}
+.wn-admin-dossier .wn-admin-dossier__body {
+  display: block;
+  padding: 20px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.wn-admin-dossier .wn-admin-review-gate,
+.wn-admin-dossier .wn-admin-dossier__section {
+  padding: clamp(16px, 2vw, 24px);
+  border: 1px solid #dfe9e5;
+  border-radius: 18px;
+  background: #fff;
+  margin-bottom: 18px;
+  scroll-margin-top: 16px;
+}
+.wn-admin-dossier .wn-admin-review-gate__summary {
+  grid-template-columns: minmax(125px,180px) minmax(140px,1fr) minmax(190px,auto);
+  gap: 16px;
+}
+.wn-admin-dossier .wn-admin-review-gate__summary > div:first-child span {
+  font-size: 13px;
+  font-weight: 700;
+}
+.wn-admin-dossier .wn-admin-review-gate__summary > div:first-child strong {
+  font-size: 30px;
+  line-height: 1.4;
+}
+.wn-admin-dossier .wn-admin-review-gate__summary > div:first-child small {
+  font-size: 12px;
+}
+.wn-admin-dossier .wn-admin-review-gate__state {
+  font-size: 12px;
+  padding: 11px 14px;
+  line-height: 1.7;
+  white-space: normal;
+}
+.wn-admin-dossier .wn-admin-review-gate__intro {
+  margin: 18px 0;
+  padding: 13px 15px;
+  border-radius: 12px;
+  border-right: 3px solid #0f7056;
+  background: #f3f8f5;
+  color: #345348;
+  font-size: 14px;
+  line-height: 1.9;
+}
+.wn-admin-dossier .wn-admin-review-group {
+  margin-top: 18px;
+}
+.wn-admin-dossier .wn-admin-review-group + .wn-admin-review-group {
+  border-top: 1px solid #e7eeea;
+  padding-top: 20px;
+}
+.wn-admin-dossier .wn-admin-review-group__heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.wn-admin-dossier .wn-admin-review-group__heading h3 {
+  font-size: 17px;
+  font-weight: 850;
+  color: #0b4237;
+}
+.wn-admin-dossier .wn-admin-review-group__heading p {
+  font-size: 13px;
+  line-height: 1.8;
+  color: #637970;
+}
+.wn-admin-dossier .wn-admin-review-group__heading > span {
+  white-space: nowrap;
+  flex-shrink: 0;
+  padding: 7px 11px;
+  background: #edf5f0;
+  border-radius: 999px;
+  color: #1a624d;
+  font-size: 12px;
+  font-weight: 700;
+}
+.wn-admin-dossier .wn-admin-review-checklist {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap: 12px;
+  margin-top: 0;
+}
+.wn-admin-dossier .wn-admin-review-checklist > article {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px solid #e0eae5;
+  background: #fcfefd;
+  min-width: 0;
+}
+.wn-admin-dossier .wn-admin-review-checklist > article.is-approved {
+  border-color: #b9dcca;
+  background: #f4fbf6;
+}
+.wn-admin-dossier .wn-admin-review-checklist > article.is-changes-requested {
+  border-color: #e9c8bd;
+  background: #fffbf9;
+}
+.wn-admin-dossier .wn-admin-review-checklist__label {
+  gap: 11px;
+  min-width: 0;
+}
+.wn-admin-dossier .wn-admin-review-checklist__label > svg {
+  width: 20px;
+  height: 20px;
+}
+.wn-admin-dossier .wn-admin-review-checklist__label > div {
+  min-width: 0;
+}
+.wn-admin-dossier .wn-admin-review-checklist__label strong {
+  font-size: 15px;
+  line-height: 1.65;
+  font-weight: 850;
+}
+.wn-admin-dossier .wn-admin-review-checklist__label small {
+  font-size: 12px;
+  line-height: 1.7;
+}
+.wn-admin-dossier .wn-admin-review-checklist__label p.wn-admin-review-checklist__hint {
+  margin-top: 9px;
+  font-size: 13px;
+  line-height: 1.8;
+  color: #546e63;
+}
+.wn-admin-dossier .wn-admin-review-checklist__label p.wn-admin-review-checklist__missing-text,
+.wn-admin-dossier .wn-admin-review-checklist__label p.wn-admin-review-checklist__note {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #fff0ea;
+  color: #994b2d;
+  font-size: 12px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.wn-admin-dossier .wn-admin-review-checklist__actions {
+  justify-content: flex-start;
+  gap: 7px;
+}
+.wn-admin-dossier .wn-admin-review-checklist__actions button {
+  min-height: 39px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 750;
+  border-radius: 9px;
+  line-height: 1.5;
+}
+.wn-admin-dossier .wn-admin-review-checklist__actions button.is-inspect {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #e8f4f0;
+  color: #11614c;
+}
+.wn-admin-dossier .wn-admin-review-checklist__actions button:disabled {
+  opacity: .48;
+  cursor: not-allowed;
+}
+.wn-admin-dossier .wn-admin-dossier__section-title {
+  gap: 9px;
+  margin-bottom: 15px;
+}
+.wn-admin-dossier .wn-admin-dossier__section-title h3 {
+  font-size: 17px;
+  line-height: 1.6;
+}
+.wn-admin-dossier .wn-admin-dossier__grid {
+  grid-template-columns: repeat(3,minmax(0,1fr));
+  gap: 11px;
+}
+.wn-admin-dossier .wn-admin-dossier__value {
+  min-width: 0;
+  padding: 13px;
+  background: #f4f8f6;
+}
+.wn-admin-dossier .wn-admin-dossier__value span {
+  font-size: 12px;
+  color: #677e73;
+}
+.wn-admin-dossier .wn-admin-dossier__value strong {
+  font-size: 14px;
+  line-height: 1.7;
+}
+.wn-admin-dossier .wn-admin-dossier__asset-grid {
+  gap: 12px;
+}
+.wn-admin-dossier .wn-admin-dossier__asset-grid > button {
+  min-height: 76px;
+  padding: 12px;
+  border-radius: 12px;
+}
+.wn-admin-dossier .wn-admin-dossier__asset-grid strong {
+  font-size: 14px;
+}
+.wn-admin-dossier .wn-admin-dossier__asset-grid small,
+.wn-admin-dossier .wn-admin-dossier__privacy,
+.wn-admin-dossier .wn-admin-dossier__empty {
+  font-size: 12px;
+  line-height: 1.7;
+}
+.wn-admin-dossier .wn-admin-audit-list strong {
+  font-size: 13px;
+}
+.wn-admin-dossier .wn-admin-audit-list small {
+  font-size: 12px;
+}
+.wn-admin-dossier .wn-admin-audit-list > div {
+  grid-template-columns: minmax(120px,1fr) minmax(0,2fr);
+}
+.wn-admin-dossier .wn-admin-dossier__footer {
+  z-index: 3;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+  padding: 14px;
+}
+.wn-admin-dossier .wn-admin-dossier__footer button {
+  min-height: 44px;
+  padding: 10px 16px;
+  font-size: 13px;
+}
+
+/* Modal within the authenticated teacher dossier, never a new browser tab. */
+.wn-admin-asset-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 160;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(8,22,20,.78);
+}
+.wn-admin-asset-viewer__panel {
+  width: min(940px,100%);
+  max-height: min(92dvh,850px);
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 24px 80px rgba(0,0,0,.28);
+}
+.wn-admin-asset-viewer__header,
+.wn-admin-asset-viewer__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 15px 20px;
+  background: #fff;
+}
+.wn-admin-asset-viewer__header {
+  border-bottom: 1px solid #e5eeea;
+}
+.wn-admin-asset-viewer__header h3 {
+  font-size: 19px;
+  font-weight: 850;
+  color: #0b4237;
+}
+.wn-admin-asset-viewer__header p {
+  font-size: 13px;
+  color: #617569;
+}
+.wn-admin-asset-viewer__header button {
+  min-width: 42px;
+  min-height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: #eef3f0;
+}
+.wn-admin-asset-viewer__content {
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  padding: 18px;
+  overflow: auto;
+  background: #101d1b;
+}
+.wn-admin-asset-viewer__content img,
+.wn-admin-asset-viewer__content video,
+.wn-admin-asset-viewer__content iframe {
+  display: block;
+  width: 100%;
+  max-height: 65dvh;
+  object-fit: contain;
+}
+.wn-admin-asset-viewer__content img {
+  width: auto;
+  max-width: 100%;
+}
+.wn-admin-asset-viewer__content iframe {
+  min-height: 60dvh;
+  border: 0;
+  background: #fff;
+}
+.wn-admin-asset-viewer__content audio { width: min(100%,630px); }
+.wn-admin-asset-viewer__message {
+  padding: 16px;
+  font-size: 14px;
+  line-height: 1.85;
+  text-align: center;
+  color: #e7eee9;
+}
+.wn-admin-asset-viewer__message.is-error { color: #ffd5c7; }
+.wn-admin-asset-viewer__footer {
+  border-top: 1px solid #e5eeea;
+}
+.wn-admin-asset-viewer__footer a,
+.wn-admin-asset-viewer__footer button {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.wn-admin-asset-viewer__footer a {
+  background: #eaf5ef;
+  color: #126146;
+}
+.wn-admin-asset-viewer__footer button {
+  background: #0b4439;
+  color: #fff;
+}
+@media (max-width: 860px) {
+  .wn-admin-dossier .wn-admin-review-checklist { grid-template-columns: 1fr; }
+  .wn-admin-dossier .wn-admin-dossier__grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .wn-admin-dossier .wn-admin-review-gate__summary { grid-template-columns: minmax(0,1fr) minmax(0,1fr); }
+  .wn-admin-dossier .wn-admin-review-gate__state { grid-column: 1 / -1; }
+}
+@media (max-width: 560px) {
+  .wn-admin-dossier-backdrop .wn-admin-dossier { width: 100vw; }
+  .wn-admin-dossier .wn-admin-dossier__header { padding: 14px; flex-wrap: wrap; }
+  .wn-admin-dossier .wn-admin-dossier__body { padding: 12px; }
+  .wn-admin-dossier .wn-admin-dossier__grid,
+  .wn-admin-dossier .wn-admin-dossier__asset-grid,
+  .wn-admin-dossier .wn-admin-review-gate__summary { grid-template-columns: 1fr; }
+  .wn-admin-dossier .wn-admin-review-group__heading { align-items: flex-start; flex-direction: column; }
+  .wn-admin-asset-viewer { padding: 8px; }
+  .wn-admin-asset-viewer__header, .wn-admin-asset-viewer__footer { padding: 12px; }
+  .wn-admin-asset-viewer__content { padding: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wn-admin-dossier * { scroll-behavior: auto; }
+}
