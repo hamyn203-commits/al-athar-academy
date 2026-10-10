@@ -684,7 +684,7 @@ requireContains(
 requireContains(
   'backend/routes/subscriptions.js',
   'subscription selection must derive pricing from the server-side catalog',
-  /quoteSubscription\(\{\s*planKey,\s*sessionCount\s*\}\)[\s\S]{0,900}pricePerSessionMinor:\s*quote\.pricePerSessionMinor[\s\S]{0,300}totalAmountMinor:\s*quote\.totalAmountMinor/
+  /quoteSubscription\(\{\s*planKey,\s*sessionCount\s*\}\)[\s\S]{0,1800}pricePerSessionMinor:\s*quote\.pricePerSessionMinor[\s\S]{0,300}totalAmountMinor:\s*quote\.totalAmountMinor/
 );
 requireAbsent(
   'backend/routes/subscriptions.js',
@@ -695,6 +695,126 @@ requireContains(
   'backend/models/GroupCircle.js',
   'group circles must allow the approved 15-student economic plan capacity',
   /capacity:[\s\S]{0,100}max:\s*15/
+);
+requireContains(
+  'backend/routes/payments.js',
+  'subscription manual payment must derive amount from the stored subscription quote',
+  /kind:\s*['"]subscription['"][\s\S]{0,900}amountMinor:\s*subscription\.totalAmountMinor[\s\S]{0,120}currency:\s*subscription\.currency/
+);
+requireAbsent(
+  'backend/routes/payments.js',
+  'subscription manual payment must never trust a client supplied amount',
+  /subscription\/:id\/manual[\s\S]{0,2600}(?:req\.body\.(?:amount|amountMinor|price)|amountMinor:\s*req\.body)/
+);
+requireContains(
+  'backend/routes/payments.js',
+  'subscription payment proof must remain owner scoped',
+  /subscription\/:id\/manual[\s\S]{0,1600}isOwnedObjectReference\([\s\S]{0,180}['"]payment-proof['"][\s\S]{0,120}req\.user\.id/
+);
+requireContains(
+  'backend/models/Payment.js',
+  'pending subscription manual payments must be unique per student and subscription',
+  /student:\s*1,\s*subscription:\s*1,\s*provider:\s*1,\s*status:\s*1[\s\S]{0,260}unique:\s*true[\s\S]{0,260}kind:\s*['"]subscription['"][\s\S]{0,160}provider:\s*['"]manual['"][\s\S]{0,160}status:\s*['"]pending['"]/
+);
+requireContains(
+  'backend/services/manualPaymentSettlement.js',
+  'new subscription payments must move to placement while early renewals queue',
+  /subscription\.renewalOf[\s\S]{0,1800}subscription\.status\s*=\s*['"]renewal_queued['"][\s\S]{0,2200}subscription\.status\s*=\s*['"]awaiting_placement['"]/
+);
+requireContains(
+  'backend/routes/subscriptions.js',
+  'renewal pricing must remain server-authoritative and reuse the current plan',
+  /router\.post\(['"]\/:id\/renew['"][\s\S]{0,1800}quoteSubscription\(\{\s*planKey:\s*source\.planKey,\s*sessionCount\s*\}\)[\s\S]{0,1800}preferredTeacher:\s*source\.preferredTeacher[\s\S]{0,300}circle:\s*source\.circle/
+);
+requireContains(
+  'backend/routes/subscriptions.js',
+  'normal plan selection must not overwrite a pending renewal',
+  /pendingRenewal[\s\S]{0,900}RENEWAL_PAYMENT_PENDING[\s\S]{0,2600}findOneAndUpdate\([\s\S]{0,220}renewalOf:\s*null/
+);
+requireContains(
+  'backend/routes/subscriptions.js',
+  'subscription placement must remain admin-only',
+  /router\.post\(['"]\/admin\/:id\/place['"],\s*protect,\s*authorize\(['"]admin['"]\)/
+);
+requireContains(
+  'backend/services/subscriptionPlacement.js',
+  'placement must use the student preferred teacher',
+  /subscription\.preferredTeacher[\s\S]{0,1000}Teacher\.findOne\([\s\S]{0,260}_id:\s*subscription\.preferredTeacher/
+);
+requireContains(
+  'backend/services/subscriptionPlacement.js',
+  'group activation must obey the selected plan minimum',
+  /circle\.students\.length\s*>=\s*plan\.minStudents/
+);
+requireContains(
+  'backend/services/subscriptionPlacement.js',
+  'existing circle placement must match student gender age track and level',
+  /gender:\s*expectedGender[\s\S]{0,180}targetAgeGroup:\s*expectedAgeGroup[\s\S]{0,180}track:\s*expectedTrack[\s\S]{0,180}level:\s*expectedLevel/
+);
+requireContains(
+  'backend/routes/payments.js',
+  'subscription payment review must notify the student about placement or retry',
+  /result\?\.subscriptionId[\s\S]{0,3600}notifyUser\(result\.studentId/
+);
+requireContains(
+  'backend/routes/subscriptions.js',
+  'subscription placement must notify the learner lifecycle state',
+  /subscriptionStatus\s*===\s*['"]active['"][\s\S]{0,2400}notifyUser\(result\.studentId/
+);
+requireContains(
+  'backend/models/SubscriptionUsage.js',
+  'subscription usage ledger must be unique per subscription and session',
+  /subscription:\s*1,\s*session:\s*1[\s\S]{0,120}unique:\s*true/
+);
+requireContains(
+  'backend/routes/sessions.js',
+  'group circle scheduling must be teacher/admin protected and require an active circle',
+  /router\.post\(['"]\/group-circle['"],\s*protect,\s*authorize\(['"]teacher['"],\s*['"]admin['"]\)[\s\S]{0,900}\[['"]active['"],\s*['"]full['"]\]\.includes\(circle\.status\)/
+);
+requireContains(
+  'backend/routes/sessions.js',
+  'group circle scheduling must snapshot the roster into attendance',
+  /const attendance\s*=\s*\(circle\.students\s*\|\|\s*\[\]\)\.map[\s\S]{0,900}type:\s*['"]group_circle['"][\s\S]{0,500}attendance/
+);
+requireContains(
+  'backend/routes/sessions.js',
+  'group attendance updates must be teacher/admin protected and restricted to final states',
+  /router\.patch\(['"]\/:id\/attendance['"],\s*protect,\s*authorize\(['"]teacher['"],\s*['"]admin['"]\)[\s\S]{0,2600}new Set\(\[['"]attended['"],\s*['"]absent['"],\s*['"]excused['"]\]\)/
+);
+requireContains(
+  'backend/routes/sessions.js',
+  'group completion must fail closed until attendance is finalized',
+  /session\.type\s*===\s*['"]group_circle['"][\s\S]{0,700}ATTENDANCE_INCOMPLETE/
+);
+requireContains(
+  'backend/routes/sessions.js',
+  'group completion must settle subscription credits idempotently',
+  /session\.type\s*===\s*['"]group_circle['"][\s\S]{0,160}settleSubscriptionUsageForSession\(session\)/
+);
+requireContains(
+  'backend/services/subscriptionUsage.js',
+  'eligible early excuses must preserve the package credit',
+  /status\s*===\s*['"]excused['"]\s*&&\s*eligible[\s\S]{0,160}outcome:\s*['"]compensated['"]/
+);
+requireContains(
+  'backend/services/subscriptionUsage.js',
+  'a paid queued renewal must activate when the previous package reaches zero',
+  /renewalOf:\s*subscription\._id[\s\S]{0,220}status:\s*['"]renewal_queued['"][\s\S]{0,500}queuedRenewal\.status\s*=\s*['"]active['"]/
+);
+requireContains(
+  'backend/services/subscriptionUsage.js',
+  'exhausted subscriptions must remove future circle attendance and direct circle access',
+  /subscription\.status\s*===\s*['"]completed['"][\s\S]{0,1200}\$pull:\s*\{\s*students:\s*studentId[\s\S]{0,800}\$unset:\s*\{\s*circle:\s*1[\s\S]{0,900}\$pull:\s*\{\s*attendance:\s*\{\s*student:\s*studentId/
+);
+requireContains(
+  'backend/services/teacherFinance.js',
+  'teacher session earnings must scale by duration from the hourly rate',
+  /function\s+calculateSessionEarning[\s\S]{0,500}rate\s*\*\s*duration\s*\/\s*60/
+);
+requireContains(
+  'backend/routes/sessions.js',
+  'session completion must use the duration based teacher earning calculator',
+  /calculateSessionEarning\(HOURLY_RATE,\s*sessionDuration\)/
 );
 
 // T07.2d: manual transfer approval must remain private, admin-only and transactional.
@@ -721,7 +841,7 @@ requireContains(
 requireContains(
   'backend/services/manualPaymentSettlement.js',
   'manual payment approval must create enrollment through the settlement service',
-  /normalizedAction\s*===\s*['"]approve['"][\s\S]{0,900}createEnrollmentForSettledPayment/
+  /normalizedAction\s*===\s*['"]approve['"][\s\S]{0,7200}createEnrollmentForSettledPayment/
 );
 requireAbsent(
   'backend/routes/uploads.js',

@@ -171,6 +171,18 @@ assert.match(studentDashboard, /\/api\/students\/dashboard\/guardian-invitations
 assert.match(studentDashboard, /submitGuardianInvitation/);
 assert.match(studentDashboard, /copyInvitationCode/);
 assert.match(studentDashboard, /trialAllowance/);
+assert.match(studentDashboard, /\/api\/subscriptions\/me/);
+assert.match(studentDashboard, /currentSubscription/);
+assert.match(studentDashboard, /حالة اشتراكك/);
+assert.match(studentDashboard, /بانتظار مراجعة الإدارة/);
+assert.match(studentDashboard, /الدفع معتمد — بانتظار التسكين/);
+assert.match(studentDashboard, /تم التسكين — الجروب قيد الاكتمال/);
+assert.match(studentDashboard, /sessionsRemaining/);
+assert.match(studentDashboard, /\/api\/subscriptions\/'\s*\+\s*encodeURIComponent\(subscription\._id\)\s*\+\s*'\/renew/);
+assert.match(studentDashboard, /جدد نفس الجروب/);
+assert.match(studentDashboard, /renewal_queued/);
+assert.match(studentDashboard, /group_circle/);
+assert.match(studentDashboard, /حلقة جماعية/);
 assert.match(studentDashboard, /اشتراك/);
 assert.match(studentDashboard, /navigate\(lp\(['"]\/plans['"]\)\)/);
 assert.match(studentDashboard, /تجريبيات متبقية/);
@@ -183,9 +195,19 @@ const studentDashboardRoutes = read('backend/routes/studentDashboard.js');
 assert.match(sessionModel, /teacherEvaluation:[\s\S]{0,500}surahRecited:[\s\S]{0,220}nextHomework:/);
 assert.match(sessionRoutes, /MAX_TRIAL_SESSIONS_PER_STUDENT\s*=\s*3/);
 assert.match(sessionRoutes, /TRIAL_LIMIT_REACHED/);
+assert.match(sessionRoutes, /router\.post\(['"]\/group-circle['"]/);
+assert.match(sessionRoutes, /settleSubscriptionUsageForSession/);
+assert.match(sessionRoutes, /calculateSessionEarning/);
+assert.match(sessionRoutes, /['"]attendance\.student['"]:\s*req\.user\.id/);
+assert.match(sessionRoutes, /router\.patch\(['"]\/:id\/attendance['"],\s*protect,\s*authorize\(['"]teacher['"],\s*['"]admin['"]\)/);
+assert.match(sessionRoutes, /ATTENDANCE_INCOMPLETE/);
 assert.match(sessionRoutes, /trialAllowance:[\s\S]{0,180}remaining/);
 assert.match(studentDashboardRoutes, /trialAllowance:[\s\S]{0,180}remaining/);
 assert.match(teacherDashboard, /الحصص المكتملة وتقاريرها/);
+assert.match(teacherDashboard, /completeGroupSession/);
+assert.match(teacherDashboard, /إنهاء الحصة الجماعية/);
+assert.match(teacherDashboard, /updateGroupAttendance/);
+assert.match(teacherDashboard, /معتذر — لا تخصم/);
 assert.match(teacherDashboard, /role="radiogroup"/);
 assert.match(teacherDashboard, /surahRecited:\s*evaluation\.surahRecited/);
 
@@ -203,6 +225,8 @@ assert.match(plansPage, /\[4, 8, 12, 24\]/);
 assert.match(plansPage, /sessionCount/);
 assert.match(plansPage, /\/api\/subscriptions\/plans/);
 assert.match(plansPage, /\/api\/subscriptions\/select/);
+assert.match(plansPage, /renewalSource/);
+assert.match(plansPage, /\/renew/);
 assert.match(plansPage, /men_children/);
 assert.match(plansPage, /ladies/);
 assert.match(plansPage, /لم يتم الدفع بعد/);
@@ -213,6 +237,11 @@ const subscriptionRoutes = read('backend/routes/subscriptions.js');
 const subscriptionModel = read('backend/models/StudentSubscription.js');
 assert.match(subscriptionRoutes, /router\.get\(['"]\/plans['"]/);
 assert.match(subscriptionRoutes, /router\.post\(['"]\/select['"],\s*protect,\s*authorize\(['"]student['"]\)/);
+assert.match(subscriptionRoutes, /router\.post\(['"]\/:id\/renew['"],\s*protect,\s*authorize\(['"]student['"]\)/);
+assert.match(subscriptionRoutes, /SUBSCRIPTION_NOT_RENEWABLE/);
+assert.match(subscriptionRoutes, /RENEWAL_ALREADY_EXISTS/);
+assert.match(subscriptionRoutes, /RENEWAL_PAYMENT_PENDING/);
+assert.match(subscriptionRoutes, /renewalOf:\s*null/);
 assert.match(subscriptionRoutes, /quoteSubscription\(\{\s*planKey,\s*sessionCount\s*\}\)/);
 assert.match(subscriptionModel, /pending_payment/);
 assert.match(subscriptionModel, /sessionCount:[\s\S]{0,100}enum:\s*\[4, 8, 12, 24\]/);
@@ -230,6 +259,11 @@ assert.match(courseDetail, /localizedPath\(['"]\/payment\/manual['"],\s*locale\)
 const manualPayment = read('src/pages/ManualPayment/index.jsx');
 assert.match(manualPayment, /uploadFileDirect\(proof,\s*['"]payment-proof['"]\)/);
 assert.match(manualPayment, /\/api\/payments\/course\/'\s*\+\s*encodeURIComponent\(slug\)\s*\+\s*'\/manual/);
+assert.match(manualPayment, /\/api\/payments\/subscription\/'\s*\+\s*encodeURIComponent\(subscriptionId\)\s*\+\s*'\/manual/);
+assert.match(manualPayment, /عايز تدرس مع مين/);
+assert.match(manualPayment, /\/api\/teachers/);
+assert.match(manualPayment, /التجديد مع نفس المعلم/);
+assert.match(manualPayment, /disabled=\{Boolean\(subscription\?\.renewalOf\)\}/);
 
 // T22: Teacher public media is rendered through same-origin routes.
 const teacherMedia = read('src/lib/teacherMedia.js');
@@ -245,8 +279,17 @@ assert.match(teacherProfilePage, /media\.additionalVideos/);
 assert.match(teacherDirectoryPage, /teacherPublicImage\(teacher\.media\?\.profilePhoto\)/);
 assert.match(read('backend/routes/uploads.js'), /uploads\/teacher-public\//);
 const adminPayments = read('src/pages/AdminPayments/index.jsx');
+const adminSubscriptions = read('src/pages/AdminSubscriptions/index.jsx');
 assert.match(adminPayments, /\/api\/payments\/admin\/manual/);
 assert.match(adminPayments, /\/review/);
+assert.match(adminPayments, /المعلم المختار/);
+assert.match(adminSubscriptions, /\/api\/subscriptions\/admin\/placements/);
+assert.match(adminSubscriptions, /\/api\/subscriptions\/admin\/'\s*\+\s*encodeURIComponent\(item\._id\)\s*\+\s*'\/place/);
+assert.match(adminSubscriptions, /جروب موجود/);
+assert.match(adminSubscriptions, /جروب جديد/);
+assert.match(adminSubscriptions, /\/api\/sessions\/group-circle/);
+assert.match(adminSubscriptions, /جدولة حصة الجروب/);
+assert.match(adminSubscriptions, /durationOptionsFor/);
 
 
 const adminDashboard = read('src/pages/AdminDashboard/index.jsx');
@@ -291,6 +334,7 @@ assert.doesNotMatch(adminDashboard, /<TabBar/);
 assert.match(adminDashboardShell, /wn-admin-sidebar/);
 assert.match(adminDashboardShell, /wn-admin-topbar/);
 assert.match(adminDashboardShell, /مركز القيادة/);
+assert.match(adminDashboardShell, /الاشتراكات والتسكين/);
 assert.match(adminDashboardShell, /السحوبات والمالية/);
 assert.match(adminDashboardShell, /التحليلات والنمو/);
 // T19 — Illustrated first screen with navigable actions and scrolled detail.
@@ -389,6 +433,10 @@ assert.match(
 assert.match(
   app,
   /path=["']admin\/payments["'][\s\S]{0,180}<ProtectedRoute\s+roles=\{\[['"]admin['"]\]\}/
+);
+assert.match(
+  app,
+  /path=["']admin\/subscriptions["'][\s\S]{0,180}<ProtectedRoute\s+roles=\{\[['"]admin['"]\]\}/
 );
 
 console.log('Route navigation contracts passed.');

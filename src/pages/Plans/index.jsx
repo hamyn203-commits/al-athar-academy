@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft, ArrowRight, BadgeCheck, BookOpenCheck, Check, Clock3,
   Crown, Heart, ShieldCheck, Sparkles, Users, UserRound
@@ -105,6 +105,8 @@ export default function PlansPage() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const renewalId = searchParams.get('renew') || '';
   const isAr = locale === 'ar';
   const ArrowIcon = isAr ? ArrowLeft : ArrowRight;
   const [audience, setAudience] = useState('general');
@@ -112,6 +114,7 @@ export default function PlansPage() {
   const [catalog, setCatalog] = useState(null);
   const [selection, setSelection] = useState(null);
   const [selectingPlan, setSelectingPlan] = useState('');
+  const [renewalSource, setRenewalSource] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -128,6 +131,27 @@ export default function PlansPage() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!renewalId || !isAuthenticated || user?.role !== 'student') return;
+
+    let cancelled = false;
+    api.get('/api/subscriptions/' + encodeURIComponent(renewalId), { auth: true })
+      .then((data) => {
+        if (cancelled || !data?.subscription) return;
+        const source = data.subscription;
+        setRenewalSource(source);
+        setSessionCount(Number(source.sessionCount || 8));
+        setAudience(source.section === 'ladies' ? 'women' : 'general');
+      })
+      .catch((error) => {
+        if (!cancelled) toast.error(error.message || (isAr ? 'تعذر تحميل بيانات التجديد.' : 'Could not load renewal details.'));
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [renewalId, isAuthenticated, user?.role, toast, isAr]);
 
   const serverPlans = useMemo(
     () => new Map((catalog?.plans || []).map((plan) => [plan.key, plan])),
@@ -159,6 +183,10 @@ export default function PlansPage() {
     };
   }), [serverPlans, sessionCount]);
 
+  const visiblePlans = renewalSource
+    ? plans.filter((plan) => plan.id === renewalSource.planKey)
+    : plans;
+
   const handlePlanSelect = async (plan) => {
     if (isLoading) return;
 
@@ -175,16 +203,36 @@ export default function PlansPage() {
 
     setSelectingPlan(plan.id);
     try {
-      const data = await api.post('/api/subscriptions/select', {
-        planKey: plan.id,
-        section: audience === 'women' ? 'ladies' : 'men_children',
-        sessionCount,
-      }, { auth: true });
+      const data = renewalSource
+        ? await api.post(
+            '/api/subscriptions/' + encodeURIComponent(renewalSource._id) + '/renew',
+            { sessionCount },
+            { auth: true }
+          )
+        : await api.post('/api/subscriptions/select', {
+            planKey: plan.id,
+            section: audience === 'women' ? 'ladies' : 'men_children',
+            sessionCount,
+          }, { auth: true });
 
       setSelection(data.subscription || null);
-      toast.success(isAr
-        ? 'تم حفظ اختيارك. لن يتم أي خصم قبل إتمام خطوة الدفع.'
-        : 'Your selection is saved. No charge is made before checkout.');
+      toast.success(
+        renewalSource
+          ? (isAr
+              ? 'تم إنشاء التجديد بنفس المعلم والجروب. أكمل التحويل.'
+              : 'Renewal created for the same tutor and group. Complete the transfer.')
+          : (isAr
+              ? 'تم حفظ اختيارك. اختر الشيخ ثم ارفع إثبات التحويل.'
+              : 'Your selection is saved. Choose your tutor, then upload the transfer proof.')
+      );
+
+      if (data.subscription?._id) {
+        navigate(
+          localizedPath('/payment/manual', locale)
+          + '?subscription='
+          + encodeURIComponent(data.subscription._id)
+        );
+      }
     } catch (error) {
       toast.error(error.message || (isAr ? 'تعذر حفظ اختيار الباقة.' : 'Could not save the package selection.'));
     } finally {
@@ -254,7 +302,8 @@ export default function PlansPage() {
                   role="tab"
                   aria-selected={audience === 'general'}
                   className={audience === 'general' ? 'is-active' : ''}
-                  onClick={() => setAudience('general')}
+                  disabled={Boolean(renewalSource)}
+                  onClick={() => !renewalSource && setAudience('general')}
                 >
                   <Users size={18} />
                   <span>
@@ -267,7 +316,8 @@ export default function PlansPage() {
                   role="tab"
                   aria-selected={audience === 'women'}
                   className={audience === 'women' ? 'is-active is-women' : 'is-women'}
-                  onClick={() => setAudience('women')}
+                  disabled={Boolean(renewalSource)}
+                  onClick={() => !renewalSource && setAudience('women')}
                 >
                   <Heart size={18} />
                   <span>
@@ -291,6 +341,20 @@ export default function PlansPage() {
                 ))}
               </div>
             </div>
+
+            {renewalSource && (
+              <aside className="wn-plans-selection" role="status">
+                <BadgeCheck size={22} />
+                <div>
+                  <strong>{isAr ? 'تجديد سريع لنفس الحلقة' : 'Fast renewal for the same circle'}</strong>
+                  <p>
+                    {isAr
+                      ? 'الخطة والمعلم والجروب ثابتون. اختر فقط عدد الحصص الجديدة ثم أكمل التحويل.'
+                      : 'Plan, tutor, and group stay the same. Choose only the new session count, then complete the transfer.'}
+                  </p>
+                </div>
+              </aside>
+            )}
 
             {selection && (
               <aside className="wn-plans-selection" role="status">
@@ -329,7 +393,7 @@ export default function PlansPage() {
             </div>
 
             <div className="wn-plans-grid">
-              {plans.map((plan) => (
+              {visiblePlans.map((plan) => (
                 <article key={plan.id} className={'wn-plan-card is-' + plan.tone + (plan.featured ? ' is-featured' : '')}>
                   <div className="wn-plan-card__media">
                     <img src={plan.image} alt={isAr ? plan.nameAr : plan.nameEn} loading="lazy" />
@@ -379,7 +443,9 @@ export default function PlansPage() {
                     >
                       {selectingPlan === plan.id
                         ? (isAr ? 'جاري الحفظ...' : 'Saving...')
-                        : (isAr ? 'اختيار الخطة' : 'Choose plan')}
+                        : renewalSource
+                          ? (isAr ? 'تجديد الباقة' : 'Renew package')
+                          : (isAr ? 'اختيار الخطة' : 'Choose plan')}
                       <ArrowIcon size={17} />
                     </button>
                   </div>

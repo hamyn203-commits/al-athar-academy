@@ -54,8 +54,19 @@ const StudentSubscriptionSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending_payment', 'active', 'paused', 'completed', 'cancelled', 'expired'],
+    enum: ['pending_payment', 'payment_review', 'renewal_queued', 'awaiting_placement', 'placed', 'active', 'paused', 'completed', 'cancelled', 'expired'],
     default: 'pending_payment',
+    index: true,
+  },
+  preferredTeacher: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Teacher',
+    default: null,
+  },
+  renewalOf: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'StudentSubscription',
+    default: null,
     index: true,
   },
   circle: {
@@ -82,6 +93,9 @@ const StudentSubscriptionSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  paidAt: Date,
+  renewalQueuedAt: Date,
+  placedAt: Date,
   startedAt: Date,
   completedAt: Date,
 }, { timestamps: true });
@@ -92,6 +106,10 @@ StudentSubscriptionSchema.index(
   { unique: true, partialFilterExpression: { status: 'pending_payment' } }
 );
 StudentSubscriptionSchema.index({ circle: 1, status: 1 });
+StudentSubscriptionSchema.index(
+  { renewalOf: 1 },
+  { unique: true, partialFilterExpression: { renewalOf: { $type: 'objectId' } } }
+);
 
 StudentSubscriptionSchema.pre('validate', function(next) {
   if (this.sessionsUsed > this.sessionCount) {

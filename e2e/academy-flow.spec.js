@@ -125,11 +125,18 @@ test.describe('Wahy Wa Namaa core academy journey', () => {
 
     const groupPlan = studentPage.locator('article').filter({ hasText: 'الحلقة الجماعية' }).first();
     await groupPlan.getByRole('button', { name: 'اختيار الخطة', exact: true }).click();
-    const savedSelection = studentPage.getByRole('status').filter({ hasText: 'تم حفظ اختيار الباقة' });
-    await expect(savedSelection).toBeVisible();
-    await expect(savedSelection.getByText(/24 حصة/)).toBeVisible();
-    await expect(savedSelection.getByText(/480 جنيه/)).toBeVisible();
-    await expect(savedSelection.getByText(/لم يتم الدفع بعد/)).toBeVisible();
+
+    await expect(studentPage).toHaveURL(/\/ar\/payment\/manual\?subscription=/);
+    await expect(studentPage.getByRole('heading', { name: 'إتمام الاشتراك والتحويل' })).toBeVisible();
+    await expect(studentPage.getByText(/480 EGP/)).toBeVisible();
+    await expect(studentPage.getByText('e2e@instapay', { exact: true })).toBeVisible();
+    await expect(studentPage.getByText('عايز تدرس مع مين؟', { exact: true })).toBeVisible();
+    const teacherSelect = studentPage.getByRole('combobox', { name: 'اختيار الشيخ أو المعلمة' });
+    await expect(teacherSelect).toBeVisible();
+    await expect(teacherSelect.locator('option')).toContainText(['اختر الشيخ أو المعلمة', 'E2E Teacher One']);
+    const e2eTeacherOption = teacherSelect.locator('option').filter({ hasText: 'E2E Teacher One' });
+    await teacherSelect.selectOption(await e2eTeacherOption.getAttribute('value'));
+    await expect(teacherSelect.locator('option:checked')).toContainText('E2E Teacher One');
 
     await studentContext.close();
   });

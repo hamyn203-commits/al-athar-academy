@@ -2,6 +2,10 @@
 
 const mongoose = require('mongoose');
 const Payment = require('../models/Payment');
+const StudentSubscription = require('../models/StudentSubscription');
+const GroupCircle = require('../models/GroupCircle');
+const User = require('../models/User');
+const { getPlan } = require('../config/subscriptionPlans');
 const { assertPaymentTransition } = require('../utils/paymentIntegrity');
 const { createEnrollmentForSettledPayment } = require('./paymentSettlement');
 
@@ -26,7 +30,7 @@ async function processManualPaymentReview({
       const payment = await Payment.findOne({
         _id: paymentId,
         provider: 'manual',
-        kind: 'course_enrollment',
+        kind: { $in: ['course_enrollment', 'subscription'] },
       }).session(session);
 
       if (!payment) {
@@ -54,6 +58,105 @@ async function processManualPaymentReview({
         payment.failureCode = undefined;
         await payment.save({ session });
 
+        if (payment.kind === 'subscription') {
+          const subscription = await StudentSubscription.findOne({
+            _id: payment.subscription,
+            student: payment.student,
+          }).session(session);
+
+          if (!subscription) {
+            const error = new Error('Subscription not found for payment');
+            error.code = 'SUBSCRIPTION_NOT_FOUND';
+            throw error;
+          }
+
+          const paidAt = new Date();
+          let renewalQueued = false;
+          let renewalActivated = false;
+          let renewalCircleId = subscription.circle ? String(subscription.circle) : null;
+
+          if (subscription.renewalOf) {
+            const source = await StudentSubscription.findOne({
+              _id: subscription.renewalOf,
+              student: payment.student,
+            }).session(session);
+
+            if (
+              source
+              && ['active', 'placed', 'paused'].includes(source.status)
+              && Number(source.sessionsRemaining || 0) > 0
+              && subscription.circle
+            ) {
+              subscription.status = 'renewal_queued';
+              subscription.renewalQueuedAt = paidAt;
+              renewalQueued = true;
+            } else if (source?.status === 'completed' && subscription.circle) {
+              const circle = await GroupCircle.findById(subscription.circle).session(session);
+              const plan = getPlan(subscription.planKey);
+
+              if (
+                circle
+                && plan
+                && String(circle.teacher) === String(subscription.preferredTeacher)
+                && (circle.students || []).length < Number(circle.capacity || plan.maxStudents)
+              ) {
+                const alreadyMember = (circle.students || []).some(
+                  (studentId) => String(studentId) === String(payment.student)
+                );
+                if (!alreadyMember) circle.students.push(payment.student);
+
+                if (circle.students.length >= Number(circle.capacity || plan.maxStudents)) {
+                  circle.status = 'full';
+                } else if (circle.students.length >= plan.minStudents) {
+                  circle.status = 'active';
+                } else {
+                  circle.status = 'forming';
+                }
+
+                await circle.save({ session });
+                await User.updateOne(
+                  { _id: payment.student },
+                  { $set: { circle: circle._id } },
+                  { session }
+                );
+
+                subscription.placedAt = paidAt;
+                subscription.status = ['active', 'full'].includes(circle.status) ? 'active' : 'placed';
+                if (subscription.status === 'active') {
+                  subscription.startedAt = paidAt;
+                  renewalActivated = true;
+                }
+              } else {
+                subscription.status = 'awaiting_placement';
+              }
+            } else {
+              subscription.status = 'awaiting_placement';
+            }
+          } else {
+            subscription.status = 'awaiting_placement';
+          }
+
+          subscription.payment = payment._id;
+          subscription.paidAt = paidAt;
+          await subscription.save({ session });
+
+          result = {
+            paymentId: String(payment._id),
+            paymentStatus: payment.status,
+            enrollmentId: null,
+            enrollmentCreated: false,
+            studentId: payment.student ? String(payment.student) : null,
+            courseId: null,
+            subscriptionId: String(subscription._id),
+            subscriptionStatus: subscription.status,
+            awaitingPlacement: subscription.status === 'awaiting_placement',
+            renewalQueued,
+            renewalActivated,
+            renewalCircleId,
+          };
+          return;
+        }
+
         const fulfillment = await createEnrollmentForSettledPayment(payment, session);
         result = {
           paymentId: String(payment._id),
@@ -62,6 +165,8 @@ async function processManualPaymentReview({
           enrollmentCreated: fulfillment.created,
           studentId: payment.student ? String(payment.student) : null,
           courseId: payment.course ? String(payment.course) : null,
+          subscriptionId: null,
+          awaitingPlacement: false,
         };
         return;
       }
@@ -72,6 +177,17 @@ async function processManualPaymentReview({
       payment.failureCode = 'MANUAL_PAYMENT_REJECTED';
       await payment.save({ session });
 
+      if (payment.kind === 'subscription' && payment.subscription) {
+        await StudentSubscription.updateOne(
+          { _id: payment.subscription, student: payment.student },
+          {
+            $set: { status: 'pending_payment' },
+            $unset: { payment: 1, paidAt: 1 },
+          },
+          { session }
+        );
+      }
+
       result = {
         paymentId: String(payment._id),
         paymentStatus: payment.status,
@@ -79,6 +195,8 @@ async function processManualPaymentReview({
         enrollmentCreated: false,
         studentId: payment.student ? String(payment.student) : null,
         courseId: payment.course ? String(payment.course) : null,
+        subscriptionId: payment.subscription ? String(payment.subscription) : null,
+        awaitingPlacement: false,
       };
     });
 

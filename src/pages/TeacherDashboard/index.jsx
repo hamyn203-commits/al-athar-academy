@@ -120,6 +120,7 @@ export default function TeacherDashboard() {
     profilePhoto: null, introductionVideo: null, recitationVideo: null, teachingMethodVideo: null,
   });
   const [savingProfileChange, setSavingProfileChange] = useState(false);
+  const [attendanceUpdating, setAttendanceUpdating] = useState('');
 
 
   const load = useCallback(async () => {
@@ -377,7 +378,7 @@ export default function TeacherDashboard() {
   const completeSession = async () => {
     if (!evalModal) return;
     try {
-      await api.put(`/api/sessions/${evalModal._id}/complete`, {
+      const completed = await api.put(`/api/sessions/${evalModal._id}/complete`, {
         evaluation: {
           attendance: evaluation.attendance,
           memorization: evaluation.memorization,
@@ -408,11 +409,73 @@ export default function TeacherDashboard() {
         toast.info('تم إنهاء الحصة، لكن تعذر إرسال تقرير المتابعة الخارجي. التقرير محفوظ داخل الحصة.');
       }
 
-      toast.success(`تم إنهاء الحصة واعتماد الاستحقاق (+${SESSION_RATE} ج.م)`);
+      const earnedAmount = Number(completed?.session?.earnings?.amount || SESSION_RATE);
+      toast.success(`تم إنهاء الحصة واعتماد الاستحقاق (+${earnedAmount} ج.م)`);
       setEvalModal(null);
       load();
     } catch (error) {
       toast.error(error.message || 'فشل إكمال الحصة');
+    }
+  };
+
+  const updateGroupAttendance = async (session, studentId, status) => {
+    if (!session?._id || !studentId) return;
+    const key = session._id + ':' + studentId;
+    setAttendanceUpdating(key);
+    try {
+      const result = await api.patch(`/api/sessions/${session._id}/attendance`, {
+        records: [{ studentId, status }],
+      }, { auth: true });
+
+      setSessions((current) => current.map((item) => (
+        item._id === session._id
+          ? { ...item, attendance: result.attendance || item.attendance }
+          : item
+      )));
+      toast.success(
+        status === 'attended'
+          ? 'تم تسجيل حضور الطالب'
+          : status === 'excused'
+            ? 'تم تسجيل اعتذار الطالب'
+            : 'تم تسجيل غياب الطالب'
+      );
+    } catch (error) {
+      toast.error(error.message || 'فشل تحديث الحضور');
+    } finally {
+      setAttendanceUpdating('');
+    }
+  };
+
+  const completeGroupSession = async (session) => {
+    if (!session?._id) return;
+
+    const unresolved = (session.attendance || []).filter(
+      (entry) => ['pending', 'confirmed'].includes(entry.status)
+    );
+    if (unresolved.length) {
+      toast.info('سجل الحضور النهائي لكل الطلاب من قائمة الحضور داخل الحصة قبل الإنهاء');
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `تأكيد إنهاء ${session.circle?.name || 'الحصة الجماعية'}؟ سيتم احتساب حصة واحدة لكل طالب مستحق حسب الحضور والاعتذارات.`
+    );
+    if (!confirmed) return;
+
+    try {
+      const result = await api.put(`/api/sessions/${session._id}/complete`, {
+        evaluation: {
+          overallNotes: 'تم إغلاق الحصة الجماعية من لوحة المعلم',
+        },
+      }, { auth: true });
+
+      const earnedAmount = Number(result?.session?.earnings?.amount || 0);
+      toast.success(
+        `تم إنهاء الحصة الجماعية واحتساب أرصدة الطلاب (+${earnedAmount} ج.م للمعلم)`
+      );
+      load();
+    } catch (error) {
+      toast.error(error.message || 'فشل إكمال الحصة الجماعية');
     }
   };
 
@@ -527,9 +590,12 @@ export default function TeacherDashboard() {
 
   const enterAcademyRoom = async (session) => {
     try {
+      const isGroupCircle = session.type === 'group_circle';
       const room = await api.post('/api/live/sessions', {
-        title: `حلقة ${session.student?.name || 'الطالب'}`,
-        description: 'حلقة فردية عبر غرفة الأكاديمية',
+        title: isGroupCircle
+          ? (session.circle?.name || 'حلقة جماعية')
+          : `حلقة ${session.student?.name || 'الطالب'}`,
+        description: isGroupCircle ? 'حلقة جماعية عبر غرفة الأكاديمية' : 'حلقة فردية عبر غرفة الأكاديمية',
         subject: 'quran',
         sessionId: session._id,
       }, { auth: true });
@@ -847,8 +913,8 @@ export default function TeacherDashboard() {
                               <small>{formatSessionDateTime(session, 'ar-EG', { day: 'numeric', month: 'short' })} · {sessionTimeZone(session, teacher?.availabilityTimezone || 'Africa/Cairo')}</small>
                             </div>
                             <div className="wn-teacher-agenda__student">
-                              <strong>{session.student?.name || 'طالب'}</strong>
-                              <span>{session.type === 'trial' ? 'حصة تجريبية' : 'حصة فردية'}</span>
+                              <strong>{session.type === 'group_circle' ? (session.circle?.name || 'حلقة جماعية') : (session.student?.name || 'طالب')}</strong>
+                              <span>{session.type === 'trial' ? 'حصة تجريبية' : session.type === 'group_circle' ? 'حصة جماعية' : 'حصة فردية'}</span>
                             </div>
                             <div className="wn-teacher-agenda__actions">
                               <button type="button" onClick={() => setChatSession(session)} aria-label="محادثة"><MessageSquare size={16} /></button>
@@ -1479,9 +1545,80 @@ export default function TeacherDashboard() {
                               <small>{sessionTimeZone(session, teacher?.availabilityTimezone || 'Africa/Cairo')}</small>
                             </div>
                             <div className="wn-teacher-session-card__student">
-                              <span>{session.type === 'trial' ? 'تجريبية' : 'فردية'}</span>
-                              <h4>{session.student?.name || 'طالب'}</h4>
-                              <button type="button" onClick={() => openStudent(session.student)}>عرض ملف الطالب</button>
+                              <span>{session.type === 'trial' ? 'تجريبية' : session.type === 'group_circle' ? 'جماعية' : 'فردية'}</span>
+                              <h4>{session.type === 'group_circle' ? (session.circle?.name || 'حلقة جماعية') : (session.student?.name || 'طالب')}</h4>
+                              {session.type !== 'group_circle' ? (
+                                <button type="button" onClick={() => openStudent(session.student)}>عرض ملف الطالب</button>
+                              ) : (
+                                <div className="mt-2 space-y-2">
+                                  <small>{session.attendance?.length || 0} طالب · {session.duration || 60} دقيقة</small>
+                                  {!hasStarted ? (
+                                    <p className="text-xs font-semibold text-slate-500">تسجيل الحضور يفتح عند بداية موعد الحلقة.</p>
+                                  ) : null}
+                                  <div className="space-y-1.5">
+                                    {(session.attendance || []).map((entry) => {
+                                      const studentId = entry.student?._id || entry.student;
+                                      const studentName = entry.student?.name || 'طالب';
+                                      const isEligibleExcuse = entry.status === 'excused' && entry.eligibleForCompensation;
+                                      const isUpdating = attendanceUpdating === session._id + ':' + studentId;
+                                      return (
+                                        <div key={studentId} className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs">
+                                          <strong className="min-w-[90px]">{studentName}</strong>
+                                          {isEligibleExcuse ? (
+                                            <>
+                                              <span className="rounded-full bg-blue-50 px-2 py-1 font-semibold text-blue-700">
+                                                معتذر — لا تخصم
+                                              </span>
+                                              <button
+                                                type="button"
+                                                disabled={isUpdating || !hasStarted}
+                                                onClick={() => updateGroupAttendance(session, studentId, 'attended')}
+                                                className="rounded-lg bg-emerald-50 px-2.5 py-1 font-bold text-emerald-700"
+                                              >
+                                                حضر فعليًا
+                                              </button>
+                                            </>
+                                          ) : (
+                                            <>
+                                              <button
+                                                type="button"
+                                                disabled={isUpdating || !hasStarted}
+                                                onClick={() => updateGroupAttendance(session, studentId, 'attended')}
+                                                className={
+                                                  'rounded-lg px-2.5 py-1 font-bold ' +
+                                                  (entry.status === 'attended'
+                                                    ? 'bg-emerald-600 text-white'
+                                                    : 'bg-emerald-50 text-emerald-700')
+                                                }
+                                              >
+                                                حضر
+                                              </button>
+                                              <button
+                                                type="button"
+                                                disabled={isUpdating || !hasStarted}
+                                                onClick={() => updateGroupAttendance(session, studentId, 'absent')}
+                                                className={
+                                                  'rounded-lg px-2.5 py-1 font-bold ' +
+                                                  (entry.status === 'absent'
+                                                    ? 'bg-rose-600 text-white'
+                                                    : 'bg-rose-50 text-rose-700')
+                                                }
+                                              >
+                                                غاب
+                                              </button>
+                                            </>
+                                          )}
+                                          {entry.status === 'excused' && !entry.eligibleForCompensation ? (
+                                            <span className="rounded-full bg-amber-50 px-2 py-1 font-semibold text-amber-700">
+                                              اعتذار متأخر — تخصم
+                                            </span>
+                                          ) : null}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
                             </div>
                             <div className="wn-teacher-session-card__actions">
                               <button type="button" onClick={() => setChatSession(session)}><MessageSquare size={16} /> محادثة</button>
@@ -1497,12 +1634,12 @@ export default function TeacherDashboard() {
                               )}
                               <button
                                 type="button"
-                                onClick={() => openEval(session)}
+                                onClick={() => session.type === 'group_circle' ? completeGroupSession(session) : openEval(session)}
                                 disabled={!canComplete}
                                 className="is-complete"
                                 title={!canComplete ? 'يمكن إنهاء الحصة بعد بدء موعدها حسب توقيت السيرفر فقط' : undefined}
                               >
-                                <CheckCircle2 size={16} /> إنهاء + تقرير
+                                <CheckCircle2 size={16} /> {session.type === 'group_circle' ? 'إنهاء الحصة الجماعية' : 'إنهاء + تقرير'}
                               </button>
                             </div>
                           </article>
@@ -1543,8 +1680,8 @@ export default function TeacherDashboard() {
                           <article key={session._id} className="rounded-xl border border-slate-200 bg-white p-4">
                             <div className="flex flex-wrap items-start justify-between gap-3">
                               <div>
-                                <span className="text-xs font-bold text-emerald-700">{session.type === 'trial' ? 'حصة تجريبية' : 'حصة منتظمة'}</span>
-                                <h4 className="font-bold text-slate-900">{session.student?.name || 'طالب'}</h4>
+                                <span className="text-xs font-bold text-emerald-700">{session.type === 'trial' ? 'حصة تجريبية' : session.type === 'group_circle' ? 'حصة جماعية' : 'حصة منتظمة'}</span>
+                                <h4 className="font-bold text-slate-900">{session.type === 'group_circle' ? (session.circle?.name || 'حلقة جماعية') : (session.student?.name || 'طالب')}</h4>
                                 <p className="text-xs text-slate-500">
                                   {formatSessionDateTime(session, 'ar-EG', { dateStyle: 'medium', timeStyle: 'short' })} · {sessionTimeZone(session, teacher?.availabilityTimezone || 'Africa/Cairo')}
                                 </p>

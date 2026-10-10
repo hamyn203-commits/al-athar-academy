@@ -223,6 +223,9 @@ export default function StudentDashboard() {
   const [teacherUpdateVideoUrls, setTeacherUpdateVideoUrls] = useState({});
   const [guardianInvitations, setGuardianInvitations] = useState([]);
   const [linkedGuardians, setLinkedGuardians] = useState([]);
+  const [subscriptions, setSubscriptions] = useState([]);
+  const [renewalSessionCount, setRenewalSessionCount] = useState(8);
+  const [renewingSubscription, setRenewingSubscription] = useState(false);
   const [guardianInviteForm, setGuardianInviteForm] = useState({ guardianPhone: '', relationship: 'father' });
   const [savingGuardianInvite, setSavingGuardianInvite] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -254,11 +257,11 @@ export default function StudentDashboard() {
 
   const load = useCallback(async () => {
     try {
-      const [prof, st, tr, sess, hw, tch, ev, rev, enrollments, ref, discovery, updateData, guardianData] = await Promise.all([
+      const [prof, st, tr, sess, hw, tch, ev, rev, enrollments, ref, discovery, updateData, guardianData, subscriptionData] = await Promise.all([
         api.get('/api/students/dashboard/profile', { auth: true }),
         api.get('/api/students/dashboard/stats', { auth: true }),
         api.get('/api/sessions/my-sessions?type=trial&limit=50', { auth: true }),
-        api.get('/api/sessions/my-sessions?type=regular&limit=50', { auth: true }),
+        api.get('/api/sessions/my-sessions?limit=100', { auth: true }),
         api.get('/api/homework/student', { auth: true }),
         api.get('/api/students/dashboard/teachers', { auth: true }),
         api.get('/api/students/dashboard/evaluations', { auth: true }),
@@ -268,11 +271,12 @@ export default function StudentDashboard() {
         api.get('/api/teachers?limit=8&sortBy=rating&sortOrder=desc').catch(() => ({ teachers: [] })),
         api.get('/api/teacher-updates/student', { auth: true }).catch(() => ({ updates: [] })),
         api.get('/api/students/dashboard/guardian-invitations', { auth: true }).catch(() => ({ invitations: [], linkedGuardians: [] })),
+        api.get('/api/subscriptions/me', { auth: true }).catch(() => ({ subscriptions: [] })),
       ]);
       setProfile(prof);
       setStats(st);
       setTrials(tr.sessions || []);
-      setSessions(sess.sessions || []);
+      setSessions((sess.sessions || []).filter((item) => item.type !== 'trial'));
       setHomework(hw.homework || []);
       setTeachers(tch.teachers || []);
       setDiscoverTeachers(discovery.teachers || []);
@@ -283,6 +287,7 @@ export default function StudentDashboard() {
       setTeacherUpdates(updateData.updates || []);
       setGuardianInvitations(guardianData.invitations || []);
       setLinkedGuardians(guardianData.linkedGuardians || []);
+      setSubscriptions(subscriptionData.subscriptions || []);
     } catch {
       toast.error(locale === 'id' ? 'Gagal memuat data dasbor siswa' : locale === 'ar' ? 'تعذر تحميل بيانات لوحة الطالب' : 'Failed to load student dashboard data');
     } finally {
@@ -298,9 +303,19 @@ export default function StudentDashboard() {
       const result = await api.get('/api/sessions/my-sessions?limit=100', { auth: true });
       const all = result.sessions || [];
       setTrials(all.filter((item) => item.type === 'trial'));
-      setSessions(all.filter((item) => item.type === 'regular'));
+      setSessions(all.filter((item) => item.type !== 'trial'));
     } catch {
       // Keep the current dashboard stable during a transient sync failure.
+    }
+  }, [ready]);
+
+  const refreshSubscriptions = useCallback(async () => {
+    if (!ready) return;
+    try {
+      const result = await api.get('/api/subscriptions/me', { auth: true });
+      setSubscriptions(result.subscriptions || []);
+    } catch {
+      // Keep the last known subscription state during transient failures.
     }
   }, [ready]);
 
@@ -308,7 +323,10 @@ export default function StudentDashboard() {
     if (!ready) return undefined;
 
     const refresh = () => {
-      if (document.visibilityState === 'visible') syncSessions();
+      if (document.visibilityState === 'visible') {
+        syncSessions();
+        refreshSubscriptions();
+      }
     };
 
     const interval = window.setInterval(refresh, 15000);
@@ -323,7 +341,7 @@ export default function StudentDashboard() {
       window.removeEventListener('focus', onFocus);
       document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [ready, syncSessions]);
+  }, [ready, syncSessions, refreshSubscriptions]);
 
   useEffect(() => {
     if (!ready) return undefined;
@@ -345,6 +363,7 @@ export default function StudentDashboard() {
           .catch(() => {});
       }
       if (type === 'system') {
+        refreshSubscriptions();
         api.get('/api/students/dashboard/guardian-invitations', { auth: true })
           .then((result) => {
             setGuardianInvitations(result.invitations || []);
@@ -356,7 +375,7 @@ export default function StudentDashboard() {
 
     window.addEventListener('wn:realtime-notification', onRealtimeNotification);
     return () => window.removeEventListener('wn:realtime-notification', onRealtimeNotification);
-  }, [ready, syncSessions]);
+  }, [ready, syncSessions, refreshSubscriptions]);
 
   useEffect(() => {
     const requestedTab = searchParams.get('tab');
@@ -450,6 +469,79 @@ export default function StudentDashboard() {
     || nextActiveSession?.teacher?.name
     || (locale === 'ar' ? 'معلم الأكاديمية' : 'Quran Tutor');
   const nextSessionDate = nextActiveSession ? new Date(nextActiveSession.scheduledAt) : null;
+  const renewalSubscription = subscriptions.find((item) =>
+    item.renewalOf && ['pending_payment', 'payment_review', 'renewal_queued'].includes(item.status)
+  ) || null;
+  const currentSubscription = subscriptions.find((item) =>
+    ['awaiting_placement', 'placed', 'active', 'paused'].includes(item.status)
+  ) || subscriptions.find((item) =>
+    !item.renewalOf && ['pending_payment', 'payment_review'].includes(item.status)
+  ) || subscriptions.find((item) =>
+    item.status === 'completed'
+  ) || null;
+  const currentSubscriptionTeacherName = currentSubscription?.preferredTeacher?.personalInfo?.fullName
+    || currentSubscription?.preferredTeacher?.user?.name
+    || '';
+  const subscriptionStatusCopy = currentSubscription ? ({
+    pending_payment: {
+      ar: 'اختر المعلم وارفع إثبات التحويل لإكمال الاشتراك.',
+      en: 'Choose your tutor and upload the transfer proof to continue.',
+    },
+    payment_review: {
+      ar: 'تم رفع التحويل وهو الآن قيد مراجعة الإدارة.',
+      en: 'Your transfer proof is under admin review.',
+    },
+    awaiting_placement: {
+      ar: 'تم اعتماد الدفع. الإدارة تعمل الآن على تسكينك مع المعلم الذي اخترته.',
+      en: 'Payment approved. Administration is placing you with your selected tutor.',
+    },
+    placed: {
+      ar: 'تم تسكينك في الجروب. ننتظر اكتمال الحد الأدنى لبدء الحلقة.',
+      en: 'You have been placed in the group. The circle is waiting for its minimum size.',
+    },
+    active: {
+      ar: 'اشتراكك نشط والحلقة جاهزة.',
+      en: 'Your subscription is active and the circle is ready.',
+    },
+    paused: {
+      ar: 'اشتراكك متوقف مؤقتًا. تواصل مع الإدارة للمساعدة.',
+      en: 'Your subscription is temporarily paused. Contact administration for help.',
+    },
+    completed: {
+      ar: 'انتهى رصيد الباقة. يمكنك تجديد نفس الجروب والمعلم بسهولة.',
+      en: 'Your package balance is finished. You can easily renew the same group and tutor.',
+    },
+  }[currentSubscription.status] || {
+    ar: currentSubscription.status,
+    en: currentSubscription.status,
+  }) : null;
+
+  const renewSubscription = async (subscription) => {
+    if (!subscription?._id) return;
+    setRenewingSubscription(true);
+    try {
+      const result = await api.post(
+        '/api/subscriptions/' + encodeURIComponent(subscription._id) + '/renew',
+        { sessionCount: Number(renewalSessionCount) },
+        { auth: true }
+      );
+      const renewal = result.subscription;
+      toast.success(locale === 'ar'
+        ? 'تم إنشاء التجديد بنفس الجروب والمعلم. أكمل التحويل.'
+        : 'Renewal created for the same group and tutor. Complete the transfer.');
+      if (renewal?._id) {
+        navigate(lp('/payment/manual') + '?subscription=' + encodeURIComponent(renewal._id));
+      }
+    } catch (error) {
+      if (error.code === 'RENEWAL_ALREADY_EXISTS' && error.data?.subscription?._id) {
+        navigate(lp('/payment/manual') + '?subscription=' + encodeURIComponent(error.data.subscription._id));
+        return;
+      }
+      toast.error(error.message || (locale === 'ar' ? 'تعذر إنشاء التجديد' : 'Could not create renewal'));
+    } finally {
+      setRenewingSubscription(false);
+    }
+  };
 
   const loadTeacherUpdateVideo = async (updateId, index) => {
     const key = `${updateId}-${index}`;
@@ -822,6 +914,10 @@ export default function StudentDashboard() {
                   onClick={() => {
                     if (nextActiveSession) {
                       setTab(nextActiveSession.type === 'trial' ? 'trials' : 'sessions');
+                    } else if (currentSubscription?.status === 'pending_payment') {
+                      navigate(lp('/payment/manual') + '?subscription=' + encodeURIComponent(currentSubscription._id));
+                    } else if (currentSubscription) {
+                      setTab('account');
                     } else if (postTrialSession?.teacher) {
                       navigate(lp('/plans'));
                     } else {
@@ -832,9 +928,13 @@ export default function StudentDashboard() {
                 >
                   {nextActiveSession
                     ? (locale === 'ar' ? 'عرض الحصة القادمة' : 'View next session')
-                    : postTrialSession
-                      ? (locale === 'ar' ? 'اشتراك والاستمرار' : 'Subscribe & continue')
-                      : (locale === 'ar' ? 'اختر معلمك' : 'Find your tutor')}
+                    : currentSubscription
+                      ? (currentSubscription.status === 'pending_payment'
+                          ? (locale === 'ar' ? 'إكمال التحويل' : 'Complete transfer')
+                          : (locale === 'ar' ? 'متابعة الاشتراك' : 'Track subscription'))
+                      : postTrialSession
+                        ? (locale === 'ar' ? 'اشتراك والاستمرار' : 'Subscribe & continue')
+                        : (locale === 'ar' ? 'اختر معلمك' : 'Find your tutor')}
                 </button>
                 <button type="button" onClick={() => setTab('homework')} className="wn-student-secondary-action">
                   <FileText size={16} />
@@ -874,7 +974,132 @@ export default function StudentDashboard() {
             </div>
           </section>
 
-          {postTrialSession && (
+          {currentSubscription && (
+            <section className="wn-student-next-step" aria-label={locale === 'ar' ? 'حالة الاشتراك' : 'Subscription status'}>
+              <div>
+                <span className="wn-student-next-step__eyebrow">
+                  {locale === 'ar' ? 'حالة اشتراكك' : 'Subscription status'}
+                </span>
+                <h3>
+                  {currentSubscription.pricingSnapshot?.nameAr
+                    ? (locale === 'ar'
+                        ? currentSubscription.pricingSnapshot.nameAr
+                        : currentSubscription.pricingSnapshot.nameEn || currentSubscription.pricingSnapshot.nameAr)
+                    : (locale === 'ar' ? 'اشتراك الأكاديمية' : 'Academy subscription')}
+                </h3>
+                <p>{locale === 'ar' ? subscriptionStatusCopy?.ar : subscriptionStatusCopy?.en}</p>
+                <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold">
+                  <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-emerald-800">
+                    <CreditCard size={14} />
+                    {locale === 'ar'
+                      ? `${currentSubscription.sessionCount} حصة · متبقي ${currentSubscription.sessionsRemaining}`
+                      : `${currentSubscription.sessionCount} sessions · ${currentSubscription.sessionsRemaining} remaining`}
+                  </span>
+                  {currentSubscriptionTeacherName ? (
+                    <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-slate-700">
+                      <UserRound size={14} />
+                      {locale === 'ar' ? `المعلم: ${currentSubscriptionTeacherName}` : `Tutor: ${currentSubscriptionTeacherName}`}
+                    </span>
+                  ) : null}
+                  {currentSubscription.circle?.name ? (
+                    <span className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-blue-800">
+                      <Users size={14} />
+                      {locale === 'ar' ? `الجروب: ${currentSubscription.circle.name}` : `Group: ${currentSubscription.circle.name}`}
+                    </span>
+                  ) : null}
+                </div>
+              </div>
+              <div className="wn-student-next-step__actions">
+                {currentSubscription.status === 'pending_payment' ? (
+                  <button
+                    type="button"
+                    onClick={() => navigate(lp('/payment/manual') + '?subscription=' + encodeURIComponent(currentSubscription._id))}
+                    className="wn-student-primary-action"
+                  >
+                    <CreditCard size={17} />
+                    {locale === 'ar' ? 'إكمال التحويل' : 'Complete transfer'}
+                  </button>
+                ) : null}
+                {currentSubscription.status === 'payment_review' ? (
+                  <span className="text-xs font-semibold text-amber-700">
+                    {locale === 'ar' ? 'بانتظار مراجعة الإدارة' : 'Waiting for admin review'}
+                  </span>
+                ) : null}
+                {currentSubscription.status === 'awaiting_placement' ? (
+                  <span className="text-xs font-semibold text-blue-700">
+                    {locale === 'ar' ? 'الدفع معتمد — بانتظار التسكين' : 'Payment approved — awaiting placement'}
+                  </span>
+                ) : null}
+                {currentSubscription.status === 'placed' ? (
+                  <span className="text-xs font-semibold text-blue-700">
+                    {locale === 'ar' ? 'تم التسكين — الجروب قيد الاكتمال' : 'Placed — group forming'}
+                  </span>
+                ) : null}
+                {currentSubscription.status === 'active' ? (
+                  <button
+                    type="button"
+                    onClick={() => setTab('sessions')}
+                    className="wn-student-primary-action"
+                  >
+                    <Calendar size={17} />
+                    {locale === 'ar' ? 'عرض حصصي' : 'View sessions'}
+                  </button>
+                ) : null}
+
+                {renewalSubscription ? (
+                  renewalSubscription.status === 'pending_payment' ? (
+                    <button
+                      type="button"
+                      onClick={() => navigate(lp('/payment/manual') + '?subscription=' + encodeURIComponent(renewalSubscription._id))}
+                      className="wn-student-primary-action"
+                    >
+                      <CreditCard size={17} />
+                      {locale === 'ar' ? 'إكمال دفع التجديد' : 'Complete renewal payment'}
+                    </button>
+                  ) : renewalSubscription.status === 'payment_review' ? (
+                    <span className="text-xs font-semibold text-amber-700">
+                      {locale === 'ar' ? 'تجديدك قيد مراجعة التحويل' : 'Renewal payment under review'}
+                    </span>
+                  ) : (
+                    <span className="text-xs font-semibold text-emerald-700">
+                      {locale === 'ar'
+                        ? `التجديد مدفوع وجاهز: ${renewalSubscription.sessionCount} حصة تبدأ تلقائيًا بعد انتهاء الرصيد الحالي`
+                        : `Renewal paid and ready: ${renewalSubscription.sessionCount} sessions will activate automatically`}
+                    </span>
+                  )
+                ) : (
+                  ((currentSubscription.status === 'active' && Number(currentSubscription.sessionsRemaining || 0) <= 2)
+                    || currentSubscription.status === 'completed') ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <select
+                        value={renewalSessionCount}
+                        onChange={(event) => setRenewalSessionCount(Number(event.target.value))}
+                        className="rounded-lg border border-emerald-200 bg-white px-3 py-2 text-sm font-bold text-emerald-800"
+                        aria-label={locale === 'ar' ? 'عدد حصص التجديد' : 'Renewal sessions'}
+                      >
+                        {[4, 8, 12, 24].map((count) => (
+                          <option key={count} value={count}>{count} {locale === 'ar' ? 'حصص' : 'sessions'}</option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        disabled={renewingSubscription}
+                        onClick={() => renewSubscription(currentSubscription)}
+                        className="wn-student-primary-action"
+                      >
+                        <RotateCcw size={17} />
+                        {renewingSubscription
+                          ? (locale === 'ar' ? 'جاري إنشاء التجديد...' : 'Creating renewal...')
+                          : (locale === 'ar' ? 'جدد نفس الجروب' : 'Renew same group')}
+                      </button>
+                    </div>
+                  ) : null
+                )}
+              </div>
+            </section>
+          )}
+
+          {postTrialSession && !currentSubscription && (
             <section className="wn-student-next-step">
               <div>
                 <span className="wn-student-next-step__eyebrow">{locale === 'ar' ? 'خطوتك التالية' : 'Next step'}</span>
@@ -1926,6 +2151,11 @@ function SessionCard({ session, onReview, hasReviewed, onChat }) {
   const { locale } = useI18n();
   const teacherName = session.teacher?.user?.name || session.teacher?.personalInfo?.fullName || (locale === 'id' ? 'Guru' : locale === 'ar' ? 'المعلم' : 'Tutor');
   const isTrial = session.type === 'trial';
+  const isGroup = session.type === 'group_circle';
+  const durationMinutes = Number(session.duration || 60);
+  const durationLabel = locale === 'ar'
+    ? (durationMinutes === 120 ? 'ساعتان' : durationMinutes === 90 ? 'ساعة ونصف' : durationMinutes === 60 ? 'ساعة' : durationMinutes + ' دقيقة')
+    : (durationMinutes === 60 ? '1 hour' : durationMinutes + ' minutes');
   const joinWindow = session.status === 'accepted'
     ? (session.lifecycle
       ? { phase: session.lifecycle.joinPhase, within: session.lifecycle.joinOpen }
@@ -1942,11 +2172,17 @@ function SessionCard({ session, onReview, hasReviewed, onChat }) {
     <div className="border rounded-lg p-4 flex flex-wrap justify-between items-start gap-3">
       <div>
         <div className="flex items-center gap-2">
-          <h3 className="font-bold">{teacherName}</h3>
-          <span className="text-xs bg-slate-100 px-2 py-0.5 rounded">{isTrial ? (locale === 'id' ? 'Uji Coba' : 'تجريبية') : (locale === 'id' ? 'Reguler' : 'منتظمة')}</span>
+          <h3 className="font-bold">{isGroup ? (session.circle?.name || teacherName) : teacherName}</h3>
+          <span className="text-xs bg-slate-100 px-2 py-0.5 rounded">
+            {isTrial
+              ? (locale === 'id' ? 'Uji Coba' : 'تجريبية')
+              : isGroup
+                ? (locale === 'ar' ? 'حلقة جماعية' : 'Group circle')
+                : (locale === 'id' ? 'Reguler' : 'منتظمة')}
+          </span>
         </div>
         <p className="text-sm text-gray-600 flex items-center gap-1 mt-1">
-          <Clock size={14} /> {formatSessionDateTime(session, locale === 'id' ? 'id-ID' : locale === 'ar' ? 'ar-EG' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' })} — {locale === 'id' ? '1 Jam' : locale === 'ar' ? 'ساعة' : '1 Hour'} · {sessionTimeZone(session)}
+          <Clock size={14} /> {formatSessionDateTime(session, locale === 'id' ? 'id-ID' : locale === 'ar' ? 'ar-EG' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' })} — {durationLabel} · {sessionTimeZone(session)}
         </p>
         <span className={`text-xs px-2 py-0.5 rounded mt-1 inline-block ${
           session.status === 'accepted' ? 'bg-green-100 text-green-700'

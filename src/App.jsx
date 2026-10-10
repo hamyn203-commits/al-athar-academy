@@ -51,6 +51,7 @@ const Donate = lazy(() => import('./pages/Donate'));
 const PaymentReturn = lazy(() => import('./pages/PaymentReturn'));
 const ManualPayment = lazy(() => import('./pages/ManualPayment'));
 const AdminPayments = lazy(() => import('./pages/AdminPayments'));
+const AdminSubscriptions = lazy(() => import('./pages/AdminSubscriptions'));
 const WomenPortal = lazy(() => import('./pages/Women'));
 const VideoLibrary = lazy(() => import('./pages/Library'));
 const Careers = lazy(() => import('./pages/Careers'));
@@ -118,6 +119,7 @@ function pageRoutes() {
       <Route path="admin/dashboard" element={<ProtectedRoute roles={['admin']}><AdminLegacyRedirect /></ProtectedRoute>} />
       <Route path="admin" element={<ProtectedRoute roles={['admin']}><AdminDashboard /></ProtectedRoute>} />
       <Route path="admin/payments" element={<ProtectedRoute roles={['admin']}><AdminPayments /></ProtectedRoute>} />
+      <Route path="admin/subscriptions" element={<ProtectedRoute roles={['admin']}><AdminSubscriptions /></ProtectedRoute>} />
       <Route path="live" element={<ProtectedRoute><LiveSessions /></ProtectedRoute>} />
       <Route path="live/:roomId" element={<ProtectedRoute><LiveRoom /></ProtectedRoute>} />
       <Route path="meeting/:sessionId" element={<ProtectedRoute><MeetingRoom /></ProtectedRoute>} />

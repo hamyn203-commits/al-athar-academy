@@ -4,7 +4,7 @@ const { PAYMENT_STATUSES, SUPPORTED_CURRENCIES } = require('../utils/paymentInte
 const PaymentSchema = new mongoose.Schema({
   kind: {
     type: String,
-    enum: ['course_enrollment', 'donation'],
+    enum: ['course_enrollment', 'subscription', 'donation'],
     required: true,
     index: true,
   },
@@ -93,6 +93,10 @@ const PaymentSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Course',
   },
+  subscription: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'StudentSubscription',
+  },
   donation: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Donation',
@@ -139,6 +143,18 @@ PaymentSchema.index(
   { unique: true, sparse: true }
 );
 PaymentSchema.index({ student: 1, course: 1, status: 1 });
+PaymentSchema.index({ student: 1, subscription: 1, status: 1 });
+PaymentSchema.index(
+  { student: 1, subscription: 1, provider: 1, status: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      kind: 'subscription',
+      provider: 'manual',
+      status: 'pending',
+    },
+  }
+);
 PaymentSchema.index({ provider: 1, status: 1, createdAt: -1 });
 PaymentSchema.index({ donation: 1, status: 1 });
 
@@ -146,6 +162,12 @@ PaymentSchema.pre('validate', function paymentRelationValidation(next) {
   if (this.kind === 'course_enrollment') {
     if (!this.student || !this.course) {
       return next(new Error('Course payments require student and course'));
+    }
+  }
+
+  if (this.kind === 'subscription') {
+    if (!this.student || !this.subscription) {
+      return next(new Error('Subscription payments require student and subscription'));
     }
   }
 
