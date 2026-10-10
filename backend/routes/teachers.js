@@ -10,6 +10,8 @@ const User = require('../models/User');
 const Session = require('../models/Session');
 const { protect, authorize } = require('../middleware/auth');
 const objectStorage = require('../services/objectStorage');
+const crypto = require('crypto');
+const { boundedMediaRange } = require('../utils/mediaByteRange');
 const { resolveOwnedTeacherAssets } = require('../utils/teacherAssetLifecycle');
 const { sendEmail } = require('../services/notificationDispatcher');
 const { notifyAdmins, notifyUser } = require('../utils/notify');
@@ -951,11 +953,19 @@ router.get('/admin/:id/profile-change/media-playback/:kind', protect, authorize(
         error: 'مخزن الوسائط رفض رابط تشغيل الفيديو. يجب مراجعة إعدادات الوصول.',
       });
     }
+    const useRangeProxy = !check.ok && (
+      /^(?:video|audio)\//i.test(metadata.contentType || '') ||
+      req.params.kind !== 'profilePhoto'
+    );
     const verifiedPlayback = {
       ...playback,
+      ...(useRangeProxy ? {
+        url: createAdminMediaRangeUrl(teacher._id, req.params.kind, req.params.index, reference),
+        streamingMode: 'authenticated-range',
+      } : { streamingMode: 'direct' }),
       contentType: metadata.contentType,
       sizeBytes: metadata.sizeBytes,
-      streamingChecked: check.ok,
+      streamingChecked: check.ok || useRangeProxy,
     };
 
     await logAdminAction({
@@ -1212,6 +1222,130 @@ router.put('/admin/:id/review-checklist/:key', protect, authorize('admin'), asyn
 
 // Scoped, short-lived browser playback avoids proxying multi-MB videos through
 // the API function. The client never receives storage credentials or raw blob refs.
+const TEACHER_MEDIA_KINDS = new Set([
+  'profilePhoto', 'introductionVideo', 'recitationVideo', 'teachingMethodVideo',
+  'additionalVideos', 'audioRecordings',
+]);
+const TEACHER_MEDIA_TICKET_PURPOSE = 'teacher-admin-media-range';
+
+function createAdminMediaRangeUrl(teacherId, kind, index, reference, scope = 'original') {
+  const indexNumber = Number(index ?? 0);
+  const referenceDigest = crypto.createHash('sha256').update(String(reference)).digest('hex');
+  const ticket = jwt.sign({
+    purpose: TEACHER_MEDIA_TICKET_PURPOSE,
+    teacherId: String(teacherId),
+    kind,
+    index: indexNumber,
+    scope,
+    referenceDigest,
+  }, process.env.JWT_SECRET || 'wahy-namaa-dev-access-secret-change-me', { expiresIn: '30m' });
+  const origin = String(process.env.API_PUBLIC_URL || 'https://wahy-wa-namaa-api.vercel.app').replace(/\/$/, '');
+  const url = new URL(`${origin}/api/teachers/admin-media-range/${encodeURIComponent(teacherId)}/${encodeURIComponent(kind)}/${indexNumber}`);
+  if (url.protocol !== 'https:' && process.env.NODE_ENV === 'production') throw new Error('HTTPS is required for admin playback');
+  url.searchParams.set('ticket', ticket);
+  return url.toString();
+}
+
+// The media element cannot send Authorization headers. Grant a short-lived,
+// asset-specific bearer ticket only after the admin endpoint authenticates.
+// Each streamed byte-range is limited to 2 MiB to fit serverless response limits.
+router.get('/admin-media-range/:id/:kind/:index', async (req, res) => {
+  res.setHeader('Cache-Control', 'private, no-store');
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Accept-Ranges', 'bytes');
+
+  try {
+    const ticket = String(req.query.ticket || '');
+    if (!ticket || ticket.length > 4096) return res.status(401).end();
+    const payload = jwt.verify(ticket, process.env.JWT_SECRET || 'wahy-namaa-dev-access-secret-change-me', {
+      algorithms: ['HS256'],
+    });
+    const index = Number(req.params.index);
+    if (
+      payload.purpose !== TEACHER_MEDIA_TICKET_PURPOSE ||
+      payload.teacherId !== req.params.id ||
+      payload.kind !== req.params.kind ||
+      payload.index !== index ||
+      !TEACHER_MEDIA_KINDS.has(req.params.kind) ||
+      !Number.isSafeInteger(index) || index < 0 ||
+      !['original', 'proposed'].includes(payload.scope)
+    ) return res.status(403).end();
+
+    let reference = null;
+    if (payload.scope === 'proposed') {
+      const request = await TeacherProfileChangeRequest.findOne({
+        teacher: req.params.id,
+        status: 'pending',
+      }).sort({ createdAt: -1 }).lean();
+      reference = request?.proposed?.media?.[req.params.kind];
+    } else {
+      const teacher = await Teacher.findById(req.params.id).select('media');
+      const media = teacher?.media?.[req.params.kind];
+      reference = Array.isArray(media) ? media[index] : index === 0 ? media : null;
+    }
+    if (!reference) return res.status(404).end();
+    const digest = crypto.createHash('sha256').update(String(reference)).digest('hex');
+    if (digest !== payload.referenceDigest) return res.status(403).end();
+
+    const meta = await objectStorage.inspectPrivateMedia(reference);
+    if (!meta || !Number.isSafeInteger(Number(meta.sizeBytes)) || Number(meta.sizeBytes) <= 0) return res.status(404).end();
+
+    let selection;
+    try {
+      selection = boundedMediaRange(req.headers.range, Number(meta.sizeBytes));
+    } catch {
+      res.setHeader('Content-Range', `bytes */${meta.sizeBytes}`);
+      return res.status(416).end();
+    }
+    const { start, end, size } = selection;
+    const result = await objectStorage.getPrivateObject(reference, {
+      headers: { Range: `bytes=${start}-${end}` },
+    });
+    if (!result?.stream) return res.status(404).end();
+    const actualRange = result.headers?.get?.('content-range')
+      || result.blob?.contentRange || '';
+    // Refuse to serve unbounded/full blobs; the SDK hides HTTP 206 in its
+    // statusCode, but passes the upstream content-range header unchanged.
+    if (actualRange !== `bytes ${start}-${end}/${size}`) {
+      if (typeof result.stream.cancel === 'function') await result.stream.cancel().catch(() => {});
+      else result.stream.destroy?.();
+      console.warn('Private teacher video range mismatch', {
+        media: req.params.kind, expectedBytes: end - start + 1,
+        rangeProvided: Boolean(actualRange),
+      });
+      return res.status(502).end();
+    }
+
+    res.setHeader('Content-Type', meta.contentType || 'application/octet-stream');
+    res.setHeader('Content-Range', `bytes ${start}-${end}/${size}`);
+    res.setHeader('Content-Length', String(end - start + 1));
+    res.status(206);
+
+    if (typeof result.stream.pipe === 'function') return result.stream.pipe(res);
+    const reader = result.stream.getReader?.();
+    if (!reader) return res.end();
+    try {
+      let remaining = end - start + 1;
+      while (remaining > 0) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const part = Buffer.from(value);
+        res.write(part.subarray(0, remaining));
+        remaining -= part.length;
+      }
+      return res.end();
+    } finally {
+      await reader.cancel().catch(() => {});
+    }
+  } catch (error) {
+    if (error?.name === 'TokenExpiredError' || error?.name === 'JsonWebTokenError') return res.status(401).end();
+    console.error('Teacher admin media range playback failed:', error?.message);
+    if (!res.headersSent) return res.status(502).end();
+    return res.destroy();
+  }
+});
+
 router.get('/admin/:id/media-playback/:kind{/:index}', protect, authorize('admin'), async (req, res) => {
   try {
     const allowed = ['profilePhoto', 'introductionVideo', 'recitationVideo', 'teachingMethodVideo', 'additionalVideos', 'audioRecordings'];
@@ -1253,11 +1387,19 @@ router.get('/admin/:id/media-playback/:kind{/:index}', protect, authorize('admin
         error: 'مخزن الوسائط رفض رابط تشغيل الفيديو. يجب مراجعة إعدادات الوصول.',
       });
     }
+    const useRangeProxy = !check.ok && (
+      /^(?:video|audio)\//i.test(metadata.contentType || '') ||
+      req.params.kind !== 'profilePhoto'
+    );
     const verifiedPlayback = {
       ...playback,
+      ...(useRangeProxy ? {
+        url: createAdminMediaRangeUrl(req.params.id, req.params.kind, 0, reference, 'proposed'),
+        streamingMode: 'authenticated-range',
+      } : { streamingMode: 'direct' }),
       contentType: metadata.contentType,
       sizeBytes: metadata.sizeBytes,
-      streamingChecked: check.ok,
+      streamingChecked: check.ok || useRangeProxy,
     };
 
     await logAdminAction({
