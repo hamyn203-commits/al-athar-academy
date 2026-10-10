@@ -1074,13 +1074,7 @@ requireContains(
   /session-control\.viewed/
 );
 
-if (failures.length) {
-  console.error('Security contracts failed:');
-  failures.forEach((failure) => console.error(`- ${failure}`));
-  process.exit(1);
-}
 
-console.log('Security contracts passed.');
 
 requireContains(
   'backend/config/uploadPolicy.js',
@@ -1130,3 +1124,11 @@ requireContains('backend/routes/subscriptions.js', 'circle start must remain adm
 requireContains('backend/services/subscriptionUsage.js', 'settlement must deduplicate by learner and session before choosing a renewed package', /const existingUsage[\s\S]{0,180}student:\s*studentId,\s*session:\s*sessionDoc\._id[\s\S]{0,650}const subscription/);
 requireContains('backend/services/subscriptionUsage.js', 'concurrent renewal settlement must lock the circle inside the transaction', /withTransaction[\s\S]{0,550}\$inc:\s*\{\s*subscriptionUsageVersion:\s*1/);
 requireContains('backend/routes/circles.js', 'subscription circles cannot bypass paid admin placement', /router\.post\(['"]\/:id\/join['"][\s\S]{0,1800}SUBSCRIPTION_PLACEMENT_REQUIRED/);
+
+if (failures.length) {
+  console.error('Security contracts failed:');
+  failures.forEach((failure) => console.error(`- ${failure}`));
+  process.exit(1);
+}
+
+console.log('Security contracts passed.');

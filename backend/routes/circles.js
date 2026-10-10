@@ -537,7 +537,7 @@ router.put('/:id', protect, authorize('admin', 'teacher'), async (req, res) => {
     } = req.body;
 
     if (circle.subscriptionPlanKey && (
-      (status !== undefined && status !== circle.status)
+      (status !== undefined && ['active', 'full'].includes(status) && !['active', 'full'].includes(circle.status))
       || (teacherId && String(teacherId) !== String(circle.teacher))
       || (subscriptionPlanKey !== undefined && subscriptionPlanKey !== circle.subscriptionPlanKey)
       || (capacity !== undefined && Number(capacity) !== circle.capacity)
