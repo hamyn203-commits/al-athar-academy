@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const StudentSubscription = require('../models/StudentSubscription');
+const User = require('../models/User');
 const GroupCircle = require('../models/GroupCircle');
 const Teacher = require('../models/Teacher');
 const { protect, authorize } = require('../middleware/auth');
@@ -17,6 +18,7 @@ const { logAdminAction } = require('../services/adminAudit');
 const { notifyUser } = require('../utils/notify');
 const {
   isSection,
+  isCompatibleStudentSection,
   publicPlanCatalog,
   quoteSubscription,
 } = require('../config/subscriptionPlans');
@@ -191,6 +193,17 @@ router.post('/select', protect, authorize('student'), async (req, res) => {
       return res.status(400).json({
         error: 'القسم غير متاح',
         code: 'SUBSCRIPTION_SECTION_INVALID',
+      });
+    }
+
+    const student = await User.findById(req.user.id).select('enrollmentSection role isActive');
+    if (!student || student.role !== 'student' || student.isActive === false) {
+      return res.status(403).json({ error: 'حساب الطالب غير متاح', code: 'STUDENT_ACCOUNT_UNAVAILABLE' });
+    }
+    if (!isCompatibleStudentSection(student.enrollmentSection, section)) {
+      return res.status(409).json({
+        error: 'القسم المحدد لا يتطابق مع القسم المسجل في حسابك. تواصل مع الإدارة لتصحيح القسم.',
+        code: 'SUBSCRIPTION_SECTION_MISMATCH',
       });
     }
 
