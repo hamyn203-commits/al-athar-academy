@@ -55,3 +55,37 @@ test('S3 playback only grants a bounded temporary GET for one object', async () 
     assert.ok(result.expiresAt <= Date.now() + 1800000);
   });
 });
+
+
+test('signed playback probe requests only a 32-byte range and cancels the response', async () => {
+  const previousFetch = global.fetch;
+  let receivedRange;
+  let cancelled = 0;
+  global.fetch = async (_url, options) => {
+    receivedRange = options.headers.Range;
+    return {
+      status: 206,
+      body: { cancel: async () => { cancelled += 1; } },
+    };
+  };
+  try {
+    assert.deepEqual(await storage.probeTemporaryMediaUrl('https://media.invalid/signed'), { ok: true, status: 206 });
+    assert.equal(receivedRange, 'bytes=0-31');
+    assert.equal(cancelled, 1);
+  } finally {
+    global.fetch = previousFetch;
+  }
+});
+
+test('signed playback probe rejects denied/absent files without downloading them', async () => {
+  const previousFetch = global.fetch;
+  global.fetch = async () => ({
+    status: 403,
+    body: { cancel: async () => {} },
+  });
+  try {
+    assert.deepEqual(await storage.probeTemporaryMediaUrl('https://media.invalid/denied'), { ok: false, status: 403 });
+  } finally {
+    global.fetch = previousFetch;
+  }
+});
