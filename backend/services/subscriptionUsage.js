@@ -69,6 +69,15 @@ async function settleSubscriptionUsageForSession(sessionDoc) {
       let result = null;
 
       await dbSession.withTransaction(async () => {
+        // The identity is learner + lesson, independent of package renewal.
+        const previousUsage = await SubscriptionUsage.findOne({
+          student: studentId, session: sessionDoc._id,
+        }).session(dbSession);
+        if (previousUsage) {
+          result = { studentId, alreadyProcessed: true, outcome: previousUsage.outcome };
+          return;
+        }
+
         const subscription = await StudentSubscription.findOne({
           student: studentId,
           circle: circleId,
@@ -224,7 +233,7 @@ async function settleSubscriptionUsageForSession(sessionDoc) {
       : count >= Number(plan?.minStudents || 1)
         ? 'active'
         : 'forming';
-    if (nextStatus !== refreshedCircle.status) {
+    if (['active', 'full'].includes(refreshedCircle.status) && nextStatus !== refreshedCircle.status) {
       await GroupCircle.updateOne({ _id: circleId }, { $set: { status: nextStatus } });
     }
   }
@@ -269,3 +278,4 @@ module.exports = {
   attendanceDecision,
   settleSubscriptionUsageForSession,
 };
+

@@ -693,8 +693,8 @@ requireAbsent(
 );
 requireContains(
   'backend/models/GroupCircle.js',
-  'group circles must allow the approved 15-student economic plan capacity',
-  /capacity:[\s\S]{0,100}max:\s*15/
+  'group circles must allow the approved 20-student economic plan capacity',
+  /capacity:[\s\S]{0,100}max:\s*20/
 );
 requireContains(
   'backend/routes/payments.js',

@@ -20,8 +20,8 @@ test('subscription catalog exposes the five approved plans and package sizes', (
   assert.equal(catalog.plans.length, 5);
 
   assert.equal(getPlan('community').pricePerSessionMinor, 1000);
-  assert.equal(getPlan('community').minStudents, 10);
-  assert.equal(getPlan('community').maxStudents, 15);
+  assert.equal(getPlan('community').minStudents, 15);
+  assert.equal(getPlan('community').maxStudents, 20);
   assert.equal(getPlan('community').durationMinMinutes, 60);
   assert.equal(getPlan('community').durationMaxMinutes, 120);
 
@@ -72,3 +72,4 @@ test('subscription quote rejects unknown plans and arbitrary package sizes', () 
     (error) => error.code === 'SUBSCRIPTION_PACK_INVALID'
   );
 });
+

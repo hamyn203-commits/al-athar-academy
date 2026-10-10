@@ -56,6 +56,7 @@ export default function AdminPayments() {
           : 'تم رفض إثبات الدفع'
       );
       await load();
+      if (result.awaitingPlacement) navigate('../subscriptions');
     } catch (error) {
       toast.error(error.message || 'فشلت المراجعة');
     } finally {
@@ -84,6 +85,7 @@ export default function AdminPayments() {
   return (
     <DashboardLayout title="مراجعة المدفوعات اليدوية" user={user} onLogout={logout}>
       <div className="wn-admin-payment-readable">
+      <button className="wn-btn wn-btn--secondary mb-4" onClick={() => navigate('../subscriptions')}>الاشتراكات والتسكين</button>
       <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
         <button onClick={() => navigate('..')} className="wn-btn wn-btn--secondary">
           <ArrowRight size={16} /> لوحة الإدارة
@@ -172,3 +174,4 @@ export default function AdminPayments() {
     </DashboardLayout>
   );
 }
+
