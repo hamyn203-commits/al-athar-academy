@@ -226,11 +226,15 @@ async function getPrivateObject(reference, options = {}) {
       ...(options.headers?.Range ? { Range: options.headers.Range } : {}),
     }));
     return {
-      statusCode: 200,
+      statusCode: result.ContentRange ? 206 : 200,
       stream: result.Body,
+      headers: {
+        get: (name) => String(name || '').toLowerCase() === 'content-range' ? (result.ContentRange || null) : null,
+      },
       blob: {
         contentType: result.ContentType || 'application/octet-stream',
         etag: result.ETag,
+        contentRange: result.ContentRange || null,
       },
     };
   }
