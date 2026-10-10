@@ -127,6 +127,37 @@ requireContains(
   /presignUrl\(token, \{ pathname, operation: 'get', validUntil \}\)/
 );
 requireContains(
+  'backend/routes/teachers.js',
+  'a private video must have a short-lived teacher- and asset-scoped JWT',
+  /purpose: TEACHER_MEDIA_TICKET_PURPOSE[\s\S]*?referenceDigest/
+);
+requireContains(
+  'backend/routes/teachers.js',
+  'range ticket is independently verified before reading teacher media',
+  /router\.get\('\/admin-media-range[\s\S]*?jwt\.verify\(ticket/
+);
+requireContains(
+  'backend/routes/teachers.js',
+  'range endpoint must verify media digest to prevent replay after replacement',
+  /digest !== payload\.referenceDigest/
+);
+requireContains(
+  'backend/app.js',
+  'never log bearer tickets from media Range URLs',
+  /req\.path\.startsWith\('\/api\/teachers\/admin-media-range\/'\)/
+);
+requireContains(
+  'backend/routes/teachers.js',
+  'range endpoint sends bounded partial content',
+  /res\.setHeader\('Content-Range'/
+);
+requireContains(
+  'backend/services/objectStorage.js',
+  'Blob media reads must pass requested Range header',
+  /\.\.\.\(options\.headers \? \{ headers: options\.headers \} : \{\}\)/
+);
+
+requireContains(
   'backend/routes/uploads.js',
   'Blob uploads must be private by default',
   /privateByDefault/
