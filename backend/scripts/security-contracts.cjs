@@ -144,7 +144,7 @@ requireContains(
 requireContains(
   'backend/app.js',
   'never log bearer tickets from media Range URLs',
-  /req\.path\.startsWith\('\/api\/teachers\/admin-media-range\/'\)/
+  /req\.originalUrl[\s\S]*?startsWith\('\/api\/teachers\/admin-media-range\/'\)/
 );
 requireContains(
   'backend/routes/teachers.js',
