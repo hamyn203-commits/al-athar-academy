@@ -960,7 +960,7 @@ router.get('/admin/:id/profile-change/media-playback/:kind', protect, authorize(
     const verifiedPlayback = {
       ...playback,
       ...(useRangeProxy ? {
-        url: createAdminMediaRangeUrl(teacher._id, req.params.kind, req.params.index, reference),
+        url: createAdminMediaRangeUrl(req.params.id, req.params.kind, 0, reference, 'proposed'),
         streamingMode: 'authenticated-range',
       } : { streamingMode: 'direct' }),
       contentType: metadata.contentType,
@@ -1272,21 +1272,36 @@ router.get('/admin-media-range/:id/:kind/:index', async (req, res) => {
       !['original', 'proposed'].includes(payload.scope)
     ) return res.status(403).end();
 
-    let reference = null;
-    if (payload.scope === 'proposed') {
+    const readOriginalReference = async () => {
+      const teacher = await Teacher.findById(req.params.id).select('media');
+      const media = teacher?.media?.[req.params.kind];
+      return Array.isArray(media) ? media[index] : index === 0 ? media : null;
+    };
+    const readProposedReference = async () => {
       const request = await TeacherProfileChangeRequest.findOne({
         teacher: req.params.id,
         status: 'pending',
       }).sort({ createdAt: -1 }).lean();
-      reference = request?.proposed?.media?.[req.params.kind];
-    } else {
-      const teacher = await Teacher.findById(req.params.id).select('media');
-      const media = teacher?.media?.[req.params.kind];
-      reference = Array.isArray(media) ? media[index] : index === 0 ? media : null;
+      return request?.proposed?.media?.[req.params.kind] || null;
+    };
+    const matchesTicket = (candidate) => candidate && (
+      crypto.createHash('sha256').update(String(candidate)).digest('hex') === payload.referenceDigest
+    );
+
+    let reference = payload.scope === 'proposed'
+      ? await readProposedReference()
+      : await readOriginalReference();
+
+    // Compatibility for tickets minted by the previous buggy deploy where the
+    // original/proposed scope value was swapped. The immutable reference hash
+    // is authoritative, so this never grants access to a different object.
+    if (!matchesTicket(reference)) {
+      const legacyCandidate = payload.scope === 'proposed'
+        ? await readOriginalReference()
+        : await readProposedReference();
+      reference = matchesTicket(legacyCandidate) ? legacyCandidate : null;
     }
     if (!reference) return res.status(404).end();
-    const digest = crypto.createHash('sha256').update(String(reference)).digest('hex');
-    if (digest !== payload.referenceDigest) return res.status(403).end();
 
     const meta = await objectStorage.inspectPrivateMedia(reference);
     if (!meta || !Number.isSafeInteger(Number(meta.sizeBytes)) || Number(meta.sizeBytes) <= 0) return res.status(404).end();
@@ -1394,7 +1409,7 @@ router.get('/admin/:id/media-playback/:kind{/:index}', protect, authorize('admin
     const verifiedPlayback = {
       ...playback,
       ...(useRangeProxy ? {
-        url: createAdminMediaRangeUrl(req.params.id, req.params.kind, 0, reference, 'proposed'),
+        url: createAdminMediaRangeUrl(teacher._id, req.params.kind, req.params.index, reference, 'original'),
         streamingMode: 'authenticated-range',
       } : { streamingMode: 'direct' }),
       contentType: metadata.contentType,

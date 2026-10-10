@@ -139,12 +139,12 @@ requireContains(
 requireContains(
   'backend/routes/teachers.js',
   'range endpoint must verify media digest to prevent replay after replacement',
-  /digest !== payload\.referenceDigest/
+  /const matchesTicket = \(candidate\)[\s\S]*?digest\('hex'\) === payload\.referenceDigest/
 );
 requireContains(
   'backend/app.js',
   'never log bearer tickets from media Range URLs',
-  /req\.path\.startsWith\('\/api\/teachers\/admin-media-range\/'\)/
+  /req\.originalUrl[\s\S]*?startsWith\('\/api\/teachers\/admin-media-range\/'\)/
 );
 requireContains(
   'backend/routes/teachers.js',

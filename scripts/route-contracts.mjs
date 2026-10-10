@@ -428,6 +428,18 @@ assert.match(teacherAssetViewer, /describePlaybackError/);
 assert.match(teacherAssetViewer, /preview\.contentType/);
 assert.match(teacherAssetViewer, /playbackErrorCode/);
 assert.match(teacherAssetViewer, /H\.264/);
+const teachersRouteSource = read('backend/routes/teachers.js');
+const profilePlaybackStart = teachersRouteSource.indexOf("router.get('/admin/:id/profile-change/media-playback/:kind'");
+const profilePlaybackEnd = teachersRouteSource.indexOf("router.get('/admin/:id/profile-change/media/:kind'", profilePlaybackStart);
+const originalPlaybackStart = teachersRouteSource.indexOf("router.get('/admin/:id/media-playback/:kind{/:index}'");
+const originalPlaybackEnd = teachersRouteSource.indexOf("router.get('/admin/:id/media/:kind{/:index}'", originalPlaybackStart);
+const profilePlaybackRoute = teachersRouteSource.slice(profilePlaybackStart, profilePlaybackEnd);
+const originalPlaybackRoute = teachersRouteSource.slice(originalPlaybackStart, originalPlaybackEnd);
+assert.match(profilePlaybackRoute, /createAdminMediaRangeUrl\(req\.params\.id, req\.params\.kind, 0, reference, 'proposed'\)/);
+assert.doesNotMatch(profilePlaybackRoute, /createAdminMediaRangeUrl\(teacher\._id/);
+assert.match(originalPlaybackRoute, /createAdminMediaRangeUrl\(teacher\._id, req\.params\.kind, req\.params\.index, reference, 'original'\)/);
+assert.doesNotMatch(originalPlaybackRoute, /'proposed'/);
+
 
 
 assert.match(teacherAssetViewer, /aria-modal="true"/);
