@@ -29,6 +29,11 @@ test('admin places learner, starts a 15-student circle and schedules without con
   await expect(row.getByRole('cell').nth(3)).toHaveText('4');
   const tomorrow = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString().slice(0, 10);
   await circle.locator('input[type="datetime-local"]').fill(tomorrow + 'T18:00');
+  // Toast updates must not reload/unmount the circle and erase its draft.
+  while (await page.getByRole('button', { name: 'إغلاق', exact: true }).count()) {
+    await page.getByRole('button', { name: 'إغلاق', exact: true }).first().click();
+  }
+  await expect(circle.locator('input[type="datetime-local"]')).toHaveValue(tomorrow + 'T18:00');
   const scheduled = page.waitForResponse(response => response.url().includes('/api/sessions/group-circle') && response.request().method() === 'POST');
   await circle.getByRole('button', { name: 'جدولة الحصة وإرسال التنبيهات' }).click();
   const response = await scheduled;

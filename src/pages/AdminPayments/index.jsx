@@ -14,6 +14,7 @@ export default function AdminPayments() {
   const { user, ready, logout } = useRequireAuth(['admin']);
   const navigate = useNavigate();
   const toast = useToast();
+  const showLoadError = toast.error;
   const [filter, setFilter] = useState('pending');
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -25,11 +26,11 @@ export default function AdminPayments() {
       const result = await api.get('/api/payments/admin/manual?status=' + encodeURIComponent(filter), { auth: true });
       setPayments(result.payments || []);
     } catch (error) {
-      toast.error(error.message || 'تعذر تحميل المدفوعات');
+      showLoadError(error.message || 'تعذر تحميل المدفوعات');
     } finally {
       setLoading(false);
     }
-  }, [filter, toast]);
+  }, [filter, showLoadError]);
 
   useEffect(() => {
     if (ready) load();

@@ -14,6 +14,7 @@ export default function AdminSubscriptions() {
   const { user, ready, logout } = useRequireAuth(['admin']);
   const navigate = useNavigate();
   const toast = useToast();
+  const showLoadError = toast.error;
   const [tab, setTab] = useState('awaiting');
   const [subscriptions, setSubscriptions] = useState([]);
   const [circles, setCircles] = useState([]);
@@ -31,9 +32,9 @@ export default function AdminSubscriptions() {
       ]);
       setSubscriptions(placements.subscriptions || []);
       setCircles(groups.circles || []);
-    } catch (error) { toast.error(error.message || 'تعذر تحميل الاشتراكات والحلقات'); }
+    } catch (error) { showLoadError(error.message || 'تعذر تحميل الاشتراكات والحلقات'); }
     finally { setLoading(false); }
-  }, [toast]);
+  }, [showLoadError]);
 
   useEffect(() => { if (ready) load(); }, [ready, load]);
 
