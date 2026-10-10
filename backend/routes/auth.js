@@ -16,6 +16,7 @@ const { addMockUser, findMockUserByEmail, findMockUserById, updateMockUser } = r
 const { sendEmail } = require('../services/notificationDispatcher');
 const { getTeacherAccessDecision } = require('../utils/teacherAccess');
 const { normalizePhone } = require('../utils/phone');
+const { isSection } = require('../config/subscriptionPlans');
 const storage = require('../services/objectStorage');
 const { createGuardianInvitation } = require('../services/guardianInvitations');
 
@@ -71,7 +72,7 @@ function sanitizeUserResponse(user) {
 
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, password, phone, role, guardianPhone, guardianRelationship, whatsappPhone, age, gender, currentLevel, preferredTrack, memorizedJuz, memorizationDetails, customLevel } = req.body;
+    const { name, email, password, phone, role, guardianPhone, guardianRelationship, whatsappPhone, age, gender, currentLevel, preferredTrack, memorizedJuz, memorizationDetails, customLevel, enrollmentSection } = req.body;
     const normalizedEmail = String(email || '').trim().toLowerCase();
     const allowedRoles = ['student', 'guardian'];
 
@@ -91,6 +92,10 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'This role cannot be self-registered' });
     }
     const assignedRole = role || 'student';
+    // A guardian may manage children from both divisions, so do not bind guardians.
+    if (assignedRole === 'student' && enrollmentSection !== undefined && !isSection(enrollmentSection)) {
+      return res.status(400).json({ error: 'القسم التعليمي المختار غير صحيح', code: 'ENROLLMENT_SECTION_INVALID' });
+    }
     const normalizedPhone = normalizePhone(phone);
 
     if (assignedRole === 'guardian' && !normalizedPhone) {
@@ -130,6 +135,7 @@ router.post('/register', async (req, res) => {
           whatsappPhone: String(whatsappPhone || '').trim(),
           ...(age ? { age: Number(age) } : {}),
           ...(gender ? { gender } : {}),
+          ...(enrollmentSection ? { enrollmentSection } : {}),
           currentLevel: ['beginner', 'intermediate', 'advanced', 'ijazah'].includes(currentLevel) ? currentLevel : 'beginner',
           preferredTrack: ['memorization', 'tajweed_ijazah', 'kids_foundation'].includes(preferredTrack) ? preferredTrack : 'memorization',
           memorizedJuz: Math.max(0, Math.min(30, Math.trunc(Number(memorizedJuz) || 0))),
@@ -183,6 +189,7 @@ router.post('/register', async (req, res) => {
       name,
       phone,
       role: assignedRole,
+      ...(assignedRole === 'student' && enrollmentSection ? { enrollmentSection } : {}),
       isActive: true,
       lastLogin: new Date(),
     });
@@ -224,6 +231,10 @@ router.post('/google', async (req, res) => {
     const { verifyGoogleCredential } = require('../services/googleIdentity');
     const identity = await verifyGoogleCredential(req.body?.credential, process.env.GOOGLE_CLIENT_ID);
     const requestedRole = ['student', 'guardian', 'teacher'].includes(req.body?.role) ? req.body.role : 'student';
+    const enrollmentSection = req.body?.enrollmentSection;
+    if (requestedRole === 'student' && req.body?.context === 'signup' && enrollmentSection !== undefined && !isSection(enrollmentSection)) {
+      return res.status(400).json({ error: 'القسم التعليمي المختار غير صحيح', code: 'ENROLLMENT_SECTION_INVALID' });
+    }
     let user = await User.findOne({ googleSubject: identity.sub }).select('+googleSubject +refreshTokenVersion');
 
     if (!user) {
@@ -252,6 +263,7 @@ router.post('/google', async (req, res) => {
           password: require('crypto').randomBytes(48).toString('base64url'),
           googleSubject: identity.sub,
           role: requestedRole,
+          ...(requestedRole === 'student' && req.body?.context === 'signup' && enrollmentSection ? { enrollmentSection } : {}),
           onboarding: { required: true, completed: false },
           emailVerified: true,
           avatar: identity.picture,
