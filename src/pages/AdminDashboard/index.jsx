@@ -344,52 +344,25 @@ export default function AdminDashboard() {
     }
   };
 
-  const openTeacherDocument = async (teacherId, kind, index) => {
-    try {
-      const suffix = Number.isInteger(index) ? `/${index}` : '';
-      const response = await api.request(
-        `/api/teachers/admin/${teacherId}/document/${kind}${suffix}?reason=teacher-review`,
-        { auth: true, json: false, method: 'GET' }
-      );
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      window.open(url, '_blank', 'noopener,noreferrer');
-      window.setTimeout(() => URL.revokeObjectURL(url), 60000);
-    } catch (error) {
-      toast.error(error.message || 'تعذر فتح المستند');
-    }
+  // Keep authorization and admin audit on existing protected endpoints.
+  // Temporary preview URLs are created/revoked inside the dossier component.
+  const fetchTeacherReviewAsset = async (path) => {
+    const response = await api.request(path, { auth: true, json: false, method: 'GET' });
+    return response.blob();
   };
 
-  const openTeacherMedia = async (teacherId, kind, index) => {
-    try {
-      const suffix = Number.isInteger(index) ? `/${index}` : '';
-      const response = await api.request(
-        `/api/teachers/admin/${teacherId}/media/${kind}${suffix}?reason=teacher-review`,
-        { auth: true, json: false, method: 'GET' }
-      );
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      window.open(url, '_blank', 'noopener,noreferrer');
-      window.setTimeout(() => URL.revokeObjectURL(url), 120000);
-    } catch (error) {
-      toast.error(error.message || 'تعذر فتح ملف المعلم');
-    }
+  const openTeacherDocument = (teacherId, kind, index) => {
+    const suffix = Number.isInteger(index) ? `/${index}` : '';
+    return fetchTeacherReviewAsset(`/api/teachers/admin/${teacherId}/document/${kind}${suffix}?reason=teacher-review`);
   };
 
-  const openTeacherProfileChangeMedia = async (teacherId, kind) => {
-    try {
-      const response = await api.request(
-        `/api/teachers/admin/${teacherId}/profile-change/media/${kind}?reason=profile-change-review`,
-        { auth: true, json: false, method: 'GET' }
-      );
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      window.open(url, '_blank', 'noopener,noreferrer');
-      window.setTimeout(() => URL.revokeObjectURL(url), 120000);
-    } catch (error) {
-      toast.error(error.message || 'تعذر فتح الوسيط المقترح');
-    }
+  const openTeacherMedia = (teacherId, kind, index) => {
+    const suffix = Number.isInteger(index) ? `/${index}` : '';
+    return fetchTeacherReviewAsset(`/api/teachers/admin/${teacherId}/media/${kind}${suffix}?reason=teacher-review`);
   };
+
+  const openTeacherProfileChangeMedia = (teacherId, kind) =>
+    fetchTeacherReviewAsset(`/api/teachers/admin/${teacherId}/profile-change/media/${kind}?reason=profile-change-review`);
 
   const reviewTeacherProfileChange = async (teacherId, action, suppliedNote = '') => {
     let note = suppliedNote;

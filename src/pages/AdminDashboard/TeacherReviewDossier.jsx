@@ -1,7 +1,9 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import TeacherAssetViewer from './TeacherAssetViewer';
+import './TeacherReviewDossier.css';
 import {
   AlertTriangle, CheckCircle2, Circle, FileText, GraduationCap, Headphones,
-  IdCard, ShieldCheck, UserRound, Video, X, XCircle, Clock3, History,
+  IdCard, ShieldCheck, UserRound, Video, X, XCircle, Clock3, History, Eye,
 } from 'lucide-react';
 
 const MEDIA_ITEMS = [
@@ -10,6 +12,28 @@ const MEDIA_ITEMS = [
   { key: 'recitationVideo', label: 'فيديو التلاوة', icon: Video },
   { key: 'teachingMethodVideo', label: 'فيديو طريقة التدريس', icon: Video },
 ];
+
+const REVIEW_GROUPS = [
+  { title: 'البيانات والمؤهلات', hint: 'التحقق من البيانات الشخصية والمؤهلات والخبرة', keys: ['personal-info', 'academic-info', 'quran-profile'] },
+  { title: 'الصور والفيديوهات', hint: 'مراجعة صورة الملف والفيديوهات المطلوبة بالصوت والصورة', keys: ['profile-photo', 'introduction-video', 'recitation-video', 'teaching-method-video'] },
+  { title: 'الهوية والشهادات', hint: 'فحص البطاقة والمستندات والإجازات إن وجدت', keys: ['id-card-front', 'id-card-back', 'graduation-certificate', 'tajweed-certificates', 'ijazat'] },
+];
+
+const REVIEW_GUIDES = {
+  'personal-info': { hint: 'طابق الاسم والسن والهاتف والمدينة مع الهوية.', section: 'review-personal-info' },
+  'academic-info': { hint: 'تحقق من الجامعة والكلية والمؤهل وسنة التخرج.', section: 'review-academic-info' },
+  'quran-profile': { hint: 'تحقق من الحفظ والإجازات والخبرة والتخصصات.', section: 'review-academic-info' },
+  'profile-photo': { hint: 'تأكد من وضوح الصورة ومناسبتها للملف.', category: 'media', kind: 'profilePhoto' },
+  'introduction-video': { hint: 'استمع إلى تعريف المعلم وجودة الصوت والصورة.', category: 'media', kind: 'introductionVideo' },
+  'recitation-video': { hint: 'راجع جودة التلاوة وسلامة الأداء.', category: 'media', kind: 'recitationVideo' },
+  'teaching-method-video': { hint: 'راجع أسلوب الشرح وطريقة التدريس.', category: 'media', kind: 'teachingMethodVideo' },
+  'id-card-front': { hint: 'طابق بيانات وجه البطاقة مع ملف المعلم.', category: 'document', kind: 'idCardFront' },
+  'id-card-back': { hint: 'راجع ظهر بطاقة الهوية.', category: 'document', kind: 'idCardBack' },
+  'graduation-certificate': { hint: 'راجع صحة شهادة التخرج إن كانت مطلوبة.', category: 'document', kind: 'graduationCertificate' },
+  'tajweed-certificates': { hint: 'راجع الشهادات المرفوعة واحدةً واحدة.', category: 'document', kind: 'tajweedCertificates', index: 0 },
+  ijazat: { hint: 'راجع الإجازات وأسماء المشايخ.', category: 'document', kind: 'ijazat', index: 0 },
+};
+const REVIEW_STATES = { pending: 'لم يراجع بعد', approved: 'تم الاعتماد', 'changes-requested': 'بانتظار تعديل المعلم', 'not-applicable': 'غير منطبق' };
 
 function Value({ label, value }) {
   return (
@@ -36,6 +60,21 @@ export default function TeacherReviewDossier({
   const gate = dossier?.gate;
   const profileChange = dossier?.profileChange;
   const approved = teacher?.status === 'approved' && teacher?.isVerified === true;
+  const [selectedAsset, setSelectedAsset] = useState(null);
+  const showAsset = (category, kind, label, index) => setSelectedAsset({ category, kind, label, index });
+  const inspectItem = (item) => {
+    const guide = REVIEW_GUIDES[item.key];
+    if (!guide) return;
+    if (guide.section) document.getElementById(guide.section)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    else showAsset(guide.category, guide.kind, item.label, guide.index);
+  };
+  const canInspect = (item) => {
+    if (!item.available) return false;
+    if (item.key === 'graduation-certificate') return Boolean(teacher?.documents?.graduationCertificate);
+    if (item.key === 'tajweed-certificates') return (teacher?.documents?.tajweedCertificatesCount || 0) > 0;
+    if (item.key === 'ijazat') return (teacher?.documents?.ijazatCount || 0) > 0;
+    return true;
+  };
 
   const specializations = useMemo(
     () => (teacher?.quranInfo?.specializations || []).join('، '),
@@ -98,48 +137,41 @@ export default function TeacherReviewDossier({
                 </div>
               </div>
 
-              <div className="wn-admin-review-checklist">
-                {(gate?.items || []).map((item) => (
-                  <article key={item.key} className={`is-${item.status} ${!item.available ? 'is-missing' : ''}`}>
-                    <div className="wn-admin-review-checklist__label">
-                      {item.status === 'approved'
-                        ? <CheckCircle2 size={17} />
-                        : item.status === 'changes-requested'
-                          ? <XCircle size={17} />
-                          : <Circle size={17} />}
-                      <div>
-                        <strong>{item.label}</strong>
-                        <small>
-                          {item.requiredForTeacher ? 'إلزامي' : 'اختياري'}
-                          {!item.available ? ' · الملف/البيان غير متاح' : ''}
-                        </small>
-                        {item.note ? <p>{item.note}</p> : null}
-                      </div>
+              <p className="wn-admin-review-gate__intro">افتح تفاصيل كل بند أولًا، ثم اعتمده بعد التحقق منه. لو في مشكلة، اطلب تعديلًا واكتب للمعلم ما يجب إصلاحه.</p>
+              {REVIEW_GROUPS.map((group) => {
+                const items = (gate?.items || []).filter((item) => group.keys.includes(item.key));
+                if (!items.length) return null;
+                return (
+                  <div className="wn-admin-review-group" key={group.title}>
+                    <div className="wn-admin-review-group__heading">
+                      <div><h3>{group.title}</h3><p>{group.hint}</p></div>
+                      <span>{items.filter((item) => item.satisfied).length} من {items.length} مكتمل</span>
                     </div>
-                    <div className="wn-admin-review-checklist__actions">
-                      <button
-                        type="button"
-                        disabled={!item.available}
-                        onClick={() => onChecklist(teacher._id, item.key, 'approved', '')}
-                        className="is-approve"
-                      >
-                        اعتماد البند
-                      </button>
-                      <button type="button" onClick={() => requestChanges(item)} className="is-change">
-                        يحتاج تعديل
-                      </button>
-                      {item.canMarkNotApplicable ? (
-                        <button
-                          type="button"
-                          onClick={() => onChecklist(teacher._id, item.key, 'not-applicable', '')}
-                        >
-                          غير منطبق
-                        </button>
-                      ) : null}
+                    <div className="wn-admin-review-checklist">
+                      {items.map((item) => (
+                        <article key={item.key} className={`is-${item.status} ${!item.available ? 'is-missing' : ''}`}>
+                          <div className="wn-admin-review-checklist__label">
+                            {item.satisfied ? <CheckCircle2 size={20} /> : item.status === 'changes-requested' ? <XCircle size={20} /> : <Circle size={20} />}
+                            <div>
+                              <strong>{item.label}</strong>
+                              <small>{item.requiredForTeacher ? 'إلزامي' : 'اختياري'} · {REVIEW_STATES[item.status] || 'قيد المراجعة'}</small>
+                              <p className="wn-admin-review-checklist__hint">{REVIEW_GUIDES[item.key]?.hint}</p>
+                              {!item.available ? <p className="wn-admin-review-checklist__missing-text">هذا البيان أو الملف غير متاح حتى الآن.</p> : null}
+                              {item.note ? <p className="wn-admin-review-checklist__note">ملاحظة الإدارة: {item.note}</p> : null}
+                            </div>
+                          </div>
+                          <div className="wn-admin-review-checklist__actions">
+                            <button type="button" className="is-inspect" disabled={!canInspect(item)} onClick={() => inspectItem(item)}><Eye size={16} /> عرض التفاصيل</button>
+                            <button type="button" className="is-approve" disabled={!item.available || item.status === 'approved'} onClick={() => onChecklist(teacher._id, item.key, 'approved', '')}>{item.status === 'approved' ? 'تم الاعتماد' : 'اعتماد البند'}</button>
+                            <button type="button" className="is-change" onClick={() => requestChanges(item)}>طلب تعديل</button>
+                            {item.canMarkNotApplicable ? <button type="button" disabled={item.status === 'not-applicable'} onClick={() => onChecklist(teacher._id, item.key, 'not-applicable', '')}>غير منطبق</button> : null}
+                          </div>
+                        </article>
+                      ))}
                     </div>
-                  </article>
-                ))}
-              </div>
+                  </div>
+                );
+              })}
             </section> : null}
 
             {profileChange ? (
@@ -173,7 +205,7 @@ export default function TeacherReviewDossier({
 
                 <div className="wn-admin-dossier__asset-grid mt-4">
                   {MEDIA_ITEMS.filter(({ key }) => profileChange.proposed?.media?.[key]).map(({ key, label, icon: Icon }) => (
-                    <button key={key} type="button" onClick={() => onOpenProfileChangeMedia?.(teacher._id, key)}>
+                    <button key={key} type="button" onClick={() => showAsset('profile-change', key, `${label} المقترحة`)}>
                       <Icon size={18} />
                       <span><strong>{label} المقترحة</strong><small>فتح للمراجعة</small></span>
                     </button>
@@ -201,7 +233,7 @@ export default function TeacherReviewDossier({
               </section>
             ) : null}
 
-            <section className="wn-admin-dossier__section">
+            <section id="review-personal-info" className="wn-admin-dossier__section">
               <div className="wn-admin-dossier__section-title"><UserRound size={18} /><h3>البيانات الشخصية</h3></div>
               <div className="wn-admin-dossier__grid">
                 <Value label="الاسم" value={teacher.personalInfo?.fullName} />
@@ -216,7 +248,7 @@ export default function TeacherReviewDossier({
               </div>
             </section>
 
-            <section className="wn-admin-dossier__section">
+            <section id="review-academic-info" className="wn-admin-dossier__section">
               <div className="wn-admin-dossier__section-title"><GraduationCap size={18} /><h3>الدراسة والخبرة</h3></div>
               <div className="wn-admin-dossier__grid">
                 <Value label="الجامعة" value={teacher.academicInfo?.university} />
@@ -243,20 +275,20 @@ export default function TeacherReviewDossier({
                     key={key}
                     type="button"
                     disabled={!teacher.media?.[key]}
-                    onClick={() => onOpenMedia(teacher._id, key)}
+                    onClick={() => showAsset('media', key, label)}
                   >
                     <Icon size={18} />
                     <span><strong>{label}</strong><small>{teacher.media?.[key] ? 'فتح للمراجعة' : 'غير متاح'}</small></span>
                   </button>
                 ))}
                 {Array.from({ length: teacher.media?.additionalVideosCount || 0 }).map((_, index) => (
-                  <button key={`video-${index}`} type="button" onClick={() => onOpenMedia(teacher._id, 'additionalVideos', index)}>
+                  <button key={`video-${index}`} type="button" onClick={() => showAsset('media', 'additionalVideos', `فيديو إضافي ${index + 1}`, index)}>
                     <Video size={18} />
                     <span><strong>فيديو إضافي {index + 1}</strong><small>فتح للمراجعة</small></span>
                   </button>
                 ))}
                 {Array.from({ length: teacher.media?.audioRecordingsCount || 0 }).map((_, index) => (
-                  <button key={`audio-${index}`} type="button" onClick={() => onOpenMedia(teacher._id, 'audioRecordings', index)}>
+                  <button key={`audio-${index}`} type="button" onClick={() => showAsset('media', 'audioRecordings', `تسجيل صوتي ${index + 1}`, index)}>
                     <Headphones size={18} />
                     <span><strong>تسجيل صوتي {index + 1}</strong><small>فتح للمراجعة</small></span>
                   </button>
@@ -271,22 +303,22 @@ export default function TeacherReviewDossier({
                 كل فتح لمستند أو ملف حساس يتم تسجيله في سجل الإدارة.
               </p>
               <div className="wn-admin-dossier__asset-grid">
-                <button type="button" disabled={!teacher.documents?.idCardFront} onClick={() => onOpenDocument(teacher._id, 'idCardFront')}>
+                <button type="button" disabled={!teacher.documents?.idCardFront} onClick={() => showAsset('document', 'idCardFront', 'وجه البطاقة')}>
                   <IdCard size={18} /><span><strong>وجه البطاقة</strong><small>{teacher.documents?.idCardFront ? 'فتح' : 'غير متاح'}</small></span>
                 </button>
-                <button type="button" disabled={!teacher.documents?.idCardBack} onClick={() => onOpenDocument(teacher._id, 'idCardBack')}>
+                <button type="button" disabled={!teacher.documents?.idCardBack} onClick={() => showAsset('document', 'idCardBack', 'ظهر البطاقة')}>
                   <IdCard size={18} /><span><strong>ظهر البطاقة</strong><small>{teacher.documents?.idCardBack ? 'فتح' : 'غير متاح'}</small></span>
                 </button>
-                <button type="button" disabled={!teacher.documents?.graduationCertificate} onClick={() => onOpenDocument(teacher._id, 'graduationCertificate')}>
+                <button type="button" disabled={!teacher.documents?.graduationCertificate} onClick={() => showAsset('document', 'graduationCertificate', 'شهادة التخرج')}>
                   <FileText size={18} /><span><strong>شهادة التخرج</strong><small>{teacher.documents?.graduationCertificate ? 'فتح' : 'غير متاح'}</small></span>
                 </button>
                 {Array.from({ length: teacher.documents?.tajweedCertificatesCount || 0 }).map((_, index) => (
-                  <button key={`tajweed-${index}`} type="button" onClick={() => onOpenDocument(teacher._id, 'tajweedCertificates', index)}>
+                  <button key={`tajweed-${index}`} type="button" onClick={() => showAsset('document', 'tajweedCertificates', `شهادة تجويد ${index + 1}`, index)}>
                     <FileText size={18} /><span><strong>شهادة تجويد {index + 1}</strong><small>فتح</small></span>
                   </button>
                 ))}
                 {Array.from({ length: teacher.documents?.ijazatCount || 0 }).map((_, index) => (
-                  <button key={`ijaza-${index}`} type="button" onClick={() => onOpenDocument(teacher._id, 'ijazat', index)}>
+                  <button key={`ijaza-${index}`} type="button" onClick={() => showAsset('document', 'ijazat', `إجازة ${index + 1}`, index)}>
                     <FileText size={18} /><span><strong>إجازة {index + 1}</strong><small>فتح</small></span>
                   </button>
                 ))}
@@ -337,6 +369,14 @@ export default function TeacherReviewDossier({
           </div>
         )}
       </div>
+      {selectedAsset && (
+        <TeacherAssetViewer
+          teacherId={teacher._id}
+          asset={selectedAsset}
+          onClose={() => setSelectedAsset(null)}
+          loader={selectedAsset.category === 'document' ? onOpenDocument : selectedAsset.category === 'profile-change' ? onOpenProfileChangeMedia : onOpenMedia}
+        />
+      )}
     </div>
   );
 }

@@ -385,6 +385,31 @@ assert.match(teacherReviewDossier, /approvalReady/);
 assert.match(teacherReviewDossier, /onOpenDocument/);
 assert.match(teacherReviewDossier, /onOpenMedia/);
 
+// Teacher review assets must remain in the authenticated admin dossier.
+// Opening a new tab after an async fetch is blocked by browsers and breaks video review.
+const teacherAssetViewer = read('src/pages/AdminDashboard/TeacherAssetViewer.jsx');
+const teacherReviewStyles = read('src/pages/AdminDashboard/TeacherReviewDossier.css');
+assert.match(teacherReviewDossier, /REVIEW_GROUPS/);
+assert.match(teacherReviewDossier, /REVIEW_GUIDES/);
+assert.match(teacherReviewDossier, /canInspect/);
+assert.match(teacherReviewDossier, /<TeacherAssetViewer/);
+assert.match(teacherReviewDossier, /showAsset\('media'/);
+assert.match(teacherReviewDossier, /showAsset\('document'/);
+assert.match(teacherReviewDossier, /showAsset\('profile-change'/);
+assert.match(teacherAssetViewer, /<video[\s\S]*?controls/);
+assert.match(teacherAssetViewer, /<audio[^>]*controls/);
+assert.match(teacherAssetViewer, /URL\.createObjectURL/);
+assert.match(teacherAssetViewer, /URL\.revokeObjectURL/);
+assert.match(teacherAssetViewer, /aria-modal="true"/);
+assert.match(adminDashboard, /fetchTeacherReviewAsset/);
+assert.doesNotMatch(
+  adminDashboard.slice(adminDashboard.indexOf('const fetchTeacherReviewAsset'), adminDashboard.indexOf('const reviewTeacherProfileChange')),
+  /window\.open\(/
+);
+assert.match(teacherReviewStyles, /wn-admin-review-group__heading/);
+assert.match(teacherReviewStyles, /@media \(max-width: 560px\)/);
+
+
 
 const adminPeopleSearch = read('src/pages/AdminDashboard/AdminPeopleSearch.jsx');
 const student360Dossier = read('src/pages/AdminDashboard/Student360Dossier.jsx');
