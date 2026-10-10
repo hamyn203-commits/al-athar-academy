@@ -224,6 +224,8 @@ export default function StudentDashboard() {
   const [guardianInvitations, setGuardianInvitations] = useState([]);
   const [linkedGuardians, setLinkedGuardians] = useState([]);
   const [subscriptions, setSubscriptions] = useState([]);
+  const [subscriptionsLoaded, setSubscriptionsLoaded] = useState(false);
+  const defaultStudentTabRef = useRef(false);
   const [renewalSessionCount, setRenewalSessionCount] = useState(8);
   const [renewingSubscription, setRenewingSubscription] = useState(false);
   const [guardianInviteForm, setGuardianInviteForm] = useState({ guardianPhone: '', relationship: 'father' });
@@ -271,7 +273,7 @@ export default function StudentDashboard() {
         api.get('/api/teachers?limit=8&sortBy=rating&sortOrder=desc').catch(() => ({ teachers: [] })),
         api.get('/api/teacher-updates/student', { auth: true }).catch(() => ({ updates: [] })),
         api.get('/api/students/dashboard/guardian-invitations', { auth: true }).catch(() => ({ invitations: [], linkedGuardians: [] })),
-        api.get('/api/subscriptions/me', { auth: true }).catch(() => ({ subscriptions: [] })),
+        api.get('/api/subscriptions/me', { auth: true }).catch(() => null),
       ]);
       setProfile(prof);
       setStats(st);
@@ -287,7 +289,10 @@ export default function StudentDashboard() {
       setTeacherUpdates(updateData.updates || []);
       setGuardianInvitations(guardianData.invitations || []);
       setLinkedGuardians(guardianData.linkedGuardians || []);
-      setSubscriptions(subscriptionData.subscriptions || []);
+      if (subscriptionData) {
+        setSubscriptions(subscriptionData.subscriptions || []);
+        setSubscriptionsLoaded(true);
+      }
     } catch {
       toast.error(locale === 'id' ? 'Gagal memuat data dasbor siswa' : locale === 'ar' ? 'تعذر تحميل بيانات لوحة الطالب' : 'Failed to load student dashboard data');
     } finally {
@@ -314,6 +319,7 @@ export default function StudentDashboard() {
     try {
       const result = await api.get('/api/subscriptions/me', { auth: true });
       setSubscriptions(result.subscriptions || []);
+      setSubscriptionsLoaded(true);
     } catch {
       // Keep the last known subscription state during transient failures.
     }
@@ -434,6 +440,25 @@ export default function StudentDashboard() {
     }
   };
 
+  const currentSubscription = subscriptions.find((item) => item.status === 'active')
+    || subscriptions.find((item) =>
+    ['awaiting_placement', 'placed', 'paused'].includes(item.status)
+  ) || subscriptions.find((item) =>
+    !item.renewalOf && ['pending_payment', 'payment_review'].includes(item.status)
+  ) || subscriptions.find((item) =>
+    item.status === 'completed'
+  ) || null;
+  const renewalSubscription = subscriptions.find((item) =>
+    String(item.renewalOf?._id || item.renewalOf || '') === String(currentSubscription?._id || '')
+    && ['pending_payment', 'payment_review', 'renewal_queued'].includes(item.status)
+  ) || null;
+
+  useEffect(() => {
+    if (!subscriptionsLoaded || defaultStudentTabRef.current) return;
+    defaultStudentTabRef.current = true;
+    if (currentSubscription && !searchParams.get('tab')) setTab('sessions');
+  }, [subscriptionsLoaded, currentSubscription, searchParams]);
+
   if (!ready) return null;
 
   const now = new Date();
@@ -469,16 +494,6 @@ export default function StudentDashboard() {
     || nextActiveSession?.teacher?.name
     || (locale === 'ar' ? 'معلم الأكاديمية' : 'Quran Tutor');
   const nextSessionDate = nextActiveSession ? new Date(nextActiveSession.scheduledAt) : null;
-  const renewalSubscription = subscriptions.find((item) =>
-    item.renewalOf && ['pending_payment', 'payment_review', 'renewal_queued'].includes(item.status)
-  ) || null;
-  const currentSubscription = subscriptions.find((item) =>
-    ['awaiting_placement', 'placed', 'active', 'paused'].includes(item.status)
-  ) || subscriptions.find((item) =>
-    !item.renewalOf && ['pending_payment', 'payment_review'].includes(item.status)
-  ) || subscriptions.find((item) =>
-    item.status === 'completed'
-  ) || null;
   const currentSubscriptionTeacherName = currentSubscription?.preferredTeacher?.personalInfo?.fullName
     || currentSubscription?.preferredTeacher?.user?.name
     || '';
@@ -881,7 +896,7 @@ export default function StudentDashboard() {
         <div className="flex justify-center py-20"><div className="spinner spinner-lg" /></div>
       ) : (
         <>
-          <section className="wn-student-welcome">
+          {subscriptionsLoaded && !currentSubscription && <section className="wn-student-welcome">
             <div className="wn-student-welcome__content">
               <span className="wn-student-welcome__eyebrow">
                 <Sparkles size={15} />
@@ -972,13 +987,18 @@ export default function StudentDashboard() {
                 </div>
               </div>
             </div>
-          </section>
+          </section>}
+
+          {!subscriptionsLoaded && <section className="wn-dashboard-surface" role="status">
+            <p>{locale === 'ar' ? 'تعذر تأكيد حالة اشتراكك. أعد المحاولة لعرض باقتك.' : 'Could not confirm your subscription. Retry to load your package.'}</p>
+            <button className="wn-btn wn-btn--secondary mt-3" onClick={refreshSubscriptions}>{locale === 'ar' ? 'إعادة المحاولة' : 'Retry'}</button>
+          </section>}
 
           {currentSubscription && (
             <section className="wn-student-next-step" aria-label={locale === 'ar' ? 'حالة الاشتراك' : 'Subscription status'}>
               <div>
                 <span className="wn-student-next-step__eyebrow">
-                  {locale === 'ar' ? 'حالة اشتراكك' : 'Subscription status'}
+                  {locale === 'ar' ? 'اشتراكك الحالي' : 'Your current package'}
                 </span>
                 <h3>
                   {currentSubscription.pricingSnapshot?.nameAr
@@ -992,8 +1012,8 @@ export default function StudentDashboard() {
                   <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-emerald-800">
                     <CreditCard size={14} />
                     {locale === 'ar'
-                      ? `${currentSubscription.sessionCount} حصة · متبقي ${currentSubscription.sessionsRemaining}`
-                      : `${currentSubscription.sessionCount} sessions · ${currentSubscription.sessionsRemaining} remaining`}
+                      ? `الباقة: ${currentSubscription.sessionCount} حصص · المستخدم: ${currentSubscription.sessionsUsed || 0} · المتبقي: ${currentSubscription.sessionsRemaining}`
+                      : `Package: ${currentSubscription.sessionCount} sessions · Used: ${currentSubscription.sessionsUsed || 0} · Remaining: ${currentSubscription.sessionsRemaining}`}
                   </span>
                   {currentSubscriptionTeacherName ? (
                     <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-slate-700">
@@ -1008,6 +1028,18 @@ export default function StudentDashboard() {
                     </span>
                   ) : null}
                 </div>
+              <div className="mt-4 space-y-3" data-testid="subscription-details">
+                <p className="text-sm font-semibold">{locale === 'ar' ? 'سعر الحصة:' : 'Price per lesson:'} {Number(currentSubscription.pricePerSessionMinor || 0) / 100} {currentSubscription.currency || 'EGP'}</p>
+                <progress className="w-full" value={currentSubscription.sessionsUsed || 0} max={currentSubscription.sessionCount} aria-label={locale === 'ar' ? 'الحصص المستخدمة' : 'Used sessions'} />
+                {currentSubscription.circle && <p className="text-sm">{locale === 'ar' ? 'طلاب المجموعة:' : 'Group learners:'} {currentSubscription.circle.students?.length || 0}/{currentSubscription.circle.capacity || '—'}</p>}
+                {(currentSubscription.circle?.schedule || []).length > 0 && <div className="text-sm">
+                  <strong>{locale === 'ar' ? 'جدول الحلقة' : 'Circle schedule'} — {currentSubscription.circle.timezone || 'Africa/Cairo'}</strong>
+                  {(currentSubscription.circle.schedule || []).map((row, index) => <p key={index}>{(locale === 'ar' ? { Saturday: 'السبت', Sunday: 'الأحد', Monday: 'الاثنين', Tuesday: 'الثلاثاء', Wednesday: 'الأربعاء', Thursday: 'الخميس', Friday: 'الجمعة' }[row.day] : row.day) || row.day}: {row.startTime}–{row.endTime}</p>)}
+                </div>}
+                {currentSubscription.status === 'active' && Number(currentSubscription.sessionsRemaining) <= 2 && !renewalSubscription && <div role="status" className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-semibold text-amber-900" data-testid="low-balance-alert">
+                  {locale === 'ar' ? `متبقي لك ${currentSubscription.sessionsRemaining} حصة في باقتك. جدّد اشتراكك للاستمرار مع نفس المعلم والمجموعة.` : `You have ${currentSubscription.sessionsRemaining} lessons left. Renew to continue with the same tutor and group.`}
+                </div>}
+              </div>
               </div>
               <div className="wn-student-next-step__actions">
                 {currentSubscription.status === 'pending_payment' ? (
@@ -1090,7 +1122,7 @@ export default function StudentDashboard() {
                         <RotateCcw size={17} />
                         {renewingSubscription
                           ? (locale === 'ar' ? 'جاري إنشاء التجديد...' : 'Creating renewal...')
-                          : (locale === 'ar' ? 'جدد نفس الجروب' : 'Renew same group')}
+                          : (locale === 'ar' ? 'تجديد الاشتراك' : 'Renew subscription')}
                       </button>
                     </div>
                   ) : null
@@ -1099,7 +1131,7 @@ export default function StudentDashboard() {
             </section>
           )}
 
-          {postTrialSession && !currentSubscription && (
+          {subscriptionsLoaded && postTrialSession && !currentSubscription && (
             <section className="wn-student-next-step">
               <div>
                 <span className="wn-student-next-step__eyebrow">{locale === 'ar' ? 'خطوتك التالية' : 'Next step'}</span>
@@ -1143,7 +1175,7 @@ export default function StudentDashboard() {
               locale={locale}
             />
 
-            {tab === 'overview' && (
+            {tab === 'overview' && subscriptionsLoaded && !currentSubscription && (
               <div className="wn-student-overview">
                 <div className="wn-student-overview__grid">
                   <section className="wn-student-session-panel">
@@ -1521,6 +1553,15 @@ export default function StudentDashboard() {
               </div>
             )}
 
+            {tab === 'overview' && currentSubscription && <section className="space-y-3 p-4">
+              <h3 className="font-bold">{locale === 'ar' ? 'متابعة دراستك' : 'Your study workspace'}</h3>
+              <div className="flex flex-wrap gap-3">
+                <button className="wn-student-primary-action" onClick={() => setTab('sessions')}>{locale === 'ar' ? 'حصصي' : 'My lessons'}</button>
+                <button className="wn-student-secondary-action" onClick={() => setTab('homework')}>{locale === 'ar' ? 'واجباتي' : 'Homework'}</button>
+                <button className="wn-student-secondary-action" onClick={() => setTab('evaluations')}>{locale === 'ar' ? 'التقارير والتقييمات' : 'Reports and feedback'}</button>
+              </div>
+            </section>}
+
             {tab === 'trials' && (
               <div className="space-y-3">
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -1544,9 +1585,9 @@ export default function StudentDashboard() {
 
             {tab === 'sessions' && (
               <div className="space-y-3">
-                <p className="text-sm text-slate-600 mb-2">{locale === 'id' ? 'Sesi kelas reguler Anda setelah guru menyetujui' : locale === 'ar' ? 'حصصك المنتظمة بعد الموافقة على المعلم' : 'Your regular sessions after tutor approval'}</p>
+                <p className="text-sm text-slate-600 mb-2">{locale === 'id' ? 'Sesi kelas reguler Anda setelah guru menyetujui' : locale === 'ar' ? (currentSubscription ? 'حصص اشتراكك ومواعيد حلقتك' : 'حصصك المنتظمة بعد الموافقة على المعلم') : 'Your regular sessions after tutor approval'}</p>
                 {sessions.length === 0 ? (
-                  <p className="text-center text-gray-500 py-8">{locale === 'id' ? 'Tidak ada sesi reguler — Selesaikan kelas uji coba terlebih dahulu, lalu pesan dari menu akun' : locale === 'ar' ? 'لا حصص منتظمة — أكمل تجريبية ثم احجز من «حسابي»' : 'No regular sessions — complete a trial first, then book from your account tab'}</p>
+                  <p className="text-center text-gray-500 py-8">{locale === 'id' ? 'Tidak ada sesi reguler — Selesaikan kelas uji coba terlebih dahulu, lalu pesan dari menu akun' : locale === 'ar' ? (currentSubscription ? (currentSubscription.status === 'active' ? 'لا توجد حصص مجدولة حتى الآن. ستظهر هنا بعد جدولة الإدارة أو المعلم.' : subscriptionStatusCopy?.ar) : 'لا حصص منتظمة — أكمل تجريبية ثم احجز من «حسابي»') : (currentSubscription ? (currentSubscription.status === 'active' ? 'No lessons scheduled yet. They will appear after your tutor or administration schedules them.' : subscriptionStatusCopy?.en) : 'No regular sessions — complete a trial first, then book from your account tab')}</p>
                 ) : sessions.map((s) => (
                   <SessionCard key={s._id} session={s} onReview={openReview} hasReviewed={hasReviewed(s._id)} onChat={setChatSession} />
                 ))}
@@ -2262,3 +2303,4 @@ function InfoRow({ label, value }) {
 function taskTypeLabel(t) {
   return TASK_TYPES.find((x) => x.id === t)?.label || t;
 }
+

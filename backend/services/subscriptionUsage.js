@@ -31,6 +31,10 @@ function attendanceDecision(entry) {
   return { outcome: 'consumed', reason: 'pending' };
 }
 
+function shouldSendLowBalance(subscription, prepaidRenewal) {
+  return subscription.sessionsRemaining === 2 && !subscription.lowBalanceNotifiedAt && !prepaidRenewal;
+}
+
 async function settleSubscriptionUsageForSession(sessionDoc) {
   if (!sessionDoc || sessionDoc.status !== 'completed' || sessionDoc.type !== 'group_circle' || !sessionDoc.circle) {
     return { processed: false, usages: [] };
@@ -122,15 +126,16 @@ async function settleSubscriptionUsageForSession(sessionDoc) {
           subscription.completedAt = now;
         }
 
+        const prepaidRenewal = subscription.sessionsRemaining <= 2
+          ? await StudentSubscription.findOne({ student: studentId, renewalOf: subscription._id, status: 'renewal_queued' }).session(dbSession)
+          : null;
+        const lowBalanceAlert = shouldSendLowBalance(subscription, prepaidRenewal);
+        if (lowBalanceAlert) subscription.lowBalanceNotifiedAt = now;
         await subscription.save({ session: dbSession });
 
         let renewalActivated = false;
         if (subscription.status === 'completed') {
-          const queuedRenewal = await StudentSubscription.findOne({
-            student: studentId,
-            renewalOf: subscription._id,
-            status: 'renewal_queued',
-          }).session(dbSession);
+          const queuedRenewal = prepaidRenewal;
 
           if (queuedRenewal) {
             queuedRenewal.status = 'active';
@@ -173,7 +178,7 @@ async function settleSubscriptionUsageForSession(sessionDoc) {
           renewalActivated,
         };
 
-        if (subscription.sessionsRemaining <= 2) {
+        if (lowBalanceAlert || subscription.status === 'completed') {
           notificationTarget = {
             studentId,
             remaining: subscription.sessionsRemaining,
@@ -226,11 +231,11 @@ async function settleSubscriptionUsageForSession(sessionDoc) {
               en: 'All sessions in your package have been used. Choose a new package to continue.',
             }
           : {
-              ar: `متبقي لك ${target.remaining} حصة فقط في الباقة الحالية.`,
+              ar: `متبقي لك ${target.remaining} حصة في باقتك. جدّد اشتراكك للاستمرار مع نفس المعلم والمجموعة.`,
               en: `You have only ${target.remaining} session(s) left in your current package.`,
             },
       data: {
-        actionUrl: target.completed && !target.renewalActivated ? '/plans' : '/student/dashboard',
+        actionUrl: '/student/dashboard?tab=sessions',
         metadata: {
           remainingSessions: target.remaining,
           sessionId: String(sessionDoc._id),
@@ -245,6 +250,8 @@ async function settleSubscriptionUsageForSession(sessionDoc) {
 
 module.exports = {
   attendanceDecision,
+  shouldSendLowBalance,
   settleSubscriptionUsageForSession,
 };
+
 
