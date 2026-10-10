@@ -248,7 +248,7 @@ async function startSubscriptionCircle({ circleId, schedule, timezone = 'Africa/
       }).session(dbSession);
       const studentIds = [...new Set(placed.map(item => String(item.student)))];
       circle.capacity = operationalCapacity(circle, plan);
-      if (placed.some(item => circle.subscriptionSection && item.section !== circle.subscriptionSection)) {
+      if (new Set(placed.map(item => item.section)).size > 1 || placed.some(item => circle.subscriptionSection && item.section !== circle.subscriptionSection)) {
         fail('CIRCLE_NOT_COMPATIBLE', 'اشتراكات الحلقة تابعة لأقسام مختلفة');
       }
       if (studentIds.length !== circle.students.length || studentIds.length < plan.minStudents || studentIds.length > circle.capacity) {
@@ -262,6 +262,7 @@ async function startSubscriptionCircle({ circleId, schedule, timezone = 'Africa/
         }
       }
       const now = new Date();
+      circle.subscriptionSection = circle.subscriptionSection || placed[0]?.section;
       circle.schedule = rows;
       circle.timezone = timezone;
       circle.startedAt = now;

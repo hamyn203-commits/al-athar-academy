@@ -95,7 +95,7 @@ jobs:
         run: npm run test:e2e
 
       - name: Concurrent subscription settlement regression
-        run: node backend/scripts/test-subscription-settlement.cjs
+        run: node backend/scripts/check-subscription-settlement.cjs
 
       - name: Upload Playwright report
         if: ${{ !cancelled() }}
