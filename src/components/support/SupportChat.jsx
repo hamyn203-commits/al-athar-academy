@@ -92,12 +92,12 @@ export default function SupportChat({ studentId = 'me', admin = false }) {
       window.dispatchEvent(new Event('wn:support-changed'));
       await refresh();
     } catch (failure) { if (version === generation.current) setError(failure.message || (ar ? 'تعذر الإرسال. حاول مرة أخرى.' : 'Send failed. Please retry.')); }
-    finally { setSending(false); }
+    finally { if (version === generation.current) setSending(false); }
   };
   const all = [...new Map([...older, ...messages].map((m) => [m._id, m])).values()].sort((a, b) => a._id.localeCompare(b._id));
 
   return <section className="wn-support-chat" aria-label={ar ? 'محادثة الإدارة' : 'Administration chat'} dir={ar ? 'rtl' : 'ltr'}>
-    <header className="wn-support-chat__header"><span className="wn-support-icon"><MessageCircle size={23} /></span><div><h2>{admin ? student?.name || (ar ? 'محادثة الطالب' : 'Student chat') : ar ? 'تواصل مع الإدارة' : 'Contact administration'}</h2><p>{ar ? 'اكتب استفسارك هنا، ورد الإدارة هيوصلك داخل حسابك.' : 'Send your question here. Replies will arrive in your account.'}</p></div><button type="button" onClick={refresh} aria-label={ar ? 'تحديث المحادثة' : 'Refresh chat'}><RefreshCw size={18} /></button></header>
+    <header className="wn-support-chat__header"><span className="wn-support-icon"><MessageCircle size={23} /></span><div><h2>{admin ? student?.name || (ar ? 'محادثة الطالب' : 'Student chat') : ar ? 'تواصل مع الإدارة' : 'Contact administration'}</h2><p>{admin ? (ar ? 'محادثة مباشرة مع الطالب، محفوظة ومتزامنة مع حسابه.' : 'A direct, saved conversation synchronized with the student account.') : (ar ? 'اكتب استفسارك هنا، ورد الإدارة هيوصلك داخل حسابك.' : 'Send your question here. Replies will arrive in your account.')}</p></div><button type="button" onClick={refresh} aria-label={ar ? 'تحديث المحادثة' : 'Refresh chat'}><RefreshCw size={18} /></button></header>
     <div className="wn-support-sync" role="status">{syncError ? (ar ? 'تعذر التحديث — بنحاول الاتصال مجددًا' : 'Update unavailable — reconnecting') : (ar ? 'تحديث تلقائي للرسائل وحالة القراءة' : 'Messages and read receipts update automatically')}</div>
     <div className="wn-support-chat__messages" ref={view} role="log" aria-live="polite" aria-relevant="additions">
       {nextBefore && <button type="button" className="wn-support-older" disabled={loadingOlder} onClick={loadOlder}>{ar ? 'تحميل رسائل أقدم' : 'Load older messages'}</button>}
@@ -106,7 +106,7 @@ export default function SupportChat({ studentId = 'me', admin = false }) {
         return <article key={m._id} className={`wn-support-bubble ${mine ? 'is-mine' : ''}`}><strong>{m.senderRole === 'admin' ? (ar ? 'الإدارة' : 'Administration') : student?.name}</strong><p>{m.text}</p><small>{new Date(m.createdAt).toLocaleString(ar ? 'ar-EG' : 'en', { dateStyle: 'short', timeStyle: 'short' })}{mine && <span> · {m.readAt ? (ar ? 'تمت القراءة' : 'Read') : (ar ? 'تم الإرسال' : 'Sent')}</span>}</small></article>;
       })}<div ref={bottom}/>
     </div>
-    <form onSubmit={send} className="wn-support-compose"><label htmlFor={`support-text-${studentId}`}>{ar ? 'رسالتك' : 'Your message'}</label><textarea id={`support-text-${studentId}`} value={text} onChange={(e) => setText(e.target.value)} maxLength={2000} rows={3} disabled={sending} placeholder={ar ? 'اكتب رسالتك للإدارة…' : 'Write your message…'} /><div><small>{text.length}/2000</small><button type="submit" disabled={!text.trim() || sending}><Send size={17}/>{sending ? (ar ? 'جاري الإرسال…' : 'Sending…') : (ar ? 'إرسال الرسالة' : 'Send message')}</button></div>{error && <p className="wn-support-error" role="alert">{error}</p>}</form>
+    <form onSubmit={send} className="wn-support-compose"><label htmlFor={`support-text-${studentId}`}>{ar ? 'رسالتك' : 'Your message'}</label><textarea id={`support-text-${studentId}`} value={text} onChange={(e) => setText(e.target.value)} maxLength={2000} rows={3} disabled={sending} placeholder={ar ? (admin ? 'اكتب رسالتك للطالب…' : 'اكتب رسالتك للإدارة…') : 'Write your message…'} /><div><small>{text.length}/2000</small><button type="submit" disabled={!text.trim() || sending}><Send size={17}/>{sending ? (ar ? 'جاري الإرسال…' : 'Sending…') : (ar ? 'إرسال الرسالة' : 'Send message')}</button></div>{error && <p className="wn-support-error" role="alert">{error}</p>}</form>
   </section>;
 }
 

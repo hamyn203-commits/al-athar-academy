@@ -899,6 +899,7 @@ export default function StudentDashboard() {
         <div className="flex justify-center py-20"><div className="spinner spinner-lg" /></div>
       ) : (
         <>
+          {tab !== 'support' && <>
           {subscriptionsLoaded && !currentSubscription && <section className="wn-student-welcome">
             <div className="wn-student-welcome__content">
               <span className="wn-student-welcome__eyebrow">
@@ -1169,6 +1170,7 @@ export default function StudentDashboard() {
             </section>
           )}
 
+          </>}
           <div className="wn-dashboard-surface wn-student-surface">
             <StudentCommandBar
               primaryItems={primaryNavItems}
