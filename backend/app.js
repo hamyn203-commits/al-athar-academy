@@ -168,7 +168,7 @@ app.use((req, _res, next) => {
 // A private-video Range URL contains a 30-minute bearer ticket. Never log
 // the raw query string; production access logs would expose the credential.
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev', {
-  skip: (req) => req.path.startsWith('/api/teachers/admin-media-range/'),
+  skip: (req) => String(req.originalUrl || req.url || '').startsWith('/api/teachers/admin-media-range/'),
 }));
 
 // Ensure database connectivity before business API requests. Health remains available
