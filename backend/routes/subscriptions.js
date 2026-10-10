@@ -7,12 +7,14 @@ const Teacher = require('../models/Teacher');
 const { protect, authorize } = require('../middleware/auth');
 const {
   placeSubscription,
+  startSubscriptionCircle,
   circleGenderForStudent,
   ageGroupForStudent,
 } = require('../services/subscriptionPlacement');
 const { logAdminAction } = require('../services/adminAudit');
 const { notifyUser } = require('../utils/notify');
 const {
+  getPlan,
   isSection,
   publicPlanCatalog,
   quoteSubscription,
@@ -326,14 +328,14 @@ router.get('/admin/placements', protect, authorize('admin'), async (req, res) =>
           && circle.targetAgeGroup === expectedAgeGroup
           && circle.track === expectedTrack
           && circle.level === expectedLevel
-          && (circle.students || []).length < Number(circle.capacity || 0)
+          && (circle.students || []).length < Number(getPlan(subscription.planKey)?.maxStudents || circle.capacity || 0)
         ))
         .map((circle) => ({
           _id: circle._id,
           name: circle.name,
           code: circle.code,
           status: circle.status,
-          capacity: circle.capacity,
+          capacity: getPlan(subscription.planKey)?.maxStudents || circle.capacity,
           currentCount: (circle.students || []).length,
           availableSeats: Math.max(0, Number(circle.capacity || 0) - (circle.students || []).length),
           schedule: circle.schedule || [],
@@ -342,6 +344,7 @@ router.get('/admin/placements', protect, authorize('admin'), async (req, res) =>
 
       return {
         ...serializeSubscription(subscription),
+        plan: getPlan(subscription.planKey),
         student: subscription.student,
         preferredTeacher: subscription.preferredTeacher,
         compatibleCircles,
@@ -351,6 +354,21 @@ router.get('/admin/placements', protect, authorize('admin'), async (req, res) =>
     return res.json({ subscriptions: rows });
   } catch (error) {
     return res.status(500).json({ error: 'فشل تحميل طلبات التسكين', details: error.message });
+  }
+});
+
+router.post('/admin/circles/:id/start', protect, authorize('admin'), async (req, res) => {
+  try {
+    const result = await startSubscriptionCircle({ circleId: req.params.id, schedule: req.body.schedule, timezone: req.body.timezone });
+    await logAdminAction({ req, action: 'subscription.circle_started', entityType: 'group-circle', entityId: req.params.id, reason: 'اعتماد الجدول وبدء الحلقة', metadata: { alreadyStarted: Boolean(result.alreadyStarted) } }).catch(() => {});
+    await Promise.allSettled([...result.studentIds, result.teacherUserId].filter(Boolean).map(id => notifyUser(id, {
+      type: 'system', title: { ar: 'بدأت حلقة الاشتراك', en: 'Your circle has started' },
+      message: { ar: 'اعتمدت الإدارة جدول الحلقة. راجع المواعيد في لوحة حسابك.', en: 'Administration approved your circle schedule. Check your dashboard.' },
+      data: { actionUrl: id === result.teacherUserId ? '/teacher/dashboard' : '/student/dashboard', metadata: { circleId: result.circleId } },
+    })));
+    res.json({ success: true, ...result });
+  } catch (error) {
+    res.status(error.code === 'CIRCLE_NOT_FOUND' ? 404 : 409).json({ error: error.message, code: error.code || 'CIRCLE_START_FAILED' });
   }
 });
 
@@ -402,7 +420,7 @@ router.post('/admin/:id/place', protect, authorize('admin'), async (req, res) =>
         type: 'system',
         title: { ar: 'تم تسكينك في الحلقة', en: 'You have been placed in a circle' },
         message: {
-          ar: `تم وضعك في ${result.circleName || 'الحلقة'} مع المعلم الذي اخترته. ننتظر اكتمال الحد الأدنى لبدء الحلقة.`,
+          ar: `تم وضعك في ${result.circleName || 'الحلقة'} مع المعلم الذي اخترته. ننتظر اكتمال المجموعة واعتماد الإدارة للمواعيد.`,
           en: `You were placed in ${result.circleName || 'the circle'} with your selected tutor. The circle is waiting for its minimum size.`,
         },
         data: {
@@ -479,3 +497,4 @@ router.get('/:id', protect, authorize('student', 'admin'), async (req, res) => {
 });
 
 module.exports = router;
+

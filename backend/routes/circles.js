@@ -258,7 +258,7 @@ router.post('/', protect, authorize('admin', 'teacher'), async (req, res) => {
     if (subscriptionPlanKey && !selectedPlan) {
       return res.status(400).json({ error: 'خطة الاشتراك غير صحيحة', code: 'CIRCLE_PLAN_INVALID' });
     }
-    const manualCapacity = Math.min(15, Math.max(1, Number(capacity || 10)));
+    const manualCapacity = Math.min(20, Math.max(1, Number(capacity || 10)));
     const resolvedCapacity = selectedPlan?.maxStudents || manualCapacity;
     const resolvedPricePerSession = selectedPlan
       ? { ...(pricePerSession || {}), egp: selectedPlan.pricePerSessionMinor / 100 }
@@ -393,6 +393,10 @@ router.post('/:id/join', protect, authorize('student', 'guardian', 'admin'), asy
       return res.status(404).json({ error: 'الحلقة غير موجودة' });
     }
 
+    if (circle.subscriptionPlanKey) {
+      return res.status(409).json({ error: 'تسكين حلقات الاشتراك يتم من الإدارة بعد اعتماد الدفع', code: 'USE_SUBSCRIPTION_PLACEMENT' });
+    }
+
     if (circle.status === 'completed' || circle.status === 'paused') {
       return res.status(400).json({ error: 'هذه الحلقة غير متاحة للانضمام حالياً' });
     }
@@ -494,7 +498,7 @@ router.put('/:id', protect, authorize('admin', 'teacher'), async (req, res) => {
       if (Array.isArray(schedule)) found.schedule = schedule;
       if (status !== undefined) found.status = status;
       if (notes !== undefined) found.notes = notes;
-      if (capacity !== undefined) found.capacity = Math.min(15, Math.max(1, Number(capacity)));
+      if (capacity !== undefined) found.capacity = Math.min(20, Math.max(1, Number(capacity)));
       if (subscriptionPlanKey !== undefined) found.subscriptionPlanKey = subscriptionPlanKey;
       return res.json({
         success: true,
@@ -543,7 +547,7 @@ router.put('/:id', protect, authorize('admin', 'teacher'), async (req, res) => {
     if (notes !== undefined) circle.notes = notes;
     if (pricePerSession !== undefined) circle.pricePerSession = pricePerSession;
     if (capacity !== undefined) {
-      const normalizedCapacity = Math.min(15, Math.max(1, Number(capacity)));
+      const normalizedCapacity = Math.min(20, Math.max(1, Number(capacity)));
       if (!Number.isFinite(normalizedCapacity) || normalizedCapacity < circle.students.length) {
         return res.status(400).json({ error: 'سعة الحلقة غير صحيحة أو أقل من عدد الطلاب الحالي' });
       }
@@ -574,6 +578,9 @@ router.put('/:id', protect, authorize('admin', 'teacher'), async (req, res) => {
       }
     }
 
+    if (circle.subscriptionPlanKey && status !== undefined && ['active', 'full'].includes(status) && !['active', 'full'].includes(circle.status)) {
+      return res.status(409).json({ error: 'ابدأ حلقة الاشتراك من صفحة الاشتراكات والتسكين', code: 'USE_SUBSCRIPTION_START' });
+    }
     if (status !== undefined) {
       if (status === 'full' || circle.students.length >= (circle.capacity || 10)) {
         circle.status = circle.students.length >= (circle.capacity || 10) ? 'full' : status;
@@ -646,3 +653,4 @@ router.delete('/:id', protect, authorize('admin'), async (req, res) => {
 });
 
 module.exports = router;
+

@@ -31,7 +31,7 @@ function teacherName(item) {
 
 function statusLabel(status) {
   if (status === 'awaiting_placement') return 'مدفوع — بانتظار التسكين';
-  if (status === 'placed') return 'تم التسكين — الجروب قيد الاكتمال';
+  if (status === 'placed') return 'تم التسكين — انتظار اكتمال المجموعة واعتماد المواعيد';
   if (status === 'active') return 'نشط';
   return status || '—';
 }
@@ -40,7 +40,7 @@ export default function AdminSubscriptions() {
   const { user, ready, logout } = useRequireAuth(['admin']);
   const navigate = useNavigate();
   const toast = useToast();
-  const [filter, setFilter] = useState('awaiting_placement');
+  const [filter, setFilter] = useState('all');
   const [subscriptions, setSubscriptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState('');
@@ -210,6 +210,30 @@ export default function AdminSubscriptions() {
     return owners;
   }, [subscriptions]);
 
+  const circles = useMemo(() => {
+    const groups = new Map();
+    for (const item of subscriptions) {
+      if (!item.circle?._id) continue;
+      if (!groups.has(item.circle._id)) groups.set(item.circle._id, { ...item.circle, plan: item.plan, teacherName: teacherName(item), learners: [] });
+      groups.get(item.circle._id).learners.push(item);
+    }
+    return [...groups.values()];
+  }, [subscriptions]);
+  const [startForms, setStartForms] = useState({});
+  const startCircle = async (circle) => {
+    const form = startForms[circle._id] || {};
+    if (!form.day || !form.startTime || !form.endTime) return toast.error('حدد اليوم ووقت البداية والنهاية');
+    setWorking('start:' + circle._id);
+    try {
+      await api.post('/api/subscriptions/admin/circles/' + circle._id + '/start', {
+        schedule: [{ day: form.day, startTime: form.startTime, endTime: form.endTime }], timezone: 'Africa/Cairo',
+      }, { auth: true });
+      toast.success('تم اعتماد الجدول وبدء الحلقة');
+      await load();
+    } catch (error) { toast.error(error.message || 'تعذر بدء الحلقة'); }
+    finally { setWorking(''); }
+  };
+
   const counts = useMemo(() => ({
     total: subscriptions.length,
     awaiting: subscriptions.filter((item) => item.status === 'awaiting_placement').length,
@@ -259,6 +283,34 @@ export default function AdminSubscriptions() {
           </div>
         </section>
 
+        {!loading && circles.length > 0 ? <section className="grid lg:grid-cols-2 gap-4" aria-label="الحلقات الجماعية">
+          {circles.map(circle => {
+            const count = circle.students?.length || 0;
+            const minimum = circle.plan?.minStudents || 1;
+            const maximum = circle.plan?.maxStudents || circle.capacity;
+            const started = ['active', 'full'].includes(circle.status);
+            const form = startForms[circle._id] || {};
+            const update = patch => setStartForms(current => ({ ...current, [circle._id]: { ...current[circle._id], ...patch } }));
+            return <article key={circle._id} className="wn-dashboard-surface space-y-3">
+              <h3 className="font-bold text-lg">{circle.name}</h3>
+              <p>{circle.teacherName} — {circle.plan?.name?.ar}</p>
+              <p className="font-semibold">{count}/{maximum} طالب — {started ? 'الحلقة نشطة' : count < minimum ? `متبقي ${minimum - count} طالب للبدء` : 'جاهزة لاعتماد المواعيد'}</p>
+              <progress className="w-full" value={count} max={maximum} aria-label="اكتمال المجموعة" />
+              <ul className="text-sm space-y-1">{circle.learners.map(item => <li key={item._id}>{item.student?.name} — متبقي {item.sessionsRemaining} من {item.sessionCount} حصة</li>)}</ul>
+              {!started && count >= minimum ? <div className="space-y-3">
+                <div className="grid grid-cols-3 gap-2">
+                  <select aria-label="يوم الحلقة" value={form.day || ''} onChange={e => update({ day: e.target.value })} className="border rounded p-2"><option value="">اختر اليوم</option>{DAY_OPTIONS.map(([value,label]) => <option key={value} value={value}>{label}</option>)}</select>
+                  <input aria-label="بداية الحلقة" type="time" value={form.startTime || ''} onChange={e => update({ startTime: e.target.value })} className="border rounded p-2" />
+                  <input aria-label="نهاية الحلقة" type="time" value={form.endTime || ''} onChange={e => update({ endTime: e.target.value })} className="border rounded p-2" />
+                </div>
+                <p className="text-xs">المواعيد بتوقيت القاهرة. بدء الحلقة لا يخصم أي حصة.</p>
+                <button className="wn-btn wn-btn--primary" disabled={Boolean(working)} onClick={() => startCircle(circle)}>{working === 'start:' + circle._id ? 'جاري الاعتماد...' : 'اعتماد المواعيد وبدء الحلقة'}</button>
+              </div> : null}
+              {started ? <p className="text-sm">{(circle.schedule || []).map(row => `${DAY_OPTIONS.find(([day]) => day === row.day)?.[1] || row.day} ${row.startTime}–${row.endTime}`).join('، ')} — {circle.timezone}</p> : null}
+            </article>;
+          })}
+        </section> : null}
+
         {loading ? (
           <div className="flex justify-center py-20"><div className="spinner spinner-lg" /></div>
         ) : subscriptions.length === 0 ? (
@@ -305,7 +357,7 @@ export default function AdminSubscriptions() {
                         <p><strong>المبلغ المدفوع:</strong> {amount} {item.currency}</p>
                         <p>
                           <strong>حجم الجروب:</strong>{' '}
-                          {item.pricingSnapshot?.minStudents || '—'}–{item.pricingSnapshot?.maxStudents || '—'}
+                          {item.plan?.minStudents || item.pricingSnapshot?.minStudents || '—'}–{item.plan?.maxStudents || item.pricingSnapshot?.maxStudents || '—'}
                         </p>
                       </div>
 
@@ -512,7 +564,7 @@ export default function AdminSubscriptions() {
                           <strong>{statusLabel(item.status)}</strong>
                           <p className="text-xs text-slate-500 mt-2">
                             {item.status === 'placed'
-                              ? 'الجروب قيد الاكتمال. ستتاح جدولة الحصص عند وصوله للحد الأدنى.'
+                              ? 'انتظار اكتمال المجموعة واعتماد المواعيد. ستتاح جدولة الحصص عند وصوله للحد الأدنى.'
                               : 'لا يوجد إجراء تسكين مطلوب لهذه الحالة.'}
                           </p>
                         </div>
@@ -528,3 +580,4 @@ export default function AdminSubscriptions() {
     </DashboardLayout>
   );
 }
+

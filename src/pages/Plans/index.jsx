@@ -21,8 +21,8 @@ const PLAN_DEFS = [
     nameAr: 'الحلقة الاقتصادية الكبرى',
     nameEn: 'Community Circle',
     price: 10,
-    studentsAr: 'من 10 إلى 15 طالب',
-    studentsEn: '10–15 students',
+    studentsAr: 'من 15 إلى 20 طالب',
+    studentsEn: '15–20 students',
     image: '/images/plans/plan-community.svg',
     badgeAr: 'الأوفر',
     badgeEn: 'Best value',
@@ -481,3 +481,4 @@ export default function PlansPage() {
     </>
   );
 }
+

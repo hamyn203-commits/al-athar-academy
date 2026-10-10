@@ -97,6 +97,7 @@ async function processManualPaymentReview({
               if (
                 circle
                 && plan
+                && !['paused', 'completed'].includes(circle.status)
                 && String(circle.teacher) === String(subscription.preferredTeacher)
                 && (circle.students || []).length < Number(circle.capacity || plan.maxStudents)
               ) {
@@ -105,10 +106,13 @@ async function processManualPaymentReview({
                 );
                 if (!alreadyMember) circle.students.push(payment.student);
 
-                if (circle.students.length >= Number(circle.capacity || plan.maxStudents)) {
+                const wasStarted = ['active', 'full'].includes(circle.status) && (circle.schedule || []).length > 0;
+                if (wasStarted && circle.students.length >= Number(circle.capacity || plan.maxStudents)) {
                   circle.status = 'full';
-                } else if (circle.students.length >= plan.minStudents) {
+                } else if (wasStarted) {
                   circle.status = 'active';
+                } else if (circle.students.length >= plan.minStudents) {
+                  circle.status = 'ready';
                 } else {
                   circle.status = 'forming';
                 }
@@ -209,3 +213,4 @@ async function processManualPaymentReview({
 module.exports = {
   processManualPaymentReview,
 };
+
