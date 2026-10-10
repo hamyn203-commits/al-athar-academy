@@ -50,7 +50,7 @@ test('women-section account stays within its saved section at subscription check
   await page.locator('form').getByRole('button', { name: /إنشاء|تسجيل/ }).click();
   const registration = await (await registered).json();
   expect(registration.user?.enrollmentSection).toBe('ladies');
-  await expect(page).toHaveURL(/\\/ar\\/student\\/dashboard/);
+  await expect(page).toHaveURL(/\/ar\/student\/dashboard/);
 
   const headers = { Authorization: 'Bearer ' + registration.accessToken };
   const wrong = await page.request.post('/api/subscriptions/select', {
