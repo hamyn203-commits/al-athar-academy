@@ -935,6 +935,29 @@ router.get('/admin/:id/profile-change/media-playback/:kind', protect, authorize(
       error: 'Direct media playback is not supported by the current storage driver',
     });
 
+    const metadata = await objectStorage.inspectPrivateMedia(reference);
+    if (!metadata || !Number.isFinite(Number(metadata.sizeBytes)) || Number(metadata.sizeBytes) <= 0) {
+      return res.status(404).json({
+        code: 'MEDIA_FILE_MISSING',
+        error: 'الملف غير موجود في التخزين أو حجمه صفر. اطلب إعادة رفع الفيديو.',
+      });
+    }
+    // Confirm that the signed GET capability reaches the actual object.
+    // This only requests 32 bytes and never proxies an entire media file.
+    const check = await objectStorage.probeTemporaryMediaUrl(playback.url);
+    if (check.status === 401 || check.status === 403 || check.status === 404) {
+      return res.status(502).json({
+        code: 'MEDIA_SIGNED_URL_REJECTED',
+        error: 'مخزن الوسائط رفض رابط تشغيل الفيديو. يجب مراجعة إعدادات الوصول.',
+      });
+    }
+    const verifiedPlayback = {
+      ...playback,
+      contentType: metadata.contentType,
+      sizeBytes: metadata.sizeBytes,
+      streamingChecked: check.ok,
+    };
+
     await logAdminAction({
       req,
       action: 'teacher.profile-change.media-playback-authorized',
@@ -946,7 +969,7 @@ router.get('/admin/:id/profile-change/media-playback/:kind', protect, authorize(
 
     res.setHeader('Cache-Control', 'private, no-store');
     res.setHeader('Referrer-Policy', 'no-referrer');
-    return res.json(playback);
+    return res.json(verifiedPlayback);
   } catch (error) {
     console.error('Teacher profile-change media playback signing failed:', error.message);
     return res.status(502).json({
@@ -1214,6 +1237,29 @@ router.get('/admin/:id/media-playback/:kind{/:index}', protect, authorize('admin
       error: 'Direct media playback is not supported by the current storage driver',
     });
 
+    const metadata = await objectStorage.inspectPrivateMedia(reference);
+    if (!metadata || !Number.isFinite(Number(metadata.sizeBytes)) || Number(metadata.sizeBytes) <= 0) {
+      return res.status(404).json({
+        code: 'MEDIA_FILE_MISSING',
+        error: 'الملف غير موجود في التخزين أو حجمه صفر. اطلب إعادة رفع الفيديو.',
+      });
+    }
+    // Confirm that the signed GET capability reaches the actual object.
+    // This only requests 32 bytes and never proxies an entire media file.
+    const check = await objectStorage.probeTemporaryMediaUrl(playback.url);
+    if (check.status === 401 || check.status === 403 || check.status === 404) {
+      return res.status(502).json({
+        code: 'MEDIA_SIGNED_URL_REJECTED',
+        error: 'مخزن الوسائط رفض رابط تشغيل الفيديو. يجب مراجعة إعدادات الوصول.',
+      });
+    }
+    const verifiedPlayback = {
+      ...playback,
+      contentType: metadata.contentType,
+      sizeBytes: metadata.sizeBytes,
+      streamingChecked: check.ok,
+    };
+
     await logAdminAction({
       req,
       action: 'teacher.sensitive-media.playback-authorized',
@@ -1225,7 +1271,7 @@ router.get('/admin/:id/media-playback/:kind{/:index}', protect, authorize('admin
 
     res.setHeader('Cache-Control', 'private, no-store');
     res.setHeader('Referrer-Policy', 'no-referrer');
-    return res.json(playback);
+    return res.json(verifiedPlayback);
   } catch (error) {
     console.error('Teacher private media playback signing failed:', error.message);
     return res.status(502).json({
