@@ -453,6 +453,20 @@ export default function TeacherRegistration() {
                     <Shield size={18} className="shrink-0" />
                     <span>بالضغط على إرسال، أنت توافق على مراجعة بياناتك من قبل إدارة الأكاديمية</span>
                   </div>
+                  {f.submitting && (
+                    <div role="status" aria-live="polite" className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+                      {f.uploadProgress?.saving ? (
+                        <p>اكتمل رفع الملفات، جاري حفظ الطلب...</p>
+                      ) : (
+                        <>
+                          <p>جاري رفع: {f.uploadProgress?.label || 'تجهيز الملفات'}</p>
+                          <p className="mt-1">الملفات المكتملة: {f.uploadProgress?.completed || 0} من {f.uploadProgress?.total || '—'}</p>
+                          <progress className="mt-2 w-full" max={100} value={f.uploadProgress?.percentage || 0} aria-label="نسبة رفع الملف الحالي" />
+                          <p>{f.uploadProgress?.percentage || 0}% — اترك الصفحة مفتوحة حتى يكتمل الإرسال.</p>
+                        </>
+                      )}
+                    </div>
+                  )}
                   <button type="button" onClick={f.submit} disabled={f.submitting}
                     className="btn-primary w-full py-4 text-base disabled:opacity-50">
                     {f.submitting ? 'جاري الإرسال...' : 'إرسال الطلب للمراجعة'}
@@ -472,7 +486,7 @@ export default function TeacherRegistration() {
                 </div>
               )}
               {f.step === 5 && (
-                <button type="button" onClick={f.prev} className="btn-secondary mt-4">
+                <button type="button" onClick={f.prev} disabled={f.submitting} className="btn-secondary mt-4 disabled:opacity-50">
                   <ArrowRight size={18} /> تعديل البيانات
                 </button>
               )}

@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useToast } from '../../context/ToastProvider';
 import { apiUrl } from '../../config';
 import { INITIAL_FORM, DRAFT_KEY } from './constants';
 import { uploadFileDirect } from '../../lib/fileUpload';
 import { useAuth } from '../../hooks/useAuth.jsx';
+import { uploadTeacherFiles } from '../../lib/teacherUploadQueue.mjs';
 import { getAccessToken } from '../../lib/authSession';
 
 const emptyFiles = () => ({
@@ -108,6 +109,9 @@ export function useTeacherForm() {
   const [step, setStep] = useState(1);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(null);
+  const submissionLock = useRef(false);
+  const completedUploads = useRef({ scope: '', files: new Map() });
   const [applicationStatus, setApplicationStatus] = useState('pending');
   const [applicationStatusToken, setApplicationStatusToken] = useState('');
   const [credentials, setCredentials] = useState({ email: '', password: '', confirmPassword: '' });
@@ -321,6 +325,7 @@ export function useTeacherForm() {
   const prev = () => { if (step > 1) setStep(authenticatedTeacher && step === 4 ? 1 : step - 1); };
 
   const submit = async () => {
+    if (submissionLock.current) return;
     const err = validate(4);
     if (err) { toast.error(err); return; }
 
@@ -331,44 +336,41 @@ export function useTeacherForm() {
       return;
     }
 
+    submissionLock.current = true;
     setSubmitting(true);
+    setFieldError('');
+    setUploadProgress(null);
     const city = pCity(formData.personalInfo.address);
+    let saveTimer;
+    let saveTimedOut = false;
 
     try {
-      const uploadOne = (file, purpose) => file
-        ? uploadFileDirect(file, purpose, { verificationToken })
-        : Promise.resolve(null);
-      const uploadMany = (items, purpose) => Promise.all(
-        (items || []).map((file) => uploadFileDirect(file, purpose, { verificationToken }))
-      );
-
-      const [
-        profilePhoto,
-        idCardFront,
-        idCardBack,
-        graduationCertificate,
-        tajweedCertificates,
-        ijazat,
-        introductionVideo,
-        recitationVideo,
-        teachingMethodVideo,
-      ] = await Promise.all([
-        uploadOne(files.profilePhoto, 'teacher-public'),
-        uploadOne(files.idCardFront, 'teacher-private'),
-        uploadOne(files.idCardBack, 'teacher-private'),
-        formData.documentAvailability.graduationCertificate
-          ? uploadOne(files.graduationCertificate, 'teacher-private')
-          : Promise.resolve(null),
-        formData.documentAvailability.tajweedCertificates
-          ? uploadMany(files.tajweedCertificates, 'teacher-private')
-          : Promise.resolve([]),
-        formData.documentAvailability.ijazat
-          ? uploadMany(files.ijazat, 'teacher-private')
-          : Promise.resolve([]),
-        uploadOne(files.introductionVideo, 'teacher-public'),
-        uploadMany(files.recitationVideos, 'teacher-public'),
-        uploadOne(files.teachingMethodVideo, 'teacher-public'),
-      ]);
+      const scope = authenticatedTeacher ? String(user.id || user._id || user.email) : verificationToken;
+      if (completedUploads.current.scope !== scope) {
+        completedUploads.current = { scope, files: new Map() };
+      }
+      const one = (key, purpose, label, enabled = true) => ({
+        key, purpose, label, files: enabled && files[key] ? [files[key]] : [],
+      });
+      const many = (key, purpose, label, enabled = true) => ({
+        key, purpose, label, multiple: true, files: enabled ? files[key] || [] : [],
+      });
+      const uploadedFiles = await uploadTeacherFiles([
+        one('profilePhoto', 'teacher-public', 'الصورة الشخصية'),
+        one('idCardFront', 'teacher-private', 'وجه البطاقة'),
+        one('idCardBack', 'teacher-private', 'ظهر البطاقة'),
+        one('graduationCertificate', 'teacher-private', 'شهادة التخرج', formData.documentAvailability.graduationCertificate),
+        many('tajweedCertificates', 'teacher-private', 'شهادات التجويد', formData.documentAvailability.tajweedCertificates),
+        many('ijazat', 'teacher-private', 'الإجازات', formData.documentAvailability.ijazat),
+        one('introductionVideo', 'teacher-public', 'الفيديو التعريفي'),
+        { ...many('recitationVideos', 'teacher-public', 'فيديو التلاوة'), key: 'recitationVideo' },
+        one('teachingMethodVideo', 'teacher-public', 'فيديو طريقة التدريس'),
+      ], {
+        upload: (file, purpose, options) => uploadFileDirect(file, purpose, { ...options, verificationToken }),
+        cache: completedUploads.current.files,
+        onProgress: setUploadProgress,
+      });
+      setUploadProgress({ saving: true });
 
       const payload = {
         personalInfo: JSON.stringify({
@@ -400,41 +402,42 @@ export function useTeacherForm() {
           tajweedCertificates: formData.documentAvailability.tajweedCertificates,
           ijazat: formData.documentAvailability.ijazat,
         },
-        uploadedFiles: {
-          profilePhoto,
-          idCardFront,
-          idCardBack,
-          graduationCertificate,
-          tajweedCertificates,
-          ijazat,
-          introductionVideo,
-          recitationVideo,
-          teachingMethodVideo,
-        },
+        uploadedFiles,
       };
 
+      const saveController = new AbortController();
+      saveTimer = setTimeout(() => { saveTimedOut = true; saveController.abort(); }, 45000);
       const r = await fetch(apiUrl('/api/teachers/register'), {
+        signal: saveController.signal,
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json', ...(authenticatedTeacher ? { Authorization: `Bearer ${getAccessToken()}` } : {}) },
         body: JSON.stringify(payload),
       });
-      const data = await r.json();
-      if (!r.ok) throw new Error(data.error || 'فشل التسجيل');
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(data.error || 'تعذر حفظ طلب المعلم. تواصل مع الإدارة إذا تكرر الخطأ.');
       localStorage.removeItem(DRAFT_KEY);
       setApplicationStatus(data.applicationStatus || 'pending');
       setApplicationStatusToken(data.applicationStatusToken || '');
+      completedUploads.current.files.clear();
       setSubmitted(true);
       toast.success('تم إرسال طلبك بنجاح!');
     } catch (e) {
-      toast.error(e.message);
+      const message = saveTimedOut || /failed to fetch|network|load failed/i.test(e.message || '')
+        ? 'اكتمل رفع الملفات لكن تعذر تأكيد حفظ الطلب. تحقق من حالة الطلب مع الإدارة قبل إعادة الإرسال.'
+        : e.message;
+      setFieldError(message);
+      toast.error(message);
     } finally {
+      clearTimeout(saveTimer);
+      submissionLock.current = false;
       setSubmitting(false);
+      setUploadProgress(null);
     }
   };
 
   return {
-    step, setStep, submitted, submitting, applicationStatus, checkApplicationStatus, credentials, setCredentials, authenticatedTeacher,
+    step, setStep, submitted, submitting, uploadProgress, applicationStatus, checkApplicationStatus, credentials, setCredentials, authenticatedTeacher,
     formData, files, setFile, update,
     verificationCode, setVerificationCode, isCodeSent, emailVerified,
     verifiedEmail, fieldError,

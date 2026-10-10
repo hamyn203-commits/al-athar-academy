@@ -50,6 +50,8 @@ export async function uploadFileDirect(file, purpose, options = {}) {
 
   const blob = await upload(pathname, file, {
     access: 'private',
+    abortSignal: options.abortSignal,
+    onUploadProgress: options.onUploadProgress,
     handleUploadUrl: apiUrl('/api/uploads/blob'),
     multipart: file.size > 5 * 1024 * 1024,
     clientPayload: JSON.stringify({
