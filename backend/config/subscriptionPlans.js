@@ -67,6 +67,12 @@ function isSection(value) {
   return SECTIONS.includes(String(value || '').trim());
 }
 
+// Legacy students registered before the division chooser remain eligible.
+// New accounts with a declared division cannot bypass it in a direct API request.
+function isCompatibleStudentSection(enrollmentSection, section) {
+  return !isSection(enrollmentSection) || enrollmentSection === section;
+}
+
 function quoteSubscription({ planKey, sessionCount }) {
   const plan = getPlan(planKey);
   const count = Number(sessionCount);
@@ -108,6 +114,7 @@ module.exports = {
   getPlan,
   isSessionPack,
   isSection,
+  isCompatibleStudentSection,
   quoteSubscription,
   publicPlanCatalog,
 };
