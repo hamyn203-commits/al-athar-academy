@@ -133,6 +133,36 @@ async function createUploadUrl({ key, contentType, expiresIn = 600 }) {
   return getSignedUrl(getS3Client(), command, { expiresIn });
 }
 
+// Grant an authenticated reviewer a short, single-object GET capability instead
+// of proxying a large video through a Vercel Function. Keep this server-only.
+async function createTemporaryReadUrl(reference, { expiresIn = 20 * 60 } = {}) {
+  const seconds = Math.min(30 * 60, Math.max(60, Math.floor(Number(expiresIn) || 0)));
+  const stored = unwrapPublicProxyReference(reference);
+  if (!stored || !/^https:\/\//i.test(stored) && getDriver() !== 's3') return null;
+
+  if (getDriver() === 'vercel-blob') {
+    if (!isVercelBlobReference(stored)) return null;
+    const { issueSignedToken, presignUrl } = await import('@vercel/blob');
+    const pathname = extractPathname(stored);
+    if (!isSafeObjectPath(pathname)) return null;
+    const validUntil = Date.now() + seconds * 1000;
+    const token = await issueSignedToken({ pathname, operations: ['get'], validUntil });
+    const result = await presignUrl(token, { pathname, operation: 'get', validUntil });
+    if (!result?.presignedUrl?.startsWith('https://')) throw new Error('Unable to sign private asset URL');
+    return { url: result.presignedUrl, expiresAt: validUntil };
+  }
+
+  if (getDriver() === 's3') {
+    const pathname = extractPathname(stored);
+    if (!isSafeObjectPath(pathname)) return null;
+    const command = new GetObjectCommand({ Bucket: process.env.S3_BUCKET, Key: pathname });
+    const url = await getSignedUrl(getS3Client(), command, { expiresIn: seconds });
+    return { url, expiresAt: Date.now() + seconds * 1000 };
+  }
+
+  return null;
+}
+
 async function getPrivateObject(reference, options = {}) {
   if (getDriver() === 'vercel-blob') {
     const { get } = await import('@vercel/blob');
@@ -208,6 +238,7 @@ module.exports = {
   unwrapPublicProxyReference,
   createUploadUrl,
   getPrivateObject,
+  createTemporaryReadUrl,
   deleteObject,
   deleteOwnedObject,
 };
