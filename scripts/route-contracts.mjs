@@ -424,6 +424,11 @@ assert.match(adminDashboard, /MEDIA_PREVIEW_NOT_SUPPORTED/);
 assert.match(teacherAssetViewer, /isBlob \? ownedObjectUrl : result\.url/);
 assert.match(teacherAssetViewer, /retryKey/);
 assert.match(teacherAssetViewer, /إعادة المحاولة/);
+assert.match(teacherAssetViewer, /describePlaybackError/);
+assert.match(teacherAssetViewer, /preview\.contentType/);
+assert.match(teacherAssetViewer, /playbackErrorCode/);
+assert.match(teacherAssetViewer, /H\.264/);
+
 
 assert.match(teacherAssetViewer, /aria-modal="true"/);
 assert.match(adminDashboard, /fetchTeacherReviewAsset/);

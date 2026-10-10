@@ -133,6 +133,51 @@ async function createUploadUrl({ key, contentType, expiresIn = 600 }) {
   return getSignedUrl(getS3Client(), command, { expiresIn });
 }
 
+// Read only asset metadata from trusted private storage; never return the
+// original object path, signed authorization, or video content as metadata.
+async function inspectPrivateMedia(reference) {
+  const stored = unwrapPublicProxyReference(reference);
+  if (getDriver() === 'vercel-blob') {
+    if (!isVercelBlobReference(stored)) return null;
+    const { head } = await import('@vercel/blob');
+    const meta = await head(stored, { token: process.env.BLOB_READ_WRITE_TOKEN });
+    return { contentType: meta.contentType || 'application/octet-stream', sizeBytes: meta.size || 0 };
+  }
+
+  if (getDriver() === 's3') {
+    const pathname = extractPathname(stored);
+    if (!isSafeObjectPath(pathname)) return null;
+    const { HeadObjectCommand } = require('@aws-sdk/client-s3');
+    const meta = await getS3Client().send(new HeadObjectCommand({
+      Bucket: process.env.S3_BUCKET,
+      Key: pathname,
+    }));
+    return { contentType: meta.ContentType || 'application/octet-stream', sizeBytes: meta.ContentLength || 0 };
+  }
+  return null;
+}
+
+// The reviewer can otherwise receive a valid-looking URL for an absent or
+// inaccessible object. Probe just the first bytes; never proxy the whole video.
+async function probeTemporaryMediaUrl(url) {
+  let response;
+  try {
+    response = await fetch(url, {
+      method: 'GET',
+      headers: { Range: 'bytes=0-31' },
+      signal: AbortSignal.timeout(7000),
+      redirect: 'follow',
+    });
+    return { ok: response.status === 200 || response.status === 206, status: response.status };
+  } catch {
+    return { ok: false, status: 0 };
+  } finally {
+    // Even if the provider ignores Range and responds with 200, we must not
+    // accidentally download the entire media inside a serverless function.
+    if (response?.body) await response.body.cancel().catch(() => {});
+  }
+}
+
 // Grant an authenticated reviewer a short, single-object GET capability instead
 // of proxying a large video through a Vercel Function. Keep this server-only.
 async function createTemporaryReadUrl(reference, { expiresIn = 20 * 60 } = {}) {
@@ -239,6 +284,8 @@ module.exports = {
   createUploadUrl,
   getPrivateObject,
   createTemporaryReadUrl,
+  inspectPrivateMedia,
+  probeTemporaryMediaUrl,
   deleteObject,
   deleteOwnedObject,
 };
