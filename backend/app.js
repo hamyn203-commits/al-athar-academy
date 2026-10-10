@@ -43,6 +43,8 @@ app.use(helmet({
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: Number(process.env.RATE_LIMIT_MAX || 150),
+  // Authenticated background synchronization has a separate per-account budget.
+  skip: (req) => req.method === 'GET' && /^\/(?:support\/(?:inbox|me\/unread|[^/]+\/messages)|notifications(?:\/unread-count)?)\/?$/.test(req.path),
   message: { error: 'Too many requests, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -313,6 +315,7 @@ app.use('/api/reviews', require('./routes/reviews'));
 app.use('/api/homework', require('./routes/homework'));
 app.use('/api/uploads', require('./routes/uploads'));
 app.use('/api/notifications', require('./routes/notifications'));
+app.use('/api/support', require('./routes/support'));
 app.use('/api/courses', require('./routes/courses'));
 app.use('/api/certificates', require('./routes/certificates'));
 app.use('/api/assignments', require('./routes/assignments'));

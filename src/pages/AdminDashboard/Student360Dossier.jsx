@@ -47,6 +47,7 @@ export default function Student360Dossier({
   onOpenGuardian,
   onOpenTeacher,
   onOpenHomeworkAudio,
+  onMessageStudent,
 }) {
   const student = dossier?.student;
   const summary = dossier?.summary || {};
@@ -59,6 +60,7 @@ export default function Student360Dossier({
             <span>Student 360</span>
             <h2>{student?.name || 'ملف الطالب'}</h2>
             <p>{student?.email || '—'} · {student?.phone || '—'}</p>
+            {student?._id && <button type="button" onClick={() => onMessageStudent?.(student._id)} className="mt-3 inline-flex items-center gap-2 rounded-xl bg-emerald-800 px-4 py-2 text-white"><MessageSquare size={17} /> مراسلة الطالب</button>}
             {studentAvatarUrl(student?.avatar) && <img src={studentAvatarUrl(student.avatar)} alt="الصورة الشخصية للطالب" className="mt-3 w-16 h-16 rounded-full object-cover border border-slate-200" />}
           </div>
           <button type="button" onClick={onClose} aria-label="إغلاق"><X size={20} /></button>
@@ -274,3 +276,4 @@ export default function Student360Dossier({
     </div>
   );
 }
+

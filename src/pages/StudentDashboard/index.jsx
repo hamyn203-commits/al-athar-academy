@@ -19,6 +19,7 @@ import { localizeInternalHref } from '../../lib/navigation';
 import { apiUrl } from '../../config';
 import StudentTeacherMarketplace from './TeacherMarketplace';
 import SessionChatModal from '../../components/session/SessionChatModal';
+import SupportChat, { SupportLauncher } from '../../components/support/SupportChat';
 import { sessionJoinWindow, formatSessionDateTime, sessionTimeZone } from '../../lib/sessionTime';
 
 const emptyReview = { rating: 5, comment: '', wouldContinue: true };
@@ -385,7 +386,7 @@ export default function StudentDashboard() {
 
   useEffect(() => {
     const requestedTab = searchParams.get('tab');
-    const allowedTabs = ['overview', 'discover', 'trials', 'sessions', 'homework', 'teacher-updates', 'evaluations', 'recordings', 'certificates', 'achievements', 'referral', 'account'];
+    const allowedTabs = ['overview', 'discover', 'trials', 'sessions', 'homework', 'teacher-updates', 'evaluations', 'recordings', 'certificates', 'achievements', 'referral', 'account', 'support'];
     if (requestedTab && allowedTabs.includes(requestedTab)) {
       setTab(requestedTab);
     }
@@ -888,14 +889,17 @@ export default function StudentDashboard() {
       icon: UserRound,
       description: locale === 'ar' ? 'بياناتك ومعلموك ودوراتك' : 'Profile, tutors, and courses',
     },
+    { id: 'support', label: locale === 'ar' ? 'تواصل مع الإدارة' : 'Support', icon: Send, description: locale === 'ar' ? 'رسائلك مع إدارة الأكاديمية' : 'Messages with the academy' },
   ];
 
   return (
     <DashboardLayout title={locale === 'id' ? 'Dasbor Siswa' : locale === 'ar' ? 'لوحة الطالب' : 'Student Dashboard'} user={user} onLogout={logout}>
+      <SupportLauncher onOpen={() => setTab('support')} />
       {loading ? (
         <div className="flex justify-center py-20"><div className="spinner spinner-lg" /></div>
       ) : (
         <>
+          {tab !== 'support' && <>
           {subscriptionsLoaded && !currentSubscription && <section className="wn-student-welcome">
             <div className="wn-student-welcome__content">
               <span className="wn-student-welcome__eyebrow">
@@ -995,7 +999,7 @@ export default function StudentDashboard() {
           </section>}
 
           {currentSubscription && (
-            <section className="wn-student-next-step" aria-label={locale === 'ar' ? 'حالة الاشتراك' : 'Subscription status'}>
+            <section className="wn-student-next-step wn-student-subscription" aria-label={locale === 'ar' ? 'حالة الاشتراك' : 'Subscription status'}>
               <div>
                 <span className="wn-student-next-step__eyebrow">
                   {locale === 'ar' ? 'اشتراكك الحالي' : 'Your current package'}
@@ -1166,6 +1170,7 @@ export default function StudentDashboard() {
             </section>
           )}
 
+          </>}
           <div className="wn-dashboard-surface wn-student-surface">
             <StudentCommandBar
               primaryItems={primaryNavItems}
@@ -1174,6 +1179,8 @@ export default function StudentDashboard() {
               onChange={setTab}
               locale={locale}
             />
+
+            {tab === 'support' && <SupportChat />}
 
             {tab === 'overview' && subscriptionsLoaded && !currentSubscription && (
               <div className="wn-student-overview">
@@ -2303,4 +2310,5 @@ function InfoRow({ label, value }) {
 function taskTypeLabel(t) {
   return TASK_TYPES.find((x) => x.id === t)?.label || t;
 }
+
 

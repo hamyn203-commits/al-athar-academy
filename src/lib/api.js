@@ -71,6 +71,9 @@ class ApiClient {
       );
     }
 
+    if (typeof window !== 'undefined' && /^\/api\/notifications(?:\/|\?|$)/.test(path) && ['PUT', 'DELETE'].includes(rest.method)) {
+      window.dispatchEvent(new Event('wn:notifications-changed'));
+    }
     return json ? data : response;
   }
 
@@ -83,3 +86,4 @@ class ApiClient {
 
 export const api = new ApiClient();
 export default api;
+

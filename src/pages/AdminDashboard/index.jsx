@@ -23,6 +23,7 @@ import AdminExecutiveHome from './AdminExecutiveHome';
 import AdminSessionControl from './AdminSessionControl';
 import AdminGuardianLinksPanel from './AdminGuardianLinksPanel';
 import LaunchReadinessPanel from './LaunchReadinessPanel';
+import AdminSupportInbox from './AdminSupportInbox';
 
 const STATUS_LABEL = { new: 'جديدة', read: 'مقروءة', replied: 'تم الرد', closed: 'مغلقة' };
 const STATUS_COLOR = { new: 'bg-blue-100 text-blue-700', read: 'bg-gray-100', replied: 'bg-green-100 text-green-700', closed: 'bg-gray-200' };
@@ -37,6 +38,8 @@ export default function AdminDashboard() {
   const [searchParams] = useSearchParams();
   const toast = useToast();
   const [tab, setTab] = useState('overview');
+  const supportStudent = searchParams.get('student') || '';
+  const setSupportStudent = (studentId) => navigate(`?tab=messages&student=${encodeURIComponent(studentId)}`);
   const [loading, setLoading] = useState(true);
   const focus = searchParams.get('focus') || '';
 
@@ -663,6 +666,8 @@ export default function AdminDashboard() {
 
           {tab === 'messages' && (
             <div className="space-y-4">
+              <AdminSupportInbox selectedStudent={supportStudent} onSelect={setSupportStudent} />
+              <h2 className="text-lg font-bold">رسائل نموذج التواصل</h2>
               {messages.length === 0 ? <Empty text="لا رسائل" /> : messages.map((m) => (
                 <div key={m._id} className="wn-dashboard-surface">
                   <div className="flex justify-between items-start gap-3 mb-3">
@@ -1165,6 +1170,7 @@ export default function AdminDashboard() {
           onOpenGuardian={openFamilyDossier}
           onOpenTeacher={openTeacherDossier}
           onOpenHomeworkAudio={openStudentHomeworkAudio}
+          onMessageStudent={(studentId) => { setStudentDossier(null); setSupportStudent(studentId); setTab('messages'); }}
         />
       )}
 
@@ -1179,3 +1185,4 @@ export default function AdminDashboard() {
     </AdminDashboardShell>
   );
 }
+

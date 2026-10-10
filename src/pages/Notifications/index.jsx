@@ -22,9 +22,10 @@ export default function NotificationsPage(){
 
   const load=useCallback(async()=>{try{const data=await api.get('/api/notifications?limit=50',{auth:true});setNotifications(data.notifications||[]);setUnreadCount(data.unreadCount||0);}catch{setNotifications([]);}finally{setLoading(false);}},[]);
   useEffect(()=>{if(!isAuthenticated){navigate(localizedPath('/login',locale)+'?redirect=/notifications');return;}load();},[isAuthenticated,navigate,load,locale]);
+  useEffect(()=>{if(!isAuthenticated)return;const sync=()=>{if(document.visibilityState==='visible')load();};const timer=setInterval(sync,10000);window.addEventListener('focus',sync);window.addEventListener('wn:notifications-changed',sync);window.addEventListener('wn:realtime-notification',sync);document.addEventListener('visibilitychange',sync);return()=>{clearInterval(timer);window.removeEventListener('focus',sync);window.removeEventListener('wn:notifications-changed',sync);window.removeEventListener('wn:realtime-notification',sync);document.removeEventListener('visibilitychange',sync);};},[isAuthenticated,load]);
 
-  const markAsRead=async(id)=>{await api.put('/api/notifications/'+id+'/read',{}, {auth:true});setNotifications((prev)=>prev.map((n)=>n._id===id?{...n,isRead:true}:n));setUnreadCount((count)=>Math.max(0,count-1));};
-  const markAll=async()=>{await api.put('/api/notifications/read-all',{}, {auth:true});setNotifications((prev)=>prev.map((n)=>({...n,isRead:true})));setUnreadCount(0);};
+  const markAsRead=async(id)=>{await api.put('/api/notifications/'+id+'/read',{}, {auth:true});await load();};
+  const markAll=async()=>{await api.put('/api/notifications/read-all',{}, {auth:true});await load();};
 
   return <div className="wn-public-shell min-h-screen"><GlobalHeader/>
     <section className="wn-public-hero"><div className="page-container wn-public-hero__inner"><div><span className="wn-auth-visual__eyebrow"><Sparkles size={14}/>{isAr?'مركز الإشعارات':'NOTIFICATION CENTER'}</span><h1>{isAr?'إشعارات حسابك':'Your notifications'}</h1><p>{isAr?'الجلسات والتحديثات المرتبطة بحسابك تظهر هنا عند وصولها من النظام.':'Account-related session alerts and updates appear here when sent by the system.'}</p></div><div className="wn-public-hero__art" aria-hidden="true"><div className="wn-public-orbit"/><div className="wn-public-orbit__core"><Bell size={46} strokeWidth={1.25}/></div></div></div></section>
@@ -34,3 +35,4 @@ export default function NotificationsPage(){
     </main><GlobalFooter/>
   </div>;
 }
+

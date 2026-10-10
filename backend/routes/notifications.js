@@ -1,9 +1,11 @@
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const router = express.Router();
 const Notification = require('../models/Notification');
 const User = require('../models/User');
 const { protect, authorize } = require('../middleware/auth');
-const { createUserRealtimeToken, isRealtimeConfigured } = require('../services/realtimeNotificationBus');
+const { createUserRealtimeToken, isRealtimeConfigured, publishRealtimeNotification } = require('../services/realtimeNotificationBus');
+router.use(protect, rateLimit({ windowMs: 15 * 60 * 1000, max: 900, keyGenerator: (req) => req.user.id, standardHeaders: true, legacyHeaders: false, skip: () => process.env.DISABLE_RATE_LIMIT === 'true' }));
 
 // @route   GET /api/notifications/realtime-token
 // @desc    Get a short-lived LiveKit data-only token for instant in-app events
@@ -43,7 +45,9 @@ router.get('/', protect, async (req, res) => {
       filter.type = type;
     }
 
-    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const pageSize = Math.min(100, Math.max(1, parseInt(limit) || 20));
+    const pageNumber = Math.min(10000, Math.max(1, parseInt(page) || 1));
+    const skip = (pageNumber - 1) * pageSize;
 
     const [notifications, total] = await Promise.all([
       Notification.find(filter)
@@ -55,7 +59,7 @@ router.get('/', protect, async (req, res) => {
         .populate('data.certificate', 'certificateId')
         .sort({ createdAt: -1 })
         .skip(skip)
-        .limit(parseInt(limit)),
+        .limit(pageSize),
       Notification.countDocuments(filter)
     ]);
 
@@ -67,10 +71,10 @@ router.get('/', protect, async (req, res) => {
     res.json({
       notifications,
       pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
+        page: pageNumber,
+        limit: pageSize,
         total,
-        pages: Math.ceil(total / parseInt(limit))
+        pages: Math.ceil(total / pageSize)
       },
       unreadCount
     });
@@ -112,6 +116,7 @@ router.put('/:id/read', protect, async (req, res) => {
     }
 
     await notification.markAsRead();
+    await publishRealtimeNotification(req.user.id, { type: 'notifications-changed' });
 
     res.json(notification);
   } catch (error) {
@@ -133,6 +138,7 @@ router.put('/read-all', protect, async (req, res) => {
       }
     );
 
+    await publishRealtimeNotification(req.user.id, { type: 'notifications-changed' });
     res.json({ message: 'All notifications marked as read' });
   } catch (error) {
     console.error('Mark all read error:', error);
@@ -147,6 +153,7 @@ router.delete('/clear-all', protect, async (req, res) => {
   try {
     await Notification.deleteMany({ user: req.user.id });
 
+    await publishRealtimeNotification(req.user.id, { type: 'notifications-changed' });
     res.json({ message: 'All notifications cleared' });
   } catch (error) {
     console.error('Clear all error:', error);
@@ -168,6 +175,7 @@ router.delete('/:id', protect, async (req, res) => {
       return res.status(404).json({ error: 'Notification not found' });
     }
 
+    await publishRealtimeNotification(req.user.id, { type: 'notifications-changed' });
     res.json({ message: 'Notification deleted' });
   } catch (error) {
     console.error('Delete notification error:', error);
@@ -358,3 +366,4 @@ router.get('/stats', protect, async (req, res) => {
 });
 
 module.exports = router;
+
