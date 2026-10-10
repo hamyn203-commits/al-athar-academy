@@ -10,6 +10,7 @@ function loadService(name, dependencies) {
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../services', name), 'utf8'), {
     module, exports: module.exports, require: id => {
       if (id === '../config/subscriptionPlans') return plans;
+      if (id === './subscriptionCircleLifecycle') return require('../services/subscriptionCircleLifecycle');
       if (!(id in dependencies)) throw new Error('Missing test dependency: ' + id);
       return dependencies[id];
     }, Intl, Date, Set, Map,
@@ -18,21 +19,21 @@ function loadService(name, dependencies) {
 }
 const query = value => ({ session: async () => value });
 function startFixture(count, status = 'ready') {
-  const circle = { _id: 'circle', subscriptionPlanKey: 'community', status, students: Array.from({ length: count }, (_, i) => 's' + i), teacher: 'teacher', save: async () => {} };
+  const circle = { _id: 'circle', subscriptionPlanKey: 'community', status, capacity: 20, students: Array.from({ length: count }, (_, i) => 's' + i), teacher: 'teacher', save: async () => {} };
   let activations = 0;
   const service = loadService('subscriptionPlacement.js', {
     mongoose: { startSession: async () => ({ withTransaction: async fn => fn(), endSession: async () => {} }) },
     '../models/GroupCircle': { findById: () => query(circle) },
     '../models/Teacher': { findOne: () => query({ user: 't' }) },
     '../models/User': {},
-    '../models/StudentSubscription': { find: () => query(circle.students.map(student => ({ _id: student, student }))), updateMany: async () => { activations++; } },
+    '../models/StudentSubscription': { find: () => query(circle.students.map(student => ({ _id: student, student, sessionsRemaining: 4, planKey: 'community', preferredTeacher: 'teacher' }))), updateMany: async () => { activations++; } },
   });
   return { circle, service, activations: () => activations };
 }
 const schedule = [{ day: 'Saturday', startTime: '18:00', endTime: '19:00' }];
 test('14 learners cannot start; 15 can start without charging credits', async () => {
   const small = startFixture(14);
-  await assert.rejects(small.service.startSubscriptionCircle({ circleId: 'circle', schedule }), { code: 'CIRCLE_NOT_READY' });
+  await assert.rejects(small.service.startSubscriptionCircle({ circleId: 'circle', schedule }), { code: 'CIRCLE_MINIMUM_NOT_MET' });
   assert.equal(small.activations(), 0);
   const ready = startFixture(15);
   const result = await ready.service.startSubscriptionCircle({ circleId: 'circle', schedule });
@@ -64,10 +65,10 @@ test('replaying an old lesson cannot consume a newly activated renewal', async (
     mongoose: { startSession: async () => ({ withTransaction: async fn => fn(), endSession: async () => {} }) },
     '../models/GroupCircle': { findById: () => circleQuery, updateOne: async () => {} },
     '../models/StudentSubscription': { findOne: () => { reads++; throw new Error('Renewal must not be read'); } },
-    '../models/SubscriptionUsage': { findOne: filter => { assert.equal(filter.student, 'student'); assert.equal(filter.session, 'lesson'); return query({ outcome: 'consumed' }); } },
+    '../models/SubscriptionUsage': { findOne: filter => { assert.equal(filter.student, 'student'); assert.equal(filter.session, 'lesson'); return query({ outcome: 'consumed', subscription: 'source' }); } },
     '../models/Session': {}, '../models/User': {}, '../utils/notify': { notifyUser: async () => {} },
   });
-  const result = await service.settleSubscriptionUsageForSession({ _id: 'lesson', type: 'group_circle', circle: 'circle', attendance: [{ student: 'student', status: 'attended' }] });
+  const result = await service.settleSubscriptionUsageForSession({ _id: 'lesson', status: 'completed', type: 'group_circle', circle: 'circle', attendance: [{ student: 'student', status: 'attended' }] });
   assert.equal(result.usages[0].alreadyProcessed, true);
   assert.equal(reads, 0);
 });
@@ -80,7 +81,7 @@ test('placing the fifteenth learner marks the circle ready and leaves all credit
     '../models/GroupCircle': { findOne: () => query(circle) },
     '../models/Teacher': { findOne: () => query({ _id: 'teacher' }) },
     '../models/User': { findById: () => ({ select: () => query(student) }) },
-    '../models/StudentSubscription': { findById: () => query(subscription), updateMany: async () => { throw new Error('Placement must not activate cohort'); } },
+    '../models/StudentSubscription': { findById: () => query(subscription), exists: () => query(false), updateMany: async () => { throw new Error('Placement must not activate cohort'); } },
   });
   const result = await service.placeSubscription({ subscriptionId: 'subscription', existingCircleId: 'circle' });
   assert.equal(result.circleStatus, 'ready');
@@ -89,3 +90,4 @@ test('placing the fifteenth learner marks the circle ready and leaves all credit
   assert.equal(circle.capacity, 20);
   assert.equal(subscription.startedAt, undefined);
 });
+

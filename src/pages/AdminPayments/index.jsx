@@ -14,6 +14,7 @@ export default function AdminPayments() {
   const { user, ready, logout } = useRequireAuth(['admin']);
   const navigate = useNavigate();
   const toast = useToast();
+  const showLoadError = toast.error;
   const [filter, setFilter] = useState('pending');
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -25,11 +26,11 @@ export default function AdminPayments() {
       const result = await api.get('/api/payments/admin/manual?status=' + encodeURIComponent(filter), { auth: true });
       setPayments(result.payments || []);
     } catch (error) {
-      toast.error(error.message || 'تعذر تحميل المدفوعات');
+      showLoadError(error.message || 'تعذر تحميل المدفوعات');
     } finally {
       setLoading(false);
     }
-  }, [filter, toast]);
+  }, [filter, showLoadError]);
 
   useEffect(() => {
     if (ready) load();
@@ -56,7 +57,6 @@ export default function AdminPayments() {
           : 'تم رفض إثبات الدفع'
       );
       await load();
-      if (result.awaitingPlacement) navigate('../subscriptions');
     } catch (error) {
       toast.error(error.message || 'فشلت المراجعة');
     } finally {
@@ -85,11 +85,11 @@ export default function AdminPayments() {
   return (
     <DashboardLayout title="مراجعة المدفوعات اليدوية" user={user} onLogout={logout}>
       <div className="wn-admin-payment-readable">
-      <button className="wn-btn wn-btn--secondary mb-4" onClick={() => navigate('../subscriptions')}>الاشتراكات والتسكين</button>
       <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
-        <button onClick={() => navigate('..')} className="wn-btn wn-btn--secondary">
+        <button onClick={() => navigate('..', { relative: 'path' })} className="wn-btn wn-btn--secondary">
           <ArrowRight size={16} /> لوحة الإدارة
         </button>
+        <button onClick={() => navigate('../subscriptions', { relative: 'path' })} className="wn-btn wn-btn--primary">الاشتراكات وتسكين الطلاب</button>
         <div className="flex gap-2">
           <select value={filter} onChange={(event) => setFilter(event.target.value)} className="border rounded-lg px-3 py-2 text-sm">
             <option value="pending">قيد المراجعة</option>
@@ -158,6 +158,9 @@ export default function AdminPayments() {
                     <button onClick={() => openProof(payment)} className="wn-btn wn-btn--secondary"><Eye size={16} /> عرض الإثبات</button>
                   ) : null}
 
+                  {payment.kind === 'subscription' && payment.status === 'succeeded' ? (
+                    <button onClick={() => navigate('../subscriptions', { relative: 'path' })} className="wn-btn wn-btn--primary">متابعة التسكين والحلقات</button>
+                  ) : null}
                   {payment.status === 'pending' ? (
                     <div className="flex gap-2">
                       <button disabled={working === payment.id} onClick={() => review(payment, 'approve')} className="wn-btn wn-btn--primary"><CheckCircle size={16} /> {payment.kind === 'subscription' ? 'اعتماد الدفع' : 'قبول'}</button>
