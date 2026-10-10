@@ -92,10 +92,10 @@ export function postAuthDestination({
   // A deep link from a previous account must not take this user to another
   // role's workspace. ProtectedRoute also enforces this at the route level.
   const restrictedRole =
-    /^\\/student(?:\\/|$)/.test(pathname) ? 'student' :
-    /^\\/guardian(?:\\/|$)/.test(pathname) ? 'guardian' :
-    /^\\/teacher(?:\\/dashboard(?:\\/|$)|$)/.test(pathname) ? 'teacher' :
-    /^\\/admin(?:\\/|$)/.test(pathname) ? 'admin' :
+    /^\/student(?:\/|$)/.test(pathname) ? 'student' :
+    /^\/guardian(?:\/|$)/.test(pathname) ? 'guardian' :
+    /^\/teacher(?:\/dashboard(?:\/|$)|$)/.test(pathname) ? 'teacher' :
+    /^\/admin(?:\/|$)/.test(pathname) ? 'admin' :
     null;
 
   return restrictedRole && restrictedRole !== role
