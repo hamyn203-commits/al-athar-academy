@@ -106,13 +106,13 @@ export function AuthProvider({ children }) {
     }
   }, [saveAuthenticatedSession]);
 
-  const googleLogin = useCallback(async (credential, role = 'student', context = 'signin') => {
+  const googleLogin = useCallback(async (credential, role = 'student', context = 'signin', enrollmentSection) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/auth/google`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ credential, role, context }),
+        body: JSON.stringify({ credential, role, context, ...(context === 'signup' && role === 'student' && enrollmentSection ? { enrollmentSection } : {}) }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Google sign-in failed');
