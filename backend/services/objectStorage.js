@@ -214,6 +214,7 @@ async function getPrivateObject(reference, options = {}) {
     return get(reference, {
       access: 'private',
       ifNoneMatch: options.ifNoneMatch,
+      ...(options.headers ? { headers: options.headers } : {}),
       token: process.env.BLOB_READ_WRITE_TOKEN,
     });
   }
@@ -222,6 +223,7 @@ async function getPrivateObject(reference, options = {}) {
     const result = await getS3Client().send(new GetObjectCommand({
       Bucket: process.env.S3_BUCKET,
       Key: extractPathname(reference),
+      ...(options.headers?.Range ? { Range: options.headers.Range } : {}),
     }));
     return {
       statusCode: 200,
