@@ -27,7 +27,7 @@ export default function TeacherAssetViewer({ teacherId, asset, loader, onClose }
   const latestLoader = useRef(loader);
   // The dashboard refreshes its queue and creates new callback identities. Do not
   // restart an actively playing video just because the parent re-rendered.
-  latestLoader.current = loader;
+  useEffect(() => { latestLoader.current = loader; }, [loader]);
   const { kind, index, category } = asset;
 
   useEffect(() => {
