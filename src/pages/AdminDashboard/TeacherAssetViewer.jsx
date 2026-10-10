@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Download, X } from 'lucide-react';
 
 // Protected assets never receive a public URL. We fetch with the administrator's
@@ -24,6 +24,11 @@ function describePlaybackError(code, type) {
 export default function TeacherAssetViewer({ teacherId, asset, loader, onClose }) {
   const [preview, setPreview] = useState({ status: 'loading' });
   const [retryKey, setRetryKey] = useState(0);
+  const latestLoader = useRef(loader);
+  // The dashboard refreshes its queue and creates new callback identities. Do not
+  // restart an actively playing video just because the parent re-rendered.
+  latestLoader.current = loader;
+  const { kind, index, category } = asset;
 
   useEffect(() => {
     let active = true;
@@ -31,7 +36,7 @@ export default function TeacherAssetViewer({ teacherId, asset, loader, onClose }
     setPreview({ status: 'loading' });
 
     Promise.resolve()
-      .then(() => loader(teacherId, asset.kind, asset.index))
+      .then(() => latestLoader.current(teacherId, kind, index))
       .then((result) => {
         if (!active) return;
         const isBlob = result instanceof Blob;
@@ -43,9 +48,9 @@ export default function TeacherAssetViewer({ teacherId, asset, loader, onClose }
         if (!isBlob && !isTrustedUrl) {
           throw new Error('لم يصل رابط تشغيل صالح من الخادم.');
         }
-        const format = asset.category === 'document'
+        const format = category === 'document'
           ? (result.type.startsWith('image/') ? 'image' : result.type === 'application/pdf' ? 'pdf' : 'other')
-          : asset.kind === 'profilePhoto' ? 'image' : asset.kind === 'audioRecordings' ? 'audio' : 'video';
+          : kind === 'profilePhoto' ? 'image' : kind === 'audioRecordings' ? 'audio' : 'video';
         if (isBlob) ownedObjectUrl = URL.createObjectURL(result);
         setPreview({ status: 'ready', url: isBlob ? ownedObjectUrl : result.url, format, playbackError: false, temporary: !isBlob, streamingMode: isBlob ? 'local-blob' : result.streamingMode, contentType: isBlob ? result.type : result.contentType, sizeBytes: isBlob ? result.size : result.sizeBytes, streamingChecked: isBlob ? true : result.streamingChecked });
       })
@@ -57,7 +62,7 @@ export default function TeacherAssetViewer({ teacherId, asset, loader, onClose }
       active = false;
       if (ownedObjectUrl) URL.revokeObjectURL(ownedObjectUrl);
     };
-  }, [teacherId, asset, loader, retryKey]);
+  }, [teacherId, kind, index, category, retryKey]);
 
   useEffect(() => {
     const onKeyDown = (event) => {
