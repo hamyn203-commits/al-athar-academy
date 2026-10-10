@@ -213,7 +213,7 @@ assert.match(teacherDashboard, /surahRecited:\s*evaluation\.surahRecited/);
 
 const plansPage = read('src/pages/Plans/index.jsx');
 assert.match(plansPage, /الحلقة الاقتصادية الكبرى/);
-assert.match(plansPage, /من 10 إلى 15 طالب/);
+assert.match(plansPage, /من 15 إلى 20 طالب/);
 assert.match(plansPage, /الحلقة الجماعية/);
 assert.match(plansPage, /من 5 إلى 10 طلاب/);
 assert.match(plansPage, /قسم الرجال والأطفال/);
@@ -455,3 +455,4 @@ assert.match(guardianDashboard, /session\.instanceKey/);
 assert.match(guardianDashboard, /\/api\/guardian\/invitations/);
 assert.match(guardianDashboard, /respondToInvitation/);
 assert.match(guardianDashboard, /طلبات ربط جديدة/);
+

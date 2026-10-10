@@ -230,9 +230,9 @@ async function settleSubscriptionUsageForSession(sessionDoc) {
     const count = (refreshedCircle.students || []).length;
     const nextStatus = count >= Number(refreshedCircle.capacity || 0)
       ? 'full'
-      : count >= Number(plan?.minStudents || 1)
+      : ['active', 'full'].includes(refreshedCircle.status)
         ? 'active'
-        : 'forming';
+        : count >= Number(plan?.minStudents || 1) ? 'ready' : 'forming';
     if (['active', 'full'].includes(refreshedCircle.status) && nextStatus !== refreshedCircle.status) {
       await GroupCircle.updateOne({ _id: circleId }, { $set: { status: nextStatus } });
     }

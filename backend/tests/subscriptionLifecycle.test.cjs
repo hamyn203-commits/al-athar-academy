@@ -71,3 +71,21 @@ test('replaying an old lesson cannot consume a newly activated renewal', async (
   assert.equal(result.usages[0].alreadyProcessed, true);
   assert.equal(reads, 0);
 });
+test('placing the fifteenth learner marks the circle ready and leaves all credits waiting', async () => {
+  const circle = { _id: 'circle', name: 'Group', capacity: 15, status: 'forming', students: Array.from({ length: 14 }, (_, i) => 's' + i), save: async () => {} };
+  const subscription = { _id: 'subscription', student: 'new', status: 'awaiting_placement', preferredTeacher: 'teacher', planKey: 'community', section: 'men_children', sessionsRemaining: 4, save: async () => {} };
+  const student = { _id: 'new', name: 'New', gender: 'male', age: 20, save: async () => {} };
+  const service = loadService('subscriptionPlacement.js', {
+    mongoose: { startSession: async () => ({ withTransaction: async fn => fn(), endSession: async () => {} }) },
+    '../models/GroupCircle': { findOne: () => query(circle) },
+    '../models/Teacher': { findOne: () => query({ _id: 'teacher' }) },
+    '../models/User': { findById: () => ({ select: () => query(student) }) },
+    '../models/StudentSubscription': { findById: () => query(subscription), updateMany: async () => { throw new Error('Placement must not activate cohort'); } },
+  });
+  const result = await service.placeSubscription({ subscriptionId: 'subscription', existingCircleId: 'circle' });
+  assert.equal(result.circleStatus, 'ready');
+  assert.equal(subscription.status, 'placed');
+  assert.equal(subscription.sessionsRemaining, 4);
+  assert.equal(circle.capacity, 20);
+  assert.equal(subscription.startedAt, undefined);
+});

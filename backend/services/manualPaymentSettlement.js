@@ -109,7 +109,7 @@ async function processManualPaymentReview({
                 const wasStarted = ['active', 'full'].includes(circle.status) && (circle.schedule || []).length > 0;
                 if (wasStarted && circle.students.length >= Number(circle.capacity || plan.maxStudents)) {
                   circle.status = 'full';
-                } else if (wasStarted && circle.students.length >= plan.minStudents) {
+                } else if (wasStarted) {
                   circle.status = 'active';
                 } else if (circle.students.length >= plan.minStudents) {
                   circle.status = 'ready';
