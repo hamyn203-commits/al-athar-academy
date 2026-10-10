@@ -32,8 +32,8 @@ export default function CTASection() {
           </p>
 
           <div className="wn-final-cta__actions">
-            <LocalizedLink to="/free-trial" locale={locale} className="wn-btn wn-btn--accent wn-btn--lg">
-              <span>{isAr ? 'ابدأ الحصة التعريفية' : 'Start your introductory lesson'}</span>
+            <LocalizedLink to="/start" locale={locale} className="wn-btn wn-btn--accent wn-btn--lg">
+              <span>{isAr ? 'ابدأ معنا' : 'Start with us'}</span>
               <ArrowIcon size={18} className="wn-btn__arrow" />
             </LocalizedLink>
             <LocalizedLink to="/contact" locale={locale} className="wn-btn wn-btn--outline-light wn-btn--lg">
