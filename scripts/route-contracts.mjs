@@ -173,13 +173,13 @@ assert.match(studentDashboard, /copyInvitationCode/);
 assert.match(studentDashboard, /trialAllowance/);
 assert.match(studentDashboard, /\/api\/subscriptions\/me/);
 assert.match(studentDashboard, /currentSubscription/);
-assert.match(studentDashboard, /حالة اشتراكك/);
+assert.match(studentDashboard, /اشتراكك الحالي/);
 assert.match(studentDashboard, /بانتظار مراجعة الإدارة/);
 assert.match(studentDashboard, /الدفع معتمد — بانتظار التسكين/);
 assert.match(studentDashboard, /تم التسكين — الجروب قيد الاكتمال/);
 assert.match(studentDashboard, /sessionsRemaining/);
 assert.match(studentDashboard, /\/api\/subscriptions\/'\s*\+\s*encodeURIComponent\(subscription\._id\)\s*\+\s*'\/renew/);
-assert.match(studentDashboard, /جدد نفس الجروب/);
+assert.match(studentDashboard, /تجديد الاشتراك/);
 assert.match(studentDashboard, /renewal_queued/);
 assert.match(studentDashboard, /group_circle/);
 assert.match(studentDashboard, /حلقة جماعية/);
@@ -455,4 +455,5 @@ assert.match(guardianDashboard, /session\.instanceKey/);
 assert.match(guardianDashboard, /\/api\/guardian\/invitations/);
 assert.match(guardianDashboard, /respondToInvitation/);
 assert.match(guardianDashboard, /طلبات ربط جديدة/);
+
 
