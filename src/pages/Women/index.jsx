@@ -88,7 +88,7 @@ export default function WomenPortal() {
             </div>
           )}
           <div className="text-center mt-10">
-            <Link to={localizedPath('/register/student', locale)} className="btn-primary">{isAr ? 'سجّلي كطالبة' : 'Register as Student'}</Link>
+            <Link to={localizedPath('/register/student', locale) + '?section=women'} className="btn-primary">{isAr ? 'سجّلي كطالبة' : 'Register as Student'}</Link>
           </div>
         </section>
       </main>
