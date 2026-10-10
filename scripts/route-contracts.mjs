@@ -418,6 +418,13 @@ assert.match(teacherAssetViewer, /<video[\s\S]*?controls/);
 assert.match(teacherAssetViewer, /<audio[^>]*controls/);
 assert.match(teacherAssetViewer, /URL\.createObjectURL/);
 assert.match(teacherAssetViewer, /URL\.revokeObjectURL/);
+assert.match(adminDashboard, /\/media-playback\/\$\{kind\}/);
+assert.match(adminDashboard, /\/profile-change\/media-playback\/\$\{kind\}/);
+assert.match(adminDashboard, /MEDIA_PREVIEW_NOT_SUPPORTED/);
+assert.match(teacherAssetViewer, /isBlob \? ownedObjectUrl : result\.url/);
+assert.match(teacherAssetViewer, /retryKey/);
+assert.match(teacherAssetViewer, /إعادة المحاولة/);
+
 assert.match(teacherAssetViewer, /aria-modal="true"/);
 assert.match(adminDashboard, /fetchTeacherReviewAsset/);
 assert.doesNotMatch(

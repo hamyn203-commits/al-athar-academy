@@ -356,13 +356,38 @@ export default function AdminDashboard() {
     return fetchTeacherReviewAsset(`/api/teachers/admin/${teacherId}/document/${kind}${suffix}?reason=teacher-review`);
   };
 
+  const fetchTeacherPlayback = async (signPath, fallbackPath) => {
+    try {
+      // Only the signed URL reaches the native <video> element. Do not proxy
+      // large media through a Vercel Function or download it all as a Blob.
+      const preview = await api.get(signPath, { auth: true });
+      if (!preview?.url?.startsWith('https://')) {
+        throw new Error('تعذر الحصول على رابط تشغيل آمن للفيديو.');
+      }
+      return preview;
+    } catch (error) {
+      // Compatibility with local filesystem and legacy private uploads.
+      // Never downgrade a permission error to an unauthenticated file URL.
+      if (error?.code === 'MEDIA_PREVIEW_NOT_SUPPORTED') {
+        return fetchTeacherReviewAsset(fallbackPath);
+      }
+      throw error;
+    }
+  };
+
   const openTeacherMedia = (teacherId, kind, index) => {
     const suffix = Number.isInteger(index) ? `/${index}` : '';
-    return fetchTeacherReviewAsset(`/api/teachers/admin/${teacherId}/media/${kind}${suffix}?reason=teacher-review`);
+    return fetchTeacherPlayback(
+      `/api/teachers/admin/${teacherId}/media-playback/${kind}${suffix}`,
+      `/api/teachers/admin/${teacherId}/media/${kind}${suffix}?reason=teacher-review`
+    );
   };
 
   const openTeacherProfileChangeMedia = (teacherId, kind) =>
-    fetchTeacherReviewAsset(`/api/teachers/admin/${teacherId}/profile-change/media/${kind}?reason=profile-change-review`);
+    fetchTeacherPlayback(
+      `/api/teachers/admin/${teacherId}/profile-change/media-playback/${kind}`,
+      `/api/teachers/admin/${teacherId}/profile-change/media/${kind}?reason=profile-change-review`
+    );
 
   const reviewTeacherProfileChange = async (teacherId, action, suppliedNote = '') => {
     let note = suppliedNote;

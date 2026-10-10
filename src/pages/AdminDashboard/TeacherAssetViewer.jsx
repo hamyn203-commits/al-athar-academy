@@ -5,22 +5,27 @@ import { Download, X } from 'lucide-react';
 // existing authorization, create a temporary blob URL, then revoke it on close.
 export default function TeacherAssetViewer({ teacherId, asset, loader, onClose }) {
   const [preview, setPreview] = useState({ status: 'loading' });
+  const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
     let active = true;
-    let url = null;
+    let ownedObjectUrl = null;
     setPreview({ status: 'loading' });
 
     Promise.resolve()
       .then(() => loader(teacherId, asset.kind, asset.index))
-      .then((blob) => {
+      .then((result) => {
         if (!active) return;
-        if (!(blob instanceof Blob) || blob.size === 0) throw new Error('الملف فارغ أو غير متاح.');
+        const isBlob = result instanceof Blob;
+        if (isBlob && result.size === 0) throw new Error('الملف فارغ أو غير متاح.');
+        if (!isBlob && (!result?.url || !/^https:\/\//i.test(result.url))) {
+          throw new Error('لم يصل رابط تشغيل صالح من الخادم.');
+        }
         const format = asset.category === 'document'
-          ? (blob.type.startsWith('image/') ? 'image' : blob.type === 'application/pdf' ? 'pdf' : 'other')
+          ? (result.type.startsWith('image/') ? 'image' : result.type === 'application/pdf' ? 'pdf' : 'other')
           : asset.kind === 'profilePhoto' ? 'image' : asset.kind === 'audioRecordings' ? 'audio' : 'video';
-        url = URL.createObjectURL(blob);
-        setPreview({ status: 'ready', url, format, playbackError: false });
+        if (isBlob) ownedObjectUrl = URL.createObjectURL(result);
+        setPreview({ status: 'ready', url: isBlob ? ownedObjectUrl : result.url, format, playbackError: false, temporary: !isBlob });
       })
       .catch((error) => {
         if (active) setPreview({ status: 'error', message: error?.message || 'تعذر تحميل الملف.' });
@@ -28,9 +33,9 @@ export default function TeacherAssetViewer({ teacherId, asset, loader, onClose }
 
     return () => {
       active = false;
-      if (url) URL.revokeObjectURL(url);
+      if (ownedObjectUrl) URL.revokeObjectURL(ownedObjectUrl);
     };
-  }, [teacherId, asset, loader]);
+  }, [teacherId, asset, loader, retryKey]);
 
   useEffect(() => {
     const onKeyDown = (event) => {
@@ -51,7 +56,7 @@ export default function TeacherAssetViewer({ teacherId, asset, loader, onClose }
           {preview.status === 'loading' ? (
             <p className="wn-admin-asset-viewer__message" role="status">جاري تحميل الملف… قد يستغرق الفيديو الكبير بعض الوقت.</p>
           ) : preview.status === 'error' ? (
-            <p className="wn-admin-asset-viewer__message is-error" role="alert">تعذرت معاينة الملف: {preview.message}</p>
+            <p className="wn-admin-asset-viewer__message is-error" role="alert">تعذرت معاينة الملف: {preview.message}<br />تحقق من اتصال الإنترنت ثم أعد المحاولة.</p>
           ) : (
             <>
               {preview.format === 'image' ? <img src={preview.url} alt={asset.label} /> : null}
@@ -72,15 +77,18 @@ export default function TeacherAssetViewer({ teacherId, asset, loader, onClose }
                 <p className="wn-admin-asset-viewer__message">هذا النوع من الملفات غير مدعوم للمعاينة المباشرة. يمكن تنزيله للمراجعة.</p>
               ) : null}
               {preview.playbackError ? (
-                <p className="wn-admin-asset-viewer__message is-error" role="alert">لم يستطع المتصفح فك ترميز الفيديو. يمكنك تنزيله وتشغيله ببرنامج يدعم الصيغة.</p>
+                <p className="wn-admin-asset-viewer__message is-error" role="alert">تعذر تشغيل هذا الفيديو. قد تكون صيغته غير مدعومة أو انتهت صلاحية رابط المعاينة؛ اضغط إعادة المحاولة للحصول على رابط جديد.</p>
               ) : null}
             </>
           )}
         </div>
         <footer className="wn-admin-asset-viewer__footer">
           {preview.status === 'ready' ? (
-            <a href={preview.url} download={`teacher-review-${asset.kind}`}><Download size={17} /> تنزيل الملف عند الحاجة</a>
+            <a href={preview.url} download={`teacher-review-${asset.kind}`} rel="noreferrer" referrerPolicy="no-referrer"><Download size={17} /> تنزيل الملف عند الحاجة</a>
           ) : <span />}
+          {preview.status === 'error' || preview.playbackError ? (
+            <button type="button" className="wn-admin-asset-viewer__retry" onClick={() => setRetryKey((count) => count + 1)}>إعادة المحاولة</button>
+          ) : null}
           <button type="button" onClick={onClose}>إغلاق المعاينة</button>
         </footer>
       </section>
