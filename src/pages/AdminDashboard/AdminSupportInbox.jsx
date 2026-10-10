@@ -11,7 +11,7 @@ export default function AdminSupportInbox({ selectedStudent, onSelect }) {
     catch { setError('تعذر تحديث صندوق المحادثات. حاول مجددًا.'); }
   }, []);
   useEffect(() => {
-    refresh();
+    api.get('/api/support/inbox', { auth: true }).then((data) => { setRows(data.conversations); setNextBefore(data.nextBefore); }).catch(() => setError('تعذر تحميل صندوق المحادثات'));
     const visible = () => { if (document.visibilityState === 'visible') refresh(); };
     const timer = setInterval(visible, 10000);
     window.addEventListener('focus', visible); window.addEventListener('wn:realtime-notification', visible); window.addEventListener('wn:support-changed', visible);

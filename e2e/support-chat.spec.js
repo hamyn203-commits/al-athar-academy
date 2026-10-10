@@ -86,7 +86,7 @@ test('administration starts a conversation from the student dossier and student 
   await page.locator('#login-password').fill(E2E_PASSWORD);
   await page.locator('form button[type="submit"]').click();
   await expect(page).toHaveURL(/\/ar\/admin/);
-  await page.goto(`/ar/admin/dashboard?tab=people&student=${student.user._id}`);
+  await page.goto('/ar/admin?tab=people');
   // Open the actual dossier through the directory, as an administrator would.
   const directory = page.getByRole('region', { name: 'دليل الطلاب والأسر' });
   await directory.getByLabel('بحث عن طالب أو ولي أمر').fill(accounts.trialLimitStudent);

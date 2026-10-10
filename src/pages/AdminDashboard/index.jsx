@@ -38,8 +38,8 @@ export default function AdminDashboard() {
   const [searchParams] = useSearchParams();
   const toast = useToast();
   const [tab, setTab] = useState('overview');
-  const [supportStudent, setSupportStudent] = useState(searchParams.get('student') || '');
-  useEffect(() => { if (searchParams.get('student')) setSupportStudent(searchParams.get('student')); }, [searchParams]);
+  const supportStudent = searchParams.get('student') || '';
+  const setSupportStudent = (studentId) => navigate(`?tab=messages&student=${encodeURIComponent(studentId)}`);
   const [loading, setLoading] = useState(true);
   const focus = searchParams.get('focus') || '';
 

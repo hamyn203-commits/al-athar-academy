@@ -48,7 +48,7 @@ export default function SupportChat({ studentId = 'me', admin = false }) {
 
   useEffect(() => {
     generation.current += 1; busy.current = false; cursorInitialized.current = false;
-    setMessages([]); setOlder([]); setNextBefore(null); setLoaded(false); setText(''); setError(''); pending.current = null;
+    // The parent keys conversations by student, so a new conversation starts with fresh state.
     refresh();
     const onVisible = () => { if (document.visibilityState === 'visible') refresh(); };
     const interval = window.setInterval(onVisible, 5000);

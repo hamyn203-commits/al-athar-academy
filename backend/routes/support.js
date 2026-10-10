@@ -96,7 +96,7 @@ router.post('/:studentId/messages', sendLimiter, async (req, res, next) => {
       try { notice = await Notification.findOneAndUpdate(noticeFilter, { $setOnInsert: {
         type: 'support-message', title: { ar: admin ? `رسالة من ${student.name}` : 'رسالة من الإدارة', en: admin ? 'New student message' : 'New administration message' },
         message: { ar: message.text.slice(0, 140), en: message.text.slice(0, 140) }, status: 'sent',
-        data: { supportMessage: message._id, metadata: { studentId: String(student._id) }, actionUrl: admin ? `/admin/dashboard?tab=messages&student=${student._id}` : '/student/dashboard?tab=support' },
+        data: { supportMessage: message._id, metadata: { studentId: String(student._id) }, actionUrl: admin ? `/admin?tab=messages&student=${student._id}` : '/student/dashboard?tab=support' },
       } }, { upsert: true, new: true, runValidators: true }); }
       catch (error) { if (error.code !== 11000) throw error; notice = await Notification.findOne(noticeFilter); }
       // A reader can open the chat between saving the message and saving its notice.

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Bell, CheckCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
@@ -25,7 +25,7 @@ export default function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     if (fetching.current) { refreshPending.current = true; return; }
     fetching.current = true;
     try {
@@ -62,7 +62,7 @@ export default function NotificationBell() {
       fetching.current = false;
       if (refreshPending.current) { refreshPending.current = false; fetchNotifications(); }
     }
-  };
+  }, [locale, toast]);
 
   useEffect(() => {
     let disposed = false;
@@ -139,7 +139,7 @@ export default function NotificationBell() {
       realtimeRoomRef.current?.disconnect?.();
       realtimeRoomRef.current = null;
     };
-  }, [locale, toast]);
+  }, [locale, toast, fetchNotifications]);
 
   const markAsRead = async (id) => {
     try {
