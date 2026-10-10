@@ -960,7 +960,7 @@ router.get('/admin/:id/profile-change/media-playback/:kind', protect, authorize(
     const verifiedPlayback = {
       ...playback,
       ...(useRangeProxy ? {
-        url: createAdminMediaRangeUrl(teacher._id, req.params.kind, req.params.index, reference),
+        url: createAdminMediaRangeUrl(req.params.id, req.params.kind, 0, reference, 'proposed'),
         streamingMode: 'authenticated-range',
       } : { streamingMode: 'direct' }),
       contentType: metadata.contentType,
@@ -1394,7 +1394,7 @@ router.get('/admin/:id/media-playback/:kind{/:index}', protect, authorize('admin
     const verifiedPlayback = {
       ...playback,
       ...(useRangeProxy ? {
-        url: createAdminMediaRangeUrl(req.params.id, req.params.kind, 0, reference, 'proposed'),
+        url: createAdminMediaRangeUrl(teacher._id, req.params.kind, req.params.index, reference, 'original'),
         streamingMode: 'authenticated-range',
       } : { streamingMode: 'direct' }),
       contentType: metadata.contentType,
