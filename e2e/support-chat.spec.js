@@ -97,6 +97,7 @@ test('administration starts a conversation from the student dossier and student 
   const welcome = `الإدارة بتتابع معاك ${Date.now()}`;
   await chat.getByLabel('رسالتك').fill(welcome);
   await chat.getByRole('button', { name: 'إرسال الرسالة', exact: true }).click();
+  await expect(chat.getByText(welcome, { exact: true })).toBeVisible();
   const unread = await (await request.get(`${endpoint}/api/support/me/unread`, { headers: student.headers })).json();
   expect(unread.unread).toBeGreaterThan(0);
   await page.context().clearCookies();
