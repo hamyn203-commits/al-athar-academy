@@ -435,10 +435,23 @@ const originalPlaybackStart = teachersRouteSource.indexOf("router.get('/admin/:i
 const originalPlaybackEnd = teachersRouteSource.indexOf("router.get('/admin/:id/media/:kind{/:index}'", originalPlaybackStart);
 const profilePlaybackRoute = teachersRouteSource.slice(profilePlaybackStart, profilePlaybackEnd);
 const originalPlaybackRoute = teachersRouteSource.slice(originalPlaybackStart, originalPlaybackEnd);
-assert.match(profilePlaybackRoute, /createAdminMediaRangeUrl\(req\.params\.id, req\.params\.kind, 0, reference, 'proposed'\)/);
-assert.doesNotMatch(profilePlaybackRoute, /createAdminMediaRangeUrl\(teacher\._id/);
-assert.match(originalPlaybackRoute, /createAdminMediaRangeUrl\(teacher\._id, req\.params\.kind, req\.params\.index, reference, 'original'\)/);
-assert.doesNotMatch(originalPlaybackRoute, /'proposed'/);
+assert.match(profilePlaybackRoute, /createVerifiedTeacherPlayback\(reference,/);
+assert.match(profilePlaybackRoute, /teacherId: req\.params\.id/);
+assert.match(profilePlaybackRoute, /index: 0/);
+assert.match(profilePlaybackRoute, /scope: 'proposed'/);
+assert.match(originalPlaybackRoute, /createVerifiedTeacherPlayback\(reference,/);
+assert.match(originalPlaybackRoute, /teacherId: teacher\._id/);
+assert.match(originalPlaybackRoute, /index: req\.params\.index/);
+assert.match(originalPlaybackRoute, /scope: 'original'/);
+// Always verify a real provider range before giving the browser a link.
+assert.match(teachersRouteSource, /async function createVerifiedTeacherPlayback/);
+assert.match(teachersRouteSource, /objectStorage\.getPrivateObject\(reference, \{/);
+assert.match(teachersRouteSource, /actualRange !==/);
+assert.match(teachersRouteSource, /streamingMode: 'authenticated-range'/);
+// Use the academy's origin, not the API domain or an unverifiable Blob URL.
+assert.match(teachersRouteSource, /const pathname = `\/api\/teachers\/admin-media-range\//);
+assert.match(adminDashboard, /preview\.url\.startsWith\('\/api\/teachers\/admin-media-range\/'\)/);
+assert.match(teacherAssetViewer, /result\.url\.startsWith\('\/api\/teachers\/admin-media-range\/'\)/);
 
 
 
