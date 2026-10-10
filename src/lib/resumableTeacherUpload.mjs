@@ -142,7 +142,7 @@ export async function uploadResumableParts(file, {
             failure = error;
             return;
           }
-          onUploadState(navigator?.onLine === false ? 'paused' : 'retrying');
+          onUploadState((typeof navigator !== 'undefined' && navigator.onLine === false) ? 'paused' : 'retrying');
           try {
             await reconnect(abortSignal, onUploadState);
             await delay(Math.min(8000, 750 * (2 ** attempt)), abortSignal);
