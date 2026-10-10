@@ -105,6 +105,27 @@ requireContains(
   'teacher private documents must use authorized object-storage reads',
   /getPrivateObject\(stored/
 );
+
+requireContains(
+  'backend/routes/teachers.js',
+  'teacher streaming playback route must require admin authentication',
+  /router\.get\('\/admin\/:id\/media-playback\/:kind\{\/:index\}',\s*protect,\s*authorize\('admin'\)/
+);
+requireContains(
+  'backend/routes/teachers.js',
+  'teacher proposed media playback must require admin authentication',
+  /router\.get\('\/admin\/:id\/profile-change\/media-playback\/:kind',\s*protect,\s*authorize\('admin'\)/
+);
+requireContains(
+  'backend/services/objectStorage.js',
+  'private Blob playback must use short-lived scoped signed token',
+  /issueSignedToken\(\{ pathname, operations: \['get'\], validUntil \}\)/
+);
+requireContains(
+  'backend/services/objectStorage.js',
+  'private Blob media URL must only allow the GET operation',
+  /presignUrl\(token, \{ pathname, operation: 'get', validUntil \}\)/
+);
 requireContains(
   'backend/routes/uploads.js',
   'Blob uploads must be private by default',
