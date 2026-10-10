@@ -72,7 +72,7 @@ export default function GlobalHeader() {
                 <Link to={lp('/login')} className="wn-approved-header__login">
                   {t.common.login}
                 </Link>
-                <Link to={lp('/free-trial')} className="wn-approved-header__cta">
+                <Link to={lp('/start')} className="wn-approved-header__cta">
                   <span>{isAr ? 'ابدأ رحلتك الآن' : 'Start Your Journey'}</span>
                   <ArrowIcon size={15} />
                 </Link>
@@ -119,7 +119,7 @@ export default function GlobalHeader() {
             </div>
 
             <Link
-              to={lp('/free-trial')}
+              to={lp('/start')}
               onClick={() => setIsMenuOpen(false)}
               className="wn-btn wn-btn--primary wn-btn--block"
             >

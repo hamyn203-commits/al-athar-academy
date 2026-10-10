@@ -77,7 +77,7 @@ export default function TargetAudiencesSection() {
               <div className="wn-audience-card__checks">
                 {items.map((item) => <span key={item}><Check size={14} /> {item}</span>)}
               </div>
-              <LocalizedLink to="/free-trial" locale={locale} className="wn-audience-card__link">
+              <LocalizedLink to="/start" locale={locale} className="wn-audience-card__link">
                 <span>{isAr ? 'ابدأ بهذا المسار' : 'Start this path'}</span>
                 <ArrowIcon size={14} />
               </LocalizedLink>

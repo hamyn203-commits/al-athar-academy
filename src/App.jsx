@@ -15,6 +15,7 @@ import ProtectedRoute from './components/auth/ProtectedRoute';
 
 const LandingPage = lazy(() => import('./pages/NewLandingPage'));
 const StudentJourney = lazy(() => import('./pages/StudentJourney'));
+const StartPage = lazy(() => import('./pages/Start'));
 const LiveSessions = lazy(() => import('./pages/LiveSessions/LiveSessions'));
 const LiveRoom = lazy(() => import('./pages/LiveRoom/LiveRoom'));
 const NotFoundPage = lazy(() => import('./pages/NotFound/NotFound'));
@@ -80,6 +81,7 @@ function pageRoutes() {
     <>
       <Route index element={<AuthenticatedLanding><LandingPage /></AuthenticatedLanding>} />
       <Route path="login" element={<Login />} />
+      <Route path="start" element={<StartPage />} />
       <Route path="journey" element={<StudentJourney />} />
       <Route path="forgot-password" element={<ForgotPassword />} />
       <Route path="reset-password" element={<ResetPassword />} />

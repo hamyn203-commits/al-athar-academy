@@ -396,10 +396,10 @@ export default function Teachers() {
               <div className="wn-public-empty">
                 <Users size={48} />
                 <h3>{pagination.total === 0 ? active.noTutors : active.noTutorsMatched}</h3>
-                <p>{pagination.total === 0 ? (isAr ? 'لم تُنشر ملفات معلمين متاحة حاليًا. يمكنك العودة لاحقًا أو التقديم كمعلم.' : 'No teacher profiles are currently published. You can return later or apply as a teacher.') : active.tryChanging}</p>
+                <p>{pagination.total === 0 ? (isAr ? 'لا توجد ملفات معلمين منشورة حاليًا. يمكنك بدء التسجيل وسنتابع معك خطوات اختيار المسار.' : 'No tutor profiles are published right now. You can still begin enrollment.') : active.tryChanging}</p>
                 {pagination.total === 0 ? (
-                  <Link to={lp('/register/teacher')} className="wn-btn wn-btn--primary mt-4">
-                    {active.registerTeacher}
+                  <Link to={lp('/start')} className="wn-btn wn-btn--primary mt-4">
+                    {isAr ? 'ابدأ معنا' : 'Get started'}
                   </Link>
                 ) : null}
               </div>

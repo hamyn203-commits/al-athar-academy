@@ -67,7 +67,7 @@ export default function WomenPortal() {
           {loading ? (
             <div className="flex justify-center py-12"><div className="spinner spinner-lg" /></div>
           ) : teachers.length === 0 ? (
-            <p className="text-center text-gray-500 py-12">{isAr ? 'لا توجد ملفات معلمات منشورة حاليًا — يمكنك التقديم كمعلمة' : 'No teacher profiles are published yet'}</p>
+            <p className="text-center text-gray-500 py-12">{isAr ? 'لا توجد ملفات معلمات منشورة حاليًا — يمكنك بدء التسجيل' : 'No teacher profiles are published yet'}</p>
           ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {teachers.map((t) => (
@@ -88,7 +88,7 @@ export default function WomenPortal() {
             </div>
           )}
           <div className="text-center mt-10">
-            <Link to={localizedPath('/register/student', locale)} className="btn-primary">{isAr ? 'سجّلي كطالبة' : 'Register as Student'}</Link>
+            <Link to={localizedPath('/register/student', locale) + '?section=women'} className="btn-primary">{isAr ? 'سجّلي كطالبة' : 'Register as Student'}</Link>
           </div>
         </section>
       </main>

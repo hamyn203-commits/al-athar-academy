@@ -27,13 +27,13 @@ export default function CTASection() {
           <h2>{isAr ? 'ابدأ رحلتك مع القرآن بخطوة بسيطة وواضحة' : 'Begin your Quran journey with one clear step'}</h2>
           <p>
             {isAr
-              ? 'نتعلم القرآن، نحفظه، وننمو به. ابدأ بحصة تعريفية تساعدنا على فهم مستواك واختيار الطريق المناسب لك.'
-              : 'Learn the Quran, memorize it, and grow through it. Start with an introductory lesson so we can understand your level and recommend the right path.'}
+              ? 'نتعلم القرآن، نحفظه، وننمو به. اختر قسمك وسجّل كطالب أو ولي أمر، ثم نساعدك في تحديد المسار الذي يناسبك.'
+              : 'Learn the Quran, memorize it, and grow through it. Choose a section and join as a student or parent, then find the right learning path.'}
           </p>
 
           <div className="wn-final-cta__actions">
-            <LocalizedLink to="/free-trial" locale={locale} className="wn-btn wn-btn--accent wn-btn--lg">
-              <span>{isAr ? 'ابدأ الحصة التعريفية' : 'Start your introductory lesson'}</span>
+            <LocalizedLink to="/start" locale={locale} className="wn-btn wn-btn--accent wn-btn--lg">
+              <span>{isAr ? 'ابدأ معنا' : 'Start with us'}</span>
               <ArrowIcon size={18} className="wn-btn__arrow" />
             </LocalizedLink>
             <LocalizedLink to="/contact" locale={locale} className="wn-btn wn-btn--outline-light wn-btn--lg">
