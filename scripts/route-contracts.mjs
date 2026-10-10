@@ -71,6 +71,24 @@ assert.equal(
   '/en/guardian/dashboard'
 );
 
+// Signed-in users must never land in another role's dashboard after login.
+assert.equal(
+  postAuthDestination({ redirect: '/ar/teacher/dashboard', role: 'student', locale: 'ar' }),
+  '/ar/student/dashboard'
+);
+assert.equal(
+  postAuthDestination({ redirect: '/guardian/dashboard?tab=children', role: 'teacher', locale: 'en' }),
+  '/en/teacher/dashboard'
+);
+assert.equal(
+  postAuthDestination({ redirect: '/admin?tab=people', role: 'guardian', locale: 'ar' }),
+  '/ar/guardian/dashboard'
+);
+assert.equal(
+  postAuthDestination({ redirect: '/ar/student/dashboard?tab=homework', role: 'student', locale: 'en' }),
+  '/ar/student/dashboard?tab=homework'
+);
+
 function read(relativePath) {
   return fs.readFileSync(path.join(root, relativePath), 'utf8');
 }
@@ -432,6 +450,7 @@ assert.match(family360Dossier, /الأبناء/);
 assert.match(family360Dossier, /طلبات الربط/);
 
 const app = read('src/App.jsx');
+assert.match(app, /path=["']login["'][\s\S]{0,120}<AuthenticatedLanding><Login\s*\/><\/AuthenticatedLanding>/);
 assert.match(
   app,
   /path=["']guardian\/dashboard["'][\s\S]{0,180}roles=\{\[['"]guardian['"]\]\}/
